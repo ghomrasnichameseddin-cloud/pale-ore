@@ -1,0 +1,216 @@
+import React, { useState, useEffect } from 'react';
+import { POSProvider, usePOS } from './POSContext';
+import { DashboardView } from './components/DashboardView';
+import { GoalsView } from './components/GoalsView';
+import { ProjectsView } from './components/ProjectsView';
+import { SkillsView } from './components/SkillsView';
+import { AnalyticsView } from './components/AnalyticsView';
+import { SystemView } from './components/SystemView';
+import { 
+  Activity, Target, Briefcase, Award, BarChart3, Settings, 
+  Terminal, Shield, Flame, Clock, Menu, X, Gem
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
+type TabId = 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system';
+
+function AppContent() {
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [systemTime, setSystemTime] = useState(new Date());
+
+  const { state, getPlayerLevelInfo } = usePOS();
+  const playerInfo = getPlayerLevelInfo();
+
+  // Keep system clock ticking
+  useEffect(() => {
+    const timer = setInterval(() => setSystemTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const navItems = [
+    { id: 'dashboard', label: 'DASHBOARD', icon: Activity, desc: 'Daily operations hub' },
+    { id: 'goals', label: 'GOALS', icon: Target, desc: 'Long-term strategic tracks' },
+    { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
+    { id: 'skills', label: 'SKILLS', icon: Award, desc: 'Competency tracks' },
+    { id: 'analytics', label: 'ANALYTICS', icon: BarChart3, desc: 'Performance logs' },
+    { id: 'system', label: 'SYSTEM', icon: Settings, desc: 'Direct manual override' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-300 flex flex-col md:flex-row font-sans selection:bg-cyan-500/30 selection:text-white" id="pos-application-container">
+      
+      {/* MOBILE TOP NAVIGATION BAR */}
+      <div className="md:hidden glass-panel border-b border-white/5 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <Gem className="h-5 w-5 text-zinc-400 shrink-0" />
+          <h1 className="font-display text-base font-bold tracking-wider text-white">PALE ORE</h1>
+          <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded font-bold">
+            LVL {playerInfo.level}
+          </span>
+        </div>
+        
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="text-zinc-400 hover:text-white p-1"
+          id="mobile-menu-toggle"
+        >
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* MOBILE COLLAPSIBLE DRAWER */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="md:hidden fixed top-[53px] inset-x-0 bg-zinc-950 border-b border-white/10 z-30 p-4 space-y-3"
+            id="mobile-navigation-drawer"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as TabId);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`p-3 rounded-lg border text-left flex flex-col gap-1.5 transition-colors ${
+                      isActive 
+                        ? 'bg-zinc-900 border-cyan-500/30 text-white' 
+                        : 'bg-zinc-950/50 border-white/5 text-zinc-400'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-cyan-400" />
+                    <span className="text-xs font-mono font-bold tracking-wider">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick clock in mobile menu */}
+            <div className="text-center pt-2 border-t border-white/5 text-[10px] font-mono text-zinc-500">
+              SYS TIME: {systemTime.toLocaleTimeString()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* DESKTOP PERMANENT NAVIGATION SIDEBAR */}
+      <aside className="hidden md:flex flex-col justify-between w-64 bg-zinc-950/60 border-r border-white/5 p-5 shrink-0 h-screen sticky top-0" id="desktop-sidebar-pane">
+        <div className="space-y-6">
+          
+          {/* BRAND LOGO */}
+          <div className="flex items-center gap-3 border-b border-white/5 pb-5">
+            <Gem className="h-6 w-6 text-zinc-400 shrink-0" aria-label="gemstone" />
+            <div>
+              <h1 className="font-display text-lg font-black tracking-wider text-white">PALE ORE</h1>
+              <p className="text-[9px] font-mono text-cyan-400 tracking-widest mt-0.5">PROGRESS_OS v2.6</p>
+            </div>
+          </div>
+
+          {/* ACTIVE OPERATOR STATUS MINI-WIDGET */}
+          <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[8px] font-mono text-zinc-500 uppercase">SYS_OPERATOR</span>
+              <span className="text-[8px] font-mono text-cyan-400 font-black">{playerInfo.rank}</span>
+            </div>
+            
+            <div className="flex justify-between items-baseline">
+              <span className="text-xs font-mono text-zinc-400">Level {playerInfo.level}</span>
+              <span className="text-[10px] font-mono text-zinc-500">{playerInfo.totalXp} XP</span>
+            </div>
+
+            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+              <div className="bg-cyan-500 h-full rounded" style={{ width: `${playerInfo.progress}%` }} />
+            </div>
+          </div>
+
+          {/* NAVIGATION LINKS */}
+          <nav className="space-y-1.5" id="desktop-sidebar-nav">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id as TabId)}
+                  className={`w-full flex items-center justify-between p-2.5 rounded text-xs font-mono transition-all duration-150 relative ${
+                    isActive 
+                      ? 'text-white font-bold bg-white/[0.03] border-l-2 border-cyan-400' 
+                      : 'text-zinc-500 border-l-2 border-transparent hover:text-zinc-300 hover:bg-white/[0.01]'
+                  }`}
+                  id={`nav-${item.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-600'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  
+                  {/* Active glowing cursor */}
+                  {isActive && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 glow-cyan shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+        </div>
+
+        {/* SIDEBAR FOOTER (CLOCK & RECOVERY BADGE) */}
+        <div className="border-t border-white/5 pt-4 space-y-2">
+          {state.profile.recoveryMode && (
+            <div className="bg-amber-950/30 border border-amber-500/20 text-amber-400 text-[10px] font-mono px-2.5 py-1 rounded text-center animate-pulse uppercase">
+              RECOVERY_PROTOCOL_ON
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              SYS TIME
+            </span>
+            <span>{systemTime.toLocaleTimeString()}</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN VIEW CONTENT CONTAINER */}
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full" id="pos-main-content">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+            className="h-full"
+          >
+            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'goals' && <GoalsView />}
+            {activeTab === 'projects' && <ProjectsView />}
+            {activeTab === 'skills' && <SkillsView />}
+            {activeTab === 'analytics' && <AnalyticsView />}
+            {activeTab === 'system' && <SystemView />}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <POSProvider>
+      <AppContent />
+    </POSProvider>
+  );
+}

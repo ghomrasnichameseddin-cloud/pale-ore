@@ -1,0 +1,1095 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
+  GoalStatus, GoalPriority, QuestDifficulty, QuestType
+} from './types';
+import { INITIAL_STATE } from './initialState';
+
+interface POSContextType {
+  state: POSState;
+  
+  // Goals CRUD
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => string;
+  updateGoal: (id: string, updates: Partial<Goal>) => void;
+  deleteGoal: (id: string) => void;
+  clearAllGoals: () => void;
+  
+  // Projects CRUD
+  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => string;
+  updateProject: (id: string, updates: Partial<Project>) => void;
+  deleteProject: (id: string) => void;
+  clearAllProjects: () => void;
+  
+  // Milestones CRUD
+  addMilestone: (milestone: Omit<Milestone, 'id' | 'createdAt'>) => string;
+  updateMilestone: (id: string, updates: Partial<Milestone>) => void;
+  deleteMilestone: (id: string) => void;
+  
+  // Quests CRUD & Advanced Actions
+  addQuest: (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>) => string;
+  updateQuest: (id: string, updates: Partial<Quest>) => void;
+  deleteQuest: (id: string) => void;
+  completeQuest: (id: string) => void;
+  reopenQuest: (id: string) => void;
+  failQuest: (id: string) => void;
+  duplicateQuest: (id: string) => string;
+  mergeQuests: (idA: string, idB: string, mergedName: string, mergedDescription: string) => string;
+  splitQuest: (id: string, questAName: string, questBName: string, xpRatio: number) => void;
+  
+  // Subquests CRUD
+  addSubQuest: (questId: string, name: string) => void;
+  toggleSubQuest: (questId: string, subquestId: string) => void;
+  deleteSubQuest: (questId: string, subquestId: string) => void;
+  
+  // Skills CRUD
+  addSkill: (name: string) => string;
+  updateSkillName: (id: string, name: string) => void;
+  deleteSkill: (id: string) => void;
+  clearAllSkills: () => void;
+  equipSkillTitle: (id: string, title: string) => void;
+  
+  // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
+  updateAttributeBase: (id: string, level: number) => void;
+  
+  // Profile Adjustments
+  toggleRecoveryMode: () => void;
+  updateProfileFocus: (focusText: string, goalId: string | null) => void;
+  resetAllData: () => void;
+  resetLevelAndXp: () => void;
+  clearAllQuests: () => void;
+  resetBaselineAttributes: () => void;
+  
+  // Dynamic Helpers & Analytics
+  getGoalProgress: (goalId: string) => number;
+  getProjectProgress: (projectId: string) => number;
+  getMilestoneProgress: (milestoneId: string) => number;
+  getSkillXpAndLevel: (skillId: string) => { xp: number; level: number; progress: number; mastery: number };
+  getAttributes: () => Attribute[];
+  getPlayerLevelInfo: () => { level: number; totalXp: number; xpIntoLevel: number; xpUntilNextLevel: number; progress: number; rank: string; xpRequiredForNextLevel: number };
+  getAnalytics: () => any;
+  
+  // Export/Import
+  exportData: () => string;
+  importData: (jsonData: string) => boolean;
+}
+
+const POSContext = createContext<POSContextType | undefined>(undefined);
+
+const LOCAL_STORAGE_KEY = 'pale_ore_pos_state';
+
+const calculatePlayerLevel = (totalXp: number): number => {
+  // Starts at 5000 XP for Level 1 to 2.
+  // Then XP required increases by 5000 with each level up.
+  // L = Level. XP to go from level L to L + 1 is 5000 * L.
+  // Cumulative XP needed to reach level L:
+  // sum_{i=1}^{L-1} 5000 * i = 2500 * L * (L - 1).
+  // We solve: 2500 * L * (L - 1) <= totalXp
+  // L^2 - L - totalXp / 2500 <= 0
+  // L = (1 + sqrt(1 + totalXp / 625)) / 2
+  return Math.floor((1 + Math.sqrt(1 + totalXp / 625)) / 2);
+};
+
+export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, setState] = useState<POSState>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Basic schema validation check to prevent crashes on structure updates
+        if (parsed.goals && parsed.quests && parsed.skills) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading POS state from localStorage:', e);
+    }
+    return INITIAL_STATE;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  // Helper to determine if a quest is completed or has been completed at least once (for recurring)
+  const isQuestDone = (q: Quest) => q.status === 'Completed' || (q.recurrence && q.recurrence !== 'None' && q.completedAt !== null);
+
+  // Goal helper calculation
+  const getGoalProgress = (goalId: string): number => {
+    const goalQuests = state.quests.filter(q => q.goalId === goalId);
+    if (goalQuests.length === 0) {
+      // Check if there are projects
+      const goalProjects = state.projects.filter(p => p.goalId === goalId);
+      if (goalProjects.length === 0) return 0;
+      
+      const projectProgresses = goalProjects.map(p => getProjectProgress(p.id));
+      return Math.round(projectProgresses.reduce((a, b) => a + b, 0) / projectProgresses.length);
+    }
+    const completed = goalQuests.filter(isQuestDone).length;
+    return Math.round((completed / goalQuests.length) * 100);
+  };
+
+  // Project helper calculation
+  const getProjectProgress = (projectId: string): number => {
+    const projectQuests = state.quests.filter(q => q.projectId === projectId);
+    if (projectQuests.length === 0) return 0;
+    const completed = projectQuests.filter(isQuestDone).length;
+    return Math.round((completed / projectQuests.length) * 100);
+  };
+
+  // Milestone helper calculation
+  const getMilestoneProgress = (milestoneId: string): number => {
+    const milestoneQuests = state.quests.filter(q => q.milestoneId === milestoneId);
+    if (milestoneQuests.length === 0) return 0;
+    const completed = milestoneQuests.filter(isQuestDone).length;
+    return Math.round((completed / milestoneQuests.length) * 100);
+  };
+
+  // Skill progression calculation
+  const getSkillXpAndLevel = (skillId: string) => {
+    // Accumulate XP from entire history of completions (important for repeating quests!)
+    const earnedXp = state.xpHistory
+      .filter(h => h.skillIds.includes(skillId))
+      .reduce((sum, h) => sum + h.xp, 0);
+
+    // Let's assume 250 XP per level
+    const XP_PER_LEVEL = 250;
+    const level = Math.floor(earnedXp / XP_PER_LEVEL) + 1;
+    const xpIntoLevel = earnedXp % XP_PER_LEVEL;
+    const progress = Math.round((xpIntoLevel / XP_PER_LEVEL) * 100);
+    
+    // Mastery represents level competence relative to mastery (e.g. up to Level 50 is 100%)
+    const mastery = Math.min(100, Math.round((level / 50) * 100));
+
+    return { xp: earnedXp, level, progress, mastery };
+  };
+
+  // Player Level Information
+  const getPlayerLevelInfo = () => {
+    // Use historical completions to get total earned XP
+    const totalXp = state.xpHistory.reduce((sum, h) => sum + h.xp, 0);
+    
+    const level = calculatePlayerLevel(totalXp);
+    const xpNeededForCurrentLevel = 2500 * level * (level - 1);
+    const xpRequiredForNextLevel = 5000 * level; // XP required to level up from current level to next level
+    
+    const xpIntoLevel = totalXp - xpNeededForCurrentLevel;
+    const xpUntilNextLevel = xpRequiredForNextLevel - xpIntoLevel;
+    const progress = Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100);
+
+    // Rank evaluation (Solo Leveling theme)
+    let rank = 'E-Rank';
+    if (level >= 30) rank = 'S-Rank';
+    else if (level >= 20) rank = 'A-Rank';
+    else if (level >= 15) rank = 'B-Rank';
+    else if (level >= 10) rank = 'C-Rank';
+    else if (level >= 5) rank = 'D-Rank';
+
+    return { level, totalXp, xpIntoLevel, xpUntilNextLevel, progress, rank, xpRequiredForNextLevel };
+  };
+
+  // Dynamic Attribute Engine (grounded in completed quests evidence)
+  const getAttributes = (): Attribute[] => {
+    // Analyze all completion events in the XP history, matching them with their quest details
+    const completedEvents = state.xpHistory.map(h => {
+      const q = state.quests.find(quest => quest.id === h.questId);
+      return {
+        ...h,
+        type: q?.type || 'Side',
+        goalId: q?.goalId || null,
+        difficulty: q?.difficulty || 'Normal'
+      };
+    });
+    
+    return state.attributes.map(attr => {
+      // Find related events based on attributes rules
+      let relatedCount = 0;
+      let divider = 3; // Quests needed per level
+
+      if (attr.name === 'Strength') {
+        // Fitness and Boss quests
+        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
+          const skill = state.skills.find(sk => sk.id === s);
+          return skill?.name === 'Fitness';
+        }) || e.type === 'Boss').length;
+        divider = 2; // Fast strength build
+      } else if (attr.name === 'Endurance') {
+        // Total completed events
+        relatedCount = completedEvents.length;
+        divider = 4;
+      } else if (attr.name === 'Agility') {
+        // Side quests and quick tasks
+        relatedCount = completedEvents.filter(e => e.type === 'Side' || e.type === 'Optional').length;
+        divider = 3;
+      } else if (attr.name === 'Focus') {
+        // Main quests completed
+        relatedCount = completedEvents.filter(e => e.type === 'Main').length;
+        divider = 3;
+      } else if (attr.name === 'Discipline') {
+        // Habit quests and side quests
+        relatedCount = completedEvents.filter(e => e.type === 'Habit' || e.type === 'Side').length;
+        divider = 3;
+      } else if (attr.name === 'Knowledge') {
+        // Programming, chess, or language quests
+        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
+          const skill = state.skills.find(sk => sk.id === s);
+          return ['Programming', 'English', 'Arabic', 'French', 'Chess'].includes(skill?.name || '');
+        })).length;
+        divider = 2;
+      } else if (attr.name === 'Wisdom') {
+        // Goals completed (represented by completed quests with Goal assignments)
+        relatedCount = completedEvents.filter(e => e.goalId !== null).length;
+        divider = 3;
+      } else if (attr.name === 'Social') {
+        // Communication, writing, or cooking
+        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
+          const skill = state.skills.find(sk => sk.id === s);
+          return ['Writing', 'Cooking', 'Business'].includes(skill?.name || '');
+        })).length;
+        divider = 3;
+      } else if (attr.name === 'Faith') {
+        // Qur'an and Arabic
+        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
+          const skill = state.skills.find(sk => sk.id === s);
+          return ['Qur\'an', 'Arabic'].includes(skill?.name || '');
+        })).length;
+        divider = 2;
+      }
+
+      // Base level is what is in state, we add the earned levels
+      const baseLevel = attr.level;
+      const extraLevels = Math.floor(relatedCount / divider);
+      const level = baseLevel + extraLevels;
+      const progress = Math.round(((relatedCount % divider) / divider) * 100);
+
+      return {
+        ...attr,
+        level,
+        progress
+      };
+    });
+  };
+
+  // CRUD FOR GOALS
+  const addGoal = (goal: Omit<Goal, 'id' | 'createdAt'>): string => {
+    const id = `g-${Date.now()}`;
+    const newGoal: Goal = {
+      ...goal,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      goals: [...prev.goals, newGoal]
+    }));
+    return id;
+  };
+
+  const updateGoal = (id: string, updates: Partial<Goal>) => {
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => g.id === id ? { ...g, ...updates } : g)
+    }));
+  };
+
+  const deleteGoal = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.filter(g => g.id !== id),
+      // Clean up relations
+      projects: prev.projects.filter(p => p.goalId !== id),
+      milestones: prev.milestones.filter(m => m.goalId !== id),
+      quests: prev.quests.map(q => q.goalId === id ? { ...q, goalId: null, projectId: null, milestoneId: null } : q)
+    }));
+  };
+
+  const clearAllGoals = () => {
+    setState(prev => ({
+      ...prev,
+      goals: [],
+      projects: [],
+      milestones: [],
+      quests: prev.quests.map(q => ({ ...q, goalId: null, projectId: null, milestoneId: null })),
+      profile: {
+        ...prev.profile,
+        focusGoalId: null,
+        currentFocus: prev.profile.focusGoalId ? '' : prev.profile.currentFocus
+      }
+    }));
+  };
+
+  // CRUD FOR PROJECTS
+  const addProject = (project: Omit<Project, 'id' | 'createdAt'>): string => {
+    const id = `p-${Date.now()}`;
+    const newProject: Project = {
+      ...project,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      projects: [...prev.projects, newProject]
+    }));
+    return id;
+  };
+
+  const updateProject = (id: string, updates: Partial<Project>) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => p.id === id ? { ...p, ...updates } : p)
+    }));
+  };
+
+  const deleteProject = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.filter(p => p.id !== id),
+      milestones: prev.milestones.filter(m => m.projectId !== id),
+      quests: prev.quests.map(q => q.projectId === id ? { ...q, projectId: null, milestoneId: null } : q)
+    }));
+  };
+
+  const clearAllProjects = () => {
+    setState(prev => ({
+      ...prev,
+      projects: [],
+      milestones: [],
+      quests: prev.quests.map(q => ({ ...q, projectId: null, milestoneId: null }))
+    }));
+  };
+
+  // CRUD FOR MILESTONES
+  const addMilestone = (milestone: Omit<Milestone, 'id' | 'createdAt'>): string => {
+    const id = `m-${Date.now()}`;
+    const newMilestone: Milestone = {
+      ...milestone,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      milestones: [...prev.milestones, newMilestone]
+    }));
+    return id;
+  };
+
+  const updateMilestone = (id: string, updates: Partial<Milestone>) => {
+    setState(prev => ({
+      ...prev,
+      milestones: prev.milestones.map(m => m.id === id ? { ...m, ...updates } : m)
+    }));
+  };
+
+  const deleteMilestone = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      milestones: prev.milestones.filter(m => m.id !== id),
+      quests: prev.quests.map(q => q.milestoneId === id ? { ...q, milestoneId: null } : q)
+    }));
+  };
+
+  // CRUD FOR QUESTS & PROGRESSION ACTIONS
+  const addQuest = (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>): string => {
+    const id = `q-${Date.now()}`;
+    const newQuest: Quest = {
+      ...quest,
+      id,
+      status: 'Active',
+      completedAt: null,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      quests: [...prev.quests, newQuest]
+    }));
+    return id;
+  };
+
+  const updateQuest = (id: string, updates: Partial<Quest>) => {
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => q.id === id ? { ...q, ...updates } : q)
+    }));
+  };
+
+  const deleteQuest = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.filter(q => q.id !== id),
+      xpHistory: prev.xpHistory.filter(h => h.questId !== id)
+    }));
+  };
+
+  const completeQuest = (id: string) => {
+    const questToComplete = state.quests.find(q => q.id === id);
+    if (!questToComplete) return;
+    // If it's a non-recurring quest and is already completed, ignore
+    if ((!questToComplete.recurrence || questToComplete.recurrence === 'None') && questToComplete.status === 'Completed') return;
+
+    const completedTimestamp = new Date().toISOString();
+    
+    // Create XP History entry
+    const xpHistoryId = `h-${Date.now()}`;
+    const newHistoryEntry: XPHistoryEntry = {
+      id: xpHistoryId,
+      questId: questToComplete.id,
+      questName: questToComplete.name,
+      xp: questToComplete.xp,
+      timestamp: completedTimestamp,
+      skillIds: questToComplete.relatedSkills
+    };
+
+    // Calculate momentum boost (+10% on completion, cap 100)
+    const newMomentum = Math.min(100, state.profile.momentum + 10);
+
+    setState(prev => {
+      // Complete quest or update recurrence completion time
+      const updatedQuests = prev.quests.map(q => {
+        if (q.id === id) {
+          if (q.recurrence && q.recurrence !== 'None') {
+            return {
+              ...q,
+              status: 'Active' as const, // Remain Active so it can be completed again!
+              completedAt: completedTimestamp // Track the latest completion timestamp
+            };
+          } else {
+            return {
+              ...q,
+              status: 'Completed' as const,
+              completedAt: completedTimestamp
+            };
+          }
+        }
+        return q;
+      });
+
+      // Add XP history
+      const updatedHistory = [newHistoryEntry, ...prev.xpHistory];
+
+      // Re-calculate user profile level and total XP dynamically based on completed quests history!
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const level = calculatePlayerLevel(totalXp);
+
+      // Update skills internal xp cache based on entire XP History!
+      const updatedSkills = prev.skills.map(skill => {
+        const skillXp = updatedHistory
+          .filter(h => h.skillIds.includes(skill.id))
+          .reduce((sum, h) => sum + h.xp, 0);
+        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        return {
+          ...skill,
+          level: skillLevel,
+          xp: skillXp,
+          mastery
+        };
+      });
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        skills: updatedSkills,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level,
+          momentum: newMomentum
+        }
+      };
+    });
+  };
+
+  const reopenQuest = (id: string) => {
+    const questToReopen = state.quests.find(q => q.id === id);
+    if (!questToReopen) return;
+
+    setState(prev => {
+      const updatedQuests = prev.quests.map(q => 
+        q.id === id ? { ...q, status: 'Active' as const, completedAt: null } : q
+      );
+      
+      // Remove latest completion entry from history for this quest
+      const latestHistoryEntryIndex = prev.xpHistory.findIndex(h => h.questId === id);
+      const updatedHistory = latestHistoryEntryIndex !== -1 
+        ? prev.xpHistory.filter((_, idx) => idx !== latestHistoryEntryIndex)
+        : prev.xpHistory;
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const level = calculatePlayerLevel(totalXp);
+
+      const updatedSkills = prev.skills.map(skill => {
+        const skillXp = updatedHistory
+          .filter(h => h.skillIds.includes(skill.id))
+          .reduce((sum, h) => sum + h.xp, 0);
+        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        return {
+          ...skill,
+          level: skillLevel,
+          xp: skillXp,
+          mastery
+        };
+      });
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        skills: updatedSkills,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level
+        }
+      };
+    });
+  };
+
+  const failQuest = (id: string) => {
+    const questToFail = state.quests.find(q => q.id === id);
+    if (!questToFail) return;
+    if (questToFail.status !== 'Active') return;
+
+    const failedTimestamp = new Date().toISOString();
+    
+    let penaltyXp = 50;
+    if (questToFail.difficulty === 'Easy') penaltyXp = 25;
+    else if (questToFail.difficulty === 'Normal') penaltyXp = 50;
+    else if (questToFail.difficulty === 'Hard') penaltyXp = 100;
+    else if (questToFail.difficulty === 'Boss') penaltyXp = 250;
+
+    const isImportant = questToFail.important || questToFail.type === 'Main' || questToFail.type === 'Boss' || questToFail.difficulty === 'Hard' || questToFail.difficulty === 'Boss';
+    const finalPenaltyXp = isImportant ? penaltyXp * 1.5 : penaltyXp;
+
+    const xpHistoryId = `h-fail-${Date.now()}`;
+    const penaltyEntry: XPHistoryEntry = {
+      id: xpHistoryId,
+      questId: questToFail.id,
+      questName: `💀 PENALTY: Failed "${questToFail.name}"`,
+      xp: -Math.round(finalPenaltyXp),
+      timestamp: failedTimestamp,
+      skillIds: questToFail.relatedSkills
+    };
+
+    const momentumLoss = isImportant ? 25 : 10;
+    const newMomentum = Math.max(0, state.profile.momentum - momentumLoss);
+
+    setState(prev => {
+      const updatedQuests = prev.quests.map(q => {
+        if (q.id === id) {
+          return {
+            ...q,
+            status: 'Failed' as const,
+            completedAt: failedTimestamp
+          };
+        }
+        return q;
+      });
+
+      const updatedHistory = [penaltyEntry, ...prev.xpHistory];
+      const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
+      const level = calculatePlayerLevel(totalXp);
+
+      const updatedSkills = prev.skills.map(skill => {
+        const skillXp = Math.max(0, updatedHistory
+          .filter(h => h.skillIds.includes(skill.id))
+          .reduce((sum, h) => sum + h.xp, 0));
+        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        return {
+          ...skill,
+          level: skillLevel,
+          xp: skillXp,
+          mastery
+        };
+      });
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        skills: updatedSkills,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level,
+          momentum: newMomentum
+        }
+      };
+    });
+  };
+
+  const duplicateQuest = (id: string): string => {
+    const source = state.quests.find(q => q.id === id);
+    if (!source) return '';
+
+    const newId = `q-${Date.now()}`;
+    const duplicated: Quest = {
+      ...source,
+      id: newId,
+      name: `${source.name} (Copy)`,
+      status: 'Active',
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+      subquests: source.subquests ? source.subquests.map(sq => ({
+        ...sq,
+        id: `sq-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        completed: false
+      })) : undefined
+    };
+
+    setState(prev => ({
+      ...prev,
+      quests: [...prev.quests, duplicated]
+    }));
+
+    return newId;
+  };
+
+  const addSubQuest = (questId: string, name: string) => {
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => {
+        if (q.id === questId) {
+          const subquests = q.subquests || [];
+          return {
+            ...q,
+            subquests: [
+              ...subquests,
+              { id: `sq-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, name, completed: false }
+            ]
+          };
+        }
+        return q;
+      })
+    }));
+  };
+
+  const toggleSubQuest = (questId: string, subquestId: string) => {
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => {
+        if (q.id === questId) {
+          const subquests = q.subquests || [];
+          return {
+            ...q,
+            subquests: subquests.map(sq => sq.id === subquestId ? { ...sq, completed: !sq.completed } : sq)
+          };
+        }
+        return q;
+      })
+    }));
+  };
+
+  const deleteSubQuest = (questId: string, subquestId: string) => {
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => {
+        if (q.id === questId) {
+          const subquests = q.subquests || [];
+          return {
+            ...q,
+            subquests: subquests.filter(sq => sq.id !== subquestId)
+          };
+        }
+        return q;
+      })
+    }));
+  };
+
+  const mergeQuests = (idA: string, idB: string, mergedName: string, mergedDescription: string): string => {
+    const qA = state.quests.find(q => q.id === idA);
+    const qB = state.quests.find(q => q.id === idB);
+    
+    if (!qA || !qB) return '';
+
+    const newId = `q-${Date.now()}`;
+    // Sum times and XP
+    const mergedTime = qA.estimatedTime + qB.estimatedTime;
+    const mergedXp = qA.xp + qB.xp;
+    const mergedSkills = Array.from(new Set([...qA.relatedSkills, ...qB.relatedSkills]));
+
+    const mergedQuest: Quest = {
+      id: newId,
+      name: mergedName,
+      description: mergedDescription,
+      difficulty: qA.difficulty === 'Boss' || qB.difficulty === 'Boss' ? 'Boss' : qA.difficulty,
+      estimatedTime: mergedTime,
+      xp: mergedXp,
+      goalId: qA.goalId || qB.goalId,
+      projectId: qA.projectId || qB.projectId,
+      milestoneId: qA.milestoneId || qB.milestoneId,
+      relatedSkills: mergedSkills,
+      type: qA.type === 'Main' || qB.type === 'Main' ? 'Main' : qA.type,
+      status: 'Active',
+      deadline: qA.deadline || qB.deadline,
+      completedAt: null,
+      createdAt: new Date().toISOString()
+    };
+
+    setState(prev => ({
+      ...prev,
+      quests: [...prev.quests.filter(q => q.id !== idA && q.id !== idB), mergedQuest]
+    }));
+
+    return newId;
+  };
+
+  const splitQuest = (id: string, questAName: string, questBName: string, xpRatio: number) => {
+    const source = state.quests.find(q => q.id === id);
+    if (!source) return;
+
+    const idA = `q-split-a-${Date.now()}`;
+    const idB = `q-split-b-${Date.now()}`;
+
+    const xpA = Math.max(10, Math.round(source.xp * xpRatio));
+    const xpB = Math.max(10, source.xp - xpA);
+    
+    const timeA = Math.max(5, Math.round(source.estimatedTime * xpRatio));
+    const timeB = Math.max(5, source.estimatedTime - timeA);
+
+    const qA: Quest = {
+      ...source,
+      id: idA,
+      name: questAName,
+      xp: xpA,
+      estimatedTime: timeA,
+      createdAt: new Date().toISOString()
+    };
+
+    const qB: Quest = {
+      ...source,
+      id: idB,
+      name: questBName,
+      xp: xpB,
+      estimatedTime: timeB,
+      createdAt: new Date().toISOString()
+    };
+
+    setState(prev => ({
+      ...prev,
+      quests: [...prev.quests.filter(q => q.id !== id), qA, qB]
+    }));
+  };
+
+  // CRUD FOR SKILLS
+  const addSkill = (name: string): string => {
+    const id = `s-${Date.now()}`;
+    const newSkill: Skill = {
+      id,
+      name,
+      level: 1,
+      xp: 0,
+      mastery: 0,
+      relatedGoals: [],
+      relatedProjects: []
+    };
+    setState(prev => ({
+      ...prev,
+      skills: [...prev.skills, newSkill]
+    }));
+    return id;
+  };
+
+  const updateSkillName = (id: string, name: string) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, name } : s)
+    }));
+  };
+
+  const deleteSkill = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.filter(s => s.id !== id),
+      // Clean up skill references from goals and quests
+      goals: prev.goals.map(g => ({ ...g, relatedSkills: g.relatedSkills.filter(sid => sid !== id) })),
+      quests: prev.quests.map(q => ({ ...q, relatedSkills: q.relatedSkills.filter(sid => sid !== id) }))
+    }));
+  };
+
+  const clearAllSkills = () => {
+    setState(prev => ({
+      ...prev,
+      skills: [],
+      // Clean up all skill references
+      goals: prev.goals.map(g => ({ ...g, relatedSkills: [] })),
+      quests: prev.quests.map(q => ({ ...q, relatedSkills: [] }))
+    }));
+  };
+
+  const equipSkillTitle = (id: string, title: string) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, equippedTitle: title } : s)
+    }));
+  };
+
+  // Adjust base level of Attribute
+  const updateAttributeBase = (id: string, level: number) => {
+    setState(prev => ({
+      ...prev,
+      attributes: prev.attributes.map(a => a.id === id ? { ...a, level } : a)
+    }));
+  };
+
+  // Profile Adjustments
+  const toggleRecoveryMode = () => {
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        recoveryMode: !prev.profile.recoveryMode
+      }
+    }));
+  };
+
+  const updateProfileFocus = (focusText: string, goalId: string | null) => {
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        currentFocus: focusText,
+        focusGoalId: goalId
+      }
+    }));
+  };
+
+  const resetAllData = () => {
+    setState(INITIAL_STATE);
+  };
+
+  const resetLevelAndXp = () => {
+    setState(prev => ({
+      ...prev,
+      xpHistory: [],
+      quests: prev.quests.map(q => ({ ...q, status: 'Active' as const, completedAt: null })),
+      profile: {
+        ...prev.profile,
+        level: 1,
+        xp: 0,
+        momentum: 50
+      }
+    }));
+  };
+
+  const clearAllQuests = () => {
+    setState(prev => ({
+      ...prev,
+      quests: []
+    }));
+  };
+
+  const resetBaselineAttributes = () => {
+    setState(prev => ({
+      ...prev,
+      attributes: prev.attributes.map(a => ({ ...a, level: 1, progress: 0 }))
+    }));
+  };
+
+  // Export / Import JSON representation
+  const exportData = (): string => {
+    return JSON.stringify(state, null, 2);
+  };
+
+  const importData = (jsonData: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      // Validate schema
+      if (Array.isArray(parsed.goals) && Array.isArray(parsed.quests) && Array.isArray(parsed.skills)) {
+        setState(parsed);
+        return true;
+      }
+    } catch (e) {
+      console.error('Failed to import JSON data:', e);
+    }
+    return false;
+  };
+
+  // Deep Analytics calculation
+  const getAnalytics = () => {
+    const completedQuestsCount = state.quests.filter(isQuestDone).length;
+    const totalQuests = state.quests.length;
+    const overallCompletionRate = totalQuests > 0 ? Math.round((completedQuestsCount / totalQuests) * 100) : 0;
+    
+    const goalsCompleted = state.goals.filter(g => getGoalProgress(g.id) === 100).length;
+    const projectsCompleted = state.projects.filter(p => getProjectProgress(p.id) === 100).length;
+    const milestonesCompleted = state.milestones.filter(m => getMilestoneProgress(m.id) === 100).length;
+
+    // Time calculations
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Today's XP
+    const todayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(today));
+    const todayXp = todayEvents.reduce((sum, h) => sum + h.xp, 0);
+
+    // Weekly XP
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weeklyEvents = state.xpHistory.filter(h => new Date(h.timestamp) >= oneWeekAgo);
+    const weeklyXp = weeklyEvents.reduce((sum, h) => sum + h.xp, 0);
+
+    // Monthly XP
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const monthlyEvents = state.xpHistory.filter(h => new Date(h.timestamp) >= oneMonthAgo);
+    const monthlyXp = monthlyEvents.reduce((sum, h) => sum + h.xp, 0);
+
+    // Calculate daily XP breakdown for charts (past 7 days)
+    const dailyXpTrend: { date: string; xp: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(dateStr));
+      const dayXp = dayEvents.reduce((sum, h) => sum + h.xp, 0);
+      
+      // Beautiful short string (e.g. "Jul 07" or "07 Jul")
+      const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      dailyXpTrend.push({ date: formattedDate, xp: dayXp });
+    }
+
+    // Most Improved/Active Skill (based on XP)
+    let mostImprovedSkill = 'None';
+    let maxSkillXp = -1;
+    state.skills.forEach(skill => {
+      const { xp } = getSkillXpAndLevel(skill.id);
+      if (xp > maxSkillXp) {
+        maxSkillXp = xp;
+        mostImprovedSkill = skill.name;
+      }
+    });
+
+    // Most and Least Active Goal (based on completed quests)
+    let mostActiveGoal = 'None';
+    let maxGoalQuests = -1;
+    let leastActiveGoal = 'None';
+    let minGoalQuests = Infinity;
+
+    state.goals.forEach(goal => {
+      const count = state.xpHistory.filter(h => {
+        const q = state.quests.find(quest => quest.id === h.questId);
+        return q && q.goalId === goal.id;
+      }).length;
+      if (count > maxGoalQuests) {
+        maxGoalQuests = count;
+        mostActiveGoal = goal.name;
+      }
+      if (count < minGoalQuests) {
+        minGoalQuests = count;
+        leastActiveGoal = goal.name;
+      }
+    });
+
+    if (state.goals.length === 0) {
+      leastActiveGoal = 'None';
+    }
+
+    // Strongest & Weakest Attributes
+    const attributes = getAttributes();
+    let strongestAttr = 'None';
+    let maxAttrLvl = -1;
+    let weakestAttr = 'None';
+    let minAttrLvl = Infinity;
+
+    attributes.forEach(attr => {
+      if (attr.level > maxAttrLvl) {
+        maxAttrLvl = attr.level;
+        strongestAttr = attr.name;
+      }
+      if (attr.level < minAttrLvl) {
+        minAttrLvl = attr.level;
+        weakestAttr = attr.name;
+      }
+    });
+
+    // Workload Balance (Active Quests count / total estimated time)
+    const activeQuests = state.quests.filter(q => q.status === 'Active');
+    const totalActiveTime = activeQuests.reduce((sum, q) => sum + q.estimatedTime, 0);
+    
+    let workloadStatus = 'Optimal';
+    if (totalActiveTime > 240) workloadStatus = 'Heavy Workload';
+    else if (totalActiveTime > 120) workloadStatus = 'Moderate Workload';
+    else if (totalActiveTime === 0) workloadStatus = 'No Workload';
+    else workloadStatus = 'Light Workload';
+
+    return {
+      overallCompletionRate,
+      goalsCompleted,
+      projectsCompleted,
+      milestonesCompleted,
+      todayXp,
+      weeklyXp,
+      monthlyXp,
+      averageXp: Math.round(weeklyXp / 7),
+      dailyXpTrend,
+      mostImprovedSkill,
+      mostActiveGoal,
+      leastActiveGoal,
+      strongestAttr,
+      weakestAttr,
+      workloadStatus,
+      totalActiveTime
+    };
+  };
+
+  return (
+    <POSContext.Provider value={{
+      state,
+      addGoal,
+      updateGoal,
+      deleteGoal,
+      clearAllGoals,
+      addProject,
+      updateProject,
+      deleteProject,
+      clearAllProjects,
+      addMilestone,
+      updateMilestone,
+      deleteMilestone,
+      addQuest,
+      updateQuest,
+      deleteQuest,
+      completeQuest,
+      reopenQuest,
+      failQuest,
+      duplicateQuest,
+      mergeQuests,
+      splitQuest,
+      addSubQuest,
+      toggleSubQuest,
+      deleteSubQuest,
+      addSkill,
+      updateSkillName,
+      deleteSkill,
+      clearAllSkills,
+      equipSkillTitle,
+      updateAttributeBase,
+      toggleRecoveryMode,
+      updateProfileFocus,
+      resetAllData,
+      resetLevelAndXp,
+      clearAllQuests,
+      resetBaselineAttributes,
+      getGoalProgress,
+      getProjectProgress,
+      getMilestoneProgress,
+      getSkillXpAndLevel,
+      getAttributes,
+      getPlayerLevelInfo,
+      getAnalytics,
+      exportData,
+      importData
+    }}>
+      {children}
+    </POSContext.Provider>
+  );
+};
+
+export const usePOS = () => {
+  const context = useContext(POSContext);
+  if (context === undefined) {
+    throw new Error('usePOS must be used within a POSProvider');
+  }
+  return context;
+};

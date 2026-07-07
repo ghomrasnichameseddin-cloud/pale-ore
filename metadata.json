@@ -1,0 +1,6 @@
+{
+  "name": "Pale Ore",
+  "description": "A minimalist, dark personal progression operating system to track and visualize real-world growth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
