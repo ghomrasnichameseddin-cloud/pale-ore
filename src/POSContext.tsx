@@ -63,7 +63,7 @@ interface POSContextType {
   getGoalProgress: (goalId: string) => number;
   getProjectProgress: (projectId: string) => number;
   getMilestoneProgress: (milestoneId: string) => number;
-  getSkillXpAndLevel: (skillId: string) => { xp: number; level: number; progress: number; mastery: number };
+  getSkillXpAndLevel: (skillId: string) => { xp: number; level: number; progress: number; mastery: number; xpIntoLevel: number; xpRequiredForNextLevel: number };
   getAttributes: () => Attribute[];
   getPlayerLevelInfo: () => { level: number; totalXp: number; xpIntoLevel: number; xpUntilNextLevel: number; progress: number; rank: string; xpRequiredForNextLevel: number };
   getAnalytics: () => any;
@@ -150,16 +150,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .filter(h => h.skillIds.includes(skillId))
       .reduce((sum, h) => sum + h.xp, 0);
 
-    // Let's assume 250 XP per level
-    const XP_PER_LEVEL = 250;
-    const level = Math.floor(earnedXp / XP_PER_LEVEL) + 1;
-    const xpIntoLevel = earnedXp % XP_PER_LEVEL;
-    const progress = Math.round((xpIntoLevel / XP_PER_LEVEL) * 100);
+    const level = calculatePlayerLevel(earnedXp);
+    const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
+    const xpRequiredForNextLevel = 500 * level + 500; // XP required to level up from current level to next level
+    
+    const xpIntoLevel = earnedXp - xpNeededForCurrentLevel;
+    const progress = Math.min(100, Math.max(0, Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100)));
     
     // Mastery represents level competence relative to mastery (e.g. up to Level 50 is 100%)
     const mastery = Math.min(100, Math.round((level / 50) * 100));
 
-    return { xp: earnedXp, level, progress, mastery };
+    return { xp: earnedXp, level, progress, mastery, xpIntoLevel, xpRequiredForNextLevel };
   };
 
   // Player Level Information
@@ -473,7 +474,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const skillXp = updatedHistory
           .filter(h => h.skillIds.includes(skill.id))
           .reduce((sum, h) => sum + h.xp, 0);
-        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
           ...skill,
@@ -520,7 +521,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const skillXp = updatedHistory
           .filter(h => h.skillIds.includes(skill.id))
           .reduce((sum, h) => sum + h.xp, 0);
-        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
           ...skill,
@@ -593,7 +594,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const skillXp = Math.max(0, updatedHistory
           .filter(h => h.skillIds.includes(skill.id))
           .reduce((sum, h) => sum + h.xp, 0));
-        const skillLevel = Math.floor(skillXp / 250) + 1;
+        const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
           ...skill,
@@ -1092,4 +1093,5 @@ export const usePOS = () => {
   }
   return context;
 };
+
 

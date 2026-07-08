@@ -296,7 +296,7 @@ export const SkillsView: React.FC = () => {
                 <span className="text-[10px] font-mono text-zinc-500 uppercase">CURRENT LEVEL</span>
                 <p className="text-3xl font-display font-bold text-white mt-2">LVL {selectedSkillStats.level}</p>
                 <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                  {selectedSkillStats.xp % 250} / 250 XP to next level
+                  {selectedSkillStats.xpIntoLevel} / {selectedSkillStats.xpRequiredForNextLevel} XP to next level
                 </p>
               </div>
 

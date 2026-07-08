@@ -1372,7 +1372,7 @@ export const GoalsView: React.FC = () => {
 
                             <div className="flex justify-between text-[10px] font-mono text-zinc-500">
                               <span>MASTERY: {sInfo.mastery}%</span>
-                              <span>{sInfo.xp % 250} / 250 XP to Next Level</span>
+                              <span>{sInfo.xpIntoLevel} / {sInfo.xpRequiredForNextLevel} XP to Next Level</span>
                             </div>
                           </div>
                         );
@@ -1397,3 +1397,4 @@ export const GoalsView: React.FC = () => {
     </div>
   );
 };
+
