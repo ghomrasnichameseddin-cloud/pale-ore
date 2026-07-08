@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
-import { Quest, QuestDifficulty, QuestType } from '../types';
+import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
   Shield, Zap, Activity, Flame, Clock, Plus, Trash2, 
   Copy, ToggleLeft, ToggleRight, CheckCircle2, Circle, Swords,
@@ -21,7 +21,7 @@ export const DashboardView: React.FC = () => {
   const [newQuestGoal, setNewQuestGoal] = useState<string>('');
   const [newQuestSkills, setNewQuestSkills] = useState<string[]>([]);
   const [newQuestDuration, setNewQuestDuration] = useState<number>(30);
-  const [newQuestRecurrence, setNewQuestRecurrence] = useState<'None' | 'Daily' | 'Weekly' | 'Monthly'>('None');
+  const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence>('None');
   const [newQuestImportant, setNewQuestImportant] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
 
@@ -36,7 +36,7 @@ export const DashboardView: React.FC = () => {
   const [editQuestType, setEditQuestType] = useState<QuestType>('Main');
   const [editQuestXp, setEditQuestXp] = useState<number>(100);
   const [editQuestGoal, setEditQuestGoal] = useState<string>('');
-  const [editQuestRecurrence, setEditQuestRecurrence] = useState<'None' | 'Daily' | 'Weekly' | 'Monthly'>('None');
+  const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence>('None');
   const [editQuestImportant, setEditQuestImportant] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
 
@@ -358,6 +358,7 @@ export const DashboardView: React.FC = () => {
                                 >
                                   <option value="None">Once Only</option>
                                   <option value="Daily">🔁 Daily</option>
+                                  <option value="Every 2 Days">🔁 Every 2 Days</option>
                                   <option value="Weekly">🔁 Weekly</option>
                                   <option value="Monthly">🔁 Monthly</option>
                                 </select>
@@ -790,6 +791,7 @@ export const DashboardView: React.FC = () => {
                   >
                     <option value="None">Once Only</option>
                     <option value="Daily">🔁 Daily</option>
+                    <option value="Every 2 Days">🔁 Every 2 Days</option>
                     <option value="Weekly">🔁 Weekly</option>
                     <option value="Monthly">🔁 Monthly</option>
                   </select>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
-import { Goal, GoalStatus, GoalPriority, Project, Milestone, Quest, QuestDifficulty, QuestType } from '../types';
+import { Goal, GoalStatus, GoalPriority, Project, Milestone, Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
   Target, Calendar, AlertCircle, Trash2, Plus, Edit3, 
   Play, Pause, Archive, CheckCircle, Clock, BookOpen, BarChart2, History,
@@ -58,7 +58,7 @@ export const GoalsView: React.FC = () => {
   const [newQuestProj, setNewQuestProj] = useState('');
   const [newQuestMile, setNewQuestMile] = useState('');
   const [newQuestTime, setNewQuestTime] = useState<number>(45);
-  const [newQuestRecurrence, setNewQuestRecurrence] = useState<'None' | 'Daily' | 'Weekly' | 'Monthly'>('None');
+  const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence>('None');
 
   // Advanced Quest Actions States
   const [splitQuestId, setSplitQuestId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export const GoalsView: React.FC = () => {
   const [editQuestXp, setEditQuestXp] = useState<number>(100);
   const [editQuestProj, setEditQuestProj] = useState('');
   const [editQuestMile, setEditQuestMile] = useState('');
-  const [editQuestRecurrence, setEditQuestRecurrence] = useState<'None' | 'Daily' | 'Weekly' | 'Monthly'>('None');
+  const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence>('None');
 
   const startEditingQuest = (quest: Quest) => {
     setEditingQuestId(quest.id);
@@ -1001,6 +1001,7 @@ export const GoalsView: React.FC = () => {
                       >
                         <option value="None">Once Only</option>
                         <option value="Daily">🔁 Daily</option>
+                        <option value="Every 2 Days">🔁 Every 2 Days</option>
                         <option value="Weekly">🔁 Weekly</option>
                         <option value="Monthly">🔁 Monthly</option>
                       </select>
@@ -1223,6 +1224,7 @@ export const GoalsView: React.FC = () => {
                                     >
                                       <option value="None">Once Only</option>
                                       <option value="Daily">🔁 Daily</option>
+                                      <option value="Every 2 Days">🔁 Every 2 Days</option>
                                       <option value="Weekly">🔁 Weekly</option>
                                       <option value="Monthly">🔁 Monthly</option>
                                     </select>
