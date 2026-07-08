@@ -60,10 +60,15 @@ export const SkillsView: React.FC = () => {
   // Handle skill deletion
   const handleDeleteSkill = () => {
     if (!selectedSkillId) return;
-    deleteSkill(selectedSkillId);
-    
-    const remaining = state.skills.filter(s => s.id !== selectedSkillId);
-    setSelectedSkillId(remaining[0]?.id || null);
+    const skillToDelete = state.skills.find(s => s.id === selectedSkillId);
+    if (!skillToDelete) return;
+
+    if (window.confirm(`Are you sure you want to delete the skill "${skillToDelete.name}"? This action is permanent.`)) {
+      deleteSkill(selectedSkillId);
+      
+      const remaining = state.skills.filter(s => s.id !== selectedSkillId);
+      setSelectedSkillId(remaining[0]?.id || null);
+    }
   };
 
   // Handle empty all skills
@@ -179,51 +184,74 @@ export const SkillsView: React.FC = () => {
             const stats = getSkillXpAndLevel(skill.id);
 
             return (
-              <button
+              <div
                 key={skill.id}
-                onClick={() => {
-                  setSelectedSkillId(skill.id);
-                  setIsEditingSkill(false);
-                }}
-                className={`text-left p-4 rounded-lg border transition-all space-y-3 flex flex-col justify-between ${
+                className={`group relative rounded-lg border transition-all p-4 space-y-3 flex flex-col justify-between ${
                   isSelected 
                     ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
                     : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
                 }`}
               >
-                <div className="space-y-1 w-full">
-                  <div className="flex justify-between items-start gap-1">
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase">LVL_{stats.level}</span>
-                    <span className="text-[9px] font-mono text-cyan-400 font-bold bg-cyan-950/20 px-1 rounded uppercase">
-                      MSTRY {stats.mastery}%
-                    </span>
-                  </div>
-                  <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
-                    {skill.name}
-                  </h4>
-                  {skill.equippedTitle && (
-                    <div className="pt-1">
-                      <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        🛡️ {skill.equippedTitle}
+                {/* Clickable area for selection */}
+                <div 
+                  onClick={() => {
+                    setSelectedSkillId(skill.id);
+                    setIsEditingSkill(false);
+                  }}
+                  className="cursor-pointer space-y-3 flex-1 w-full"
+                >
+                  <div className="space-y-1 w-full">
+                    <div className="flex justify-between items-start gap-1 pr-6">
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase">LVL_{stats.level}</span>
+                      <span className="text-[9px] font-mono text-cyan-400 font-bold bg-cyan-950/20 px-1 rounded uppercase">
+                        MSTRY {stats.mastery}%
                       </span>
                     </div>
-                  )}
+                    <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                      {skill.name}
+                    </h4>
+                    {skill.equippedTitle && (
+                      <div className="pt-1">
+                        <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          🛡️ {skill.equippedTitle}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full space-y-1">
+                    <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
+                      <div 
+                        className="bg-cyan-500 h-full rounded transition-all duration-300"
+                        style={{ width: `${stats.progress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[8px] font-mono text-zinc-500">
+                      <span>{stats.xp} TOTAL XP</span>
+                      <span>{stats.progress}% LEVEL_GAP</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full space-y-1">
-                  <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
-                    <div 
-                      className="bg-cyan-500 h-full rounded transition-all duration-300"
-                      style={{ width: `${stats.progress}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[8px] font-mono text-zinc-500">
-                    <span>{stats.xp} TOTAL XP</span>
-                    <span>{stats.progress}% LEVEL_GAP</span>
-                  </div>
-                </div>
-              </button>
+                {/* Individual separate delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to delete the skill "${skill.name}"? This action is permanent.`)) {
+                      deleteSkill(skill.id);
+                      if (selectedSkillId === skill.id) {
+                        const remaining = state.skills.filter(s => s.id !== skill.id);
+                        setSelectedSkillId(remaining[0]?.id || null);
+                      }
+                    }
+                  }}
+                  className="absolute top-3 right-3 p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Delete Skill Track"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -488,3 +516,4 @@ export const SkillsView: React.FC = () => {
     </div>
   );
 };
+

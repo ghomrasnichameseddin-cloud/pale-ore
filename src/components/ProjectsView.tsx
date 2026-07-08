@@ -79,10 +79,15 @@ export const ProjectsView: React.FC = () => {
   // Delete project
   const handleDeleteProj = () => {
     if (!selectedProjId) return;
-    deleteProject(selectedProjId);
-    
-    const remaining = state.projects.filter(p => p.id !== selectedProjId);
-    setSelectedProjId(remaining[0]?.id || null);
+    const projToDelete = state.projects.find(p => p.id === selectedProjId);
+    if (!projToDelete) return;
+
+    if (window.confirm(`Are you sure you want to delete the project "${projToDelete.name}"? This action is permanent.`)) {
+      deleteProject(selectedProjId);
+      
+      const remaining = state.projects.filter(p => p.id !== selectedProjId);
+      setSelectedProjId(remaining[0]?.id || null);
+    }
   };
 
   // Handle Purge/Empty All Projects
@@ -235,42 +240,65 @@ export const ProjectsView: React.FC = () => {
             const parentGoal = state.goals.find(g => g.id === proj.goalId);
 
             return (
-              <button
+              <div
                 key={proj.id}
-                onClick={() => {
-                  setSelectedProjId(proj.id);
-                  setIsEditingProj(false);
-                }}
-                className={`w-full text-left p-3.5 rounded-lg border text-xs transition-all flex flex-col gap-3 ${
+                className={`group relative p-3.5 rounded-lg border text-xs transition-all flex flex-col gap-3 ${
                   isSelected 
                     ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
                     : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
                 }`}
               >
-                <div className="space-y-1">
-                  {parentGoal && (
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase truncate block max-w-full">
-                      🎯 {parentGoal.name}
-                    </span>
-                  )}
-                  <h4 className={`font-sans font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
-                    {proj.name}
-                  </h4>
+                {/* Clickable area for selection */}
+                <div
+                  onClick={() => {
+                    setSelectedProjId(proj.id);
+                    setIsEditingProj(false);
+                  }}
+                  className="cursor-pointer space-y-3 flex-1 w-full text-left"
+                >
+                  <div className="space-y-1 pr-6">
+                    {parentGoal && (
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase truncate block max-w-full">
+                        🎯 {parentGoal.name}
+                      </span>
+                    )}
+                    <h4 className={`font-sans font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                      {proj.name}
+                    </h4>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-mono text-zinc-500">
+                      <span>COMPLETED</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
+                      <div 
+                        className="bg-cyan-500 h-full rounded transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                    <span>COMPLETED</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
-                    <div 
-                      className="bg-cyan-500 h-full rounded transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </button>
+                {/* Individual separate delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to delete the project "${proj.name}"? This action is permanent.`)) {
+                      deleteProject(proj.id);
+                      if (selectedProjId === proj.id) {
+                        const remaining = state.projects.filter(p => p.id !== proj.id);
+                        setSelectedProjId(remaining[0]?.id || null);
+                      }
+                    }
+                  }}
+                  className="absolute top-3.5 right-3.5 p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  title="Delete Project"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             );
           })}
         </div>
