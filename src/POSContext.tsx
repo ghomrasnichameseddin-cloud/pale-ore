@@ -78,15 +78,14 @@ const POSContext = createContext<POSContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY = 'pale_ore_pos_state';
 
 const calculatePlayerLevel = (totalXp: number): number => {
-  // Starts at 5000 XP for Level 1 to 2.
-  // Then XP required increases by 5000 with each level up.
-  // L = Level. XP to go from level L to L + 1 is 5000 * L.
+  // Starts with a required 1000 XP in level 1, then adds 500 XP with each level up.
+  // L = Level. XP to go from level L to L + 1 is 1000 + 500 * (L - 1) = 500 * L + 500.
   // Cumulative XP needed to reach level L:
-  // sum_{i=1}^{L-1} 5000 * i = 2500 * L * (L - 1).
-  // We solve: 2500 * L * (L - 1) <= totalXp
-  // L^2 - L - totalXp / 2500 <= 0
-  // L = (1 + sqrt(1 + totalXp / 625)) / 2
-  return Math.floor((1 + Math.sqrt(1 + totalXp / 625)) / 2);
+  // sum_{i=1}^{L-1} (500 * i + 500) = 250 * L * (L - 1) + 500 * (L - 1) = 250 * (L - 1) * (L + 2) = 250 * (L^2 + L - 2).
+  // We solve: 250 * (L^2 + L - 2) <= totalXp
+  // L^2 + L - (2 + totalXp / 250) <= 0
+  // L = (-1 + sqrt(1 + 4 * (2 + totalXp / 250))) / 2 = (-1 + sqrt(9 + totalXp / 62.5)) / 2
+  return Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2);
 };
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -169,8 +168,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const totalXp = state.xpHistory.reduce((sum, h) => sum + h.xp, 0);
     
     const level = calculatePlayerLevel(totalXp);
-    const xpNeededForCurrentLevel = 2500 * level * (level - 1);
-    const xpRequiredForNextLevel = 5000 * level; // XP required to level up from current level to next level
+    const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
+    const xpRequiredForNextLevel = 500 * level + 500; // XP required to level up from current level to next level
     
     const xpIntoLevel = totalXp - xpNeededForCurrentLevel;
     const xpUntilNextLevel = xpRequiredForNextLevel - xpIntoLevel;
@@ -1093,3 +1092,4 @@ export const usePOS = () => {
   }
   return context;
 };
+
