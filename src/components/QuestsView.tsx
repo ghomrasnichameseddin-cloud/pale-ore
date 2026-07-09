@@ -42,6 +42,11 @@ export const QuestsView: React.FC = () => {
         </div>
       </div>
 
+      {/* NEW QUEST FORM / PROMPT (TOP OF WINDOW) */}
+      <div id="quests-form-container">
+        <ExecuteQuestForm />
+      </div>
+
       {/* TWO COLUMN GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -50,10 +55,8 @@ export const QuestsView: React.FC = () => {
           <ActiveDirectives />
         </div>
 
-        {/* RIGHT COLUMN: CREATE QUEST FORM & METADATA (Takes 1/3 space) */}
-        <div className="space-y-6" id="quests-form-container">
-          <ExecuteQuestForm />
-
+        {/* RIGHT COLUMN: METADATA / GUIDE (Takes 1/3 space) */}
+        <div className="space-y-6" id="quests-sidebar-container">
           {/* QUESTING SYSTEM GUIDE CARD */}
           <div className="glass-panel rounded-lg p-5 space-y-4" id="quests-guide-panel">
             <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider border-b border-white/5 pb-2">
