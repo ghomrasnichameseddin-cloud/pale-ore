@@ -8,7 +8,7 @@ export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday } = usePOS();
 
   const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
-  const completedQuests = state.quests.filter(q => q.status === 'Completed');
+  const completedQuests = state.quests.filter(q => isQuestFinishedForToday(q) && q.status !== 'Failed');
   const totalQuests = state.quests.length;
 
   return (

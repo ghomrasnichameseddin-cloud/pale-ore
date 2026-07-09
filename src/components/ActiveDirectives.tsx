@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export const ActiveDirectives: React.FC = () => {
   const { 
-    state, updateQuest, completeQuest, failQuest, deleteQuest, duplicateQuest,
+    state, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, stopFocusSession,
     isQuestFinishedForToday
@@ -197,7 +197,7 @@ export const ActiveDirectives: React.FC = () => {
             {state.profile.recoveryMode ? 'RECOVERY DIRECTIVES' : "TODAY'S ACTIVE DIRECTIVES"}
           </h4>
           <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-            {displayActiveQuests.length} ACTIVE / {state.quests.filter(q => q.status === 'Completed').length} ARCHIVED TODAY
+            {displayActiveQuests.length} ACTIVE / {state.quests.filter(q => isQuestFinishedForToday(q) && q.status !== 'Failed').length} ARCHIVED TODAY
           </p>
         </div>
 
@@ -479,11 +479,23 @@ export const ActiveDirectives: React.FC = () => {
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Completion Checkbox */}
                       <button 
-                        onClick={() => completeQuest(quest.id)}
-                        className="mt-0.5 text-zinc-500 hover:text-emerald-400 transition-colors shrink-0"
-                        title="Complete Quest"
+                        onClick={() => {
+                          if (isQuestFinishedForToday(quest)) {
+                            reopenQuest(quest.id);
+                          } else {
+                            completeQuest(quest.id);
+                          }
+                        }}
+                        className={`mt-0.5 transition-colors shrink-0 ${
+                          isQuestFinishedForToday(quest) ? 'text-emerald-400 hover:text-zinc-500' : 'text-zinc-500 hover:text-emerald-400'
+                        }`}
+                        title={isQuestFinishedForToday(quest) ? "Reopen Quest" : "Complete Quest"}
                       >
-                        <Circle className="h-5 w-5" />
+                        {isQuestFinishedForToday(quest) ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : (
+                          <Circle className="h-5 w-5" />
+                        )}
                       </button>
                       
                       <div className="space-y-1 min-w-0 flex-1">
@@ -532,7 +544,9 @@ export const ActiveDirectives: React.FC = () => {
                           )}
                         </div>
 
-                        <h5 className="font-sans text-sm font-semibold text-white leading-tight mt-1">
+                        <h5 className={`font-sans text-sm font-semibold leading-tight mt-1 ${
+                          isQuestFinishedForToday(quest) ? 'line-through text-zinc-500' : 'text-white'
+                        }`}>
                           {quest.name}
                         </h5>
 
