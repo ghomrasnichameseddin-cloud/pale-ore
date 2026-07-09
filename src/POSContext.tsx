@@ -79,6 +79,7 @@ interface POSContextType {
   // Export/Import
   exportData: () => string;
   importData: (jsonData: string) => boolean;
+  isQuestFinishedForToday: (q: Quest) => boolean;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -230,8 +231,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const isQuestFinishedForToday = (q: Quest): boolean => {
+    if (q.status === 'Completed' || q.status === 'Failed') {
+      return true;
+    }
+    if (q.completedAt) {
+      try {
+        const completedDateStr = new Date(q.completedAt).toDateString();
+        const todayDateStr = new Date().toDateString();
+        if (completedDateStr === todayDateStr) {
+          return true;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (q.subquests && q.subquests.length > 0 && q.subquests.every(sq => sq.completed)) {
+      return true;
+    }
+    return false;
+  };
+
   // Helper to determine if a quest is completed or has been completed at least once (for recurring)
-  const isQuestDone = (q: Quest) => q.status === 'Completed' || (q.recurrence && q.recurrence !== 'None' && q.completedAt !== null);
+  const isQuestDone = (q: Quest) => isQuestFinishedForToday(q);
 
   // Goal helper calculation
   const getGoalProgress = (goalId: string): number => {
@@ -787,19 +809,147 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleSubQuest = (questId: string, subquestId: string) => {
-    setState(prev => ({
-      ...prev,
-      quests: prev.quests.map(q => {
+    setState(prev => {
+      let questCompletedNow = false;
+      let questReopenedNow = false;
+      let targetQuest: Quest | undefined = undefined;
+
+      const updatedQuests = prev.quests.map(q => {
         if (q.id === questId) {
           const subquests = q.subquests || [];
+          const updatedSubquests = subquests.map(sq => sq.id === subquestId ? { ...sq, completed: !sq.completed } : sq);
+          const allDone = updatedSubquests.length > 0 && updatedSubquests.every(sq => sq.completed);
+
+          targetQuest = q;
+
+          if (allDone && q.status === 'Active') {
+            const wasCompletedToday = q.completedAt && new Date(q.completedAt).toDateString() === new Date().toDateString();
+            if (!wasCompletedToday) {
+              questCompletedNow = true;
+            }
+          } else if (!allDone && (q.status === 'Completed' || q.completedAt !== null)) {
+            questReopenedNow = true;
+          }
+
           return {
             ...q,
-            subquests: subquests.map(sq => sq.id === subquestId ? { ...sq, completed: !sq.completed } : sq)
+            subquests: updatedSubquests
           };
         }
         return q;
-      })
-    }));
+      });
+
+      if (questCompletedNow && targetQuest) {
+        const qToComplete = targetQuest as Quest;
+        const completedTimestamp = new Date().toISOString();
+        const xpHistoryId = `h-${Date.now()}`;
+        const newHistoryEntry: XPHistoryEntry = {
+          id: xpHistoryId,
+          questId: qToComplete.id,
+          questName: qToComplete.name,
+          xp: qToComplete.xp,
+          timestamp: completedTimestamp,
+          skillIds: qToComplete.relatedSkills
+        };
+
+        const newMomentum = Math.min(100, prev.profile.momentum + 10);
+
+        const finalQuests = updatedQuests.map(q => {
+          if (q.id === questId) {
+            if (q.recurrence && q.recurrence !== 'None') {
+              return {
+                ...q,
+                status: 'Active' as const,
+                completedAt: completedTimestamp
+              };
+            } else {
+              return {
+                ...q,
+                status: 'Completed' as const,
+                completedAt: completedTimestamp
+              };
+            }
+          }
+          return q;
+        });
+
+        const updatedHistory = [newHistoryEntry, ...prev.xpHistory];
+        const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+        const level = calculatePlayerLevel(totalXp);
+
+        const updatedSkills = prev.skills.map(skill => {
+          const skillXp = updatedHistory
+            .filter(h => h.skillIds.includes(skill.id))
+            .reduce((sum, h) => sum + h.xp, 0);
+          const skillLevel = calculatePlayerLevel(skillXp);
+          const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+          return {
+            ...skill,
+            level: skillLevel,
+            xp: skillXp,
+            mastery
+          };
+        });
+
+        return {
+          ...prev,
+          quests: finalQuests,
+          skills: updatedSkills,
+          xpHistory: updatedHistory,
+          profile: {
+            ...prev.profile,
+            xp: totalXp,
+            level,
+            momentum: newMomentum
+          }
+        };
+      }
+
+      if (questReopenedNow && targetQuest) {
+        const finalQuests = updatedQuests.map(q =>
+          q.id === questId ? { ...q, status: 'Active' as const, completedAt: null } : q
+        );
+
+        const latestHistoryEntryIndex = prev.xpHistory.findIndex(h => h.questId === questId);
+        const updatedHistory = latestHistoryEntryIndex !== -1
+          ? prev.xpHistory.filter((_, idx) => idx !== latestHistoryEntryIndex)
+          : prev.xpHistory;
+
+        const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+        const level = calculatePlayerLevel(totalXp);
+
+        const updatedSkills = prev.skills.map(skill => {
+          const skillXp = updatedHistory
+            .filter(h => h.skillIds.includes(skill.id))
+            .reduce((sum, h) => sum + h.xp, 0);
+          const skillLevel = calculatePlayerLevel(skillXp);
+          const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+          return {
+            ...skill,
+            level: skillLevel,
+            xp: skillXp,
+            mastery
+          };
+        });
+
+        return {
+          ...prev,
+          quests: finalQuests,
+          skills: updatedSkills,
+          xpHistory: updatedHistory,
+          profile: {
+            ...prev.profile,
+            xp: totalXp,
+            level
+          }
+        };
+      }
+
+      return {
+        ...prev,
+        quests: updatedQuests
+      };
+    });
   };
 
   const deleteSubQuest = (questId: string, subquestId: string) => {
@@ -1206,7 +1356,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getPlayerLevelInfo,
       getAnalytics,
       exportData,
-      importData
+      importData,
+      isQuestFinishedForToday
     }}>
       {children}
     </POSContext.Provider>

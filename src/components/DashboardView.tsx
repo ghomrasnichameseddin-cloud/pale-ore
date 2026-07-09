@@ -12,7 +12,8 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { 
-    state, toggleRecoveryMode, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest
+    state, toggleRecoveryMode, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
+    isQuestFinishedForToday
   } = usePOS();
 
   const [focusText, setFocusText] = useState(state.profile.currentFocus);
@@ -21,7 +22,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
-  const activeQuests = state.quests.filter(q => q.status === 'Active');
+  const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
 
   const handleSaveFocus = (e: React.FormEvent) => {
     e.preventDefault();

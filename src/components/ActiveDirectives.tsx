@@ -12,7 +12,8 @@ export const ActiveDirectives: React.FC = () => {
   const { 
     state, updateQuest, completeQuest, failQuest, deleteQuest, duplicateQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
-    startFocusSession, activeFocusSession, stopFocusSession
+    startFocusSession, activeFocusSession, stopFocusSession,
+    isQuestFinishedForToday
   } = usePOS();
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
@@ -92,8 +93,14 @@ export const ActiveDirectives: React.FC = () => {
     setEditingQuestId(null);
   };
 
-  // Get active quests for today
-  const activeQuests = state.quests.filter(q => q.status === 'Active');
+  // Get active quests for today or finished quests if showing tomorrow/postponed
+  const activeQuests = state.quests.filter(q => {
+    const isFinished = isQuestFinishedForToday(q);
+    if (isFinished) {
+      return showTomorrowQuests;
+    }
+    return q.status === 'Active';
+  });
   
   // Filter by Recovery Mode if active
   const filteredActiveQuests = state.profile.recoveryMode
@@ -104,6 +111,7 @@ export const ActiveDirectives: React.FC = () => {
 
   // Display quests based on deadline and showTomorrow filter
   const displayActiveQuests = filteredActiveQuests.filter(q => {
+    if (isQuestFinishedForToday(q)) return true;
     if (!q.deadline) return true;
     if (showTomorrowQuests) return true;
     return q.deadline <= todayStr;

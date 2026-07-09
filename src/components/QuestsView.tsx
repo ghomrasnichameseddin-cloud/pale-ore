@@ -5,9 +5,9 @@ import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
 
 export const QuestsView: React.FC = () => {
-  const { state } = usePOS();
+  const { state, isQuestFinishedForToday } = usePOS();
 
-  const activeQuests = state.quests.filter(q => q.status === 'Active');
+  const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
   const completedQuests = state.quests.filter(q => q.status === 'Completed');
   const totalQuests = state.quests.length;
 
