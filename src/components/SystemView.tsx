@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
-  Check, Play, ArrowRight, ShieldAlert, Award
+  Check, ShieldAlert, Award
 } from 'lucide-react';
 
 export const SystemView: React.FC = () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { POSProvider, usePOS } from './POSContext';
 import { DashboardView } from './components/DashboardView';
+import { QuestsView } from './components/QuestsView';
 import { GoalsView } from './components/GoalsView';
 import { ProjectsView } from './components/ProjectsView';
 import { SkillsView } from './components/SkillsView';
@@ -8,11 +9,11 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
-  Terminal, Shield, Flame, Clock, Menu, X, Gem
+  Terminal, Shield, Flame, Clock, Menu, X, Gem, Swords
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system';
+type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -30,6 +31,7 @@ function AppContent() {
 
   const navItems = [
     { id: 'dashboard', label: 'DASHBOARD', icon: Activity, desc: 'Daily operations hub' },
+    { id: 'quests', label: 'QUESTS', icon: Swords, desc: 'All active and recurring quests' },
     { id: 'goals', label: 'GOALS', icon: Target, desc: 'Long-term strategic tracks' },
     { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
     { id: 'skills', label: 'SKILLS', icon: Award, desc: 'Competency tracks' },
@@ -193,7 +195,8 @@ function AppContent() {
             transition={{ duration: 0.15 }}
             className="h-full"
           >
-            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'quests' && <QuestsView />}
             {activeTab === 'goals' && <GoalsView />}
             {activeTab === 'projects' && <ProjectsView />}
             {activeTab === 'skills' && <SkillsView />}

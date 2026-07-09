@@ -1,12 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
-  GoalStatus, GoalPriority, QuestDifficulty, QuestType
+  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession
 } from './types';
 import { INITIAL_STATE } from './initialState';
 
 interface POSContextType {
   state: POSState;
+  
+  // Pomodoro Focus Timer
+  activeFocusSession: ActiveFocusSession | null;
+  startFocusSession: (questId: string, workTime: number, restTime: number) => void;
+  pauseFocusSession: () => void;
+  resumeFocusSession: () => void;
+  stopFocusSession: () => void;
+  completeFocusCycle: (questId: string) => void;
   
   // Goals CRUD
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => string;
@@ -94,9 +102,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Basic schema validation check to prevent crashes on structure updates
-        if (parsed.goals && parsed.quests && parsed.skills) {
-          return parsed;
+        if (parsed && typeof parsed === 'object') {
+          // Robustly merge to guarantee all schema properties are defined
+          return {
+            ...INITIAL_STATE,
+            ...parsed,
+            profile: {
+              ...INITIAL_STATE.profile,
+              ...(parsed.profile || {})
+            },
+            goals: parsed.goals || [],
+            projects: parsed.projects || [],
+            milestones: parsed.milestones || [],
+            quests: parsed.quests || [],
+            skills: parsed.skills || [],
+            attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
+            xpHistory: parsed.xpHistory || []
+          };
         }
       }
     } catch (e) {
@@ -108,6 +130,105 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  const [activeFocusSession, setActiveFocusSession] = useState<ActiveFocusSession | null>(() => {
+    try {
+      const saved = localStorage.getItem('pale_ore_pos_focus_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (activeFocusSession) {
+      localStorage.setItem('pale_ore_pos_focus_session', JSON.stringify(activeFocusSession));
+    } else {
+      localStorage.removeItem('pale_ore_pos_focus_session');
+    }
+  }, [activeFocusSession]);
+
+  useEffect(() => {
+    if (!activeFocusSession || activeFocusSession.status !== 'running') return;
+
+    const timer = setInterval(() => {
+      setActiveFocusSession(prev => {
+        if (!prev || prev.status !== 'running') return prev;
+        if (prev.timeLeft <= 1) {
+          const nextMode = prev.mode === 'work' ? 'rest' : 'work';
+          const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
+          const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
+
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav');
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+          } catch (e) {}
+
+          return {
+            ...prev,
+            mode: nextMode,
+            timeLeft: nextDuration * 60,
+            completedCycles: nextCycles,
+            status: 'paused'
+          };
+        }
+        return {
+          ...prev,
+          timeLeft: prev.timeLeft - 1
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeFocusSession?.status]);
+
+  const startFocusSession = (questId: string, workTime: number, restTime: number) => {
+    const quest = state.quests.find(q => q.id === questId);
+    if (!quest) return;
+    const estTime = quest.estimatedTime || 30;
+    const estCycles = Math.ceil(estTime / workTime);
+    
+    setActiveFocusSession({
+      questId,
+      questName: quest.name,
+      totalWorkTime: workTime,
+      totalRestTime: restTime,
+      mode: 'work',
+      status: 'running',
+      timeLeft: workTime * 60,
+      completedCycles: 0,
+      estimatedCycles: estCycles
+    });
+  };
+
+  const pauseFocusSession = () => {
+    setActiveFocusSession(prev => prev ? { ...prev, status: 'paused' } : null);
+  };
+
+  const resumeFocusSession = () => {
+    setActiveFocusSession(prev => prev ? { ...prev, status: 'running' } : null);
+  };
+
+  const stopFocusSession = () => {
+    setActiveFocusSession(null);
+  };
+
+  const completeFocusCycle = (questId: string) => {
+    setActiveFocusSession(prev => {
+      if (!prev) return null;
+      const nextMode = prev.mode === 'work' ? 'rest' : 'work';
+      const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
+      const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
+      return {
+        ...prev,
+        mode: nextMode,
+        timeLeft: nextDuration * 60,
+        completedCycles: nextCycles,
+        status: 'paused'
+      };
+    });
+  };
 
   // Helper to determine if a quest is completed or has been completed at least once (for recurring)
   const isQuestDone = (q: Quest) => q.status === 'Completed' || (q.recurrence && q.recurrence !== 'None' && q.completedAt !== null);
@@ -1036,6 +1157,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <POSContext.Provider value={{
       state,
+      activeFocusSession,
+      startFocusSession,
+      pauseFocusSession,
+      resumeFocusSession,
+      stopFocusSession,
+      completeFocusCycle,
       addGoal,
       updateGoal,
       deleteGoal,
@@ -1093,5 +1220,3 @@ export const usePOS = () => {
   }
   return context;
 };
-
-

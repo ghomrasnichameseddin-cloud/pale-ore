@@ -39,7 +39,7 @@ export interface Milestone {
 
 export type QuestDifficulty = 'Easy' | 'Normal' | 'Hard' | 'Boss' | 'Custom';
 export type QuestType = 'Main' | 'Side' | 'Boss' | 'Optional' | 'Habit' | 'Recovery' | 'Milestone' | string;
-export type QuestRecurrence = 'None' | 'Daily' | 'Every 2 Days' | 'Weekly' | 'Monthly';
+export type QuestRecurrence = 'None' | 'Daily' | 'Every 2 Days' | 'Weekly' | 'Monthly' | string;
 
 export interface Quest {
   id: string;
@@ -100,6 +100,18 @@ export interface XPHistoryEntry {
   skillIds: string[];
 }
 
+export interface ActiveFocusSession {
+  questId: string;
+  questName: string;
+  totalWorkTime: number; // in minutes
+  totalRestTime: number;  // in minutes
+  mode: 'work' | 'rest';
+  status: 'running' | 'paused' | 'idle';
+  timeLeft: number; // in seconds
+  completedCycles: number;
+  estimatedCycles: number;
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -110,3 +122,4 @@ export interface POSState {
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
 }
+
