@@ -60,6 +60,7 @@ export interface Quest {
   createdAt: string;
   important?: boolean;
   subquests?: SubQuest[];
+  energyLevel?: 'Low' | 'Medium' | 'High';
 }
 
 export interface Skill {
@@ -89,6 +90,9 @@ export interface UserProfile {
   currentFocus: string;
   focusGoalId: string | null;
   currentBossQuestId: string | null;
+  focusMinutesToday?: number;
+  focusStreak?: number;
+  lastFocusDate?: string;
 }
 
 export interface XPHistoryEntry {
@@ -122,4 +126,3 @@ export interface POSState {
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
 }
-

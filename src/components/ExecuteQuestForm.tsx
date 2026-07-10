@@ -15,6 +15,7 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [newQuestImportant, setNewQuestImportant] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
+  const [newQuestEnergy, setNewQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
   // Custom recurrence creation states
   const [customRecurrenceType, setCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -70,7 +71,8 @@ export const ExecuteQuestForm: React.FC = () => {
       type: newQuestType,
       recurrence: finalRecurrence,
       deadline: new Date().toISOString().split('T')[0],
-      important: isImportant
+      important: isImportant,
+      energyLevel: newQuestEnergy
     });
 
     setNewQuestName('');
@@ -78,6 +80,7 @@ export const ExecuteQuestForm: React.FC = () => {
     setNewQuestSkills([]);
     setNewQuestRecurrence('None');
     setNewQuestImportant(false);
+    setNewQuestEnergy('Medium');
   };
 
   return (
@@ -117,7 +120,21 @@ export const ExecuteQuestForm: React.FC = () => {
         </div>
 
         {/* Form Options Row */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 pt-1">
+          {/* Energy level selection */}
+          <div>
+            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Energy Req</label>
+            <select 
+              value={newQuestEnergy}
+              onChange={(e) => setNewQuestEnergy(e.target.value as any)}
+              className="w-full bg-zinc-950 border border-white/10 rounded p-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500 font-mono"
+            >
+              <option value="Low">⚡ Low</option>
+              <option value="Medium">⚡⚡ Medium</option>
+              <option value="High">⚡⚡⚡ High</option>
+            </select>
+          </div>
+
           {/* Type Selection */}
           <div>
             <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>

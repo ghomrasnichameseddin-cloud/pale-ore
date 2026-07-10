@@ -24,7 +24,10 @@ export const INITIAL_STATE: POSState = {
     recoveryMode: false,
     currentFocus: '',
     focusGoalId: null,
-    currentBossQuestId: null
+    currentBossQuestId: null,
+    focusMinutesToday: 0,
+    focusStreak: 0,
+    lastFocusDate: ''
   },
   xpHistory: []
 };

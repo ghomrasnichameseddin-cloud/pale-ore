@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Shield, Flame, Clock, Swords, CheckSquare, Square,
-  ShieldAlert, Activity, ChevronRight, Check, Award, Compass
+  ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
+  Sliders, Timer, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -13,7 +14,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { 
     state, toggleRecoveryMode, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
-    isQuestFinishedForToday
+    isQuestFinishedForToday, processQuestReview
   } = usePOS();
 
   const [focusText, setFocusText] = useState(state.profile.currentFocus);
@@ -23,6 +24,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
   const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
+  
+  const frogOfTheDay = activeQuests.find(q => q.important) || 
+                       (activeQuests.length > 0 ? [...activeQuests].sort((a, b) => b.xp - a.xp)[0] : null);
+  const overdueQuests = activeQuests;
 
   const handleSaveFocus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +137,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* Strategy 4: Focus HUD stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/5">
+              <div className="bg-white/[0.01] border border-white/5 rounded p-2.5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase block">FOCUS MINUTES TODAY</span>
+                <span className="text-md font-sans font-bold text-white mt-1 flex items-center gap-1.5">
+                  🧘 {state.profile.focusMinutesToday || 0}m
+                </span>
+              </div>
+              <div className="bg-white/[0.01] border border-white/5 rounded p-2.5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase block">FOCUS STREAK</span>
+                <span className="text-md font-sans font-bold text-amber-400 mt-1 flex items-center gap-1.5 animate-pulse">
+                  🔥 {state.profile.focusStreak || 0} Days
+                </span>
+              </div>
+              <div className="bg-white/[0.01] border border-white/5 rounded p-2.5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase block">EAT_FROG BOOST</span>
+                <span className="text-md font-sans font-bold text-cyan-400 mt-1">
+                  ⚡ 1.2x XP
+                </span>
+              </div>
+              <div className="bg-white/[0.01] border border-white/5 rounded p-2.5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase block">OPTIMIZED MODE</span>
+                <span className="text-md font-sans font-bold text-emerald-400 mt-1 uppercase">
+                  ACTIVE
+                </span>
+              </div>
+            </div>
+
             {state.profile.momentum < 40 && (
               <div className="mt-4 p-2.5 bg-rose-950/20 border border-rose-500/20 rounded-lg flex items-center gap-2.5 text-[10px] font-mono text-rose-400 animate-pulse">
                 <ShieldAlert className="h-4 w-4 text-rose-500 shrink-0" />
@@ -139,6 +172,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             )}
           </div>
+
+          {/* Strategy 1: Eat the Frog Priority Target */}
+          {frogOfTheDay && (
+            <div className="glass-panel rounded-lg p-5 border border-amber-500/20 bg-amber-950/5 relative overflow-hidden" id="frog-of-the-day-card">
+              <div className="absolute top-0 right-0 p-3 text-[8px] font-mono text-amber-500/30 uppercase">CRITICAL_PATH_NODE</div>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider">
+                      🐸 COGNITIVE PRIORITY // EAT THE FROG
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-sans font-extrabold text-white">
+                    {frogOfTheDay.name}
+                  </h4>
+                  <p className="text-xs text-zinc-400 line-clamp-1">
+                    {frogOfTheDay.description || 'No operational description logged.'}
+                  </p>
+                  <p className="text-[9px] text-zinc-500 font-mono italic">
+                    "If it's your job to eat a frog, it's best to do it first thing in the morning." — Mark Twain
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0 pt-2 md:pt-0">
+                  <button
+                    onClick={() => completeQuest(frogOfTheDay.id)}
+                    className="flex-1 md:flex-none px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-xs rounded transition-colors uppercase flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="h-3.5 w-3.5" /> COMPLETE_FROG (+{frogOfTheDay.xp} XP)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* COMPACT ACTIVE DIRECTIVES SUMMARY */}
           <div className="glass-panel rounded-lg p-5 space-y-4" id="dashboard-active-directives">
@@ -233,6 +301,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             )}
           </div>
 
+          {/* Strategy 3: End of Day Review Terminal */}
+          {overdueQuests.length > 0 && (
+            <div className="glass-panel rounded-lg p-5 border border-purple-500/20 bg-zinc-950/45 relative overflow-hidden animate-fadeIn" id="eod-debrief-terminal">
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(168,85,247,0.01)_1px,transparent_1px)] pointer-events-none bg-[size:100%_4px]" />
+              <div className="flex justify-between items-center border-b border-purple-500/20 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
+                  <h3 className="text-xs font-mono text-purple-400 uppercase tracking-wider">
+                    EOD_CLEAN_SLATE_DEBRIEF // WORKLOAD_MITIGATION
+                  </h3>
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500">SYS_CONSOLE v1.0</span>
+              </div>
+              
+              <p className="text-xs text-zinc-400 font-sans leading-relaxed mb-4">
+                Review your remaining active load to protect system discipline. Avoid rollover debt!
+              </p>
+              
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                {overdueQuests.map(q => (
+                  <div key={q.id} className="p-3 bg-zinc-950 border border-white/5 rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="min-w-0">
+                      <span className="text-xs font-sans font-medium text-white block">{q.name}</span>
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase">{q.type} • {q.difficulty}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                      <button
+                        onClick={() => processQuestReview(q.id, 'rollover')}
+                        className="flex-1 sm:flex-none px-2 py-1 bg-purple-950/45 hover:bg-purple-900/40 border border-purple-500/30 text-purple-400 text-[10px] font-mono rounded transition-colors uppercase"
+                        title="Move to Tomorrow"
+                      >
+                        Rollover
+                      </button>
+                      <button
+                        onClick={() => processQuestReview(q.id, 'postpone')}
+                        className="flex-1 sm:flex-none px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 text-[10px] font-mono rounded transition-colors uppercase"
+                        title="Remove Deadline (Queue)"
+                      >
+                        Defer
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm("Forgive this objective for today? No penalty will be activated.")) {
+                            processQuestReview(q.id, 'forgive');
+                          }
+                        }}
+                        className="flex-1 sm:flex-none px-2 py-1 bg-emerald-950/20 hover:bg-emerald-900/20 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono rounded transition-colors uppercase"
+                        title="Forgive & Clear"
+                      >
+                        Forgive
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* RIGHT COLUMN: WORKLOAD ANALYTICS & CURRENT FOCUS */}
@@ -302,6 +429,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* Strategy 5: Quick-Tap Daily Habit Lobby */}
+          <div className="glass-panel rounded-lg p-5 space-y-4" id="habit-lobby-panel">
+            <div className="flex justify-between items-center border-b border-white/5 pb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">⚡ DAILY_HABITS_LOBBY</span>
+              </div>
+              <span className="text-[9px] font-mono text-zinc-500">QUICK TAP TOGGLE</span>
+            </div>
+            
+            {state.quests.filter(q => q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily').length === 0 ? (
+              <p className="text-xs text-zinc-500 font-mono text-center py-2">
+                No active daily habits registered.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {state.quests.filter(q => q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily').map(habit => {
+                  const isFinished = isQuestFinishedForToday(habit);
+                  return (
+                    <div 
+                      key={habit.id}
+                      onClick={() => {
+                        if (!isFinished) {
+                          completeQuest(habit.id);
+                        }
+                      }}
+                      className={`p-2.5 rounded border transition-all cursor-pointer flex items-center justify-between ${
+                        isFinished 
+                          ? 'bg-emerald-950/10 border-emerald-500/20 text-zinc-500' 
+                          : 'bg-zinc-900 border-white/5 hover:border-cyan-500/30 text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`p-1 rounded-full shrink-0 ${isFinished ? 'bg-emerald-950 text-emerald-400' : 'bg-zinc-950 text-zinc-600'}`}>
+                          <Check className="h-3 w-3" />
+                        </div>
+                        <span className={`text-xs font-sans font-medium truncate ${isFinished ? 'line-through text-zinc-500' : ''}`}>
+                          {habit.name}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-mono font-bold shrink-0 ${isFinished ? 'text-emerald-500/40' : 'text-cyan-400'}`}>
+                        {isFinished ? 'DONE' : `+${habit.xp} XP`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

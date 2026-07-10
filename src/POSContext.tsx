@@ -43,6 +43,7 @@ interface POSContextType {
   duplicateQuest: (id: string) => string;
   mergeQuests: (idA: string, idB: string, mergedName: string, mergedDescription: string) => string;
   splitQuest: (id: string, questAName: string, questBName: string, xpRatio: number) => void;
+  processQuestReview: (id: string, action: 'rollover' | 'postpone' | 'forgive') => void;
   
   // Subquests CRUD
   addSubQuest: (questId: string, name: string) => void;
@@ -95,6 +96,37 @@ const calculatePlayerLevel = (totalXp: number): number => {
   // L^2 + L - (2 + totalXp / 250) <= 0
   // L = (-1 + sqrt(1 + 4 * (2 + totalXp / 250))) / 2 = (-1 + sqrt(9 + totalXp / 62.5)) / 2
   return Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2);
+};
+
+const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] => {
+  const result: XPHistoryEntry[] = [];
+  let availablePositiveXp = 0;
+
+  // Process history from newest to oldest
+  for (let i = 0; i < history.length; i++) {
+    const entry = history[i];
+    if (entry.xp >= 0) {
+      availablePositiveXp += entry.xp;
+      result.push(entry);
+    } else {
+      const penaltyCost = Math.abs(entry.xp);
+      if (availablePositiveXp >= penaltyCost) {
+        availablePositiveXp -= penaltyCost;
+        // Fully recovered! The penalty vanishes from history.
+      } else if (availablePositiveXp > 0) {
+        // Partially recovered! Reduce the penalty.
+        const remainingPenalty = penaltyCost - availablePositiveXp;
+        availablePositiveXp = 0;
+        result.push({
+          ...entry,
+          xp: -remainingPenalty
+        });
+      } else {
+        result.push(entry);
+      }
+    }
+  }
+  return result;
 };
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -183,6 +215,61 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => clearInterval(timer);
   }, [activeFocusSession?.status]);
+
+  useEffect(() => {
+    if (!activeFocusSession) return;
+    if (activeFocusSession.completedCycles > 0) {
+      const cycleMinutes = activeFocusSession.totalWorkTime;
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const xpHistoryId = `h-focus-${Date.now()}`;
+      const focusXpEntry: XPHistoryEntry = {
+        id: xpHistoryId,
+        questId: null,
+        questName: `🧘 Focus Session: Completed ${cycleMinutes} min work block on "${activeFocusSession.questName}"`,
+        xp: 15,
+        timestamp: new Date().toISOString(),
+        skillIds: []
+      };
+
+      setState(prev => {
+        const prevMinutes = prev.profile.focusMinutesToday || 0;
+        const prevStreak = prev.profile.focusStreak || 0;
+        const lastDate = prev.profile.lastFocusDate || '';
+        
+        let newStreak = prevStreak;
+        if (lastDate !== todayStr) {
+          if (lastDate === '') {
+            newStreak = 1;
+          } else {
+            const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            if (lastDate === yesterdayStr) {
+              newStreak = prevStreak + 1;
+            } else {
+              newStreak = 1;
+            }
+          }
+        }
+
+        const updatedHistory = resolveRecoveredPenalties([focusXpEntry, ...prev.xpHistory]);
+        const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+        const level = calculatePlayerLevel(totalXp);
+
+        return {
+          ...prev,
+          xpHistory: updatedHistory,
+          profile: {
+            ...prev.profile,
+            focusMinutesToday: prevMinutes + cycleMinutes,
+            focusStreak: newStreak,
+            lastFocusDate: todayStr,
+            xp: totalXp,
+            level
+          }
+        };
+      });
+    }
+  }, [activeFocusSession?.completedCycles]);
 
   const startFocusSession = (questId: string, workTime: number, restTime: number) => {
     const quest = state.quests.find(q => q.id === questId);
@@ -605,8 +692,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
-      // Add XP history
-      const updatedHistory = [newHistoryEntry, ...prev.xpHistory];
+      // Add XP history and dynamically resolve any negative penalties if they earned the XP back!
+      const updatedHistory = resolveRecoveredPenalties([newHistoryEntry, ...prev.xpHistory]);
 
       // Re-calculate user profile level and total XP dynamically based on completed quests history!
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
@@ -729,7 +816,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
-      const updatedHistory = [penaltyEntry, ...prev.xpHistory];
+      const updatedHistory = resolveRecoveredPenalties([penaltyEntry, ...prev.xpHistory]);
       const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
       const level = calculatePlayerLevel(totalXp);
 
@@ -873,7 +960,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return q;
         });
 
-        const updatedHistory = [newHistoryEntry, ...prev.xpHistory];
+        const updatedHistory = resolveRecoveredPenalties([newHistoryEntry, ...prev.xpHistory]);
         const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
         const level = calculatePlayerLevel(totalXp);
 
@@ -1041,6 +1128,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       quests: [...prev.quests.filter(q => q.id !== id), qA, qB]
     }));
+  };
+
+  const processQuestReview = (id: string, action: 'rollover' | 'postpone' | 'forgive') => {
+    setState(prev => {
+      const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const updatedQuests = prev.quests.map(q => {
+        if (q.id === id) {
+          if (action === 'rollover') {
+            return { ...q, deadline: tomorrowStr };
+          } else if (action === 'postpone') {
+            return { ...q, deadline: null };
+          } else if (action === 'forgive') {
+            // Keep active, clear deadline and remove completedAt
+            return { ...q, deadline: null, completedAt: null };
+          }
+        }
+        return q;
+      });
+      return {
+        ...prev,
+        quests: updatedQuests
+      };
+    });
   };
 
   // CRUD FOR SKILLS
@@ -1333,6 +1443,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       duplicateQuest,
       mergeQuests,
       splitQuest,
+      processQuestReview,
       addSubQuest,
       toggleSubQuest,
       deleteSubQuest,
