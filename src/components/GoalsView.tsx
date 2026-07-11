@@ -85,6 +85,13 @@ export const GoalsView: React.FC = () => {
   const [editQuestProj, setEditQuestProj] = useState('');
   const [editQuestMile, setEditQuestMile] = useState('');
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence>('None');
+  const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
+
+  const handleEditSkillToggle = (skillId: string) => {
+    setEditQuestSkills(prev =>
+      prev.includes(skillId) ? prev.filter(id => id !== skillId) : [...prev, skillId]
+    );
+  };
 
   const startEditingQuest = (quest: Quest) => {
     setEditingQuestId(quest.id);
@@ -95,6 +102,7 @@ export const GoalsView: React.FC = () => {
     setEditQuestProj(quest.projectId || '');
     setEditQuestMile(quest.milestoneId || '');
     setEditQuestRecurrence(quest.recurrence || 'None');
+    setEditQuestSkills(quest.relatedSkills || []);
   };
 
   const handleSaveQuestEdit = (id: string) => {
@@ -105,7 +113,8 @@ export const GoalsView: React.FC = () => {
       xp: editQuestXp,
       projectId: editQuestProj ? editQuestProj : null,
       milestoneId: editQuestMile ? editQuestMile : null,
-      recurrence: editQuestRecurrence
+      recurrence: editQuestRecurrence,
+      relatedSkills: editQuestSkills
     });
     setEditingQuestId(null);
   };
@@ -1286,6 +1295,73 @@ export const GoalsView: React.FC = () => {
                                       ))}
                                     </select>
                                   </div>
+                                </div>
+
+                                {/* Associate Skills Section */}
+                                <div className="space-y-2 pt-1 border-t border-white/5">
+                                  <label className="block text-[9px] font-mono text-zinc-500 uppercase">Associate Skills</label>
+                                  
+                                  {state.skills.length === 0 ? (
+                                    <p className="text-[10px] font-mono text-zinc-600">No skill tracks available. Create one in the Skills tab first.</p>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {/* Primary Skills */}
+                                      {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
+                                        <div className="space-y-1">
+                                          <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-wider block">Primary Skills</span>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {state.skills
+                                              .filter(s => (s.tier || 'Primary') === 'Primary')
+                                              .map(skill => {
+                                                const isSelected = editQuestSkills.includes(skill.id);
+                                                return (
+                                                  <button
+                                                    key={skill.id}
+                                                    type="button"
+                                                    onClick={() => handleEditSkillToggle(skill.id)}
+                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all ${
+                                                      isSelected 
+                                                        ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30 font-bold shadow-[0_0_8px_rgba(6,182,212,0.05)]' 
+                                                        : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
+                                                    }`}
+                                                  >
+                                                    {skill.name}
+                                                  </button>
+                                                );
+                                              })}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Secondary Skills */}
+                                      {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
+                                        <div className="space-y-1 pt-1">
+                                          <span className="text-[8px] font-mono text-fuchsia-500 uppercase tracking-wider block">Secondary Skills</span>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {state.skills
+                                              .filter(s => s.tier === 'Secondary')
+                                              .map(skill => {
+                                                const isSelected = editQuestSkills.includes(skill.id);
+                                                return (
+                                                  <button
+                                                    key={skill.id}
+                                                    type="button"
+                                                    onClick={() => handleEditSkillToggle(skill.id)}
+                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all ${
+                                                      isSelected 
+                                                        ? 'bg-fuchsia-950/50 text-fuchsia-400 border-fuchsia-500/30 font-bold shadow-[0_0_8px_rgba(217,70,239,0.05)]' 
+                                                        : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
+                                                    }`}
+                                                  >
+                                                    {skill.name}
+                                                  </button>
+                                                );
+                                              })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
