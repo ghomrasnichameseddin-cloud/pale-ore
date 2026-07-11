@@ -81,6 +81,8 @@ interface POSContextType {
   exportData: () => string;
   importData: (jsonData: string) => boolean;
   isQuestFinishedForToday: (q: Quest) => boolean;
+  systemDate: string;
+  setSystemDate: (date: string) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -129,6 +131,55 @@ const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] 
   return result;
 };
 
+const getDaysDifference = (dateStr1: string, dateStr2: string): number => {
+  try {
+    const d1 = new Date(dateStr1.split('T')[0]);
+    const d2 = new Date(dateStr2.split('T')[0]);
+    d1.setHours(0, 0, 0, 0);
+    d2.setHours(0, 0, 0, 0);
+    const diffTime = d2.getTime() - d1.getTime();
+    return Math.round(diffTime / (1000 * 60 * 60 * 24));
+  } catch (e) {
+    return 0;
+  }
+};
+
+const resetRecurringQuestsForNewDate = (newDateStr: string, currentQuests: Quest[]): Quest[] => {
+  return currentQuests.map(q => {
+    if (!q.recurrence || q.recurrence === 'None') {
+      return q;
+    }
+    
+    if (q.completedAt) {
+      const lastActionDateStr = q.completedAt.split('T')[0];
+      const diff = getDaysDifference(lastActionDateStr, newDateStr);
+      
+      let shouldReset = false;
+      if (q.recurrence === 'Daily' && diff >= 1) {
+        shouldReset = true;
+      } else if (q.recurrence === 'Every 2 Days' && diff >= 2) {
+        shouldReset = true;
+      } else if (q.recurrence === 'Weekly' && diff >= 7) {
+        shouldReset = true;
+      } else if (q.recurrence === 'Monthly' && diff >= 30) {
+        shouldReset = true;
+      } else if (diff >= 1) {
+        shouldReset = true;
+      }
+      
+      if (shouldReset) {
+        return {
+          ...q,
+          status: 'Active' as const,
+          completedAt: null,
+          subquests: q.subquests?.map(sq => ({ ...sq, completed: false }))
+        };
+      }
+    }
+    return q;
+  });
+};
+
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<POSState>(() => {
     try {
@@ -150,7 +201,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             quests: parsed.quests || [],
             skills: parsed.skills || [],
             attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
-            xpHistory: parsed.xpHistory || []
+            xpHistory: parsed.xpHistory || [],
+            systemDate: parsed.systemDate || INITIAL_STATE.systemDate
           };
         }
       }
@@ -319,14 +371,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const isQuestFinishedForToday = (q: Quest): boolean => {
+    const targetDateStr = state.systemDate || new Date().toISOString().split('T')[0];
+    
+    // If it is a recurring quest, its finished status for today is ONLY determined by completedAt
+    if (q.recurrence && q.recurrence !== 'None') {
+      if (q.completedAt) {
+        try {
+          const completedDateStr = new Date(q.completedAt).toISOString().split('T')[0];
+          if (completedDateStr === targetDateStr) {
+            return true;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      return false;
+    }
+
+    // Non-recurring quests
     if (q.status === 'Completed' || q.status === 'Failed') {
       return true;
     }
     if (q.completedAt) {
       try {
-        const completedDateStr = new Date(q.completedAt).toDateString();
-        const todayDateStr = new Date().toDateString();
-        if (completedDateStr === todayDateStr) {
+        const completedDateStr = new Date(q.completedAt).toISOString().split('T')[0];
+        if (completedDateStr === targetDateStr) {
           return true;
         }
       } catch (e) {
@@ -338,6 +407,53 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return false;
   };
+
+  const setSystemDate = (newDateStr: string) => {
+    setState(prev => {
+      const updatedQuests = resetRecurringQuestsForNewDate(newDateStr, prev.quests);
+      return {
+        ...prev,
+        systemDate: newDateStr,
+        quests: updatedQuests
+      };
+    });
+  };
+
+  // Run cycle reset check on mount and periodically at midnight
+  useEffect(() => {
+    const runCycleReset = () => {
+      const realToday = new Date().toISOString().split('T')[0];
+      setState(prev => {
+        const currentSimulated = prev.systemDate || realToday;
+        const updatedQuests = resetRecurringQuestsForNewDate(currentSimulated, prev.quests);
+        
+        // If the simulated date matches yesterday's calendar date, and it has crossed to a new real day,
+        // we can automatically advance the simulated date to match the new calendar date.
+        let nextSimulated = currentSimulated;
+        if (currentSimulated !== realToday) {
+          const daysDiff = getDaysDifference(currentSimulated, realToday);
+          // If it's a natural calendar advancement, auto-advance it
+          if (daysDiff === 1) {
+            nextSimulated = realToday;
+          }
+        }
+
+        const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests);
+
+        return {
+          ...prev,
+          systemDate: nextSimulated,
+          quests: finalQuests
+        };
+      });
+    };
+
+    runCycleReset();
+    
+    // Check every 30 seconds for midnight transition
+    const interval = setInterval(runCycleReset, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper to determine if a quest is completed or has been completed at least once (for recurring)
   const isQuestDone = (q: Quest) => isQuestFinishedForToday(q);
@@ -1468,7 +1584,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getAnalytics,
       exportData,
       importData,
-      isQuestFinishedForToday
+      isQuestFinishedForToday,
+      systemDate: state.systemDate || new Date().toISOString().split('T')[0],
+      setSystemDate
     }}>
       {children}
     </POSContext.Provider>

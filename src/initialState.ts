@@ -29,5 +29,6 @@ export const INITIAL_STATE: POSState = {
     focusStreak: 0,
     lastFocusDate: ''
   },
-  xpHistory: []
+  xpHistory: [],
+  systemDate: new Date().toISOString().split('T')[0]
 };

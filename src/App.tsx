@@ -9,7 +9,8 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
-  Terminal, Shield, Flame, Clock, Menu, X, Gem, Swords
+  Terminal, Shield, Flame, Clock, Menu, X, Gem, Swords,
+  Calendar, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,8 +21,18 @@ function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
 
-  const { state, getPlayerLevelInfo } = usePOS();
+  const { state, getPlayerLevelInfo, systemDate, setSystemDate } = usePOS();
   const playerInfo = getPlayerLevelInfo();
+
+  const shiftDate = (days: number) => {
+    try {
+      const current = new Date(systemDate);
+      current.setDate(current.getDate() + days);
+      setSystemDate(current.toISOString().split('T')[0]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Keep system clock ticking
   useEffect(() => {
@@ -95,9 +106,43 @@ function AppContent() {
               })}
             </div>
 
-            {/* Quick clock in mobile menu */}
-            <div className="text-center pt-2 border-t border-white/5 text-[10px] font-mono text-zinc-500">
-              SYS TIME: {systemTime.toLocaleTimeString()}
+            {/* Quick clock & Date Picker in mobile menu */}
+            <div className="pt-2.5 border-t border-white/5 flex flex-col items-center gap-2">
+              <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-500">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  SYS TIME
+                </span>
+                <span>{systemTime.toLocaleTimeString()}</span>
+              </div>
+              <div className="flex items-center justify-between w-full bg-zinc-900 border border-white/5 rounded-lg px-2 py-1.5 mt-1">
+                <div className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
+                  <Calendar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                  <span>DATE:</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => shiftDate(-1)} 
+                    className="p-1 hover:bg-white/5 text-zinc-400 hover:text-white rounded transition"
+                    title="Previous Day"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="date"
+                    value={systemDate}
+                    onChange={(e) => setSystemDate(e.target.value)}
+                    className="bg-zinc-950 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/50"
+                  />
+                  <button 
+                    onClick={() => shiftDate(1)} 
+                    className="p-1 hover:bg-white/5 text-zinc-400 hover:text-white rounded transition"
+                    title="Next Day"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -180,6 +225,49 @@ function AppContent() {
               SYS TIME
             </span>
             <span>{systemTime.toLocaleTimeString()}</span>
+          </div>
+
+          {/* SIMULATED SYSTEM DATE CONTROLLER */}
+          <div className="bg-zinc-900 border border-white/5 rounded-lg p-2.5 mt-2 space-y-1.5" id="simulated-date-picker-widget">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                <Calendar className="h-3 w-3 text-cyan-400 shrink-0" />
+                SYS_DATE
+              </span>
+              <span className="text-[9px] font-mono text-cyan-500 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10 uppercase tracking-widest font-black">
+                OPERATIONAL
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-1">
+              <button 
+                onClick={() => shiftDate(-1)} 
+                className="p-1.5 bg-zinc-950/80 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded border border-white/5 transition shrink-0"
+                title="Previous Day"
+                id="sys-date-shift-prev"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              
+              <div className="relative flex-1 group">
+                <input
+                  type="date"
+                  value={systemDate}
+                  onChange={(e) => setSystemDate(e.target.value)}
+                  className="w-full bg-zinc-950/80 border border-white/10 rounded px-2 py-1 text-xs font-mono text-zinc-300 text-center focus:outline-none focus:border-cyan-500/50 cursor-pointer hover:bg-zinc-950"
+                  id="sys-date-input"
+                />
+              </div>
+
+              <button 
+                onClick={() => shiftDate(1)} 
+                className="p-1.5 bg-zinc-950/80 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded border border-white/5 transition shrink-0"
+                title="Next Day"
+                id="sys-date-shift-next"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

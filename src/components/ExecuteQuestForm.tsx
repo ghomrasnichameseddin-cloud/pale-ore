@@ -4,7 +4,7 @@ import { QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { Plus } from 'lucide-react';
 
 export const ExecuteQuestForm: React.FC = () => {
-  const { state, addQuest } = usePOS();
+  const { state, addQuest, systemDate } = usePOS();
 
   const [newQuestName, setNewQuestName] = useState('');
   const [newQuestType, setNewQuestType] = useState<QuestType>('Main');
@@ -16,6 +16,7 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestImportant, setNewQuestImportant] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [newQuestEnergy, setNewQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [newQuestDeadline, setNewQuestDeadline] = useState('');
 
   // Custom recurrence creation states
   const [customRecurrenceType, setCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -70,7 +71,7 @@ export const ExecuteQuestForm: React.FC = () => {
       relatedSkills: newQuestSkills,
       type: newQuestType,
       recurrence: finalRecurrence,
-      deadline: new Date().toISOString().split('T')[0],
+      deadline: newQuestDeadline || systemDate,
       important: isImportant,
       energyLevel: newQuestEnergy
     });
@@ -81,6 +82,7 @@ export const ExecuteQuestForm: React.FC = () => {
     setNewQuestRecurrence('None');
     setNewQuestImportant(false);
     setNewQuestEnergy('Medium');
+    setNewQuestDeadline('');
   };
 
   return (
@@ -120,7 +122,7 @@ export const ExecuteQuestForm: React.FC = () => {
         </div>
 
         {/* Form Options Row */}
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-8 gap-4 pt-1">
           {/* Energy level selection */}
           <div>
             <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Energy Req</label>
@@ -210,6 +212,17 @@ export const ExecuteQuestForm: React.FC = () => {
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
+          </div>
+
+          {/* Target Date / Deadline */}
+          <div>
+            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Target Date</label>
+            <input 
+              type="date"
+              value={newQuestDeadline || systemDate}
+              onChange={(e) => setNewQuestDeadline(e.target.value)}
+              className="w-full bg-zinc-950 border border-white/10 rounded p-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500 font-mono"
+            />
           </div>
 
           {/* Critical Directive Toggle */}

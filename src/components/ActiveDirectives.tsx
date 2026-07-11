@@ -13,12 +13,14 @@ export const ActiveDirectives: React.FC = () => {
     state, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, stopFocusSession,
-    isQuestFinishedForToday
+    isQuestFinishedForToday,
+    systemDate
   } = usePOS();
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [energyFilter, setEnergyFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
+  const [terminalTab, setTerminalTab] = useState<'today' | 'deferred'>('today');
 
   // Quest Editing State
   const [editingQuestId, setEditingQuestId] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestImportant, setEditQuestImportant] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
   const [editQuestEnergy, setEditQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [editQuestDeadline, setEditQuestDeadline] = useState('');
 
   // Custom recurrence edit states
   const [editCustomRecurrenceType, setEditCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -48,6 +51,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestImportant(quest.important || false);
     setEditQuestDescription(quest.description || '');
     setEditQuestEnergy(quest.energyLevel || 'Medium');
+    setEditQuestDeadline(quest.deadline || '');
 
     const rec = quest.recurrence || 'None';
     if (rec.startsWith('Custom:')) {
@@ -92,7 +96,8 @@ export const ActiveDirectives: React.FC = () => {
       recurrence: finalRecurrence,
       important: editQuestImportant,
       description: editQuestDescription,
-      energyLevel: editQuestEnergy
+      energyLevel: editQuestEnergy,
+      deadline: editQuestDeadline ? editQuestDeadline : null
     });
     setEditingQuestId(null);
   };
@@ -105,7 +110,7 @@ export const ActiveDirectives: React.FC = () => {
     return true;
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = systemDate;
 
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
@@ -114,7 +119,7 @@ export const ActiveDirectives: React.FC = () => {
     if (!matchesEnergy) return false;
 
     if (isFinished) {
-      return q.status !== 'Failed'; // Show completed today, exclude fails
+       return q.status !== 'Failed'; // Show completed today, exclude fails
     }
     return q.status === 'Active' && (!q.deadline || q.deadline <= todayStr);
   });
@@ -136,9 +141,15 @@ export const ActiveDirectives: React.FC = () => {
 
   // Calculate tomorrow's string
   const getTomorrowStr = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    try {
+      const tomorrow = new Date(systemDate);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    } catch (e) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    }
   };
 
   const handleMoveToTomorrow = (questId: string) => {
@@ -337,7 +348,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>
                 <select 
@@ -365,6 +376,16 @@ export const ActiveDirectives: React.FC = () => {
                   <option value="Medium">⚡⚡ Medium</option>
                   <option value="High">⚡⚡⚡ High</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Target Date</label>
+                <input 
+                  type="date"
+                  value={editQuestDeadline}
+                  onChange={(e) => setEditQuestDeadline(e.target.value)}
+                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white font-mono"
+                />
               </div>
 
               <div>
@@ -825,36 +846,87 @@ export const ActiveDirectives: React.FC = () => {
         </div>
       </div>
 
-      {/* DUAL TERMINAL GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* COMPACTED UNIFIED TERMINAL CONSOLE */}
+      <div 
+        className={`glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-[550px] ${
+          terminalTab === 'today'
+            ? 'border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)]'
+            : 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
+        }`} 
+        id="unified-terminal"
+      >
+        <div className={`absolute inset-0 pointer-events-none bg-[size:100%_4px] transition-all duration-300 ${
+          terminalTab === 'today'
+            ? 'bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)]'
+            : 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
+        }`} />
         
-        {/* TERMINAL A: TODAY'S ACTIVE DIRECTIVES */}
-        <div className="glass-panel rounded-lg p-5 border border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)] relative overflow-hidden flex flex-col h-[550px]" id="today-terminal">
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)] pointer-events-none bg-[size:100%_4px]" />
-          
-          {/* Header */}
-          <div className="flex justify-between items-center pb-3 border-b border-cyan-500/10 mb-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
-              <Terminal className="h-4 w-4 text-cyan-400" />
-              <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                {state.profile.recoveryMode ? 'SYS_RECOVERY_DIRECTIVES' : 'SYS_CONSOLE // TODAY_ACTIVE'}
-              </h4>
+        {/* Terminal Header with Window Controls & Styled Tabs */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-white/10 mb-4 shrink-0 gap-3">
+          <div className="flex items-center gap-3">
+            {/* Terminal OS window indicator dots */}
+            <div className="flex items-center gap-1.5 mr-1.5 shrink-0">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
             </div>
-            <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase">
-              ONLINE_FLOW: {todayQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            
+            {/* Embedded interactive tab toggles */}
+            <div className="flex bg-zinc-900/90 p-0.5 rounded border border-white/5 shrink-0">
+              <button
+                onClick={() => setTerminalTab('today')}
+                className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                  terminalTab === 'today'
+                    ? 'bg-cyan-950 text-cyan-400 font-bold border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.05)]'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <Terminal className="h-3 w-3" />
+                SYS_ACTIVE_TODAY
+              </button>
+              <button
+                onClick={() => setTerminalTab('deferred')}
+                className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                  terminalTab === 'deferred'
+                    ? 'bg-amber-950 text-amber-400 font-bold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <Calendar className="h-3 w-3" />
+                SYS_DEFERRED_QUEUE
+              </button>
             </div>
           </div>
 
-          {/* Body Log description */}
+          {/* Dynamic state monitor badge */}
+          {terminalTab === 'today' ? (
+            <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide">
+              ONLINE_FLOW: {todayQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            </div>
+          ) : (
+            <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide">
+              QUEUED: {tomorrowPostponedQuests.length} DEFERRED
+            </div>
+          )}
+        </div>
+
+        {/* Dynamic Body Log description box */}
+        {terminalTab === 'today' ? (
           <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
             <span className="text-cyan-400/80">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
             Running daily operational protocol. Completed objectives archive below.
           </div>
+        ) : (
+          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+            <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
+            Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
+          </div>
+        )}
 
-          {/* Quests list scroll region */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800">
-            {todayQuests.length === 0 ? (
+        {/* Dynamic unified Quest list scroll region */}
+        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800">
+          {terminalTab === 'today' ? (
+            todayQuests.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
                 <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
                 <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
@@ -864,37 +936,9 @@ export const ActiveDirectives: React.FC = () => {
               <AnimatePresence mode="popLayout">
                 {todayQuests.map(q => renderQuestCard(q, false))}
               </AnimatePresence>
-            )}
-          </div>
-        </div>
-
-        {/* TERMINAL B: TOMORROW & POSTPONED DIRECTIVES */}
-        <div className="glass-panel rounded-lg p-5 border border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)] relative overflow-hidden flex flex-col h-[550px]" id="deferred-terminal">
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)] pointer-events-none bg-[size:100%_4px]" />
-          
-          {/* Header */}
-          <div className="flex justify-between items-center pb-3 border-b border-amber-500/10 mb-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0 animate-pulse" />
-              <Calendar className="h-4 w-4 text-amber-400" />
-              <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                DEFER_CONSOLE // FUTURE_&_POSTPONED
-              </h4>
-            </div>
-            <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase">
-              QUEUED: {tomorrowPostponedQuests.length} DEFERRED
-            </div>
-          </div>
-
-          {/* Body Log description */}
-          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
-            Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
-          </div>
-
-          {/* Quests list scroll region */}
-          <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800">
-            {tomorrowPostponedQuests.length === 0 ? (
+            )
+          ) : (
+            tomorrowPostponedQuests.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
                 <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
                 <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
@@ -904,10 +948,9 @@ export const ActiveDirectives: React.FC = () => {
               <AnimatePresence mode="popLayout">
                 {tomorrowPostponedQuests.map(q => renderQuestCard(q, true))}
               </AnimatePresence>
-            )}
-          </div>
+            )
+          )}
         </div>
-
       </div>
     </div>
   );

@@ -125,4 +125,5 @@ export interface POSState {
   attributes: Attribute[];
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
+  systemDate: string; // format YYYY-MM-DD
 }
