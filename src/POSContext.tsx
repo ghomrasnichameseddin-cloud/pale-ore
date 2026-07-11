@@ -163,6 +163,8 @@ export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
   }
 
   const rec = q.recurrence.toLowerCase();
+
+  // 1. Check for specific day-of-week constraints first
   const currentWeekday = getWeekdayStr(dateStr).toLowerCase();
   const fullWeekdaysMap: Record<string, string> = {
     'sunday': 'sun', 'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed',
@@ -189,12 +191,35 @@ export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
     return matchesWeekday;
   }
 
+  // 2. Check for "Every N Days" interval pattern (e.g. "Every 2 Days", "Custom: Every 3 Days")
+  const everyDaysMatch = rec.match(/every\s+(\d+)\s+days?/i);
+  if (everyDaysMatch) {
+    const n = parseInt(everyDaysMatch[1], 10);
+    if (n > 0) {
+      const creationDateStr = q.createdAt.split('T')[0];
+      const diff = getDaysDifference(creationDateStr, dateStr);
+      return diff >= 0 && diff % n === 0;
+    }
+  }
+
+  // 3. Check for Monthly recurrence
+  if (rec === 'monthly') {
+    const creationDateStr = q.createdAt.split('T')[0];
+    const [cYear, cMonth, cDay] = creationDateStr.split('-').map(Number);
+    const [tYear, tMonth, tDay] = dateStr.split('-').map(Number);
+    const lastDayOfTargetMonth = new Date(tYear, tMonth, 0).getDate();
+    const targetDayToMatch = Math.min(cDay, lastDayOfTargetMonth);
+    return tDay === targetDayToMatch;
+  }
+
+  // 4. Check for Weekly recurrence
   if (rec === 'weekly') {
     const creationDateStr = q.createdAt.split('T')[0];
     const creationWeekday = getWeekdayStr(creationDateStr).toLowerCase();
     return currentWeekday === creationWeekday;
   }
 
+  // 5. Default to true for Daily or other non-weekday custom patterns
   return true;
 };
 
