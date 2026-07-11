@@ -14,7 +14,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { 
     state, toggleRecoveryMode, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
-    isQuestFinishedForToday, processQuestReview
+    isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate
   } = usePOS();
 
   const [focusText, setFocusText] = useState(state.profile.currentFocus);
@@ -23,7 +23,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
-  const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
+  const activeQuests = state.quests.filter(q => 
+    q.status === 'Active' && 
+    !isQuestFinishedForToday(q) && 
+    isQuestScheduledForDate(q, systemDate)
+  );
   
   const frogOfTheDay = activeQuests.find(q => q.important) || 
                        (activeQuests.length > 0 ? [...activeQuests].sort((a, b) => b.xp - a.xp)[0] : null);
@@ -442,13 +446,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <span className="text-[9px] font-mono text-zinc-500">QUICK TAP TOGGLE</span>
             </div>
             
-            {state.quests.filter(q => q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily').length === 0 ? (
+            {state.quests.filter(q => (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).length === 0 ? (
               <p className="text-xs text-zinc-500 font-mono text-center py-2">
-                No active daily habits registered.
+                No active daily habits registered for today.
               </p>
             ) : (
               <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                {state.quests.filter(q => q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily').map(habit => {
+                {state.quests.filter(q => (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).map(habit => {
                   const isFinished = isQuestFinishedForToday(habit);
                   return (
                     <div 

@@ -81,6 +81,8 @@ interface POSContextType {
   exportData: () => string;
   importData: (jsonData: string) => boolean;
   isQuestFinishedForToday: (q: Quest) => boolean;
+  isQuestScheduledForDate: (q: Quest, dateStr: string) => boolean;
+  getWeekdayStr: (dateStr: string) => string;
   systemDate: string;
   setSystemDate: (date: string) => void;
 }
@@ -144,6 +146,58 @@ const getDaysDifference = (dateStr1: string, dateStr2: string): number => {
   }
 };
 
+export const getWeekdayStr = (dateStr: string): string => {
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return weekdays[date.getDay()];
+  } catch (e) {
+    return '';
+  }
+};
+
+export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
+  if (!q.recurrence || q.recurrence === 'None') {
+    return true;
+  }
+
+  const rec = q.recurrence.toLowerCase();
+  const currentWeekday = getWeekdayStr(dateStr).toLowerCase();
+  const fullWeekdaysMap: Record<string, string> = {
+    'sunday': 'sun', 'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed',
+    'thursday': 'thu', 'friday': 'fri', 'saturday': 'sat'
+  };
+
+  const weekdays = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  let hasWeekdayConstraint = false;
+  let matchesWeekday = false;
+
+  for (const day of weekdays) {
+    const shortPattern = day;
+    const fullPattern = Object.keys(fullWeekdaysMap).find(k => fullWeekdaysMap[k] === day) || '';
+    
+    if (rec.includes(shortPattern) || (fullPattern && rec.includes(fullPattern))) {
+      hasWeekdayConstraint = true;
+      if (currentWeekday === day) {
+        matchesWeekday = true;
+      }
+    }
+  }
+
+  if (hasWeekdayConstraint) {
+    return matchesWeekday;
+  }
+
+  if (rec === 'weekly') {
+    const creationDateStr = q.createdAt.split('T')[0];
+    const creationWeekday = getWeekdayStr(creationDateStr).toLowerCase();
+    return currentWeekday === creationWeekday;
+  }
+
+  return true;
+};
+
 const resetRecurringQuestsForNewDate = (newDateStr: string, currentQuests: Quest[]): Quest[] => {
   return currentQuests.map(q => {
     if (!q.recurrence || q.recurrence === 'None') {
@@ -155,16 +209,11 @@ const resetRecurringQuestsForNewDate = (newDateStr: string, currentQuests: Quest
       const diff = getDaysDifference(lastActionDateStr, newDateStr);
       
       let shouldReset = false;
-      if (q.recurrence === 'Daily' && diff >= 1) {
-        shouldReset = true;
-      } else if (q.recurrence === 'Every 2 Days' && diff >= 2) {
-        shouldReset = true;
-      } else if (q.recurrence === 'Weekly' && diff >= 7) {
-        shouldReset = true;
-      } else if (q.recurrence === 'Monthly' && diff >= 30) {
-        shouldReset = true;
-      } else if (diff >= 1) {
-        shouldReset = true;
+      if (diff >= 1) {
+        // If a quest is scheduled on this new date, it must be reset so the user can complete it again!
+        if (isQuestScheduledForDate(q, newDateStr)) {
+          shouldReset = true;
+        }
       }
       
       if (shouldReset) {
@@ -1585,6 +1634,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       exportData,
       importData,
       isQuestFinishedForToday,
+      isQuestScheduledForDate,
+      getWeekdayStr,
       systemDate: state.systemDate || new Date().toISOString().split('T')[0],
       setSystemDate
     }}>

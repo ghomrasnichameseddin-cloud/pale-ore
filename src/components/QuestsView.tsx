@@ -5,10 +5,18 @@ import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
 
 export const QuestsView: React.FC = () => {
-  const { state, isQuestFinishedForToday } = usePOS();
+  const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
 
-  const activeQuests = state.quests.filter(q => q.status === 'Active' && !isQuestFinishedForToday(q));
-  const completedQuests = state.quests.filter(q => isQuestFinishedForToday(q) && q.status !== 'Failed');
+  const activeQuests = state.quests.filter(q => 
+    q.status === 'Active' && 
+    !isQuestFinishedForToday(q) && 
+    isQuestScheduledForDate(q, systemDate)
+  );
+  const completedQuests = state.quests.filter(q => 
+    isQuestFinishedForToday(q) && 
+    q.status !== 'Failed' && 
+    isQuestScheduledForDate(q, systemDate)
+  );
   const totalQuests = state.quests.length;
 
   return (

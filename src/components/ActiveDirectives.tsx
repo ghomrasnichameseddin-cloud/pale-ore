@@ -14,6 +14,7 @@ export const ActiveDirectives: React.FC = () => {
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, stopFocusSession,
     isQuestFinishedForToday,
+    isQuestScheduledForDate,
     systemDate
   } = usePOS();
 
@@ -121,7 +122,14 @@ export const ActiveDirectives: React.FC = () => {
     if (isFinished) {
        return q.status !== 'Failed'; // Show completed today, exclude fails
     }
-    return q.status === 'Active' && (!q.deadline || q.deadline <= todayStr);
+    
+    if (q.status !== 'Active') return false;
+    
+    // Check weekday schedule if applicable
+    const isScheduled = isQuestScheduledForDate(q, todayStr);
+    if (!isScheduled) return false;
+    
+    return !q.deadline || q.deadline <= todayStr;
   });
 
   // 2. Tomorrow & Postponed quests: Active & deadline > todayStr, plus completed recurring quests (queued for tomorrow)
