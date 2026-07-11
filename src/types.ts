@@ -72,6 +72,7 @@ export interface Skill {
   relatedGoals: string[]; // Goal IDs
   relatedProjects: string[]; // Project IDs
   equippedTitle?: string;
+  tier?: 'Primary' | 'Secondary';
 }
 
 export interface Attribute {

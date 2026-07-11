@@ -51,8 +51,9 @@ interface POSContextType {
   deleteSubQuest: (questId: string, subquestId: string) => void;
   
   // Skills CRUD
-  addSkill: (name: string) => string;
+  addSkill: (name: string, tier?: 'Primary' | 'Secondary') => string;
   updateSkillName: (id: string, name: string) => void;
+  updateSkillTier: (id: string, tier: 'Primary' | 'Secondary') => void;
   deleteSkill: (id: string) => void;
   clearAllSkills: () => void;
   equipSkillTitle: (id: string, title: string) => void;
@@ -1344,7 +1345,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // CRUD FOR SKILLS
-  const addSkill = (name: string): string => {
+  const addSkill = (name: string, tier?: 'Primary' | 'Secondary'): string => {
     const id = `s-${Date.now()}`;
     const newSkill: Skill = {
       id,
@@ -1353,7 +1354,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       xp: 0,
       mastery: 0,
       relatedGoals: [],
-      relatedProjects: []
+      relatedProjects: [],
+      tier: tier || 'Primary'
     };
     setState(prev => ({
       ...prev,
@@ -1366,6 +1368,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => ({
       ...prev,
       skills: prev.skills.map(s => s.id === id ? { ...s, name } : s)
+    }));
+  };
+
+  const updateSkillTier = (id: string, tier: 'Primary' | 'Secondary') => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, tier } : s)
     }));
   };
 
@@ -1639,6 +1648,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteSubQuest,
       addSkill,
       updateSkillName,
+      updateSkillTier,
       deleteSkill,
       clearAllSkills,
       equipSkillTitle,

@@ -420,25 +420,60 @@ export const GoalsView: React.FC = () => {
             </div>
 
             {/* Link standard skills */}
-            <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Link Core Skills</label>
-              <div className="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
-                {state.skills.map(sk => {
-                  const isSel = newGoalSkills.includes(sk.id);
-                  return (
-                    <button
-                      type="button"
-                      key={sk.id}
-                      onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
-                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                        isSel ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/20' : 'bg-zinc-900 text-zinc-500 border-white/5'
-                      }`}
-                    >
-                      {sk.name}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="space-y-2">
+              <label className="block text-[10px] font-mono text-zinc-500 uppercase">Link Core Skills</label>
+              
+              {/* Primary Core Skills */}
+              {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
+                <div className="space-y-1">
+                  <span className="text-[8px] font-mono text-cyan-500 uppercase block">Primary Core Skills</span>
+                  <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
+                    {state.skills
+                      .filter(s => (s.tier || 'Primary') === 'Primary')
+                      .map(sk => {
+                        const isSel = newGoalSkills.includes(sk.id);
+                        return (
+                          <button
+                            type="button"
+                            key={sk.id}
+                            onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
+                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                              isSel ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/20 font-semibold' : 'bg-zinc-900 text-zinc-500 border-white/5'
+                            }`}
+                          >
+                            {sk.name}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* Secondary Skills */}
+              {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[8px] font-mono text-fuchsia-500 uppercase block">Secondary Skills</span>
+                  <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
+                    {state.skills
+                      .filter(s => s.tier === 'Secondary')
+                      .map(sk => {
+                        const isSel = newGoalSkills.includes(sk.id);
+                        return (
+                          <button
+                            type="button"
+                            key={sk.id}
+                            onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
+                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                              isSel ? 'bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-500/20 font-semibold' : 'bg-zinc-900 text-zinc-500 border-white/5'
+                            }`}
+                          >
+                            {sk.name}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
@@ -728,10 +763,18 @@ export const GoalsView: React.FC = () => {
                             const skill = state.skills.find(s => s.id === sid);
                             if (!skill) return null;
                             const skillInfo = getSkillXpAndLevel(sid);
+                            const isPrimary = (skill.tier || 'Primary') === 'Primary';
                             return (
-                              <div key={sid} className="p-2 bg-zinc-950 border border-white/5 rounded flex items-center gap-2 text-xs">
+                              <div 
+                                key={sid} 
+                                className={`p-2 bg-zinc-950/80 border rounded flex items-center gap-2 text-xs transition-colors ${
+                                  isPrimary ? 'border-cyan-500/10 hover:border-cyan-500/20' : 'border-fuchsia-500/10 hover:border-fuchsia-500/20'
+                                }`}
+                              >
                                 <span className="text-white font-sans">{skill.name}</span>
-                                <span className="text-cyan-500 font-mono">LVL {skillInfo.level}</span>
+                                <span className={`font-mono font-bold ${
+                                  isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
+                                }`}>LVL {skillInfo.level}</span>
                               </div>
                             );
                           })
@@ -1359,15 +1402,33 @@ export const GoalsView: React.FC = () => {
                         const skill = state.skills.find(s => s.id === sid);
                         if (!skill) return null;
                         const sInfo = getSkillXpAndLevel(sid);
+                        const isPrimary = (skill.tier || 'Primary') === 'Primary';
                         return (
-                          <div key={sid} className="p-4 bg-zinc-950/50 border border-white/5 rounded-lg text-xs space-y-3">
-                            <div className="flex justify-between items-center">
-                              <h5 className="font-sans font-bold text-white">{skill.name}</h5>
-                              <span className="text-cyan-400 font-mono font-bold">LVL {sInfo.level}</span>
+                          <div 
+                            key={sid} 
+                            className={`p-4 bg-zinc-950/50 border rounded-lg text-xs space-y-3 transition-colors ${
+                              isPrimary ? 'border-cyan-500/10' : 'border-fuchsia-500/10'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-0.5">
+                                <h5 className="font-sans font-bold text-white leading-tight">{skill.name}</h5>
+                                <span className={`text-[8px] font-mono px-1 rounded uppercase font-semibold ${
+                                  isPrimary ? 'text-cyan-400 bg-cyan-950/40' : 'text-fuchsia-400 bg-fuchsia-950/40'
+                                }`}>
+                                  {skill.tier || 'Primary'}
+                                </span>
+                              </div>
+                              <span className={`font-mono font-bold ${
+                                isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
+                              }`}>LVL {sInfo.level}</span>
                             </div>
                             
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
-                              <div className="bg-cyan-500 h-full rounded" style={{ width: `${sInfo.progress}%` }} />
+                              <div 
+                                className={`h-full rounded ${isPrimary ? 'bg-cyan-500' : 'bg-fuchsia-500'}`} 
+                                style={{ width: `${sInfo.progress}%` }} 
+                              />
                             </div>
 
                             <div className="flex justify-between text-[10px] font-mono text-zinc-500">
@@ -1397,4 +1458,3 @@ export const GoalsView: React.FC = () => {
     </div>
   );
 };
-

@@ -326,27 +326,64 @@ export const ExecuteQuestForm: React.FC = () => {
         )}
 
         {/* Skills assignment check */}
-        <div>
-          <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1.5">Associate Skills</label>
-          <div className="flex flex-wrap gap-1.5">
-            {state.skills.map(skill => {
-              const isSelected = newQuestSkills.includes(skill.id);
-              return (
-                <button
-                  key={skill.id}
-                  type="button"
-                  onClick={() => handleSkillToggle(skill.id)}
-                  className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                    isSelected 
-                      ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30 font-bold' 
-                      : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
-                  }`}
-                >
-                  {skill.name}
-                </button>
-              );
-            })}
-          </div>
+        <div className="space-y-2">
+          <label className="block text-[10px] font-mono text-zinc-500 uppercase">Associate Skills</label>
+          
+          {/* Primary Skills */}
+          {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-wider block">Primary Skills</span>
+              <div className="flex flex-wrap gap-1.5">
+                {state.skills
+                  .filter(s => (s.tier || 'Primary') === 'Primary')
+                  .map(skill => {
+                    const isSelected = newQuestSkills.includes(skill.id);
+                    return (
+                      <button
+                        key={skill.id}
+                        type="button"
+                        onClick={() => handleSkillToggle(skill.id)}
+                        className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                          isSelected 
+                            ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30 font-bold' 
+                            : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
+                        }`}
+                      >
+                        {skill.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Secondary Skills */}
+          {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
+            <div className="space-y-1 pt-1">
+              <span className="text-[8px] font-mono text-fuchsia-500 uppercase tracking-wider block">Secondary Skills</span>
+              <div className="flex flex-wrap gap-1.5">
+                {state.skills
+                  .filter(s => s.tier === 'Secondary')
+                  .map(skill => {
+                    const isSelected = newQuestSkills.includes(skill.id);
+                    return (
+                      <button
+                        key={skill.id}
+                        type="button"
+                        onClick={() => handleSkillToggle(skill.id)}
+                        className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                          isSelected 
+                            ? 'bg-fuchsia-950/50 text-fuchsia-400 border-fuchsia-500/30 font-bold' 
+                            : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
+                        }`}
+                      >
+                        {skill.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
       </form>
     </div>
