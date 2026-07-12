@@ -4,7 +4,7 @@ import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
   Circle, CheckCircle2, Trash2, Edit3, Save, X, Skull, 
   Calendar, SkipForward, Play, Pause, Clock, Timer, 
-  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu
+  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -23,7 +23,7 @@ export const ActiveDirectives: React.FC = () => {
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [energyFilter, setEnergyFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
-  const [terminalTab, setTerminalTab] = useState<'today' | 'deferred'>('today');
+  const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred'>('today');
 
   // Quick / Bulk Add States
   const [quickInputText, setQuickInputText] = useState('');
@@ -259,6 +259,38 @@ export const ActiveDirectives: React.FC = () => {
 
   const todayStr = systemDate;
 
+  // Calculate tomorrow's string
+  const getTomorrowStr = () => {
+    try {
+      const tomorrow = new Date(systemDate);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    } catch (e) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    }
+  };
+
+  const getNext7Days = (): string[] => {
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      try {
+        const d = new Date(systemDate);
+        d.setDate(d.getDate() + i);
+        dates.push(d.toISOString().split('T')[0]);
+      } catch (e) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+    }
+    return dates;
+  };
+
+  const tomorrowStr = getTomorrowStr();
+  const next7Days = getNext7Days();
+
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
@@ -278,7 +310,47 @@ export const ActiveDirectives: React.FC = () => {
     return !q.deadline || q.deadline <= todayStr;
   });
 
-  // 2. Tomorrow & Postponed quests: Active & deadline > todayStr, plus completed recurring quests (queued for tomorrow)
+  // 2. Tomorrow's quests: Active & scheduled/deadline is tomorrow, plus completed recurring
+  const tomorrowQuests = baseQuests.filter(q => {
+    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
+    if (!matchesEnergy) return false;
+
+    const isFinished = isQuestFinishedForToday(q);
+    const isRecurring = q.recurrence && q.recurrence !== 'None';
+
+    if (isFinished) {
+      // Completed recurring quests are queued for tomorrow/future cycles
+      return isRecurring;
+    }
+
+    if (q.status !== 'Active') return false;
+
+    // Scheduled on tomorrow?
+    const isScheduled = isQuestScheduledForDate(q, tomorrowStr);
+    const isDueTomorrow = q.deadline === tomorrowStr;
+
+    return isScheduled || isDueTomorrow;
+  });
+
+  // 3. This Week's quests: next 7 days scheduled/due
+  const weekQuests = baseQuests.filter(q => {
+    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
+    if (!matchesEnergy) return false;
+
+    const isFinished = isQuestFinishedForToday(q);
+    if (q.status !== 'Active') {
+      return isFinished; // Show completed today too
+    }
+
+    // Scheduled on any of the next 7 days?
+    const isScheduledSomeDay = next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
+    // Has a deadline within the next 7 days?
+    const hasDeadlineThisWeek = q.deadline && q.deadline >= todayStr && q.deadline <= next7Days[6];
+
+    return isScheduledSomeDay || hasDeadlineThisWeek;
+  });
+
+  // 4. Deferred quests: Active & deadline > todayStr, plus completed recurring
   const tomorrowPostponedQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
     const isRecurring = q.recurrence && q.recurrence !== 'None';
@@ -292,19 +364,6 @@ export const ActiveDirectives: React.FC = () => {
     
     return q.status === 'Active' && q.deadline && q.deadline > todayStr;
   });
-
-  // Calculate tomorrow's string
-  const getTomorrowStr = () => {
-    try {
-      const tomorrow = new Date(systemDate);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    } catch (e) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    }
-  };
 
   const handleMoveToTomorrow = (questId: string) => {
     const tomorrowStr = getTomorrowStr();
@@ -1203,6 +1262,10 @@ export const ActiveDirectives: React.FC = () => {
         className={`glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-[550px] ${
           terminalTab === 'today'
             ? 'border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)]'
+            : terminalTab === 'tomorrow'
+            ? 'border-purple-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(168,85,247,0.03)]'
+            : terminalTab === 'week'
+            ? 'border-emerald-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(16,185,129,0.03)]'
             : 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
         }`} 
         id="unified-terminal"
@@ -1210,12 +1273,16 @@ export const ActiveDirectives: React.FC = () => {
         <div className={`absolute inset-0 pointer-events-none bg-[size:100%_4px] transition-all duration-300 ${
           terminalTab === 'today'
             ? 'bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)]'
+            : terminalTab === 'tomorrow'
+            ? 'bg-[linear-gradient(to_bottom,rgba(168,85,247,0.01)_1px,transparent_1px)]'
+            : terminalTab === 'week'
+            ? 'bg-[linear-gradient(to_bottom,rgba(16,185,129,0.01)_1px,transparent_1px)]'
             : 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
         }`} />
         
         {/* Terminal Header with Window Controls & Styled Tabs */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-3 border-b border-white/10 mb-4 shrink-0 gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center pb-3 border-b border-white/10 mb-4 shrink-0 gap-3">
+          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
             {/* Terminal OS window indicator dots */}
             <div className="flex items-center gap-1.5 mr-1.5 shrink-0">
               <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
@@ -1224,39 +1291,69 @@ export const ActiveDirectives: React.FC = () => {
             </div>
             
             {/* Embedded interactive tab toggles */}
-            <div className="flex bg-zinc-900/90 p-0.5 rounded border border-white/5 shrink-0">
+            <div className="flex flex-wrap bg-zinc-900/90 p-0.5 rounded border border-white/5 shrink-0 gap-0.5 max-w-full">
               <button
                 onClick={() => setTerminalTab('today')}
-                className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
                   terminalTab === 'today'
                     ? 'bg-cyan-950 text-cyan-400 font-bold border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.05)]'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
                 <Terminal className="h-3 w-3" />
-                SYS_ACTIVE_TODAY
+                SYS_ACTIVE_TODAY ({todayQuests.length})
+              </button>
+              <button
+                onClick={() => setTerminalTab('tomorrow')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                  terminalTab === 'tomorrow'
+                    ? 'bg-purple-950 text-purple-400 font-bold border border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <Calendar className="h-3 w-3" />
+                SYS_TOMORROW ({tomorrowQuests.length})
+              </button>
+              <button
+                onClick={() => setTerminalTab('week')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                  terminalTab === 'week'
+                    ? 'bg-emerald-950 text-emerald-400 font-bold border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.05)]'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <Compass className="h-3 w-3" />
+                SYS_WEEK_HORIZON ({weekQuests.length})
               </button>
               <button
                 onClick={() => setTerminalTab('deferred')}
-                className={`flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
                   terminalTab === 'deferred'
                     ? 'bg-amber-950 text-amber-400 font-bold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
                 <Calendar className="h-3 w-3" />
-                SYS_DEFERRED_QUEUE
+                SYS_DEFERRED_QUEUE ({tomorrowPostponedQuests.length})
               </button>
             </div>
           </div>
 
           {/* Dynamic state monitor badge */}
           {terminalTab === 'today' ? (
-            <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide">
+            <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
               ONLINE_FLOW: {todayQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
             </div>
+          ) : terminalTab === 'tomorrow' ? (
+            <div className="text-[10px] font-mono text-purple-400/80 bg-purple-950/30 border border-purple-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+              FORECAST: {tomorrowQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            </div>
+          ) : terminalTab === 'week' ? (
+            <div className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/30 border border-emerald-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+              7D_HORIZON: {weekQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            </div>
           ) : (
-            <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide">
+            <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
               QUEUED: {tomorrowPostponedQuests.length} DEFERRED
             </div>
           )}
@@ -1267,6 +1364,16 @@ export const ActiveDirectives: React.FC = () => {
           <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
             <span className="text-cyan-400/80">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
             Running daily operational protocol. Completed objectives archive below.
+          </div>
+        ) : terminalTab === 'tomorrow' ? (
+          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+            <span className="text-purple-400/80">root@pos-os:~#</span> cat /sys/tomorrow_operational_log<br/>
+            Simulating next-cycle directives. Anticipating objective schedules.
+          </div>
+        ) : terminalTab === 'week' ? (
+          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+            <span className="text-emerald-400/80">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
+            Analyzing 7-day milestone projection. Balancing recurring workloads.
           </div>
         ) : (
           <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
@@ -1287,6 +1394,30 @@ export const ActiveDirectives: React.FC = () => {
             ) : (
               <AnimatePresence mode="popLayout">
                 {todayQuests.map(q => renderQuestCard(q, false))}
+              </AnimatePresence>
+            )
+          ) : terminalTab === 'tomorrow' ? (
+            tomorrowQuests.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
+                <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
+                <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {tomorrowQuests.map(q => renderQuestCard(q, true))}
+              </AnimatePresence>
+            )
+          ) : terminalTab === 'week' ? (
+            weekQuests.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
+                <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
+                <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {weekQuests.map(q => renderQuestCard(q, true))}
               </AnimatePresence>
             )
           ) : (
