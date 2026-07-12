@@ -483,13 +483,118 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
+  const applyMidnightPenalties = (prev: POSState, oldDate: string, newDateStr: string) => {
+    const daysDiff = getDaysDifference(oldDate, newDateStr);
+    let updatedQuests = [...prev.quests];
+    let updatedHistory = [...prev.xpHistory];
+    let updatedMomentum = prev.profile.momentum;
+
+    if (daysDiff >= 1) {
+      // Find critical quests active on oldDate that were left unchecked (incomplete)
+      const uncheckedCriticalQuests = prev.quests.filter(q => {
+        const isCritical = q.important || q.type === 'Main' || q.type === 'Boss';
+        if (!isCritical) return false;
+
+        // Check if recurring
+        if (q.recurrence && q.recurrence !== 'None') {
+          const isScheduled = isQuestScheduledForDate(q, oldDate);
+          if (!isScheduled) return false;
+
+          if (q.completedAt) {
+            const compDate = q.completedAt.split('T')[0];
+            if (compDate === oldDate) {
+              return false; // completed on oldDate
+            }
+          }
+          return true; // scheduled but not completed on oldDate
+        } else {
+          // One-off quest
+          if (q.status !== 'Active') return false;
+          if (q.deadline && q.deadline <= oldDate) {
+            return true;
+          }
+          return false;
+        }
+      });
+
+      // Apply penalties for each unchecked critical quest
+      uncheckedCriticalQuests.forEach(q => {
+        let penaltyXp = 50;
+        if (q.difficulty === 'Easy') penaltyXp = 25;
+        else if (q.difficulty === 'Normal') penaltyXp = 50;
+        else if (q.difficulty === 'Hard') penaltyXp = 100;
+        else if (q.difficulty === 'Boss') penaltyXp = 250;
+
+        const finalPenaltyXp = penaltyXp * 1.5;
+
+        const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
+        const penaltyEntry: XPHistoryEntry = {
+          id: xpHistoryId,
+          questId: q.id,
+          questName: `💀 MIDNIGHT PENALTY: Unchecked Critical "${q.name}"`,
+          xp: -Math.round(finalPenaltyXp),
+          timestamp: new Date().toISOString(),
+          skillIds: q.relatedSkills || []
+        };
+
+        updatedHistory.unshift(penaltyEntry);
+        updatedMomentum = Math.max(0, updatedMomentum - 25);
+
+        // If one-off, mark as Failed
+        if (!q.recurrence || q.recurrence === 'None') {
+          updatedQuests = updatedQuests.map(uq => {
+            if (uq.id === q.id) {
+              return {
+                ...uq,
+                status: 'Failed' as const,
+                completedAt: new Date().toISOString()
+              };
+            }
+            return uq;
+          });
+        }
+      });
+    }
+
+    return { updatedQuests, updatedHistory, updatedMomentum };
+  };
+
   const setSystemDate = (newDateStr: string) => {
     setState(prev => {
-      const updatedQuests = resetRecurringQuestsForNewDate(newDateStr, prev.quests);
+      const oldDate = prev.systemDate;
+      const { updatedQuests, updatedHistory, updatedMomentum } = applyMidnightPenalties(prev, oldDate, newDateStr);
+      
+      const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests);
+      const finalHistory = resolveRecoveredPenalties(updatedHistory);
+      const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
+      const level = calculatePlayerLevel(totalXp);
+      
+      const updatedSkills = prev.skills.map(skill => {
+        const skillXp = Math.max(0, finalHistory
+          .filter(h => h.skillIds.includes(skill.id))
+          .reduce((sum, h) => sum + h.xp, 0));
+        const skillLevel = calculatePlayerLevel(skillXp);
+        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        return {
+          ...skill,
+          level: skillLevel,
+          xp: skillXp,
+          mastery
+        };
+      });
+
       return {
         ...prev,
         systemDate: newDateStr,
-        quests: updatedQuests
+        quests: finalQuests,
+        xpHistory: finalHistory,
+        skills: updatedSkills,
+        profile: {
+          ...prev.profile,
+          momentum: updatedMomentum,
+          xp: totalXp,
+          level
+        }
       };
     });
   };
@@ -500,7 +605,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const realToday = new Date().toISOString().split('T')[0];
       setState(prev => {
         const currentSimulated = prev.systemDate || realToday;
-        const updatedQuests = resetRecurringQuestsForNewDate(currentSimulated, prev.quests);
         
         // If the simulated date matches yesterday's calendar date, and it has crossed to a new real day,
         // we can automatically advance the simulated date to match the new calendar date.
@@ -513,12 +617,40 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
+        const oldDate = currentSimulated;
+        const { updatedQuests, updatedHistory, updatedMomentum } = applyMidnightPenalties(prev, oldDate, nextSimulated);
+
         const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests);
+        const finalHistory = resolveRecoveredPenalties(updatedHistory);
+        const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
+        const level = calculatePlayerLevel(totalXp);
+        
+        const updatedSkills = prev.skills.map(skill => {
+          const skillXp = Math.max(0, finalHistory
+            .filter(h => h.skillIds.includes(skill.id))
+            .reduce((sum, h) => sum + h.xp, 0));
+          const skillLevel = calculatePlayerLevel(skillXp);
+          const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+          return {
+            ...skill,
+            level: skillLevel,
+            xp: skillXp,
+            mastery
+          };
+        });
 
         return {
           ...prev,
           systemDate: nextSimulated,
-          quests: finalQuests
+          quests: finalQuests,
+          xpHistory: finalHistory,
+          skills: updatedSkills,
+          profile: {
+            ...prev.profile,
+            momentum: updatedMomentum,
+            xp: totalXp,
+            level
+          }
         };
       });
     };

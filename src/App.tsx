@@ -7,10 +7,11 @@ import { ProjectsView } from './components/ProjectsView';
 import { SkillsView } from './components/SkillsView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
+import { LuminescentOreLogo } from './components/LuminescentOreLogo';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
-  Terminal, Shield, Flame, Clock, Menu, X, Gem, Swords,
-  Calendar, ChevronLeft, ChevronRight
+  Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
+  Calendar, ChevronLeft, ChevronRight, Gem
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -56,7 +57,7 @@ function AppContent() {
       {/* MOBILE TOP NAVIGATION BAR */}
       <div className="md:hidden glass-panel border-b border-white/5 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <Gem className="h-5 w-5 text-zinc-400 shrink-0" />
+          <LuminescentOreLogo className="h-7 w-7" />
           <h1 className="font-display text-base font-bold tracking-wider text-white">PALE ORE</h1>
           <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/20 px-1.5 py-0.5 rounded font-bold">
             LVL {playerInfo.level}
@@ -154,7 +155,7 @@ function AppContent() {
           
           {/* BRAND LOGO */}
           <div className="flex items-center gap-3 border-b border-white/5 pb-5">
-            <Gem className="h-6 w-6 text-zinc-400 shrink-0" aria-label="gemstone" />
+            <LuminescentOreLogo className="h-9 w-9" />
             <div>
               <h1 className="font-display text-lg font-black tracking-wider text-white">PALE ORE</h1>
               <p className="text-[9px] font-mono text-cyan-400 tracking-widest mt-0.5">PROGRESS_OS v2.6</p>

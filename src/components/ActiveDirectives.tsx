@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export const ActiveDirectives: React.FC = () => {
   const { 
-    state, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
+    state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, stopFocusSession,
     isQuestFinishedForToday,
@@ -22,6 +22,128 @@ export const ActiveDirectives: React.FC = () => {
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [energyFilter, setEnergyFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
   const [terminalTab, setTerminalTab] = useState<'today' | 'deferred'>('today');
+
+  // Quick / Bulk Add States
+  const [quickInputText, setQuickInputText] = useState('');
+  const [bulkInputText, setBulkInputText] = useState('');
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [terminalLog, setTerminalLog] = useState<string | null>(null);
+
+  const parseBulkQuestLine = (line: string) => {
+    let name = line.trim();
+    if (!name) return null;
+
+    let difficulty: QuestDifficulty = 'Normal';
+    let isImportant = false;
+    let qType: QuestType = 'Main';
+    let recurrence: QuestRecurrence = 'None';
+
+    // Check for critical mark '!'
+    if (name.endsWith('!')) {
+      isImportant = true;
+      name = name.slice(0, -1).trim();
+    } else if (name.includes(' !')) {
+      isImportant = true;
+      name = name.replace(' !', '').trim();
+    }
+
+    // Check difficulty tags like [easy], [normal], [hard], [boss]
+    const diffMatch = name.match(/\[(easy|normal|hard|boss)\]/i);
+    if (diffMatch) {
+      const diffStr = diffMatch[1].toLowerCase();
+      difficulty = diffStr.charAt(0).toUpperCase() + diffStr.slice(1) as QuestDifficulty;
+      name = name.replace(diffMatch[0], '').trim();
+    }
+
+    // Check type/recurrence tags starting with *
+    const tagMatches = name.match(/\*([a-zA-Z0-9]+)/g);
+    if (tagMatches) {
+      for (const tag of tagMatches) {
+        const tagContent = tag.slice(1).toLowerCase();
+        if (tagContent === 'habit') {
+          qType = 'Habit';
+          recurrence = 'Daily';
+        } else if (tagContent === 'daily') {
+          recurrence = 'Daily';
+        } else if (tagContent === 'weekly') {
+          recurrence = 'Weekly';
+        } else if (tagContent === 'monthly') {
+          recurrence = 'Monthly';
+        } else if (tagContent === 'side') {
+          qType = 'Side';
+        } else if (tagContent === 'boss') {
+          qType = 'Boss';
+          difficulty = 'Boss';
+        }
+        name = name.replace(tag, '').trim();
+      }
+    }
+
+    name = name.replace(/\s+/g, ' ').trim();
+    if (!name) return null;
+
+    let xp = 100;
+    if (difficulty === 'Easy') xp = 50;
+    else if (difficulty === 'Normal') xp = 100;
+    else if (difficulty === 'Hard') xp = 200;
+    else if (difficulty === 'Boss') xp = 500;
+
+    const autoImportant = qType === 'Main' || qType === 'Boss' || difficulty === 'Hard' || difficulty === 'Boss';
+    const finalImportant = isImportant || autoImportant;
+
+    return {
+      name,
+      description: "Bulk logged via Pale Ore Terminal.",
+      difficulty,
+      estimatedTime: 30,
+      xp,
+      goalId: null,
+      projectId: null,
+      milestoneId: null,
+      relatedSkills: [],
+      type: qType,
+      recurrence,
+      deadline: systemDate,
+      important: finalImportant,
+      energyLevel: 'Medium' as const
+    };
+  };
+
+  const handleQuickAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = quickInputText.trim();
+    if (!text) return;
+
+    const parsed = parseBulkQuestLine(text);
+    if (parsed) {
+      addQuest(parsed);
+      setTerminalLog(`[SUCCESS] DIRECTIVE_LOGGED: "${parsed.name}" (${parsed.difficulty}, ${parsed.important ? 'CRITICAL' : 'Standard'})`);
+      setQuickInputText('');
+      setTimeout(() => setTerminalLog(null), 4000);
+    } else {
+      setTerminalLog(`[ERROR] INVALID_INPUT_FORMAT`);
+    }
+  };
+
+  const handleBulkAddSubmit = () => {
+    const lines = bulkInputText.split('\n');
+    let count = 0;
+    lines.forEach(line => {
+      const parsed = parseBulkQuestLine(line);
+      if (parsed) {
+        addQuest(parsed);
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      setTerminalLog(`[SUCCESS] BATCH_DEPLOYED: Initialized ${count} directives successfully.`);
+      setBulkInputText('');
+      setTimeout(() => setTerminalLog(null), 5000);
+    } else {
+      setTerminalLog(`[WARNING] No valid directives found to deploy.`);
+    }
+  };
 
   // Quest Editing State
   const [editingQuestId, setEditingQuestId] = useState<string | null>(null);
@@ -904,6 +1026,85 @@ export const ActiveDirectives: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* FAST_QUEST_INPUT_CONSOLE */}
+      <div className="glass-panel border-cyan-500/10 bg-zinc-950/30 p-4 rounded-lg space-y-3" id="fast-quest-console">
+        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+          <div className="flex items-center gap-2">
+            <Terminal className="h-4 w-4 text-cyan-400" />
+            <span className="text-[10px] font-mono text-zinc-300 font-bold tracking-wider">
+              PALE_ORE_DIRECTIVE_LOGGER_SYSTEM [v2.0]
+            </span>
+          </div>
+          <button 
+            type="button"
+            onClick={() => {
+              setIsBulkMode(!isBulkMode);
+              setTerminalLog(null);
+            }}
+            className="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 hover:bg-cyan-950/80 border border-cyan-500/20 px-2 py-0.5 rounded transition-all"
+          >
+            {isBulkMode ? "⚡ QUICK_MODE" : "🗃️ BULK_MODE"}
+          </button>
+        </div>
+
+        {terminalLog && (
+          <div className="p-2 bg-zinc-950 border border-white/5 rounded font-mono text-[10px] text-cyan-400 flex items-center gap-2">
+            <span className="animate-pulse">❯</span>
+            <span>{terminalLog}</span>
+          </div>
+        )}
+
+        {!isBulkMode ? (
+          <form onSubmit={handleQuickAddSubmit} className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-2.5 font-mono text-xs text-cyan-500/60 select-none">❯</span>
+              <input 
+                type="text"
+                placeholder="Log a quest: e.g. Do cardio workout [hard] *habit ! (use [difficulty], *habit, ! for critical)"
+                value={quickInputText}
+                onChange={(e) => setQuickInputText(e.target.value)}
+                className="w-full bg-zinc-950/80 border border-white/5 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 transition-all"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
+            >
+              Log
+            </button>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[9px] font-mono text-zinc-500">
+              Paste or type multiple directives (one per line). Format supports difficulty tags <span className="text-zinc-400">[easy]</span>, type tags <span className="text-zinc-400">*habit</span>, <span className="text-zinc-400">*weekly</span>, or <span className="text-zinc-400">!</span> for critical importance.
+            </p>
+            <textarea
+              rows={4}
+              placeholder="Example list:&#10;Study algorithms [hard] !&#10;Read 10 pages *habit&#10;Weekly review *weekly&#10;Buy groceries [easy]"
+              value={bulkInputText}
+              onChange={(e) => setBulkInputText(e.target.value)}
+              className="w-full bg-zinc-950/80 border border-white/5 rounded-lg p-3 text-xs font-mono text-white placeholder-zinc-750 focus:outline-none focus:border-cyan-500/30 resize-none transition-all"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setBulkInputText('')}
+                className="px-3 py-1 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 rounded border border-white/5 text-[10px] font-mono transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkAddSubmit}
+                className="px-4 py-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
+              >
+                Deploy Directives
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Strategy 2: Adaptive Load Energy Filter Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-zinc-950/45 border border-white/5 rounded-lg gap-3">
