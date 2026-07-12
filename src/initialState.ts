@@ -5,6 +5,8 @@ export const INITIAL_STATE: POSState = {
   projects: [],
   milestones: [],
   quests: [],
+  folders: [],
+  lists: [],
   skills: [],
   attributes: [
     { id: 'a-1', name: 'Strength', level: 1, progress: 0, description: 'Physical power and output, built through demanding workouts.' },

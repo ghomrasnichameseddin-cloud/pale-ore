@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { Plus } from 'lucide-react';
 
 export const ExecuteQuestForm: React.FC = () => {
-  const { state, addQuest, systemDate } = usePOS();
+  const { state, addQuest, systemDate, selectedListId } = usePOS();
 
   const [newQuestName, setNewQuestName] = useState('');
   const [newQuestType, setNewQuestType] = useState<QuestType>('Main');
   const [newQuestDiff, setNewQuestDiff] = useState<QuestDifficulty>('Normal');
   const [newQuestGoal, setNewQuestGoal] = useState<string>('');
+  const [newQuestListId, setNewQuestListId] = useState<string>('');
   const [newQuestSkills, setNewQuestSkills] = useState<string[]>([]);
   const [newQuestDuration, setNewQuestDuration] = useState<number>(30);
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
@@ -17,6 +18,14 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [newQuestEnergy, setNewQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [newQuestDeadline, setNewQuestDeadline] = useState('');
+
+  useEffect(() => {
+    if (selectedListId) {
+      setNewQuestListId(selectedListId);
+    } else {
+      setNewQuestListId('');
+    }
+  }, [selectedListId]);
 
   // Custom recurrence creation states
   const [customRecurrenceType, setCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -68,6 +77,7 @@ export const ExecuteQuestForm: React.FC = () => {
       goalId: newQuestGoal ? newQuestGoal : null,
       projectId: null,
       milestoneId: null,
+      listId: newQuestListId ? newQuestListId : null,
       relatedSkills: newQuestSkills,
       type: newQuestType,
       recurrence: finalRecurrence,
@@ -122,7 +132,7 @@ export const ExecuteQuestForm: React.FC = () => {
         </div>
 
         {/* Form Options Row */}
-        <div className="grid grid-cols-1 md:grid-cols-8 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-9 gap-4 pt-1">
           {/* Energy level selection */}
           <div>
             <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Energy Req</label>
@@ -211,6 +221,36 @@ export const ExecuteQuestForm: React.FC = () => {
               {state.goals.map(g => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
+            </select>
+          </div>
+
+          {/* List assignment */}
+          <div>
+            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Assign List</label>
+            <select 
+              value={newQuestListId}
+              onChange={(e) => setNewQuestListId(e.target.value)}
+              className="w-full bg-zinc-950 border border-white/10 rounded p-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500 font-mono truncate"
+            >
+              <option value="">No List</option>
+              {(state.folders || []).map(folder => {
+                const folderLists = (state.lists || []).filter(l => l.folderId === folder.id);
+                if (folderLists.length === 0) return null;
+                return (
+                  <optgroup key={folder.id} label={`📁 ${folder.name}`}>
+                    {folderLists.map(l => (
+                      <option key={l.id} value={l.id}>📋 {l.name}</option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+              {(state.lists || []).filter(l => !l.folderId).length > 0 && (
+                <optgroup label="Standalone Lists">
+                  {(state.lists || []).filter(l => !l.folderId).map(l => (
+                    <option key={l.id} value={l.id}>📋 {l.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 

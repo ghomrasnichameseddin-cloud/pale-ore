@@ -15,7 +15,9 @@ export const ActiveDirectives: React.FC = () => {
     startFocusSession, activeFocusSession, stopFocusSession,
     isQuestFinishedForToday,
     isQuestScheduledForDate,
-    systemDate
+    systemDate,
+    selectedFolderId,
+    selectedListId
   } = usePOS();
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
@@ -152,6 +154,7 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestType, setEditQuestType] = useState<QuestType>('Main');
   const [editQuestXp, setEditQuestXp] = useState<number>(100);
   const [editQuestGoal, setEditQuestGoal] = useState<string>('');
+  const [editQuestListId, setEditQuestListId] = useState<string>('');
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [editQuestImportant, setEditQuestImportant] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
@@ -178,6 +181,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestType(quest.type);
     setEditQuestXp(quest.xp);
     setEditQuestGoal(quest.goalId || '');
+    setEditQuestListId(quest.listId || '');
     setEditQuestImportant(quest.important || false);
     setEditQuestDescription(quest.description || '');
     setEditQuestEnergy(quest.energyLevel || 'Medium');
@@ -224,6 +228,7 @@ export const ActiveDirectives: React.FC = () => {
       type: editQuestType,
       xp: editQuestXp,
       goalId: editQuestGoal ? editQuestGoal : null,
+      listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
       important: editQuestImportant,
       description: editQuestDescription,
@@ -234,11 +239,21 @@ export const ActiveDirectives: React.FC = () => {
     setEditingQuestId(null);
   };
 
-  // Filter by Recovery Mode if active
+  // Filter by Recovery Mode, Folder, and List if active
   const baseQuests = state.quests.filter(q => {
+    // 1. Recovery Mode Filter
     if (state.profile.recoveryMode) {
-      return q.type === 'Recovery' || q.type === 'Optional';
+      if (q.type !== 'Recovery' && q.type !== 'Optional') return false;
     }
+
+    // 2. Folder & List filters
+    if (selectedListId) {
+      if (q.listId !== selectedListId) return false;
+    } else if (selectedFolderId) {
+      const listIdsInFolder = (state.lists || []).filter(l => l.folderId === selectedFolderId).map(l => l.id);
+      if (!q.listId || !listIdsInFolder.includes(q.listId)) return false;
+    }
+    
     return true;
   });
 
@@ -382,7 +397,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Recurrence</label>
                 <select 
@@ -410,6 +425,35 @@ export const ActiveDirectives: React.FC = () => {
                   {state.goals.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Parent List</label>
+                <select 
+                  value={editQuestListId}
+                  onChange={(e) => setEditQuestListId(e.target.value)}
+                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-zinc-300 truncate"
+                >
+                  <option value="">No List</option>
+                  {(state.folders || []).map(folder => {
+                    const folderLists = (state.lists || []).filter(l => l.folderId === folder.id);
+                    if (folderLists.length === 0) return null;
+                    return (
+                      <optgroup key={folder.id} label={`📁 ${folder.name}`}>
+                        {folderLists.map(l => (
+                          <option key={l.id} value={l.id}>📋 {l.name}</option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                  {(state.lists || []).filter(l => !l.folderId).length > 0 && (
+                    <optgroup label="Standalone Lists">
+                      {(state.lists || []).filter(l => !l.folderId).map(l => (
+                        <option key={l.id} value={l.id}>📋 {l.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             </div>
@@ -719,6 +763,29 @@ export const ActiveDirectives: React.FC = () => {
                     🎯 {matchedGoal.name}
                   </span>
                 )}
+
+                {/* Folder / List Relation */}
+                {(() => {
+                  if (!quest.listId) return null;
+                  const matchedList = (state.lists || []).find(l => l.id === quest.listId);
+                  if (!matchedList) return null;
+                  const matchedFolder = matchedList.folderId ? (state.folders || []).find(f => f.id === matchedList.folderId) : null;
+                  
+                  return (
+                    <span 
+                      className="text-[9px] font-mono truncate max-w-[180px] px-1.5 py-0.5 rounded flex items-center gap-1 border shrink-0"
+                      style={{
+                        color: matchedFolder?.color || '#22d3ee',
+                        borderColor: matchedFolder?.color ? `${matchedFolder.color}30` : 'rgba(34,211,238,0.2)',
+                        backgroundColor: matchedFolder?.color ? `${matchedFolder.color}10` : 'rgba(34,211,238,0.05)'
+                      }}
+                      title={matchedFolder ? `Folder: ${matchedFolder.name} > List: ${matchedList.name}` : `List: ${matchedList.name}`}
+                    >
+                      <span>📋</span>
+                      <span className="truncate">{matchedFolder ? `${matchedFolder.name} › ${matchedList.name}` : matchedList.name}</span>
+                    </span>
+                  );
+                })()}
 
                 {/* Deadline indicator */}
                 {quest.deadline && (

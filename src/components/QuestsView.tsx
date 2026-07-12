@@ -3,6 +3,7 @@ import { usePOS } from '../POSContext';
 import { Swords, Compass, ShieldAlert, CheckCircle2, Circle } from 'lucide-react';
 import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
+import { QuestDirectory } from './QuestDirectory';
 
 export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
@@ -65,6 +66,9 @@ export const QuestsView: React.FC = () => {
 
         {/* RIGHT COLUMN: METADATA / GUIDE (Takes 1/3 space) */}
         <div className="space-y-6" id="quests-sidebar-container">
+          {/* QUEST TREE DIRECTORY EXPLORER */}
+          <QuestDirectory />
+
           {/* QUESTING SYSTEM GUIDE CARD */}
           <div className="glass-panel rounded-lg p-5 space-y-4" id="quests-guide-panel">
             <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider border-b border-white/5 pb-2">

@@ -45,6 +45,14 @@ interface POSContextType {
   splitQuest: (id: string, questAName: string, questBName: string, xpRatio: number) => void;
   processQuestReview: (id: string, action: 'rollover' | 'postpone' | 'forgive') => void;
   
+  // Folders & Lists CRUD
+  addFolder: (name: string, description?: string, color?: string) => string;
+  updateFolder: (id: string, updates: { name?: string; description?: string; color?: string }) => void;
+  deleteFolder: (id: string) => void;
+  addList: (folderId: string | null, name: string, description?: string) => string;
+  updateList: (id: string, updates: { folderId?: string | null; name?: string; description?: string }) => void;
+  deleteList: (id: string) => void;
+  
   // Subquests CRUD
   addSubQuest: (questId: string, name: string) => void;
   toggleSubQuest: (questId: string, subquestId: string) => void;
@@ -86,6 +94,10 @@ interface POSContextType {
   getWeekdayStr: (dateStr: string) => string;
   systemDate: string;
   setSystemDate: (date: string) => void;
+  selectedFolderId: string | null;
+  setSelectedFolderId: (id: string | null) => void;
+  selectedListId: string | null;
+  setSelectedListId: (id: string | null) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -274,6 +286,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             projects: parsed.projects || [],
             milestones: parsed.milestones || [],
             quests: parsed.quests || [],
+            folders: parsed.folders || [],
+            lists: parsed.lists || [],
             skills: parsed.skills || [],
             attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
             xpHistory: parsed.xpHistory || [],
@@ -290,6 +304,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
   const [activeFocusSession, setActiveFocusSession] = useState<ActiveFocusSession | null>(() => {
     try {
@@ -868,6 +885,75 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentFocus: prev.profile.focusGoalId ? '' : prev.profile.currentFocus
       }
     }));
+  };
+
+  // CRUD FOR FOLDERS & LISTS
+  const addFolder = (name: string, description?: string, color?: string): string => {
+    const id = `f-${Date.now()}`;
+    const newFolder = {
+      id,
+      name,
+      description,
+      color: color || '#22d3ee',
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      folders: [...(prev.folders || []), newFolder]
+    }));
+    return id;
+  };
+
+  const updateFolder = (id: string, updates: { name?: string; description?: string; color?: string }) => {
+    setState(prev => ({
+      ...prev,
+      folders: (prev.folders || []).map(f => f.id === id ? { ...f, ...updates } : f)
+    }));
+  };
+
+  const deleteFolder = (id: string) => {
+    setState(prev => {
+      const updatedLists = (prev.lists || []).map(l => l.folderId === id ? { ...l, folderId: null } : l);
+      return {
+        ...prev,
+        folders: (prev.folders || []).filter(f => f.id !== id),
+        lists: updatedLists
+      };
+    });
+  };
+
+  const addList = (folderId: string | null, name: string, description?: string): string => {
+    const id = `l-${Date.now()}`;
+    const newList = {
+      id,
+      folderId,
+      name,
+      description,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      lists: [...(prev.lists || []), newList]
+    }));
+    return id;
+  };
+
+  const updateList = (id: string, updates: { folderId?: string | null; name?: string; description?: string }) => {
+    setState(prev => ({
+      ...prev,
+      lists: (prev.lists || []).map(l => l.id === id ? { ...l, ...updates } : l)
+    }));
+  };
+
+  const deleteList = (id: string) => {
+    setState(prev => {
+      const updatedQuests = (prev.quests || []).map(q => q.listId === id ? { ...q, listId: null } : q);
+      return {
+        ...prev,
+        lists: (prev.lists || []).filter(l => l.id !== id),
+        quests: updatedQuests
+      };
+    });
   };
 
   // CRUD FOR PROJECTS
@@ -1775,6 +1861,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mergeQuests,
       splitQuest,
       processQuestReview,
+      addFolder,
+      updateFolder,
+      deleteFolder,
+      addList,
+      updateList,
+      deleteList,
       addSubQuest,
       toggleSubQuest,
       deleteSubQuest,
@@ -1804,7 +1896,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isQuestScheduledForDate,
       getWeekdayStr,
       systemDate: state.systemDate || new Date().toISOString().split('T')[0],
-      setSystemDate
+      setSystemDate,
+      selectedFolderId,
+      setSelectedFolderId,
+      selectedListId,
+      setSelectedListId
     }}>
       {children}
     </POSContext.Provider>

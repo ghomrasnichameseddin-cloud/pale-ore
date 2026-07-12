@@ -37,6 +37,22 @@ export interface Milestone {
   createdAt: string;
 }
 
+export interface QuestFolder {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string; // hex or tailwind color class
+  createdAt: string;
+}
+
+export interface QuestList {
+  id: string;
+  folderId: string | null; // Belongs to a folder, or null (standalone)
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
 export type QuestDifficulty = 'Easy' | 'Normal' | 'Hard' | 'Boss' | 'Custom';
 export type QuestType = 'Main' | 'Side' | 'Boss' | 'Optional' | 'Habit' | 'Recovery' | 'Milestone' | string;
 export type QuestRecurrence = 'None' | 'Daily' | 'Every 2 Days' | 'Weekly' | 'Monthly' | string;
@@ -51,6 +67,7 @@ export interface Quest {
   goalId: string | null;
   projectId: string | null;
   milestoneId: string | null;
+  listId?: string | null; // Belongs to a QuestList, or null
   relatedSkills: string[]; // skill IDs
   type: QuestType;
   recurrence?: QuestRecurrence;
@@ -122,6 +139,8 @@ export interface POSState {
   projects: Project[];
   milestones: Milestone[];
   quests: Quest[];
+  folders: QuestFolder[];
+  lists: QuestList[];
   skills: Skill[];
   attributes: Attribute[];
   profile: UserProfile;
