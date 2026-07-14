@@ -4,6 +4,13 @@ import {
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession
 } from './types';
 import { INITIAL_STATE } from './initialState';
+import { auth, db } from './lib/firebase';
+import { 
+  onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, 
+  signOut, User, updateProfile
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface POSContextType {
   state: POSState;
@@ -98,6 +105,15 @@ interface POSContextType {
   setSelectedFolderId: (id: string | null) => void;
   selectedListId: string | null;
   setSelectedListId: (id: string | null) => void;
+
+  // Firebase Cloud Synchronization
+  user: User | null;
+  authLoading: boolean;
+  cloudSyncStatus: 'offline' | 'loading' | 'synced' | 'syncing' | 'error';
+  signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  linkAccountWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
+  signOutUser: () => Promise<void>;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -304,6 +320,151 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  // Firebase state
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'offline' | 'loading' | 'synced' | 'syncing' | 'error'>('offline');
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState<boolean>(false);
+
+  // Auth State Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setAuthLoading(true);
+      if (u) {
+        setUser(u);
+        setCloudSyncStatus('loading');
+        try {
+          const userDocRef = doc(db, 'users', u.uid);
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Partial<POSState>;
+            setState((prev) => {
+              return {
+                ...INITIAL_STATE,
+                ...prev,
+                ...data,
+                profile: {
+                  ...INITIAL_STATE.profile,
+                  ...prev.profile,
+                  ...(data.profile || {})
+                },
+                goals: data.goals || [],
+                projects: data.projects || [],
+                milestones: data.milestones || [],
+                quests: data.quests || [],
+                folders: data.folders || [],
+                lists: data.lists || [],
+                skills: data.skills || [],
+                attributes: (data.attributes && data.attributes.length > 0) ? data.attributes : (prev.attributes || INITIAL_STATE.attributes),
+                xpHistory: data.xpHistory || [],
+                systemDate: data.systemDate || prev.systemDate || INITIAL_STATE.systemDate
+              };
+            });
+            setCloudSyncStatus('synced');
+          } else {
+            // New user - push existing state to the cloud
+            await setDoc(userDocRef, state);
+            setCloudSyncStatus('synced');
+          }
+          setIsInitialLoadComplete(true);
+        } catch (err) {
+          console.error('Error fetching Firestore user state:', err);
+          setCloudSyncStatus('error');
+          setIsInitialLoadComplete(true);
+        }
+      } else {
+        setUser(null);
+        setCloudSyncStatus('offline');
+        try {
+          await signInAnonymously(auth);
+        } catch (err) {
+          console.error('Error signing in anonymously:', err);
+        }
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync to Cloud Effect with Debounce
+  useEffect(() => {
+    if (!user || !isInitialLoadComplete) return;
+
+    setCloudSyncStatus('syncing');
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, state);
+        setCloudSyncStatus('synced');
+      } catch (err) {
+        console.error('Error syncing to Firestore:', err);
+        setCloudSyncStatus('error');
+      }
+    }, 1500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [state, user, isInitialLoadComplete]);
+
+  const signUpWithEmail = async (email: string, password: string, displayName: string) => {
+    try {
+      setCloudSyncStatus('loading');
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      if (credential.user) {
+        await updateProfile(credential.user, { displayName });
+      }
+    } catch (err) {
+      console.error('SignUp error:', err);
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setCloudSyncStatus('loading');
+      setIsInitialLoadComplete(false);
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      console.error('SignIn error:', err);
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const linkAccountWithEmail = async (email: string, password: string, displayName: string) => {
+    try {
+      setCloudSyncStatus('loading');
+      if (!auth.currentUser) throw new Error('No user is currently logged in');
+      
+      const credential = EmailAuthProvider.credential(email, password);
+      const userCredential = await linkWithCredential(auth.currentUser, credential);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, { displayName });
+        setUser(userCredential.user);
+        const userDocRef = doc(db, 'users', userCredential.user.uid);
+        await setDoc(userDocRef, state);
+        setCloudSyncStatus('synced');
+      }
+    } catch (err) {
+      console.error('Account link error:', err);
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const signOutUser = async () => {
+    try {
+      setCloudSyncStatus('loading');
+      setIsInitialLoadComplete(false);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      await signOut(auth);
+      setState(INITIAL_STATE);
+    } catch (err) {
+      console.error('SignOut error:', err);
+      setCloudSyncStatus('error');
+    }
+  };
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -1900,7 +2061,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedFolderId,
       setSelectedFolderId,
       selectedListId,
-      setSelectedListId
+      setSelectedListId,
+      user,
+      authLoading,
+      cloudSyncStatus,
+      signUpWithEmail,
+      signInWithEmail,
+      linkAccountWithEmail,
+      signOutUser
     }}>
       {children}
     </POSContext.Provider>

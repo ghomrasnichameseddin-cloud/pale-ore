@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
-  Check, ShieldAlert, Award
+  Check, ShieldAlert, Award, Cloud, CloudOff, RefreshCw,
+  Lock, Mail, User, Key, LogIn, UserPlus, LogOut
 } from 'lucide-react';
 
 export const SystemView: React.FC = () => {
   const { 
-    state, exportData, importData, resetAllData, resetLevelAndXp, clearAllQuests, resetBaselineAttributes, updateAttributeBase, getAttributes 
+    state, exportData, importData, resetAllData, resetLevelAndXp, 
+    clearAllQuests, resetBaselineAttributes, updateAttributeBase, 
+    getAttributes, user, authLoading, cloudSyncStatus,
+    signUpWithEmail, signInWithEmail, linkAccountWithEmail, signOutUser
   } = usePOS();
 
   const [importJson, setImportJson] = useState('');
@@ -16,6 +20,17 @@ export const SystemView: React.FC = () => {
   const [showLevelResetConfirm, setShowLevelResetConfirm] = useState(false);
   const [showQuestsResetConfirm, setShowQuestsResetConfirm] = useState(false);
   const [showAttrResetConfirm, setShowAttrResetConfirm] = useState(false);
+
+  // Cloud auth forms state
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authAction, setAuthAction] = useState<'login' | 'register' | 'link'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   // Handle export click
   const handleExport = () => {
@@ -26,6 +41,62 @@ export const SystemView: React.FC = () => {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  // Handle auth submission
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    setFormSubmitting(true);
+
+    try {
+      if (authAction === 'login') {
+        await signInWithEmail(email, password);
+        setAuthSuccess('Successfully authenticated! Synchronizing your cloud data...');
+        setTimeout(() => {
+          setShowAuthForm(false);
+          setEmail('');
+          setPassword('');
+          setDisplayName('');
+          setAuthSuccess('');
+        }, 2000);
+      } else if (authAction === 'register') {
+        await signUpWithEmail(email, password, displayName);
+        setAuthSuccess('Account registered successfully! Your data is secure on the cloud.');
+        setTimeout(() => {
+          setShowAuthForm(false);
+          setEmail('');
+          setPassword('');
+          setDisplayName('');
+          setAuthSuccess('');
+        }, 2000);
+      } else if (authAction === 'link') {
+        await linkAccountWithEmail(email, password, displayName);
+        setAuthSuccess('Account successfully upgraded! Your offline progress is permanently stored.');
+        setTimeout(() => {
+          setShowAuthForm(false);
+          setEmail('');
+          setPassword('');
+          setDisplayName('');
+          setAuthSuccess('');
+        }, 2000);
+      }
+    } catch (err: any) {
+      let friendlyError = err?.message || 'Authentication operation failed.';
+      if (err?.code === 'auth/email-already-in-use') {
+        friendlyError = 'This email is already in use. Please try logging in instead.';
+      } else if (err?.code === 'auth/invalid-credential') {
+        friendlyError = 'Invalid email or password combination.';
+      } else if (err?.code === 'auth/weak-password') {
+        friendlyError = 'Password must be at least 6 characters.';
+      } else if (err?.code === 'auth/credential-already-in-use') {
+        friendlyError = 'This email is already linked to another user account.';
+      }
+      setAuthError(friendlyError);
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   // Handle JSON Import
@@ -64,6 +135,279 @@ export const SystemView: React.FC = () => {
         <p className="text-xs text-zinc-400 font-mono mt-1">
           CORE_CONTROLS • Direct override controls of the progression database
         </p>
+      </div>
+
+      {/* CLOUD SYNCHRONIZATION CONTROL PORTAL */}
+      <div className="glass-panel rounded-lg p-6 border border-cyan-500/25 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)] space-y-4 relative overflow-hidden animate-fadeIn" id="cloud-sync-portal">
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)] bg-[size:100%_4px]" />
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-white/5">
+          <div>
+            <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Cloud className="h-4 w-4 text-cyan-400" />
+              SECURE CLOUD SYNCHRONIZATION
+            </h3>
+            <p className="text-[11px] text-zinc-500 font-mono mt-0.5">PREVENT_DATA_LOSS • Keeps your operational progress alive across sessions and devices</p>
+          </div>
+
+          {/* Sync Status Badge */}
+          {authLoading ? (
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-white/5 px-2.5 py-1 rounded">
+              <RefreshCw className="h-3 w-3 animate-spin text-cyan-400" />
+              CONNECTING_SECURE_NODE...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {cloudSyncStatus === 'synced' && (
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/50 border border-cyan-500/25 px-2.5 py-1 rounded font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  SYS_ONLINE_SYNCED
+                </span>
+              )}
+              {cloudSyncStatus === 'syncing' && (
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400 bg-amber-950/50 border border-amber-500/25 px-2.5 py-1 rounded font-bold">
+                  <RefreshCw className="h-3 w-3 animate-spin text-amber-400" />
+                  UPLOADING_DUMPLOGS...
+                </span>
+              )}
+              {cloudSyncStatus === 'loading' && (
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-white/10 px-2.5 py-1 rounded">
+                  <RefreshCw className="h-3 w-3 animate-spin text-zinc-500" />
+                  LOADING_ARCHIVE...
+                </span>
+              )}
+              {cloudSyncStatus === 'error' && (
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 bg-rose-950/50 border border-rose-500/25 px-2.5 py-1 rounded font-bold">
+                  <CloudOff className="h-3.5 w-3.5" />
+                  SYNC_DISRUPTED
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sync Info Body */}
+        {!authLoading && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-1 md:col-span-2">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase">ACTIVE_CREDENTIAL_STATUS</span>
+                <div className="flex items-center gap-2 mt-1">
+                  {user?.isAnonymous ? (
+                    <div className="space-y-1">
+                      <span className="text-xs font-sans font-bold text-amber-400 flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5 animate-pulse" /> Temporary Guest Session
+                      </span>
+                      <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                        Your progress is currently saved in the cloud under an anonymous index. <strong>WARNING:</strong> If you clear your browser cache, log out, or use another browser/device, you will lose access to this progress! Use the buttons on the right to claim a permanent account.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="text-xs font-sans font-bold text-cyan-400 flex items-center gap-1">
+                        <Check className="h-3.5 w-3.5" /> Fully Secured Account
+                      </span>
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Logged in as: <strong className="text-white font-mono">{user?.email}</strong> {user?.displayName && ` (${user.displayName})`}. Your stats, attributes, and quest matrices are perfectly archived on our cloud server and synchronized instantly.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-center gap-2">
+                {user?.isAnonymous ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setAuthAction('link');
+                        setShowAuthForm(true);
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className="w-full bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      UPGRADE_TO_EMAIL_AUTH
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAuthAction('login');
+                        setShowAuthForm(true);
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className="w-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <LogIn className="h-3.5 w-3.5" />
+                      SIGN_IN_EXISTING
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    {showSignOutConfirm ? (
+                      <div className="bg-rose-950/20 border border-rose-500/30 p-2 rounded-lg text-center space-y-2">
+                        <span className="text-[9px] font-mono text-rose-400 block">LOSE LOCAL PROGRESS CACHE?</span>
+                        <div className="flex justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowSignOutConfirm(false)}
+                            className="text-[9px] font-mono text-zinc-400 hover:text-white cursor-pointer"
+                          >
+                            CANCEL
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await signOutUser();
+                              setShowSignOutConfirm(false);
+                            }}
+                            className="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500/30 text-[9px] font-mono px-2 py-0.5 rounded cursor-pointer"
+                          >
+                            CONFIRM_LOGOUT
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowSignOutConfirm(true)}
+                        className="w-full bg-rose-950/10 hover:bg-rose-950/30 border border-rose-500/10 hover:border-rose-500/30 text-rose-400 text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        TERMINATE_SESSION
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* COLLAPSIBLE AUTH FORMS */}
+            {showAuthForm && (
+              <div className="p-5 bg-zinc-900/60 border border-white/5 rounded-lg space-y-4 animate-fadeIn relative">
+                <button
+                  onClick={() => setShowAuthForm(false)}
+                  className="absolute top-4 right-4 text-zinc-500 hover:text-white text-xs font-mono cursor-pointer"
+                >
+                  [CLOSE_X]
+                </button>
+
+                <div className="flex gap-4 border-b border-white/5 pb-2.5">
+                  <button
+                    onClick={() => { setAuthAction('login'); setAuthError(''); setAuthSuccess(''); }}
+                    className={`text-xs font-mono pb-1 border-b-2 transition cursor-pointer ${
+                      authAction === 'login' ? 'text-cyan-400 border-cyan-400 font-bold' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                    }`}
+                  >
+                    1. LOGIN_PORTAL
+                  </button>
+                  {user?.isAnonymous ? (
+                    <button
+                      onClick={() => { setAuthAction('link'); setAuthError(''); setAuthSuccess(''); }}
+                      className={`text-xs font-mono pb-1 border-b-2 transition cursor-pointer ${
+                        authAction === 'link' ? 'text-cyan-400 border-cyan-400 font-bold' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                      }`}
+                    >
+                      2. UPGRADE_GUEST_SESSION
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setAuthAction('register'); setAuthError(''); setAuthSuccess(''); }}
+                      className={`text-xs font-mono pb-1 border-b-2 transition cursor-pointer ${
+                        authAction === 'register' ? 'text-cyan-400 border-cyan-400 font-bold' : 'text-zinc-500 border-transparent hover:text-zinc-300'
+                      }`}
+                    >
+                      2. CREATE_NEW_ACCOUNT
+                    </button>
+                  )}
+                </div>
+
+                <form onSubmit={handleAuthSubmit} className="space-y-3 max-w-md">
+                  {authAction === 'link' && (
+                    <p className="text-[10px] text-cyan-400/80 font-mono italic leading-relaxed">
+                      This will convert your current anonymous workspace and transfer all existing achievements, levels, goals, and quest grids to this secure email credential.
+                    </p>
+                  )}
+
+                  {(authAction === 'register' || authAction === 'link') && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                        <User className="h-3 w-3" /> Display Name / Callsign
+                      </label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="e.g. Operator-7"
+                        className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="operator@pos-net.com"
+                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                      <Lock className="h-3 w-3" /> Secure Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+
+                  {authError && (
+                    <div className="text-[11px] font-mono text-rose-400 bg-rose-950/20 border border-rose-500/20 p-2.5 rounded">
+                      <ShieldAlert className="h-3.5 w-3.5 inline mr-1" /> {authError}
+                    </div>
+                  )}
+
+                  {authSuccess && (
+                    <div className="text-[11px] font-mono text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 p-2.5 rounded">
+                      <Check className="h-3.5 w-3.5 inline mr-1" /> {authSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={formSubmitting}
+                    className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 text-xs font-mono px-4 py-2 rounded transition-colors uppercase flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    {formSubmitting ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        PROCESSING_SECURE_CHANNEL...
+                      </>
+                    ) : (
+                      <>
+                        <Key className="h-3.5 w-3.5" />
+                        {authAction === 'login' ? 'AUTHENTICATE_CREDENTIALS' : authAction === 'link' ? 'UPGRADE_GUEST_ACCOUNT' : 'PROVISION_NEW_ACCOUNT'}
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
