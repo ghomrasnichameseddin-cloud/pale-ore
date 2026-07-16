@@ -338,6 +338,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setAuthLoading(true);
+      setIsInitialLoadComplete(false);
       if (u) {
         setUser(u);
         setCloudSyncStatus('loading');
