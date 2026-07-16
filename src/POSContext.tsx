@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession
@@ -319,6 +319,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_STATE;
   });
 
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
@@ -366,7 +371,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCloudSyncStatus('synced');
           } else {
             // New user - push existing state to the cloud
-            await setDoc(userDocRef, state);
+            await setDoc(userDocRef, stateRef.current);
             setCloudSyncStatus('synced');
           }
           setIsInitialLoadComplete(true);
@@ -431,6 +436,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.error('SignIn error:', err);
       setCloudSyncStatus('error');
+      setIsInitialLoadComplete(true);
       throw err;
     }
   };
@@ -444,6 +450,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (err) {
       console.error('Google Sign-In error:', err);
       setCloudSyncStatus('error');
+      setIsInitialLoadComplete(true);
       throw err;
     }
   };
