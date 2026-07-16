@@ -158,6 +158,12 @@ export const SystemView: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-2">
+              {cloudSyncStatus === 'offline' && (
+                <span className="flex items-center gap-1.5 text-[10px] font-mono text-rose-400 bg-rose-950/50 border border-rose-500/25 px-2.5 py-1 rounded font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  SYS_LOCAL_ONLY
+                </span>
+              )}
               {cloudSyncStatus === 'synced' && (
                 <span className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-950/50 border border-cyan-500/25 px-2.5 py-1 rounded font-bold">
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -193,7 +199,20 @@ export const SystemView: React.FC = () => {
               <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-1 md:col-span-2">
                 <span className="text-[10px] font-mono text-zinc-500 uppercase">ACTIVE_CREDENTIAL_STATUS</span>
                 <div className="flex items-center gap-2 mt-1">
-                  {user?.isAnonymous ? (
+                  {!user ? (
+                    <div className="space-y-1">
+                      <span className="text-xs font-sans font-bold text-rose-400 flex items-center gap-1">
+                        <ShieldAlert className="h-3.5 w-3.5 animate-pulse" /> Unconnected Session (Local Storage Only)
+                      </span>
+                      <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                        Your browser is currently blocking Firebase cloud access (typically caused by cookie blocking or security settings in preview iframes). Your progress is currently stored <strong>only on this device</strong>.
+                        <span className="text-amber-400 block mt-1 font-bold">⚠️ CRITICAL: Clearing your browser history, cache, or cookies will delete your local progress.</span>
+                      </p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1">
+                        To resolve: Open the application in a <strong>New Tab</strong> (using the link in the top-right of your preview frame) and register an account below to sync securely to the cloud.
+                      </p>
+                    </div>
+                  ) : user.isAnonymous ? (
                     <div className="space-y-1">
                       <span className="text-xs font-sans font-bold text-amber-400 flex items-center gap-1">
                         <AlertTriangle className="h-3.5 w-3.5 animate-pulse" /> Temporary Guest Session
@@ -208,7 +227,7 @@ export const SystemView: React.FC = () => {
                         <Check className="h-3.5 w-3.5" /> Fully Secured Account
                       </span>
                       <p className="text-[10px] text-zinc-400 font-sans">
-                        Logged in as: <strong className="text-white font-mono">{user?.email}</strong> {user?.displayName && ` (${user.displayName})`}. Your stats, attributes, and quest matrices are perfectly archived on our cloud server and synchronized instantly.
+                        Logged in as: <strong className="text-white font-mono">{user.email}</strong> {user.displayName && ` (${user.displayName})`}. Your stats, attributes, and quest matrices are perfectly archived on our cloud server and synchronized instantly.
                       </p>
                     </div>
                   )}
@@ -216,7 +235,34 @@ export const SystemView: React.FC = () => {
               </div>
 
               <div className="flex flex-col justify-center gap-2">
-                {user?.isAnonymous ? (
+                {!user ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setAuthAction('register');
+                        setShowAuthForm(true);
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className="w-full bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      CREATE_NEW_ACCOUNT
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAuthAction('login');
+                        setShowAuthForm(true);
+                        setAuthError('');
+                        setAuthSuccess('');
+                      }}
+                      className="w-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <LogIn className="h-3.5 w-3.5" />
+                      SIGN_IN_EXISTING
+                    </button>
+                  </>
+                ) : user.isAnonymous ? (
                   <>
                     <button
                       onClick={() => {
