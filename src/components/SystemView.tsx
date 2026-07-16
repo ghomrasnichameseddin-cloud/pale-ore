@@ -3,7 +3,7 @@ import { usePOS } from '../POSContext';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
   Check, ShieldAlert, Award, Cloud, CloudOff, RefreshCw,
-  Lock, Mail, User, Key, LogIn, UserPlus, LogOut
+  Lock, Mail, User, Key, LogIn, UserPlus, LogOut, Chrome
 } from 'lucide-react';
 
 export const SystemView: React.FC = () => {
@@ -11,7 +11,8 @@ export const SystemView: React.FC = () => {
     state, exportData, importData, resetAllData, resetLevelAndXp, 
     clearAllQuests, resetBaselineAttributes, updateAttributeBase, 
     getAttributes, user, authLoading, cloudSyncStatus,
-    signUpWithEmail, signInWithEmail, linkAccountWithEmail, signOutUser
+    signUpWithEmail, signInWithEmail, signInWithGoogle,
+    linkAccountWithEmail, linkAccountWithGoogle, signOutUser
   } = usePOS();
 
   const [importJson, setImportJson] = useState('');
@@ -92,6 +93,37 @@ export const SystemView: React.FC = () => {
         friendlyError = 'Password must be at least 6 characters.';
       } else if (err?.code === 'auth/credential-already-in-use') {
         friendlyError = 'This email is already linked to another user account.';
+      }
+      setAuthError(friendlyError);
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const handleGoogleAuth = async (action: 'login' | 'link') => {
+    setAuthError('');
+    setAuthSuccess('');
+    setFormSubmitting(true);
+    try {
+      if (action === 'login') {
+        await signInWithGoogle();
+        setAuthSuccess('Successfully authenticated with Google! Synchronizing your cloud data...');
+      } else {
+        await linkAccountWithGoogle();
+        setAuthSuccess('Account successfully linked to Google! Your offline progress is permanently stored.');
+      }
+      setTimeout(() => {
+        setShowAuthForm(false);
+        setAuthSuccess('');
+      }, 2000);
+    } catch (err: any) {
+      let friendlyError = err?.message || 'Google Authentication operation failed.';
+      if (err?.code === 'auth/popup-blocked') {
+        friendlyError = 'Pop-up blocked. Please open this application in a New Tab (top right corner button of the frame) to authenticate via Google popup.';
+      } else if (err?.code === 'auth/popup-closed-by-user') {
+        friendlyError = 'Sign-in pop-up closed before completion.';
+      } else if (err?.code === 'auth/operation-not-allowed') {
+        friendlyError = 'Google Sign-In is not enabled. If you have admin access, enable Google Provider in your Firebase Console (Authentication > Sign-in method). Otherwise, try Registering / Logging in with Email.';
       }
       setAuthError(friendlyError);
     } finally {
@@ -261,6 +293,13 @@ export const SystemView: React.FC = () => {
                       <LogIn className="h-3.5 w-3.5" />
                       SIGN_IN_EXISTING
                     </button>
+                    <button
+                      onClick={() => handleGoogleAuth('login')}
+                      className="w-full bg-red-950/40 hover:bg-red-950/60 border border-red-500/30 hover:border-red-500/50 text-red-300 text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Chrome className="h-3.5 w-3.5 text-red-400" />
+                      SIGN_IN_WITH_GOOGLE
+                    </button>
                   </>
                 ) : user.isAnonymous ? (
                   <>
@@ -287,6 +326,13 @@ export const SystemView: React.FC = () => {
                     >
                       <LogIn className="h-3.5 w-3.5" />
                       SIGN_IN_EXISTING
+                    </button>
+                    <button
+                      onClick={() => handleGoogleAuth('link')}
+                      className="w-full bg-red-950/40 hover:bg-red-950/60 border border-red-500/30 hover:border-red-500/50 text-red-300 text-xs font-mono py-2 rounded transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Chrome className="h-3.5 w-3.5 text-red-400" />
+                      LINK_WITH_GOOGLE
                     </button>
                   </>
                 ) : (

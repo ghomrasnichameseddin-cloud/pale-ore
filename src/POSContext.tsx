@@ -8,7 +8,7 @@ import { auth, db } from './lib/firebase';
 import { 
   onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, linkWithCredential, EmailAuthProvider, 
-  signOut, User, updateProfile
+  signOut, User, updateProfile, GoogleAuthProvider, signInWithPopup, linkWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -112,7 +112,9 @@ interface POSContextType {
   cloudSyncStatus: 'offline' | 'loading' | 'synced' | 'syncing' | 'error';
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   linkAccountWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
+  linkAccountWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
 }
 
@@ -433,6 +435,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setCloudSyncStatus('loading');
+      setIsInitialLoadComplete(false);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      console.error('Google Sign-In error:', err);
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
   const linkAccountWithEmail = async (email: string, password: string, displayName: string) => {
     try {
       setCloudSyncStatus('loading');
@@ -449,6 +464,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (err) {
       console.error('Account link error:', err);
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const linkAccountWithGoogle = async () => {
+    try {
+      setCloudSyncStatus('loading');
+      if (!auth.currentUser) throw new Error('No user is currently logged in');
+      
+      const provider = new GoogleAuthProvider();
+      const userCredential = await linkWithPopup(auth.currentUser, provider);
+      if (userCredential.user) {
+        setUser(userCredential.user);
+        const userDocRef = doc(db, 'users', userCredential.user.uid);
+        await setDoc(userDocRef, state);
+        setCloudSyncStatus('synced');
+      }
+    } catch (err) {
+      console.error('Google link error:', err);
       setCloudSyncStatus('error');
       throw err;
     }
@@ -2068,7 +2103,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cloudSyncStatus,
       signUpWithEmail,
       signInWithEmail,
+      signInWithGoogle,
       linkAccountWithEmail,
+      linkAccountWithGoogle,
       signOutUser
     }}>
       {children}
