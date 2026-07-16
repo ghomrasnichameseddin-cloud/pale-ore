@@ -378,8 +378,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCloudSyncStatus('offline');
         try {
           await signInAnonymously(auth);
-        } catch (err) {
-          console.error('Error signing in anonymously:', err);
+        } catch (err: any) {
+          console.warn('Anonymous authentication is restricted or disabled on the server. Running in secure local-only mode:', err?.message || err);
+          setIsInitialLoadComplete(true);
         }
       }
       setAuthLoading(false);
