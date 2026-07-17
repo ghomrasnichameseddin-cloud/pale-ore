@@ -22,7 +22,7 @@ function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
 
-  const { state, getPlayerLevelInfo, systemDate, setSystemDate, cloudSyncStatus } = usePOS();
+  const { state, getPlayerLevelInfo, systemDate, setSystemDate } = usePOS();
   const playerInfo = getPlayerLevelInfo();
 
   const shiftDate = (days: number) => {
@@ -179,30 +179,11 @@ function AppContent() {
             </div>
 
             <div className="flex justify-between items-center pt-1.5 border-t border-white/5 text-[8px] font-mono">
-              <span className="text-zinc-500 uppercase">CLOUD_BACKUP</span>
-              {cloudSyncStatus === 'synced' ? (
-                <span className="text-cyan-400 font-bold flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  ONLINE
-                </span>
-              ) : cloudSyncStatus === 'syncing' ? (
-                <span className="text-amber-400 font-bold flex items-center gap-1">
-                  <RefreshCw className="h-2.5 w-2.5 animate-spin text-amber-400" />
-                  SYNCING
-                </span>
-              ) : cloudSyncStatus === 'loading' ? (
-                <span className="text-zinc-400 font-bold flex items-center gap-1">
-                  <RefreshCw className="h-2.5 w-2.5 animate-spin text-zinc-500" />
-                  LOADING
-                </span>
-              ) : cloudSyncStatus === 'error' ? (
-                <span className="text-rose-400 font-bold flex items-center gap-1">
-                  <CloudOff className="h-2.5 w-2.5" />
-                  DISRUPTED
-                </span>
-              ) : (
-                <span className="text-zinc-500">OFFLINE</span>
-              )}
+              <span className="text-zinc-500 uppercase">STORAGE_MODE</span>
+              <span className="text-cyan-400 font-bold flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                LOCAL_OFFLINE (JSON_BAK)
+              </span>
             </div>
           </div>
 
