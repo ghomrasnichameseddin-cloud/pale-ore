@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { usePOS } from '../POSContext';
 import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
@@ -16,6 +16,8 @@ export const ActiveDirectives: React.FC = () => {
     isQuestFinishedForToday,
     isQuestScheduledForDate,
     systemDate,
+    setSystemDate,
+    updateProfileFocus,
     selectedFolderId,
     selectedListId
   } = usePOS();
@@ -30,6 +32,12 @@ export const ActiveDirectives: React.FC = () => {
   const [bulkInputText, setBulkInputText] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [terminalLog, setTerminalLog] = useState<string | null>(null);
+
+  // Command History & Intellisense State
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   const parseBulkQuestLine = (line: string) => {
     let name = line.trim();
@@ -81,6 +89,52 @@ export const ActiveDirectives: React.FC = () => {
       }
     }
 
+    // Match skill tags starting with @
+    const skillMatches = name.match(/@([a-zA-Z0-9_-]+)/g);
+    const relatedSkills: string[] = [];
+    if (skillMatches) {
+      for (const tag of skillMatches) {
+        const skillName = tag.slice(1);
+        const skill = state.skills.find(s => s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === skillName.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        if (skill) {
+          relatedSkills.push(skill.id);
+        }
+        name = name.replace(tag, '').trim();
+      }
+    }
+
+    // Match project tags starting with #
+    const projectMatches = name.match(/#([a-zA-Z0-9_-]+)/g);
+    let projectId: string | null = null;
+    let goalId: string | null = null;
+    if (projectMatches) {
+      for (const tag of projectMatches) {
+        const projName = tag.slice(1);
+        const project = state.projects.find(p => p.name.toLowerCase().replace(/[^a-z0-9]/g, '') === projName.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        if (project) {
+          projectId = project.id;
+          goalId = project.goalId || null;
+        }
+        name = name.replace(tag, '').trim();
+      }
+    }
+
+    // Match goal tags starting with /
+    const goalMatches = name.match(/\/([a-zA-Z0-9_-]+)/g);
+    if (goalMatches) {
+      for (const tag of goalMatches) {
+        const gName = tag.slice(1);
+        if (['help', 'complete', 'fail', 'delete', 'focus', 'simulate', 'sim'].includes(gName.toLowerCase())) {
+          continue;
+        }
+        const goal = state.goals.find(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '') === gName.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        if (goal) {
+          goalId = goal.id;
+        }
+        name = name.replace(tag, '').trim();
+      }
+    }
+
     name = name.replace(/\s+/g, ' ').trim();
     if (!name) return null;
 
@@ -95,14 +149,14 @@ export const ActiveDirectives: React.FC = () => {
 
     return {
       name,
-      description: "Bulk logged via Pale Ore Terminal.",
+      description: "Logged via Pale Ore Terminal.",
       difficulty,
       estimatedTime: 30,
       xp,
-      goalId: null,
-      projectId: null,
+      goalId,
+      projectId,
       milestoneId: null,
-      relatedSkills: [],
+      relatedSkills,
       type: qType,
       recurrence,
       deadline: systemDate,
@@ -116,14 +170,137 @@ export const ActiveDirectives: React.FC = () => {
     const text = quickInputText.trim();
     if (!text) return;
 
-    const parsed = parseBulkQuestLine(text);
+    // Save to history list
+    setCommandHistory(prev => {
+      const filtered = prev.filter(h => h !== text);
+      return [text, ...filtered].slice(0, 50);
+    });
+    setHistoryIndex(-1);
+
+    const words = text.split(' ');
+    const firstWord = words[0].toLowerCase();
+    const restText = words.slice(1).join(' ').trim();
+
+    if (firstWord === 'help' || text === '?') {
+      setTerminalLog(`[HELP] Commands: add <directive> | complete <query> | fail <query> | delete <query> | focus <text> [/goal] | simulate <days>`);
+      setQuickInputText('');
+      return;
+    }
+
+    if (firstWord === 'complete' || firstWord === 'done') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: complete <quest name or id>`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.status === 'Active' && 
+        (q.id.toLowerCase() === restText.toLowerCase() || q.name.toLowerCase().includes(restText.toLowerCase()))
+      );
+      if (matched) {
+        completeQuest(matched.id);
+        setTerminalLog(`[SUCCESS] RESOLVED: "${matched.name}" completed.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Active quest matching "${restText}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    if (firstWord === 'fail' || firstWord === 'skip') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: fail <quest name or id>`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.status === 'Active' && 
+        (q.id.toLowerCase() === restText.toLowerCase() || q.name.toLowerCase().includes(restText.toLowerCase()))
+      );
+      if (matched) {
+        failQuest(matched.id);
+        setTerminalLog(`[SUCCESS] DIRECTIVE_FAILED: "${matched.name}". Recovery operations initiated.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Active quest matching "${restText}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    if (firstWord === 'delete' || firstWord === 'rm') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: delete <quest name or id>`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.id.toLowerCase() === restText.toLowerCase() || q.name.toLowerCase().includes(restText.toLowerCase())
+      );
+      if (matched) {
+        deleteQuest(matched.id);
+        setTerminalLog(`[SUCCESS] DELETED: "${matched.name}" removed from log.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Quest matching "${restText}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    if (firstWord === 'focus') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: focus <focus statement> [/linked_goal]`);
+        return;
+      }
+      let focusMsg = restText;
+      let linkedGoalId: string | null = null;
+      const goalMatch = restText.match(/\/([a-zA-Z0-9_-]+)/);
+      if (goalMatch) {
+        const goalSlug = goalMatch[1];
+        const matchedGoal = state.goals.find(g => 
+          g.name.toLowerCase().replace(/[^a-z0-9]/g, '') === goalSlug.toLowerCase().replace(/[^a-z0-9]/g, '')
+        );
+        if (matchedGoal) {
+          linkedGoalId = matchedGoal.id;
+        }
+        focusMsg = restText.replace(goalMatch[0], '').trim();
+      }
+      updateProfileFocus(focusMsg, linkedGoalId);
+      setTerminalLog(`[SUCCESS] SYSTEM_FOCUS: Updated focus to "${focusMsg}".`);
+      setQuickInputText('');
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    if (firstWord === 'simulate' || firstWord === 'sim') {
+      const days = parseInt(restText, 10);
+      if (isNaN(days) || days <= 0) {
+        setTerminalLog(`[ERROR] Usage: simulate <days>`);
+        return;
+      }
+      const currentDateObj = new Date(systemDate);
+      currentDateObj.setDate(currentDateObj.getDate() + days);
+      const newDateStr = currentDateObj.toISOString().split('T')[0];
+      setSystemDate(newDateStr);
+      setTerminalLog(`[SUCCESS] CHRONO_SHIFT: Advanced ${days} day(s) to ${newDateStr}.`);
+      setQuickInputText('');
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    // Default to adding a quest (either plain text or explicitly "add ...")
+    let questLine = text;
+    if (firstWord === 'add' && restText) {
+      questLine = restText;
+    }
+
+    const parsed = parseBulkQuestLine(questLine);
     if (parsed) {
       addQuest(parsed);
       setTerminalLog(`[SUCCESS] DIRECTIVE_LOGGED: "${parsed.name}" (${parsed.difficulty}, ${parsed.important ? 'CRITICAL' : 'Standard'})`);
       setQuickInputText('');
-      setTimeout(() => setTerminalLog(null), 4000);
+      setTimeout(() => setTerminalLog(null), 5000);
     } else {
-      setTerminalLog(`[ERROR] INVALID_INPUT_FORMAT`);
+      setTerminalLog(`[ERROR] INVALID_INPUT_FORMAT. Type "help" for options.`);
     }
   };
 
@@ -144,6 +321,168 @@ export const ActiveDirectives: React.FC = () => {
       setTimeout(() => setTerminalLog(null), 5000);
     } else {
       setTerminalLog(`[WARNING] No valid directives found to deploy.`);
+    }
+  };
+
+  const suggestions = useMemo(() => {
+    if (isBulkMode || !quickInputText) return [];
+
+    const words = quickInputText.split(' ');
+    const lastWord = words[words.length - 1];
+
+    if (words.length === 1 && !quickInputText.startsWith('@') && !quickInputText.startsWith('#') && !quickInputText.startsWith('/') && !quickInputText.startsWith('[') && !quickInputText.startsWith('*')) {
+      const commands = [
+        { value: 'add ', display: 'add <quest>', desc: 'Add a new directive', type: 'command' },
+        { value: 'complete ', display: 'complete <quest>', desc: 'Complete an active quest', type: 'command' },
+        { value: 'fail ', display: 'fail <quest>', desc: 'Fail an active quest', type: 'command' },
+        { value: 'delete ', display: 'delete <quest>', desc: 'Delete a quest', type: 'command' },
+        { value: 'focus ', display: 'focus <text>', desc: 'Update operating focus', type: 'command' },
+        { value: 'simulate ', display: 'simulate <days>', desc: 'Advance simulation days', type: 'command' },
+        { value: 'help', display: 'help', desc: 'Display help details', type: 'command' }
+      ];
+      return commands.filter(c => c.value.startsWith(quickInputText.toLowerCase()));
+    }
+
+    if (lastWord.startsWith('@')) {
+      const search = lastWord.slice(1).toLowerCase();
+      return state.skills
+        .filter(s => s.name.toLowerCase().includes(search))
+        .map(s => ({
+          value: `@${s.name.replace(/\s+/g, '')}`,
+          display: `@${s.name}`,
+          desc: `Level ${s.level}`,
+          type: 'skill'
+        }));
+    }
+
+    if (lastWord.startsWith('#')) {
+      const search = lastWord.slice(1).toLowerCase();
+      return state.projects
+        .filter(p => p.status === 'Active' && p.name.toLowerCase().includes(search))
+        .map(p => ({
+          value: `#${p.name.replace(/\s+/g, '')}`,
+          display: `#${p.name}`,
+          desc: `Project`,
+          type: 'project'
+        }));
+    }
+
+    if (lastWord.startsWith('/')) {
+      const search = lastWord.slice(1).toLowerCase();
+      return state.goals
+        .filter(g => g.status === 'Active' && g.name.toLowerCase().includes(search))
+        .map(g => ({
+          value: `/${g.name.replace(/\s+/g, '')}`,
+          display: `/${g.name}`,
+          desc: `${g.priority} Goal`,
+          type: 'goal'
+        }));
+    }
+
+    if (lastWord.startsWith('[')) {
+      const search = lastWord.slice(1).toLowerCase();
+      const options = ['easy]', 'normal]', 'hard]', 'boss]'];
+      return options
+        .filter(o => o.startsWith(search))
+        .map(o => ({
+          value: `[${o}`,
+          display: `[${o.slice(0, -1)}]`,
+          desc: `Difficulty`,
+          type: 'difficulty'
+        }));
+    }
+
+    if (lastWord.startsWith('*')) {
+      const search = lastWord.slice(1).toLowerCase();
+      const options = [
+        { val: 'habit', disp: '*habit', desc: 'Daily Habit' },
+        { val: 'daily', disp: '*daily', desc: 'Daily Resets' },
+        { val: 'weekly', disp: '*weekly', desc: 'Weekly Resets' },
+        { val: 'monthly', disp: '*monthly', desc: 'Monthly Resets' },
+        { val: 'side', disp: '*side', desc: 'Side Quest' },
+        { val: 'boss', disp: '*boss', desc: 'Boss Encounter' }
+      ];
+      return options
+        .filter(o => o.val.startsWith(search))
+        .map(o => ({
+          value: o.disp,
+          display: o.disp,
+          desc: o.desc,
+          type: 'type'
+        }));
+    }
+
+    // Quest selects for complete/fail/delete commands
+    const firstWord = words[0].toLowerCase();
+    if (words.length > 1 && ['complete', 'done', 'fail', 'skip', 'delete', 'rm'].includes(firstWord)) {
+      const query = words.slice(1).join(' ').toLowerCase();
+      const activeQuests = state.quests.filter(q => 
+        (firstWord === 'delete' || firstWord === 'rm') ? true : q.status === 'Active'
+      );
+      return activeQuests
+        .filter(q => q.name.toLowerCase().includes(query))
+        .slice(0, 5)
+        .map(q => ({
+          value: `${firstWord} ${q.name}`,
+          display: q.name,
+          desc: `${q.difficulty} | ${q.type}`,
+          type: 'quest_select'
+        }));
+    }
+
+    return [];
+  }, [quickInputText, state.skills, state.projects, state.goals, state.quests, isBulkMode]);
+
+  const handleSelectSuggestion = (suggestion: any) => {
+    if (suggestion.type === 'command' || suggestion.type === 'quest_select') {
+      setQuickInputText(suggestion.value);
+    } else {
+      const words = quickInputText.split(' ');
+      words[words.length - 1] = suggestion.value;
+      setQuickInputText(words.join(' ') + ' ');
+    }
+    setFocusedSuggestionIndex(-1);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedSuggestionIndex(prev => (prev + 1) % suggestions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedSuggestionIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+      } else if (e.key === 'Enter' && focusedSuggestionIndex >= 0) {
+        e.preventDefault();
+        handleSelectSuggestion(suggestions[focusedSuggestionIndex]);
+      } else if (e.key === 'Escape') {
+        setFocusedSuggestionIndex(-1);
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const idx = focusedSuggestionIndex >= 0 ? focusedSuggestionIndex : 0;
+        handleSelectSuggestion(suggestions[idx]);
+      }
+    } else {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (commandHistory.length > 0) {
+          const nextIdx = historyIndex + 1;
+          if (nextIdx < commandHistory.length) {
+            setHistoryIndex(nextIdx);
+            setQuickInputText(commandHistory[nextIdx]);
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIdx = historyIndex - 1;
+        if (nextIdx >= 0) {
+          setHistoryIndex(nextIdx);
+          setQuickInputText(commandHistory[nextIdx]);
+        } else {
+          setHistoryIndex(-1);
+          setQuickInputText('');
+        }
+      }
     }
   };
 
@@ -1209,24 +1548,72 @@ export const ActiveDirectives: React.FC = () => {
         )}
 
         {!isBulkMode ? (
-          <form onSubmit={handleQuickAddSubmit} className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-2.5 font-mono text-xs text-cyan-500/60 select-none">❯</span>
-              <input 
-                type="text"
-                placeholder="Log a quest: e.g. Do cardio workout [hard] *habit ! (use [difficulty], *habit, ! for critical)"
-                value={quickInputText}
-                onChange={(e) => setQuickInputText(e.target.value)}
-                className="w-full bg-zinc-950/80 border border-white/5 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
-            >
-              Log
-            </button>
-          </form>
+          <div className="space-y-1 relative">
+            <form onSubmit={handleQuickAddSubmit} className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-2.5 font-mono text-xs text-cyan-500/60 select-none">❯</span>
+                <input 
+                  type="text"
+                  placeholder="Type 'help' for commands, or write: Read books [easy] *habit @Discipline #Fitness /Health"
+                  value={quickInputText}
+                  onChange={(e) => {
+                    setQuickInputText(e.target.value);
+                    setFocusedSuggestionIndex(-1);
+                  }}
+                  onKeyDown={handleInputKeyDown}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
+                  className="w-full bg-zinc-950/80 border border-white/5 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
+              >
+                Execute
+              </button>
+            </form>
+
+            {/* Suggestions Intellisense Overlay */}
+            {isInputFocused && suggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 bg-zinc-950 border border-cyan-500/30 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-white/5 font-mono text-[10px]">
+                {suggestions.map((s, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onMouseDown={() => handleSelectSuggestion(s)}
+                    onMouseEnter={() => setFocusedSuggestionIndex(index)}
+                    className={`w-full text-left px-3 py-1.5 flex items-center justify-between transition-colors ${
+                      index === focusedSuggestionIndex ? 'bg-cyan-950/60 text-cyan-300' : 'text-zinc-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-cyan-500 font-bold select-none">❯</span>
+                      <span className="font-bold text-zinc-100">{s.display}</span>
+                      {s.desc && <span className="text-[9px] text-zinc-500">({s.desc})</span>}
+                    </div>
+                    <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border leading-none ${
+                      s.type === 'command' ? 'bg-cyan-950/40 border-cyan-500/20 text-cyan-400' :
+                      s.type === 'skill' ? 'bg-amber-950/40 border-amber-500/20 text-amber-400' :
+                      s.type === 'project' ? 'bg-blue-950/40 border-blue-500/20 text-blue-400' :
+                      s.type === 'goal' ? 'bg-purple-950/40 border-purple-500/20 text-purple-400' :
+                      s.type === 'difficulty' ? 'bg-rose-950/40 border-rose-500/20 text-rose-400' :
+                      s.type === 'type' ? 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400' :
+                      'bg-zinc-900 border-white/5 text-zinc-400'
+                    }`}>
+                      {s.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[9px] font-mono text-zinc-500 pl-1 pt-1 flex items-center gap-1">
+              Supports <span className="text-cyan-500/70">@skill</span>, <span className="text-cyan-500/70">#project</span>, <span className="text-cyan-500/70">/goal</span>, <span className="text-cyan-500/70">[difficulty]</span>, <span className="text-cyan-500/70">*habit</span>, <span className="text-cyan-500/70">!</span> critical. Use <kbd className="bg-zinc-900 px-1 border border-white/5 rounded text-[8px]">↑/↓</kbd> for history, <kbd className="bg-zinc-900 px-1 border border-white/5 rounded text-[8px]">Tab</kbd> to autocomplete.
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             <p className="text-[9px] font-mono text-zinc-500">
