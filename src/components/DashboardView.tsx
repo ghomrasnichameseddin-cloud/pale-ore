@@ -13,7 +13,7 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { 
-    state, toggleRecoveryMode, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
+    state, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
     isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate
   } = usePOS();
 
@@ -53,19 +53,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </p>
         </div>
 
-        {/* Recovery Protocol Button */}
-        <button 
-          onClick={toggleRecoveryMode}
+        {/* Recovery Protocol Status Badge */}
+        <div 
           className={`flex items-center gap-2 px-3 py-1.5 rounded border text-xs font-mono transition-all duration-300 ${
             state.profile.recoveryMode
               ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
-              : 'bg-zinc-900 border-white/10 text-zinc-400 hover:border-white/20'
+              : 'bg-zinc-950/20 border-white/5 text-zinc-500'
           }`}
-          id="toggle-recovery-mode"
+          id="recovery-mode-status"
         >
           <Shield className={`h-4 w-4 ${state.profile.recoveryMode ? 'text-amber-400 animate-pulse' : ''}`} />
           {state.profile.recoveryMode ? 'RECOVERY MODE ACTIVE' : 'RECOVERY MODE INACTIVE'}
-        </button>
+        </div>
       </div>
 
       {/* TWO COLUMN GRID */}

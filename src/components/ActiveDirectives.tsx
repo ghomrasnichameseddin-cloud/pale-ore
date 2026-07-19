@@ -23,7 +23,7 @@ export const ActiveDirectives: React.FC = () => {
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [energyFilter, setEnergyFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
-  const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred'>('today');
+  const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty'>('today');
 
   // Quick / Bulk Add States
   const [quickInputText, setQuickInputText] = useState('');
@@ -243,7 +243,7 @@ export const ActiveDirectives: React.FC = () => {
   const baseQuests = state.quests.filter(q => {
     // 1. Recovery Mode Filter
     if (state.profile.recoveryMode) {
-      if (q.type !== 'Recovery' && q.type !== 'Optional') return false;
+      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty' && !q.isPenalty) return false;
     }
 
     // 2. Folder & List filters
@@ -363,6 +363,14 @@ export const ActiveDirectives: React.FC = () => {
     }
     
     return q.status === 'Active' && q.deadline && q.deadline > todayStr;
+  });
+
+  // 5. Penalty quests: Active and isPenalty or type === 'Penalty'
+  const penaltyQuests = state.quests.filter(q => {
+    if (q.status !== 'Active') return false;
+    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
+    if (!matchesEnergy) return false;
+    return q.isPenalty || q.type === 'Penalty';
   });
 
   const handleMoveToTomorrow = (questId: string) => {
@@ -1276,6 +1284,25 @@ export const ActiveDirectives: React.FC = () => {
         </div>
       </div>
 
+      {/* Recovery Alert Banner */}
+      {state.profile.recoveryMode && (
+        <div className="p-3 bg-rose-950/40 border border-rose-500/25 rounded-lg flex items-center justify-between text-xs font-mono text-rose-400 mb-4 animate-pulse">
+          <div className="flex items-center gap-2">
+            <Skull className="h-4.5 w-4.5 text-rose-500 shrink-0" />
+            <div>
+              <p className="font-bold uppercase tracking-wider text-rose-300">⚠️ SECURITY SYSTEM ALERT: RECOVERY MODE ENGAGED</p>
+              <p className="text-[10px] text-zinc-400">A directive has been failed or skipped. Normal operations are paused until all outstanding Penalty Quests are completed.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setTerminalTab('penalty')}
+            className="px-3 py-1 bg-rose-900/60 hover:bg-rose-800 border border-rose-500/30 rounded font-bold uppercase tracking-wider text-[10px] transition-colors whitespace-nowrap"
+          >
+            RESOLVE PENALTY QUESTS ({penaltyQuests.length})
+          </button>
+        </div>
+      )}
+
       {/* COMPACTED UNIFIED TERMINAL CONSOLE */}
       <div 
         className={`glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-[550px] ${
@@ -1285,7 +1312,9 @@ export const ActiveDirectives: React.FC = () => {
             ? 'border-purple-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(168,85,247,0.03)]'
             : terminalTab === 'week'
             ? 'border-emerald-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(16,185,129,0.03)]'
-            : 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
+            : terminalTab === 'deferred'
+            ? 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
+            : 'border-rose-500/35 bg-zinc-950/50 shadow-[0_0_20px_rgba(239,68,68,0.04)]'
         }`} 
         id="unified-terminal"
       >
@@ -1296,7 +1325,9 @@ export const ActiveDirectives: React.FC = () => {
             ? 'bg-[linear-gradient(to_bottom,rgba(168,85,247,0.01)_1px,transparent_1px)]'
             : terminalTab === 'week'
             ? 'bg-[linear-gradient(to_bottom,rgba(16,185,129,0.01)_1px,transparent_1px)]'
-            : 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
+            : terminalTab === 'deferred'
+            ? 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
+            : 'bg-[linear-gradient(to_bottom,rgba(239,68,68,0.015)_1px,transparent_1px)]'
         }`} />
         
         {/* Terminal Header with Window Controls & Styled Tabs */}
@@ -1355,6 +1386,17 @@ export const ActiveDirectives: React.FC = () => {
                 <Calendar className="h-3 w-3" />
                 SYS_DEFERRED_QUEUE ({tomorrowPostponedQuests.length})
               </button>
+              <button
+                onClick={() => setTerminalTab('penalty')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
+                  terminalTab === 'penalty'
+                    ? 'bg-rose-950 text-rose-400 font-bold border border-rose-500/20 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
+                    : 'text-zinc-500 hover:text-rose-400'
+                }`}
+              >
+                <Skull className="h-3 w-3 text-rose-500" />
+                SYS_PENALTY_RECOVERY ({penaltyQuests.length})
+              </button>
             </div>
           </div>
 
@@ -1371,9 +1413,13 @@ export const ActiveDirectives: React.FC = () => {
             <div className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/30 border border-emerald-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
               7D_HORIZON: {weekQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
             </div>
-          ) : (
+          ) : terminalTab === 'deferred' ? (
             <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
               QUEUED: {tomorrowPostponedQuests.length} DEFERRED
+            </div>
+          ) : (
+            <div className="text-[10px] font-mono text-rose-400 bg-rose-950/30 border border-rose-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0 animate-pulse">
+              RECOVERY_CON: {penaltyQuests.length} ACTIVE
             </div>
           )}
         </div>
@@ -1394,10 +1440,15 @@ export const ActiveDirectives: React.FC = () => {
             <span className="text-emerald-400/80">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
             Analyzing 7-day milestone projection. Balancing recurring workloads.
           </div>
-        ) : (
+        ) : terminalTab === 'deferred' ? (
           <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
             <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
             Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
+          </div>
+        ) : (
+          <div className="bg-zinc-900/60 border border-rose-950/40 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+            <span className="text-rose-500">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
+            ACTIVE SYSTEM PENALTIES DETECTED. Complete these directives immediately to disable Recovery Mode restriction lock.
           </div>
         )}
 
@@ -1439,7 +1490,7 @@ export const ActiveDirectives: React.FC = () => {
                 {weekQuests.map(q => renderQuestCard(q, true))}
               </AnimatePresence>
             )
-          ) : (
+          ) : terminalTab === 'deferred' ? (
             tomorrowPostponedQuests.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
                 <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
@@ -1449,6 +1500,18 @@ export const ActiveDirectives: React.FC = () => {
             ) : (
               <AnimatePresence mode="popLayout">
                 {tomorrowPostponedQuests.map(q => renderQuestCard(q, true))}
+              </AnimatePresence>
+            )
+          ) : (
+            penaltyQuests.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
+                <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
+                <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {penaltyQuests.map(q => renderQuestCard(q, false))}
               </AnimatePresence>
             )
           )}

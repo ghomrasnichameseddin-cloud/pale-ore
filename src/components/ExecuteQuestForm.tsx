@@ -15,6 +15,7 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestDuration, setNewQuestDuration] = useState<number>(30);
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [newQuestImportant, setNewQuestImportant] = useState(false);
+  const [newQuestIsPenalty, setNewQuestIsPenalty] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [newQuestEnergy, setNewQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [newQuestDeadline, setNewQuestDeadline] = useState('');
@@ -83,7 +84,8 @@ export const ExecuteQuestForm: React.FC = () => {
       recurrence: finalRecurrence,
       deadline: newQuestDeadline || systemDate,
       important: isImportant,
-      energyLevel: newQuestEnergy
+      energyLevel: newQuestEnergy,
+      isPenalty: newQuestIsPenalty || newQuestType === 'Penalty'
     });
 
     setNewQuestName('');
@@ -91,6 +93,7 @@ export const ExecuteQuestForm: React.FC = () => {
     setNewQuestSkills([]);
     setNewQuestRecurrence('None');
     setNewQuestImportant(false);
+    setNewQuestIsPenalty(false);
     setNewQuestEnergy('Medium');
     setNewQuestDeadline('');
   };
@@ -132,7 +135,7 @@ export const ExecuteQuestForm: React.FC = () => {
         </div>
 
         {/* Form Options Row */}
-        <div className="grid grid-cols-1 md:grid-cols-9 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-10 gap-3 pt-1">
           {/* Energy level selection */}
           <div>
             <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Energy Req</label>
@@ -159,6 +162,7 @@ export const ExecuteQuestForm: React.FC = () => {
               <option value="Side">Side Quest</option>
               <option value="Boss">Boss Quest</option>
               <option value="Recovery">Recovery Quest</option>
+              <option value="Penalty">Penalty Quest</option>
               <option value="Habit">Habit Quest</option>
               <option value="Optional">Optional Quest</option>
             </select>
@@ -267,7 +271,7 @@ export const ExecuteQuestForm: React.FC = () => {
 
           {/* Critical Directive Toggle */}
           <div>
-            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Critical/Important</label>
+            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Critical</label>
             <button
               type="button"
               onClick={() => setNewQuestImportant(!newQuestImportant)}
@@ -278,6 +282,22 @@ export const ExecuteQuestForm: React.FC = () => {
               }`}
             >
               {newQuestImportant ? '⚠️ YES' : 'NO'}
+            </button>
+          </div>
+
+          {/* Penalty Quest Toggle */}
+          <div>
+            <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Penalty</label>
+            <button
+              type="button"
+              onClick={() => setNewQuestIsPenalty(!newQuestIsPenalty)}
+              className={`w-full bg-zinc-950 border rounded p-1 text-xs font-mono transition-all duration-200 flex items-center justify-center gap-1 ${
+                newQuestIsPenalty 
+                  ? 'border-amber-500/50 text-amber-400 bg-amber-950/20 shadow-[0_0_8px_rgba(245,158,11,0.1)] font-bold' 
+                  : 'border-white/10 text-zinc-500 hover:border-white/20'
+              }`}
+            >
+              {newQuestIsPenalty ? '💀 YES' : 'NO'}
             </button>
           </div>
         </div>

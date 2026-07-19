@@ -604,12 +604,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let updatedQuests = [...prev.quests];
     let updatedHistory = [...prev.xpHistory];
     let updatedMomentum = prev.profile.momentum;
+    let recoveryModeActivated = false;
 
     if (daysDiff >= 1) {
-      // Find critical quests active on oldDate that were left unchecked (incomplete)
-      const uncheckedCriticalQuests = prev.quests.filter(q => {
-        const isCritical = q.important || q.type === 'Main' || q.type === 'Boss';
-        if (!isCritical) return false;
+      // Find ALL quests active on oldDate that were left unchecked (incomplete)
+      const uncheckedQuests = prev.quests.filter(q => {
+        if (q.status !== 'Active') return false;
+        if (q.isPenalty || q.type === 'Penalty') return false;
 
         // Check if recurring
         if (q.recurrence && q.recurrence !== 'None') {
@@ -625,7 +626,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return true; // scheduled but not completed on oldDate
         } else {
           // One-off quest
-          if (q.status !== 'Active') return false;
           if (q.deadline && q.deadline <= oldDate) {
             return true;
           }
@@ -633,28 +633,30 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
-      // Apply penalties for each unchecked critical quest
-      uncheckedCriticalQuests.forEach(q => {
+      // Apply penalties for each unchecked quest and automatically create penalty recovery quests
+      uncheckedQuests.forEach(q => {
         let penaltyXp = 50;
         if (q.difficulty === 'Easy') penaltyXp = 25;
         else if (q.difficulty === 'Normal') penaltyXp = 50;
         else if (q.difficulty === 'Hard') penaltyXp = 100;
         else if (q.difficulty === 'Boss') penaltyXp = 250;
 
-        const finalPenaltyXp = penaltyXp * 1.5;
+        const isCritical = q.important || q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
+        const finalPenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
 
         const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
         const penaltyEntry: XPHistoryEntry = {
           id: xpHistoryId,
           questId: q.id,
-          questName: `💀 MIDNIGHT PENALTY: Unchecked Critical "${q.name}"`,
+          questName: `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
           xp: -Math.round(finalPenaltyXp),
           timestamp: new Date().toISOString(),
           skillIds: q.relatedSkills || []
         };
 
         updatedHistory.unshift(penaltyEntry);
-        updatedMomentum = Math.max(0, updatedMomentum - 25);
+        const momentumLoss = isCritical ? 25 : 10;
+        updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
 
         // If one-off, mark as Failed
         if (!q.recurrence || q.recurrence === 'None') {
@@ -669,16 +671,49 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return uq;
           });
         }
+
+        // Generate the recovery/penalty quest
+        const pQuest: Quest = {
+          id: `q-penalty-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: `⚠️ RECOVERY: Resolve failed/unchecked "${q.name}"`,
+          description: `System-generated recovery directive due to unchecked/failed objective "${q.name}". Resolve this to restore operations.`,
+          status: 'Active' as const,
+          difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
+          type: 'Penalty',
+          isPenalty: true,
+          estimatedTime: 15,
+          recurrence: 'None',
+          important: true,
+          energyLevel: 'Medium',
+          deadline: q.deadline || new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          xp: 0,
+          goalId: q.goalId || null,
+          projectId: q.projectId || null,
+          milestoneId: q.milestoneId || null,
+          subquests: [
+            {
+              id: `sq-penalty-${q.id}-1`,
+              name: `Resolve the underlying issue or complete the remaining actions of "${q.name}"`,
+              completed: false
+            }
+          ],
+          relatedSkills: q.relatedSkills || []
+        };
+
+        updatedQuests.push(pQuest);
+        recoveryModeActivated = true;
       });
     }
 
-    return { updatedQuests, updatedHistory, updatedMomentum };
+    return { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated };
   };
 
   const setSystemDate = (newDateStr: string) => {
     setState(prev => {
       const oldDate = prev.systemDate;
-      const { updatedQuests, updatedHistory, updatedMomentum } = applyMidnightPenalties(prev, oldDate, newDateStr);
+      const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, newDateStr);
       
       const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests);
       const finalHistory = resolveRecoveredPenalties(updatedHistory);
@@ -709,7 +744,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           momentum: updatedMomentum,
           xp: totalXp,
-          level
+          level,
+          recoveryMode: recoveryModeActivated ? true : prev.profile.recoveryMode
         }
       };
     });
@@ -734,7 +770,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         const oldDate = currentSimulated;
-        const { updatedQuests, updatedHistory, updatedMomentum } = applyMidnightPenalties(prev, oldDate, nextSimulated);
+        const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, nextSimulated);
 
         const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests);
         const finalHistory = resolveRecoveredPenalties(updatedHistory);
@@ -765,7 +801,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...prev.profile,
             momentum: updatedMomentum,
             xp: totalXp,
-            level
+            level,
+            recoveryMode: recoveryModeActivated ? true : prev.profile.recoveryMode
           }
         };
       });
@@ -1150,11 +1187,24 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteQuest = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      quests: prev.quests.filter(q => q.id !== id),
-      xpHistory: prev.xpHistory.filter(h => h.questId !== id)
-    }));
+    setState(prev => {
+      const remainingQuests = prev.quests.filter(q => q.id !== id);
+      const remainingPenaltyQuestsCount = remainingQuests.filter(q => 
+        q.status === 'Active' && (q.isPenalty || q.type === 'Penalty')
+      ).length;
+      
+      const newRecoveryMode = remainingPenaltyQuestsCount === 0 ? false : prev.profile.recoveryMode;
+
+      return {
+        ...prev,
+        quests: remainingQuests,
+        xpHistory: prev.xpHistory.filter(h => h.questId !== id),
+        profile: {
+          ...prev.profile,
+          recoveryMode: newRecoveryMode
+        }
+      };
+    });
   };
 
   const completeQuest = (id: string) => {
@@ -1222,6 +1272,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
 
+      const isPenaltyQuest = questToComplete.isPenalty || questToComplete.type === 'Penalty';
+      const remainingPenaltyQuestsCount = updatedQuests.filter(q => 
+        q.status === 'Active' && (q.isPenalty || q.type === 'Penalty') && q.id !== id
+      ).length;
+
+      const newRecoveryMode = isPenaltyQuest 
+        ? (remainingPenaltyQuestsCount === 0 ? false : prev.profile.recoveryMode)
+        : prev.profile.recoveryMode;
+
       return {
         ...prev,
         quests: updatedQuests,
@@ -1231,7 +1290,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level,
-          momentum: newMomentum
+          momentum: newMomentum,
+          recoveryMode: newRecoveryMode
         }
       };
     });
@@ -1324,6 +1384,38 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
+      // Generate the recovery/penalty quest
+      const pQuest: Quest = {
+        id: `q-penalty-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: `⚠️ RECOVERY: Resolve failed/unchecked "${questToFail.name}"`,
+        description: `System-generated recovery directive due to unchecked/failed objective "${questToFail.name}". Resolve this to restore operations.`,
+        status: 'Active' as const,
+        difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
+        type: 'Penalty',
+        isPenalty: true,
+        estimatedTime: 15,
+        recurrence: 'None',
+        important: true,
+        energyLevel: 'Medium',
+        deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        completedAt: null,
+        xp: 0,
+        goalId: questToFail.goalId || null,
+        projectId: questToFail.projectId || null,
+        milestoneId: questToFail.milestoneId || null,
+        subquests: [
+          {
+            id: `sq-penalty-${questToFail.id}-1`,
+            name: `Resolve the underlying issue or complete the remaining actions of "${questToFail.name}"`,
+            completed: false
+          }
+        ],
+        relatedSkills: questToFail.relatedSkills || []
+      };
+
+      const finalQuestsList = [...updatedQuests, pQuest];
+
       const updatedHistory = resolveRecoveredPenalties([penaltyEntry, ...prev.xpHistory]);
       const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
       const level = calculatePlayerLevel(totalXp);
@@ -1344,14 +1436,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return {
         ...prev,
-        quests: updatedQuests,
+        quests: finalQuestsList,
         skills: updatedSkills,
         xpHistory: updatedHistory,
         profile: {
           ...prev.profile,
           xp: totalXp,
           level,
-          momentum: newMomentum
+          momentum: newMomentum,
+          recoveryMode: true
         }
       };
     });
