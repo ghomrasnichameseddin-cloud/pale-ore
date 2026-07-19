@@ -7,15 +7,16 @@ import { ProjectsView } from './components/ProjectsView';
 import { SkillsView } from './components/SkillsView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
+import { PlanningView } from './components/PlanningView';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
-  Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw
+  Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system';
+type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'planning';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -43,6 +44,7 @@ function AppContent() {
 
   const navItems = [
     { id: 'dashboard', label: 'DASHBOARD', icon: Activity, desc: 'Daily operations hub' },
+    { id: 'planning', label: 'PLANNING', icon: FolderOpen, desc: 'Vision, strategies, & SOPs' },
     { id: 'quests', label: 'QUESTS', icon: Swords, desc: 'All active and recurring quests' },
     { id: 'goals', label: 'GOALS', icon: Target, desc: 'Long-term strategic tracks' },
     { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
@@ -293,6 +295,7 @@ function AppContent() {
             className="h-full"
           >
             {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'planning' && <PlanningView onNavigate={(tab) => setActiveTab(tab)} />}
             {activeTab === 'quests' && <QuestsView />}
             {activeTab === 'goals' && <GoalsView />}
             {activeTab === 'projects' && <ProjectsView />}

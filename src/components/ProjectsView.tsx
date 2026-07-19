@@ -509,6 +509,29 @@ export const ProjectsView: React.FC = () => {
 
             </div>
 
+            {/* Connected Planning Documents Section */}
+            <div className="mt-6 pt-5 border-t border-white/5 space-y-3">
+              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                📄 STRATEGIC PLANNING DIRECTIVES
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(!state.planningDocuments || state.planningDocuments.filter(doc => doc.linkedProjects?.includes(selectedProj.id)).length === 0) ? (
+                  <p className="text-xs font-mono text-zinc-600 col-span-2">No active strategic planning documents linked to this project. Link them from the PLANNING tab.</p>
+                ) : (
+                  state.planningDocuments.filter(doc => doc.linkedProjects?.includes(selectedProj.id)).map(doc => (
+                    <div key={doc.id} className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg flex justify-between items-center text-xs">
+                      <span className="text-zinc-300 font-mono text-[10px] truncate flex items-center gap-1.5">
+                        📂 {doc.path}
+                      </span>
+                      <span className="text-[9px] bg-cyan-950/40 text-cyan-400 border border-cyan-500/10 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                        Connected
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
         ) : (
           <div className="glass-panel rounded-lg p-10 text-center space-y-2">

@@ -134,6 +134,18 @@ export interface ActiveFocusSession {
   estimatedCycles: number;
 }
 
+export interface PlanningDocument {
+  id: string;
+  path: string; // e.g. "00 Vision/Life Vision.md" or "04 Operations/Daily"
+  name: string; // e.g. "Life Vision.md"
+  content: string; // markdown content
+  linkedGoals: string[]; // Goal IDs
+  linkedProjects: string[]; // Project IDs
+  linkedQuests: string[]; // Quest IDs
+  linkedSkills: string[]; // Skill IDs
+  updatedAt: string;
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -146,4 +158,5 @@ export interface POSState {
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
   systemDate: string; // format YYYY-MM-DD
+  planningDocuments: PlanningDocument[];
 }

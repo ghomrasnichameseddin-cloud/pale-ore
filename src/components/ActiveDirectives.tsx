@@ -947,6 +947,25 @@ export const ActiveDirectives: React.FC = () => {
                   </button>
                 </form>
               </div>
+
+              {/* Linked Planning SOPs / Playbooks */}
+              {(() => {
+                const linkedDocs = state.planningDocuments?.filter(doc => doc.linkedQuests?.includes(quest.id)) || [];
+                if (linkedDocs.length === 0) return null;
+                return (
+                  <div className="mt-3 pt-2 border-t border-white/5 space-y-1">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">📄 CONNECTED_OPERATIONAL_SOPs</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {linkedDocs.map(doc => (
+                        <div key={doc.id} className="text-[9px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-500/15 px-2 py-0.5 rounded flex items-center gap-1">
+                          <span>📂</span>
+                          <span className="max-w-[180px] truncate">{doc.name || doc.path.split('/').pop()?.replace('.md', '')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

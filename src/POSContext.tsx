@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
-  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession
+  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument
 } from './types';
 import { INITIAL_STATE } from './initialState';
 
@@ -99,6 +99,11 @@ interface POSContextType {
   selectedListId: string | null;
   setSelectedListId: (id: string | null) => void;
 
+  // Planning Documents Operations
+  addPlanningDocument: (path: string, name: string, content: string) => string;
+  updatePlanningDocument: (id: string, updates: Partial<PlanningDocument>) => void;
+  deletePlanningDocument: (id: string) => void;
+  linkPlanningDocToComponent: (id: string, type: 'goal' | 'project' | 'quest' | 'skill', componentId: string, link: boolean) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -292,7 +297,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             skills: parsed.skills || [],
             attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
             xpHistory: parsed.xpHistory || [],
-            systemDate: parsed.systemDate || INITIAL_STATE.systemDate
+            systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
+            planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments
           };
         }
       }
@@ -310,6 +316,93 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  const addPlanningDocument = (path: string, name: string, content: string): string => {
+    const id = `pdoc-${Date.now()}`;
+    const newDoc: PlanningDocument = {
+      id,
+      path,
+      name,
+      content,
+      linkedGoals: [],
+      linkedProjects: [],
+      linkedQuests: [],
+      linkedSkills: [],
+      updatedAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      planningDocuments: [...(prev.planningDocuments || []), newDoc]
+    }));
+    return id;
+  };
+
+  const updatePlanningDocument = (id: string, updates: Partial<PlanningDocument>) => {
+    setState(prev => ({
+      ...prev,
+      planningDocuments: (prev.planningDocuments || []).map(doc => 
+        doc.id === id ? { ...doc, ...updates, updatedAt: new Date().toISOString() } : doc
+      )
+    }));
+  };
+
+  const deletePlanningDocument = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      planningDocuments: (prev.planningDocuments || []).filter(doc => doc.id !== id)
+    }));
+  };
+
+  const linkPlanningDocToComponent = (
+    id: string, 
+    type: 'goal' | 'project' | 'quest' | 'skill', 
+    componentId: string, 
+    link: boolean
+  ) => {
+    setState(prev => {
+      const documents = prev.planningDocuments || [];
+      const updatedDocs = documents.map(doc => {
+        if (doc.id !== id) return doc;
+        
+        let linkedGoals = doc.linkedGoals ? [...doc.linkedGoals] : [];
+        let linkedProjects = doc.linkedProjects ? [...doc.linkedProjects] : [];
+        let linkedQuests = doc.linkedQuests ? [...doc.linkedQuests] : [];
+        let linkedSkills = doc.linkedSkills ? [...doc.linkedSkills] : [];
+
+        if (type === 'goal') {
+          linkedGoals = link 
+            ? Array.from(new Set([...linkedGoals, componentId]))
+            : linkedGoals.filter(x => x !== componentId);
+        } else if (type === 'project') {
+          linkedProjects = link 
+            ? Array.from(new Set([...linkedProjects, componentId]))
+            : linkedProjects.filter(x => x !== componentId);
+        } else if (type === 'quest') {
+          linkedQuests = link 
+            ? Array.from(new Set([...linkedQuests, componentId]))
+            : linkedQuests.filter(x => x !== componentId);
+        } else if (type === 'skill') {
+          linkedSkills = link 
+            ? Array.from(new Set([...linkedSkills, componentId]))
+            : linkedSkills.filter(x => x !== componentId);
+        }
+
+        return {
+          ...doc,
+          linkedGoals,
+          linkedProjects,
+          linkedQuests,
+          linkedSkills,
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+      return {
+        ...prev,
+        planningDocuments: updatedDocs
+      };
+    });
+  };
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -1906,7 +1999,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedFolderId,
       setSelectedFolderId,
       selectedListId,
-      setSelectedListId
+      setSelectedListId,
+      addPlanningDocument,
+      updatePlanningDocument,
+      deletePlanningDocument,
+      linkPlanningDocToComponent
     }}>
       {children}
     </POSContext.Provider>

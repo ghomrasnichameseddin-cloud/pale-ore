@@ -1,4 +1,5 @@
 import { POSState } from './types';
+import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 
 export const INITIAL_STATE: POSState = {
   goals: [],
@@ -32,5 +33,6 @@ export const INITIAL_STATE: POSState = {
     lastFocusDate: ''
   },
   xpHistory: [],
-  systemDate: new Date().toISOString().split('T')[0]
+  systemDate: new Date().toISOString().split('T')[0],
+  planningDocuments: DEFAULT_PLANNING_DOCS
 };
