@@ -59,9 +59,10 @@ interface POSContextType {
   deleteSubQuest: (questId: string, subquestId: string) => void;
   
   // Skills CRUD
-  addSkill: (name: string, tier?: 'Primary' | 'Secondary') => string;
+  addSkill: (name: string, tier?: 'Primary' | 'Secondary', parentId?: string | null) => string;
   updateSkillName: (id: string, name: string) => void;
   updateSkillTier: (id: string, tier: 'Primary' | 'Secondary') => void;
+  updateSkillParent: (id: string, parentId: string | null) => void;
   deleteSkill: (id: string) => void;
   clearAllSkills: () => void;
   equipSkillTitle: (id: string, title: string) => void;
@@ -109,6 +110,68 @@ interface POSContextType {
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'pale_ore_pos_state';
+
+const getSkillXpFromHistory = (skillId: string, history: XPHistoryEntry[], allSkills: Skill[]): number => {
+  let totalXp = 0;
+  
+  const targetSkill = allSkills.find(s => s.id === skillId);
+  if (!targetSkill) return 0;
+  
+  for (const h of history) {
+    const directSkills = allSkills.filter(s => h.skillIds.includes(s.id));
+    if (directSkills.length === 0) continue;
+    
+    // Resolve primary skill IDs involved directly or indirectly (via child secondary skill)
+    const primarySkillIds = new Set<string>();
+    directSkills.forEach(s => {
+      if ((s.tier || 'Primary') === 'Primary') {
+        primarySkillIds.add(s.id);
+      } else if (s.tier === 'Secondary' && s.parentId) {
+        primarySkillIds.add(s.parentId);
+      }
+    });
+    
+    // Resolve secondary skill IDs involved directly or indirectly (linked to active primary)
+    const secondarySkillIds = new Set<string>();
+    directSkills.forEach(s => {
+      if (s.tier === 'Secondary') {
+        secondarySkillIds.add(s.id);
+      }
+    });
+    allSkills.forEach(s => {
+      if (s.tier === 'Secondary' && s.parentId && primarySkillIds.has(s.parentId)) {
+        secondarySkillIds.add(s.id);
+      }
+    });
+    
+    const primaryCount = primarySkillIds.size;
+    const secondaryCount = secondarySkillIds.size;
+    
+    const isTargetPrimary = (targetSkill.tier || 'Primary') === 'Primary';
+    
+    if (primaryCount > 0 && secondaryCount > 0) {
+      if (isTargetPrimary) {
+        if (primarySkillIds.has(skillId)) {
+          totalXp += (h.xp * 0.8) / primaryCount;
+        }
+      } else {
+        if (secondarySkillIds.has(skillId)) {
+          totalXp += (h.xp * 0.2) / secondaryCount;
+        }
+      }
+    } else if (primaryCount > 0) {
+      if (isTargetPrimary && primarySkillIds.has(skillId)) {
+        totalXp += h.xp / primaryCount;
+      }
+    } else if (secondaryCount > 0) {
+      if (!isTargetPrimary && secondarySkillIds.has(skillId)) {
+        totalXp += h.xp / secondaryCount;
+      }
+    }
+  }
+  
+  return Math.max(0, Math.round(totalXp));
+};
 
 const calculatePlayerLevel = (totalXp: number): number => {
   // Starts with a required 1000 XP in level 1, then adds 500 XP with each level up.
@@ -721,9 +784,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const level = calculatePlayerLevel(totalXp);
       
       const updatedSkills = prev.skills.map(skill => {
-        const skillXp = Math.max(0, finalHistory
-          .filter(h => h.skillIds.includes(skill.id))
-          .reduce((sum, h) => sum + h.xp, 0));
+        const skillXp = getSkillXpFromHistory(skill.id, finalHistory, prev.skills);
         const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
@@ -778,9 +839,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const level = calculatePlayerLevel(totalXp);
         
         const updatedSkills = prev.skills.map(skill => {
-          const skillXp = Math.max(0, finalHistory
-            .filter(h => h.skillIds.includes(skill.id))
-            .reduce((sum, h) => sum + h.xp, 0));
+          const skillXp = getSkillXpFromHistory(skill.id, finalHistory, prev.skills);
           const skillLevel = calculatePlayerLevel(skillXp);
           const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
           return {
@@ -852,9 +911,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Skill progression calculation
   const getSkillXpAndLevel = (skillId: string) => {
     // Accumulate XP from entire history of completions (important for repeating quests!)
-    const earnedXp = state.xpHistory
-      .filter(h => h.skillIds.includes(skillId))
-      .reduce((sum, h) => sum + h.xp, 0);
+    const earnedXp = getSkillXpFromHistory(skillId, state.xpHistory, state.skills);
 
     const level = calculatePlayerLevel(earnedXp);
     const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
@@ -1259,9 +1316,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Update skills internal xp cache based on entire XP History!
       const updatedSkills = prev.skills.map(skill => {
-        const skillXp = updatedHistory
-          .filter(h => h.skillIds.includes(skill.id))
-          .reduce((sum, h) => sum + h.xp, 0);
+        const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
         const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
@@ -1316,9 +1371,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const level = calculatePlayerLevel(totalXp);
 
       const updatedSkills = prev.skills.map(skill => {
-        const skillXp = updatedHistory
-          .filter(h => h.skillIds.includes(skill.id))
-          .reduce((sum, h) => sum + h.xp, 0);
+        const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
         const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
@@ -1421,9 +1474,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const level = calculatePlayerLevel(totalXp);
 
       const updatedSkills = prev.skills.map(skill => {
-        const skillXp = Math.max(0, updatedHistory
-          .filter(h => h.skillIds.includes(skill.id))
-          .reduce((sum, h) => sum + h.xp, 0));
+        const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
         const skillLevel = calculatePlayerLevel(skillXp);
         const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
         return {
@@ -1566,9 +1617,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const level = calculatePlayerLevel(totalXp);
 
         const updatedSkills = prev.skills.map(skill => {
-          const skillXp = updatedHistory
-            .filter(h => h.skillIds.includes(skill.id))
-            .reduce((sum, h) => sum + h.xp, 0);
+          const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
           const skillLevel = calculatePlayerLevel(skillXp);
           const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
           return {
@@ -1607,9 +1656,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const level = calculatePlayerLevel(totalXp);
 
         const updatedSkills = prev.skills.map(skill => {
-          const skillXp = updatedHistory
-            .filter(h => h.skillIds.includes(skill.id))
-            .reduce((sum, h) => sum + h.xp, 0);
+          const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
           const skillLevel = calculatePlayerLevel(skillXp);
           const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
           return {
@@ -1755,7 +1802,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // CRUD FOR SKILLS
-  const addSkill = (name: string, tier?: 'Primary' | 'Secondary'): string => {
+  const addSkill = (name: string, tier?: 'Primary' | 'Secondary', parentId?: string | null): string => {
     const id = `s-${Date.now()}`;
     const newSkill: Skill = {
       id,
@@ -1765,7 +1812,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mastery: 0,
       relatedGoals: [],
       relatedProjects: [],
-      tier: tier || 'Primary'
+      tier: tier || 'Primary',
+      parentId: parentId || null
     };
     setState(prev => ({
       ...prev,
@@ -1784,7 +1832,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateSkillTier = (id: string, tier: 'Primary' | 'Secondary') => {
     setState(prev => ({
       ...prev,
-      skills: prev.skills.map(s => s.id === id ? { ...s, tier } : s)
+      skills: prev.skills.map(s => s.id === id ? { ...s, tier, parentId: tier === 'Primary' ? null : s.parentId } : s)
+    }));
+  };
+
+  const updateSkillParent = (id: string, parentId: string | null) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, parentId } : s)
     }));
   };
 
@@ -2065,6 +2120,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addSkill,
       updateSkillName,
       updateSkillTier,
+      updateSkillParent,
       deleteSkill,
       clearAllSkills,
       equipSkillTitle,

@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export const SkillsView: React.FC = () => {
   const { 
-    state, addSkill, updateSkillName, updateSkillTier, deleteSkill, clearAllSkills, getSkillXpAndLevel, 
+    state, addSkill, updateSkillName, updateSkillTier, updateSkillParent, deleteSkill, clearAllSkills, getSkillXpAndLevel, 
     getGoalProgress, getProjectProgress, equipSkillTitle
   } = usePOS();
 
@@ -20,6 +20,7 @@ export const SkillsView: React.FC = () => {
   const [showAddSkill, setShowAddSkill] = useState(false);
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillTier, setNewSkillTier] = useState<'Primary' | 'Secondary'>('Primary');
+  const [newSkillParentId, setNewSkillParentId] = useState<string>('');
 
   // Filter tabs state
   const [filterTier, setFilterTier] = useState<'All' | 'Primary' | 'Secondary'>('All');
@@ -46,9 +47,10 @@ export const SkillsView: React.FC = () => {
       return;
     }
 
-    const id = addSkill(newSkillName.trim(), newSkillTier);
+    const id = addSkill(newSkillName.trim(), newSkillTier, newSkillTier === 'Secondary' && newSkillParentId ? newSkillParentId : null);
     setNewSkillName('');
     setNewSkillTier('Primary');
+    setNewSkillParentId('');
     setShowAddSkill(false);
     setSelectedSkillId(id);
   };
@@ -195,6 +197,26 @@ export const SkillsView: React.FC = () => {
                 </div>
               </div>
 
+              {newSkillTier === 'Secondary' && (
+                <div>
+                  <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Linked Primary Skill</label>
+                  <select
+                    value={newSkillParentId}
+                    onChange={(e) => setNewSkillParentId(e.target.value)}
+                    className="w-full bg-zinc-900 border border-white/5 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-fuchsia-500 font-mono"
+                  >
+                    <option value="">-- No Linked Primary --</option>
+                    {state.skills
+                      .filter(s => (s.tier || 'Primary') === 'Primary')
+                      .map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex justify-between items-center pt-1 border-t border-white/5">
                 <button 
                   type="button" 
@@ -285,7 +307,7 @@ export const SkillsView: React.FC = () => {
                           MSTRY {stats.mastery}%
                         </span>
                       </div>
-                      <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                       <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                         {skill.name}
                       </h4>
                       {skill.equippedTitle && (
@@ -295,6 +317,27 @@ export const SkillsView: React.FC = () => {
                           </span>
                         </div>
                       )}
+                      
+                      {/* Skill linkage badges */}
+                      {skill.tier === 'Secondary' && skill.parentId && (() => {
+                        const parent = state.skills.find(s => s.id === skill.parentId);
+                        return parent ? (
+                          <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-zinc-400">
+                            <span className="text-zinc-500">↳ Linked to</span>
+                            <span className="text-cyan-400 font-semibold">{parent.name}</span>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {(skill.tier || 'Primary') === 'Primary' && (() => {
+                        const subSkillsCount = state.skills.filter(s => s.parentId === skill.id).length;
+                        return subSkillsCount > 0 ? (
+                          <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-zinc-400">
+                            <span className="text-zinc-500">↲ Links</span>
+                            <span className="text-fuchsia-400 font-semibold">{subSkillsCount} sub-skill{subSkillsCount > 1 ? 's' : ''}</span>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
 
                     {/* Progress bar */}
@@ -432,7 +475,64 @@ export const SkillsView: React.FC = () => {
                   Accumulated competency index
                 </p>
               </div>
-                       {/* TITLES OPTIONS SECTION */}
+            </div>
+
+            {/* PARENT PRIMARY SKILL LINKAGE (For Secondary Skills) */}
+            {(selectedSkill.tier || 'Primary') === 'Secondary' && (
+              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-3 mt-4">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-fuchsia-400">Linked Primary Skill (80/20 Rule)</span>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedSkill.parentId || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateSkillParent(selectedSkill.id, val ? val : null);
+                    }}
+                    className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white flex-grow focus:outline-none focus:border-fuchsia-500"
+                  >
+                    <option value="">-- No Linked Primary Skill --</option>
+                    {state.skills
+                      .filter(s => (s.tier || 'Primary') === 'Primary' && s.id !== selectedSkill.id)
+                      .map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
+                  Linking this secondary skill to a primary skill activates <strong>80/20 Pareto distribution</strong>. Quests associated with either skill will share progress: 80% to the Primary skill, 20% to the Secondary skill!
+                </p>
+              </div>
+            )}
+
+            {/* LINKED SECONDARY SKILLS (For Primary Skills) */}
+            {(selectedSkill.tier || 'Primary') === 'Primary' && (
+              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-3 mt-4">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-cyan-400">Linked Secondary Skills (80/20 Rule)</span>
+                {state.skills.filter(s => s.parentId === selectedSkill.id).length === 0 ? (
+                  <p className="text-xs font-mono text-zinc-600">No linked secondary specializations.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {state.skills
+                      .filter(s => s.parentId === selectedSkill.id)
+                      .map(s => (
+                        <span
+                          key={s.id}
+                          className="text-[10px] font-mono text-fuchsia-400 bg-fuchsia-950/35 border border-fuchsia-500/20 px-2.5 py-1 rounded"
+                        >
+                          {s.name}
+                        </span>
+                      ))}
+                  </div>
+                )}
+                <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
+                  These secondary skills automatically split 20% of the XP whenever this primary skill is trained or active!
+                </p>
+              </div>
+            )}
+
+            {/* TITLES OPTIONS SECTION */}
             <div className="space-y-3.5 border-t border-b border-white/5 py-5">
               <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Crown className={`h-4 w-4 ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`} />
@@ -610,9 +710,8 @@ export const SkillsView: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Connected Planning Documents Section */}
+            {/* Connected Planning Documents Section */}
             <div className="space-y-3 pt-2">
               <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                 📄 STRATEGIC PLANNING DIRECTIVES

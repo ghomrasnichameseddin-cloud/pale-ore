@@ -91,6 +91,7 @@ export interface Skill {
   relatedProjects: string[]; // Project IDs
   equippedTitle?: string;
   tier?: 'Primary' | 'Secondary';
+  parentId?: string | null;
 }
 
 export interface Attribute {
