@@ -56,43 +56,14 @@ export const QuestsView: React.FC = () => {
         <ExecuteQuestForm />
       </div>
 
-      {/* TWO COLUMN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* LEFT COLUMN: ACTIVE DIRECTIVES & HISTORY LOGS (Takes 2/3 space) */}
-        <div className="lg:col-span-2 space-y-6" id="quests-list-container">
-          <ActiveDirectives />
-        </div>
+      {/* FULL-WIDTH TERMINAL & SYSTEM OPERATIONAL LOG (ACTIVE DIRECTIVES) */}
+      <div id="quests-list-container" className="w-full">
+        <ActiveDirectives />
+      </div>
 
-        {/* RIGHT COLUMN: METADATA / GUIDE (Takes 1/3 space) */}
-        <div className="space-y-6" id="quests-sidebar-container">
-          {/* QUEST TREE DIRECTORY EXPLORER */}
-          <QuestDirectory />
-
-          {/* QUESTING SYSTEM GUIDE CARD */}
-          <div className="glass-panel rounded-lg p-5 space-y-4" id="quests-guide-panel">
-            <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider border-b border-white/5 pb-2">
-              QUESTING_OPERATIONS_MANUAL
-            </h4>
-            <div className="space-y-3 text-xs leading-relaxed text-zinc-400 font-sans">
-              <p>
-                <strong className="text-white font-mono uppercase block mb-1">⚔️ Difficulty XP Scaling</strong>
-                Each quest rewards Experience Points (XP) mapped dynamically to its difficulty. Higher difficulties yield significantly scaled rewards:
-              </p>
-              <ul className="space-y-1 font-mono text-[11px] list-disc pl-4 text-zinc-500">
-                <li><span className="text-emerald-400 font-bold">EASY</span>: +50 XP</li>
-                <li><span className="text-cyan-400 font-bold">NORMAL</span>: +100 XP</li>
-                <li><span className="text-amber-400 font-bold">HARD</span>: +200 XP</li>
-                <li><span className="text-rose-400 font-bold animate-pulse">BOSS</span>: +500 XP</li>
-              </ul>
-              <p className="pt-2 border-t border-white/5">
-                <strong className="text-white font-mono uppercase block mb-1">🔄 Recurrence Protocols</strong>
-                Setup recurring side-quests or daily habits. Completed recurring quests reset according to their cycle to help you rebuild momentum systematically.
-              </p>
-            </div>
-          </div>
-        </div>
-
+      {/* FULL-WIDTH QUEST TREE DIRECTORY EXPLORER */}
+      <div className="w-full" id="quests-sidebar-container">
+        <QuestDirectory />
       </div>
     </div>
   );
