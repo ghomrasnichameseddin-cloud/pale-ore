@@ -809,7 +809,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
 
         updatedQuests.push(pQuest);
-        recoveryModeActivated = true;
+        const typeUpper = q.type.toUpperCase();
+        if (typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT') {
+          recoveryModeActivated = true;
+        }
       });
     }
 
@@ -1265,11 +1268,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CRUD FOR QUESTS & PROGRESSION ACTIONS
   const addQuest = (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>): string => {
     const id = `q-${Date.now()}`;
-    const isUnifiedModifierActive = !!(quest.important || quest.isPenalty || quest.type === 'Penalty');
     const newQuest: Quest = {
       ...quest,
-      important: isUnifiedModifierActive,
-      isPenalty: isUnifiedModifierActive,
       id,
       status: 'Active',
       completedAt: null,
@@ -1285,29 +1285,28 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateQuest = (id: string, updates: Partial<Quest>) => {
     setState(prev => ({
       ...prev,
-      quests: prev.quests.map(q => {
-        if (q.id === id) {
-          const merged = { ...q, ...updates };
-          const isUnifiedModifierActive = !!(merged.important || merged.isPenalty || merged.type === 'Penalty');
-          return {
-            ...merged,
-            important: isUnifiedModifierActive,
-            isPenalty: isUnifiedModifierActive
-          };
-        }
-        return q;
-      })
+      quests: prev.quests.map(q => q.id === id ? { ...q, ...updates } : q)
     }));
   };
 
   const deleteQuest = (id: string) => {
     setState(prev => {
       const remainingQuests = prev.quests.filter(q => q.id !== id);
-      const remainingPenaltyQuestsCount = remainingQuests.filter(q => 
-        q.status === 'Active' && (q.isPenalty || q.type === 'Penalty')
-      ).length;
-      
-      const newRecoveryMode = remainingPenaltyQuestsCount === 0 ? false : prev.profile.recoveryMode;
+      const deletedQuest = prev.quests.find(q => q.id === id);
+      const isDeactivatingQuest = deletedQuest 
+        ? (deletedQuest.type.toUpperCase() === 'PENALTY' || deletedQuest.type.toUpperCase() === 'RECOVERY' || !!deletedQuest.isPenalty)
+        : false;
+
+      let newRecoveryMode = prev.profile.recoveryMode;
+      if (isDeactivatingQuest) {
+        const remainingDeactivatingQuestsCount = remainingQuests.filter(q => 
+          q.status === 'Active' && 
+          (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY' || !!q.isPenalty)
+        ).length;
+        if (remainingDeactivatingQuestsCount === 0) {
+          newRecoveryMode = false;
+        }
+      }
 
       return {
         ...prev,
@@ -1384,13 +1383,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
 
-      const isPenaltyQuest = questToComplete.isPenalty || questToComplete.type === 'Penalty';
-      const remainingPenaltyQuestsCount = updatedQuests.filter(q => 
-        q.status === 'Active' && (q.isPenalty || q.type === 'Penalty') && q.id !== id
+      const isDeactivatingQuest = 
+        questToComplete.type.toUpperCase() === 'PENALTY' || 
+        questToComplete.type.toUpperCase() === 'RECOVERY' || 
+        !!questToComplete.isPenalty;
+
+      const remainingDeactivatingQuestsCount = updatedQuests.filter(q => 
+        q.status === 'Active' && 
+        (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY' || !!q.isPenalty) && 
+        q.id !== id
       ).length;
 
-      const newRecoveryMode = isPenaltyQuest 
-        ? (remainingPenaltyQuestsCount === 0 ? false : prev.profile.recoveryMode)
+      const newRecoveryMode = isDeactivatingQuest 
+        ? (remainingDeactivatingQuestsCount === 0 ? false : prev.profile.recoveryMode)
         : prev.profile.recoveryMode;
 
       return {
@@ -1542,6 +1547,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
 
+      const typeUpper = questToFail.type.toUpperCase();
+      const activatesRecovery = typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT';
+      const newRecoveryMode = activatesRecovery ? true : prev.profile.recoveryMode;
+
       return {
         ...prev,
         quests: finalQuestsList,
@@ -1552,7 +1561,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xp: totalXp,
           level,
           momentum: newMomentum,
-          recoveryMode: true
+          recoveryMode: newRecoveryMode
         }
       };
     });

@@ -427,31 +427,46 @@ export const ExecuteQuestForm: React.FC = () => {
                 </div>
               </div>
 
-              {/* Row 3: Unified High Priority & Failure Penalty Modifier */}
-              <div className="pt-1">
+              {/* Row 3: Critical and Penalty selectors */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Critical Toggle */}
                 <div>
-                  <span className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-                    <AlertTriangle className="h-3 w-3 text-rose-500" /> Unified High Priority & Failure Penalty Modifier
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
+                    <AlertTriangle className="h-3 w-3" /> High Priority Modifier
                   </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      const nextVal = !newQuestImportant;
-                      setNewQuestImportant(nextVal);
-                      setNewQuestIsPenalty(nextVal);
-                    }}
-                    className={`w-full bg-zinc-950 border rounded-lg p-2.5 text-xs font-mono transition-all duration-200 flex items-center justify-between px-3.5 ${
+                    onClick={() => setNewQuestImportant(!newQuestImportant)}
+                    className={`w-full bg-zinc-950 border rounded-lg p-2 text-xs font-mono transition-all duration-200 flex items-center justify-between px-3 ${
                       newQuestImportant 
-                        ? 'border-rose-500/40 text-rose-400 bg-rose-950/20 font-bold shadow-[0_0_12px_rgba(244,63,94,0.08)]' 
+                        ? 'border-rose-500/30 text-rose-400 bg-rose-950/20 font-bold' 
                         : 'border-white/5 text-zinc-500 hover:text-zinc-400 hover:border-white/10'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <Skull className={`h-3.5 w-3.5 ${newQuestImportant ? 'text-rose-400 animate-pulse' : 'text-zinc-500'}`} />
-                      <span>CRITICAL STATUS & FAILURE PENALTY SYSTEM</span>
+                    <span>CRITICAL DIRECTIVE</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${newQuestImportant ? 'bg-rose-500/20 border border-rose-500/30' : 'bg-zinc-900 border border-white/5'}`}>
+                      {newQuestImportant ? 'ACTIVE' : 'INACTIVE'}
                     </span>
-                    <span className={`text-[9px] px-2 py-0.5 rounded leading-none ${newQuestImportant ? 'bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold' : 'bg-zinc-900 border border-white/5 text-zinc-600'}`}>
-                      {newQuestImportant ? 'ENGAGED' : 'OFFLINE'}
+                  </button>
+                </div>
+
+                {/* Penalty Toggle */}
+                <div>
+                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
+                    <Skull className="h-3 w-3" /> Failure Penalty Modifier
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setNewQuestIsPenalty(!newQuestIsPenalty)}
+                    className={`w-full bg-zinc-950 border rounded-lg p-2 text-xs font-mono transition-all duration-200 flex items-center justify-between px-3 ${
+                      newQuestIsPenalty 
+                        ? 'border-amber-500/30 text-amber-400 bg-amber-950/20 font-bold' 
+                        : 'border-white/5 text-zinc-500 hover:text-zinc-400 hover:border-white/10'
+                    }`}
+                  >
+                    <span>ENFORCE PENALTY ON FAIL</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${newQuestIsPenalty ? 'bg-amber-500/20 border border-amber-500/30' : 'bg-zinc-900 border border-white/5'}`}>
+                      {newQuestIsPenalty ? 'ACTIVE' : 'INACTIVE'}
                     </span>
                   </button>
                 </div>

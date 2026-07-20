@@ -497,6 +497,7 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestListId, setEditQuestListId] = useState<string>('');
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [editQuestImportant, setEditQuestImportant] = useState(false);
+  const [editQuestIsPenalty, setEditQuestIsPenalty] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
   const [editQuestDeadline, setEditQuestDeadline] = useState('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
@@ -522,6 +523,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestGoal(quest.goalId || '');
     setEditQuestListId(quest.listId || '');
     setEditQuestImportant(quest.important || false);
+    setEditQuestIsPenalty(quest.isPenalty || false);
     setEditQuestDescription(quest.description || '');
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
@@ -569,7 +571,7 @@ export const ActiveDirectives: React.FC = () => {
       listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
       important: editQuestImportant,
-      isPenalty: editQuestImportant,
+      isPenalty: editQuestIsPenalty,
       description: editQuestDescription,
       energyLevel: 'Medium',
       deadline: editQuestDeadline ? editQuestDeadline : null,
@@ -937,7 +939,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>
                 <select 
@@ -965,7 +967,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Critical & Penalty</label>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">High Priority</label>
                 <button
                   type="button"
                   onClick={() => setEditQuestImportant(!editQuestImportant)}
@@ -975,7 +977,22 @@ export const ActiveDirectives: React.FC = () => {
                       : 'border-white/10 text-zinc-500 hover:border-white/20'
                   }`}
                 >
-                  {editQuestImportant ? '💀 ENGAGED' : 'OFFLINE'}
+                  {editQuestImportant ? '⚠️ YES' : 'NO'}
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Enforce Penalty</label>
+                <button
+                  type="button"
+                  onClick={() => setEditQuestIsPenalty(!editQuestIsPenalty)}
+                  className={`w-full bg-zinc-900 border rounded p-1 text-xs font-mono transition-all duration-200 flex items-center justify-center gap-1 ${
+                    editQuestIsPenalty 
+                      ? 'border-amber-500/50 text-amber-400 bg-amber-950/20 font-bold' 
+                      : 'border-white/10 text-zinc-500 hover:border-white/20'
+                  }`}
+                >
+                  {editQuestIsPenalty ? '💀 YES' : 'NO'}
                 </button>
               </div>
             </div>
