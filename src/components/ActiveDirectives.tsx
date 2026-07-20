@@ -569,6 +569,7 @@ export const ActiveDirectives: React.FC = () => {
       listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
       important: editQuestImportant,
+      isPenalty: editQuestImportant,
       description: editQuestDescription,
       energyLevel: 'Medium',
       deadline: editQuestDeadline ? editQuestDeadline : null,
@@ -964,17 +965,17 @@ export const ActiveDirectives: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Critical/Important</label>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Critical & Penalty</label>
                 <button
                   type="button"
                   onClick={() => setEditQuestImportant(!editQuestImportant)}
                   className={`w-full bg-zinc-900 border rounded p-1 text-xs font-mono transition-all duration-200 flex items-center justify-center gap-1 ${
                     editQuestImportant 
-                      ? 'border-rose-500/50 text-rose-400 bg-rose-950/20' 
+                      ? 'border-rose-500/50 text-rose-400 bg-rose-950/20 font-bold' 
                       : 'border-white/10 text-zinc-500 hover:border-white/20'
                   }`}
                 >
-                  {editQuestImportant ? '⚠️ YES' : 'NO'}
+                  {editQuestImportant ? '💀 ENGAGED' : 'OFFLINE'}
                 </button>
               </div>
             </div>

@@ -1265,8 +1265,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // CRUD FOR QUESTS & PROGRESSION ACTIONS
   const addQuest = (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>): string => {
     const id = `q-${Date.now()}`;
+    const isUnifiedModifierActive = !!(quest.important || quest.isPenalty || quest.type === 'Penalty');
     const newQuest: Quest = {
       ...quest,
+      important: isUnifiedModifierActive,
+      isPenalty: isUnifiedModifierActive,
       id,
       status: 'Active',
       completedAt: null,
@@ -1282,7 +1285,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateQuest = (id: string, updates: Partial<Quest>) => {
     setState(prev => ({
       ...prev,
-      quests: prev.quests.map(q => q.id === id ? { ...q, ...updates } : q)
+      quests: prev.quests.map(q => {
+        if (q.id === id) {
+          const merged = { ...q, ...updates };
+          const isUnifiedModifierActive = !!(merged.important || merged.isPenalty || merged.type === 'Penalty');
+          return {
+            ...merged,
+            important: isUnifiedModifierActive,
+            isPenalty: isUnifiedModifierActive
+          };
+        }
+        return q;
+      })
     }));
   };
 
