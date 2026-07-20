@@ -24,7 +24,7 @@ export const ActiveDirectives: React.FC = () => {
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
-  const [energyFilter, setEnergyFilter] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
+  const [difficultyFilter, setDifficultyFilter] = useState<'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss'>('All');
   const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty'>('today');
 
   // Quick / Bulk Add States
@@ -487,6 +487,7 @@ export const ActiveDirectives: React.FC = () => {
   };
 
   // Quest Editing State
+  const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
   const [editingQuestId, setEditingQuestId] = useState<string | null>(null);
   const [editQuestName, setEditQuestName] = useState('');
   const [editQuestDiff, setEditQuestDiff] = useState<QuestDifficulty>('Normal');
@@ -497,7 +498,6 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [editQuestImportant, setEditQuestImportant] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
-  const [editQuestEnergy, setEditQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [editQuestDeadline, setEditQuestDeadline] = useState('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
 
@@ -523,7 +523,6 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestListId(quest.listId || '');
     setEditQuestImportant(quest.important || false);
     setEditQuestDescription(quest.description || '');
-    setEditQuestEnergy(quest.energyLevel || 'Medium');
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
 
@@ -571,7 +570,7 @@ export const ActiveDirectives: React.FC = () => {
       recurrence: finalRecurrence,
       important: editQuestImportant,
       description: editQuestDescription,
-      energyLevel: editQuestEnergy,
+      energyLevel: 'Medium',
       deadline: editQuestDeadline ? editQuestDeadline : null,
       relatedSkills: editQuestSkills
     });
@@ -633,8 +632,8 @@ export const ActiveDirectives: React.FC = () => {
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
-    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
-    if (!matchesEnergy) return false;
+    const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+    if (!matchesDifficulty) return false;
 
     if (isFinished) {
        return q.status !== 'Failed'; // Show completed today, exclude fails
@@ -651,8 +650,8 @@ export const ActiveDirectives: React.FC = () => {
 
   // 2. Tomorrow's quests: Active & scheduled/deadline is tomorrow, plus completed recurring
   const tomorrowQuests = baseQuests.filter(q => {
-    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
-    if (!matchesEnergy) return false;
+    const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+    if (!matchesDifficulty) return false;
 
     const isFinished = isQuestFinishedForToday(q);
     const isRecurring = q.recurrence && q.recurrence !== 'None';
@@ -673,8 +672,8 @@ export const ActiveDirectives: React.FC = () => {
 
   // 3. This Week's quests: next 7 days scheduled/due
   const weekQuests = baseQuests.filter(q => {
-    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
-    if (!matchesEnergy) return false;
+    const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+    if (!matchesDifficulty) return false;
 
     const isFinished = isQuestFinishedForToday(q);
     if (q.status !== 'Active') {
@@ -693,8 +692,8 @@ export const ActiveDirectives: React.FC = () => {
   const tomorrowPostponedQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
     const isRecurring = q.recurrence && q.recurrence !== 'None';
-    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
-    if (!matchesEnergy) return false;
+    const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+    if (!matchesDifficulty) return false;
     
     if (isFinished) {
       // Completed recurring quests are queued for tomorrow/future cycles in the defer console
@@ -707,8 +706,8 @@ export const ActiveDirectives: React.FC = () => {
   // 5. Penalty quests: Active and isPenalty or type === 'Penalty'
   const penaltyQuests = state.quests.filter(q => {
     if (q.status !== 'Active') return false;
-    const matchesEnergy = energyFilter === 'All' || q.energyLevel === energyFilter;
-    if (!matchesEnergy) return false;
+    const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+    if (!matchesDifficulty) return false;
     return q.isPenalty || q.type === 'Penalty';
   });
 
@@ -937,7 +936,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>
                 <select 
@@ -951,19 +950,6 @@ export const ActiveDirectives: React.FC = () => {
                   <option value="Recovery">Recovery Quest</option>
                   <option value="Habit">Habit Quest</option>
                   <option value="Optional">Optional Quest</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Energy Req</label>
-                <select 
-                  value={editQuestEnergy}
-                  onChange={(e) => setEditQuestEnergy(e.target.value as any)}
-                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-zinc-300"
-                >
-                  <option value="Low">⚡ Low</option>
-                  <option value="Medium">⚡⚡ Medium</option>
-                  <option value="High">⚡⚡⚡ High</option>
                 </select>
               </div>
 
@@ -1083,6 +1069,7 @@ export const ActiveDirectives: React.FC = () => {
     }
 
     const finished = isQuestFinishedForToday(quest);
+    const isSelected = selectedQuestId === quest.id;
 
     return (
       <motion.div
@@ -1091,375 +1078,106 @@ export const ActiveDirectives: React.FC = () => {
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, x: isDeferred ? 10 : -10 }}
-        transition={{ duration: 0.2 }}
-        className={`p-3.5 bg-zinc-950/70 border rounded-lg flex flex-col gap-3 hover:bg-zinc-950/90 transition-all ${
-          finished 
-            ? 'border-emerald-500/20 bg-emerald-950/5' 
-            : isDeferred 
-              ? 'border-amber-500/10 hover:border-amber-500/25' 
-              : 'border-white/5 hover:border-cyan-500/20'
+        transition={{ duration: 0.15 }}
+        onClick={() => setSelectedQuestId(quest.id)}
+        className={`p-2.5 bg-zinc-950/40 hover:bg-zinc-900/60 border rounded-lg flex items-center justify-between gap-3 cursor-pointer transition-all relative ${
+          isSelected 
+            ? 'border-cyan-500 bg-cyan-950/20 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
+            : finished 
+              ? 'border-emerald-500/10 bg-emerald-950/5 opacity-75' 
+              : isDeferred 
+                ? 'border-amber-500/10 hover:border-amber-500/20' 
+                : 'border-white/5 hover:border-white/10'
         }`}
       >
-        <div className="flex items-start justify-between gap-3 w-full">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {/* Completion Checkbox */}
-            <button 
-              onClick={() => {
-                if (finished) {
-                  reopenQuest(quest.id);
-                } else {
-                  completeQuest(quest.id);
-                }
-              }}
-              className={`mt-0.5 transition-colors shrink-0 ${
-                finished ? 'text-emerald-400 hover:text-zinc-500' : 'text-zinc-500 hover:text-emerald-400'
-              }`}
-              title={finished ? "Reopen Quest" : "Complete Quest"}
-            >
-              {finished ? (
-                <CheckCircle2 className="h-5 w-5" />
-              ) : (
-                <Circle className="h-5 w-5" />
-              )}
-            </button>
-            
-            <div className="space-y-1 min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {/* Important Badge */}
-                {(quest.important || quest.type === 'Main' || quest.type === 'Boss') && (
-                  <span className="text-[9px] font-mono font-bold text-rose-400 bg-rose-950/40 border border-rose-500/30 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-0.5">
-                    ⚠️ CRITICAL
-                  </span>
-                )}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* Checkbox */}
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (finished) {
+                reopenQuest(quest.id);
+              } else {
+                completeQuest(quest.id);
+              }
+            }}
+            className={`transition-colors shrink-0 ${
+              finished ? 'text-emerald-400 hover:text-zinc-500' : 'text-zinc-500 hover:text-emerald-400'
+            }`}
+            title={finished ? "Reopen Quest" : "Complete Quest"}
+          >
+            {finished ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Circle className="h-4 w-4" />
+            )}
+          </button>
 
-                {/* Difficulty Badge */}
-                <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                  quest.difficulty === 'Easy' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' :
-                  quest.difficulty === 'Normal' ? 'bg-cyan-950/30 text-cyan-400 border border-cyan-500/10' :
-                  quest.difficulty === 'Hard' ? 'bg-purple-950/30 text-purple-400 border border-purple-500/10' :
-                  'bg-rose-950/40 text-rose-400 border border-rose-500/20 font-bold animate-pulse'
-                }`}>
-                  {quest.difficulty}
-                </span>
-
-                {/* Energy Req Badge */}
-                <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded ${
-                  quest.energyLevel === 'Low' ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10' :
-                  quest.energyLevel === 'High' ? 'bg-amber-950/20 text-amber-400 border border-amber-500/15' :
-                  'bg-zinc-800 text-zinc-300 border border-zinc-700/50'
-                }`}>
-                  ⚡ {quest.energyLevel || 'Medium'}
-                </span>
-
-                {/* Type */}
-                <span className="text-[9px] font-mono text-zinc-400 uppercase bg-zinc-900 border border-white/5 px-1.5 py-0.5 rounded">
-                  {quest.type}
-                </span>
-
-                {/* Recurrence */}
-                {quest.recurrence && quest.recurrence !== 'None' && (
-                  <span className="text-[9px] font-mono text-cyan-400 uppercase bg-cyan-950/40 border border-cyan-500/20 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
-                    🔁 {quest.recurrence}
-                  </span>
-                )}
-
-                {/* Goal Relation */}
-                {matchedGoal && (
-                  <span className="text-[9px] font-mono text-zinc-400 truncate max-w-[150px] bg-zinc-900/50 px-1.5 py-0.5 rounded">
-                    🎯 {matchedGoal.name}
-                  </span>
-                )}
-
-                {/* Folder / List Relation */}
-                {(() => {
-                  if (!quest.listId) return null;
-                  const matchedList = (state.lists || []).find(l => l.id === quest.listId);
-                  if (!matchedList) return null;
-                  const matchedFolder = matchedList.folderId ? (state.folders || []).find(f => f.id === matchedList.folderId) : null;
-                  
-                  return (
-                    <span 
-                      className="text-[9px] font-mono truncate max-w-[180px] px-1.5 py-0.5 rounded flex items-center gap-1 border shrink-0"
-                      style={{
-                        color: matchedFolder?.color || '#22d3ee',
-                        borderColor: matchedFolder?.color ? `${matchedFolder.color}30` : 'rgba(34,211,238,0.2)',
-                        backgroundColor: matchedFolder?.color ? `${matchedFolder.color}10` : 'rgba(34,211,238,0.05)'
-                      }}
-                      title={matchedFolder ? `Folder: ${matchedFolder.name} > List: ${matchedList.name}` : `List: ${matchedList.name}`}
-                    >
-                      <span>📋</span>
-                      <span className="truncate">{matchedFolder ? `${matchedFolder.name} › ${matchedList.name}` : matchedList.name}</span>
-                    </span>
-                  );
-                })()}
-
-                {/* Deadline indicator */}
-                {quest.deadline && (
-                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${
-                    isDeferred 
-                      ? 'text-amber-400 bg-amber-950/40 border border-amber-500/20' 
-                      : 'text-zinc-400 bg-zinc-900 border border-white/5'
-                  }`}>
-                    📅 {isDeferred ? `POSTPONED (${quest.deadline})` : `DUE: ${quest.deadline}`}
-                  </span>
-                )}
-
-                {/* Recurring Queued indicator */}
-                {isDeferred && finished && quest.recurrence && quest.recurrence !== 'None' && (
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded font-bold text-amber-400 bg-amber-950/45 border border-amber-500/30 uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                    ⚡ QUEUED_NEXT_CYCLE
-                  </span>
-                )}
-              </div>
-
-              <h5 className={`font-sans text-sm font-semibold leading-tight mt-1 ${
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`font-sans text-xs font-semibold truncate ${
                 finished ? 'line-through text-zinc-500' : 'text-white'
               }`}>
                 {quest.name}
-              </h5>
+              </span>
 
-              {quest.description && (
-                <p className="text-xs text-zinc-400 font-sans mt-1 whitespace-pre-wrap leading-relaxed">
-                  {quest.description}
-                </p>
+              {/* Goal Relation Badge */}
+              {matchedGoal && (
+                <span className="text-[8px] font-mono text-zinc-500 truncate max-w-[120px] bg-zinc-900/40 px-1.5 py-0.5 rounded">
+                  🎯 {matchedGoal.name}
+                </span>
               )}
-
-              {/* Estimated time display */}
-              <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 mt-1">
-                <Clock className="h-3 w-3 text-zinc-500" />
-                <span>EST: {quest.estimatedTime}m</span>
-              </div>
-
-              {/* Subquests Section */}
-              <div className="mt-3 space-y-2 border-l border-zinc-800 pl-3">
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
-                  <span>Subquests ({quest.subquests?.filter(s => s.completed).length || 0}/{quest.subquests?.length || 0})</span>
-                </div>
-                
-                {quest.subquests && quest.subquests.length > 0 && (
-                  <div className="space-y-1.5 max-w-md">
-                    {quest.subquests.map(sq => (
-                      <div key={sq.id} className="flex items-center justify-between gap-2 group/sq">
-                        <button
-                          onClick={() => toggleSubQuest(quest.id, sq.id)}
-                          className="flex items-center gap-1.5 text-xs text-left text-zinc-300 hover:text-white transition-colors"
-                        >
-                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-all ${
-                            sq.completed 
-                              ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' 
-                              : 'border-white/10 group-hover/sq:border-white/20'
-                          }`}>
-                            {sq.completed && <Check className="h-2 w-2 stroke-[3]" />}
-                          </span>
-                          <span className={`font-sans text-[11px] ${sq.completed ? 'line-through text-zinc-500' : 'text-zinc-300'}`}>
-                            {sq.name}
-                          </span>
-                        </button>
-                        
-                        <button
-                          onClick={() => deleteSubQuest(quest.id, sq.id)}
-                          className="opacity-0 group-hover/sq:opacity-100 text-zinc-600 hover:text-rose-400 p-0.5 rounded transition-all"
-                          title="Delete Subquest"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    const input = form.elements.namedItem('subquestName') as HTMLInputElement;
-                    if (input && input.value.trim()) {
-                      addSubQuest(quest.id, input.value.trim());
-                      input.value = '';
-                    }
-                  }}
-                  className="flex gap-1.5 mt-2 max-w-sm"
-                >
-                  <input
-                    type="text"
-                    name="subquestName"
-                    placeholder="Add subquest..."
-                    className="bg-zinc-900/50 border border-white/5 rounded px-2 py-0.5 text-[10px] text-zinc-300 focus:outline-none focus:border-cyan-500/50 flex-1 font-sans"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white px-2 py-0.5 rounded text-[9px] font-mono hover:bg-zinc-800 transition-colors shrink-0"
-                  >
-                    ADD
-                  </button>
-                </form>
-              </div>
-
-              {/* Linked Planning SOPs / Playbooks */}
-              {(() => {
-                const linkedDocs = state.planningDocuments?.filter(doc => doc.linkedQuests?.includes(quest.id)) || [];
-                if (linkedDocs.length === 0) return null;
-                return (
-                  <div className="mt-3 pt-2 border-t border-white/5 space-y-1">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">📄 CONNECTED_OPERATIONAL_SOPs</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {linkedDocs.map(doc => (
-                        <div key={doc.id} className="text-[9px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-500/15 px-2 py-0.5 rounded flex items-center gap-1">
-                          <span>📂</span>
-                          <span className="max-w-[180px] truncate">{doc.name || doc.path.split('/').pop()?.replace('.md', '')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
-          </div>
 
-          {/* Right XP details & Actions */}
-          <div className="flex flex-col items-end justify-between self-stretch shrink-0">
-            <span className="text-xs font-mono font-bold text-emerald-400 shrink-0">
-              +{quest.xp} XP
-            </span>
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              {/* Difficulty Badge */}
+              <span className={`text-[8px] font-mono uppercase px-1 py-0.5 rounded ${
+                quest.difficulty === 'Easy' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' :
+                quest.difficulty === 'Normal' ? 'bg-cyan-950/30 text-cyan-400 border border-cyan-500/10' :
+                quest.difficulty === 'Hard' ? 'bg-purple-950/30 text-purple-400 border border-purple-500/10' :
+                'bg-rose-950/40 text-rose-400 border border-rose-500/20 font-bold'
+              }`}>
+                {quest.difficulty}
+              </span>
 
-            <div className="flex items-center gap-1 mt-3">
-              {/* Pomodoro Focus Launcher Option */}
-              {!finished && (
-                <button
-                  onClick={() => setFocusChoiceQuestId(focusChoiceQuestId === quest.id ? null : quest.id)}
-                  className={`p-1 rounded border transition-colors flex items-center justify-center ${
-                    focusChoiceQuestId === quest.id
-                      ? 'bg-cyan-950 border-cyan-500/40 text-cyan-400'
-                      : 'bg-zinc-900/40 border-white/5 text-zinc-500 hover:border-white/10 hover:text-cyan-400'
-                  }`}
-                  title="Start Focus Timer (Pomodoro)"
-                >
-                  <Timer className="h-3.5 w-3.5" />
-                </button>
+              {/* Category */}
+              <span className="text-[8px] font-mono text-zinc-400 uppercase bg-zinc-900 px-1 py-0.5 rounded">
+                {quest.type}
+              </span>
+
+              {/* Recurrence */}
+              {quest.recurrence && quest.recurrence !== 'None' && (
+                <span className="text-[8px] font-mono text-cyan-400 uppercase bg-cyan-950/20 px-1 py-0.5 rounded">
+                  🔁 {quest.recurrence}
+                </span>
               )}
 
-              {/* Move to Tomorrow or Move to Today */}
-              {isDeferred ? (
-                !finished && (
-                  <button
-                    onClick={() => handleMoveToToday(quest.id)}
-                    className="p-1 rounded bg-amber-950/20 border border-amber-500/30 text-amber-400 hover:bg-amber-900/30 transition-colors flex items-center justify-center font-bold"
-                    title="Accelerate: Move to Today"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                  </button>
-                )
-              ) : (
-                !finished && (
-                  <button
-                    onClick={() => handleMoveToTomorrow(quest.id)}
-                    className="p-1 rounded bg-zinc-900/40 border border-white/5 text-zinc-500 hover:border-white/10 hover:text-amber-400 transition-colors flex items-center justify-center"
-                    title="Postpone to Tomorrow"
-                  >
-                    <Calendar className="h-3.5 w-3.5" />
-                  </button>
-                )
+              {/* Deadline */}
+              {quest.deadline && (
+                <span className="text-[8px] font-mono text-amber-400 bg-amber-950/20 px-1 py-0.5 rounded">
+                  📅 {quest.deadline}
+                </span>
               )}
-
-              {/* Won't Do / Fail Task (Activate Penalty) */}
-              {!finished && (
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Mark "${quest.name}" as "Won't Do"? It will fail the quest, skip it, and activate an operational XP/momentum penalty.`)) {
-                      failQuest(quest.id);
-                    }
-                  }}
-                  className="p-1 rounded bg-zinc-900/40 border border-white/5 text-zinc-500 hover:border-white/10 hover:text-rose-500 transition-colors flex items-center justify-center font-bold"
-                  title="Won't Do (Skip and Penalize)"
-                >
-                  <Ban className="h-3.5 w-3.5" />
-                </button>
-              )}
-
-              {/* Edit */}
-              <button 
-                onClick={() => startEditingQuest(quest)}
-                className="p-1 rounded bg-zinc-900/40 border border-white/5 text-zinc-500 hover:border-white/10 hover:text-cyan-400 transition-colors"
-                title="Edit directive"
-              >
-                <Edit3 className="h-3.5 w-3.5" />
-              </button>
-
-              {/* Duplicate */}
-              <button 
-                onClick={() => duplicateQuest(quest.id)}
-                className="p-1 rounded bg-zinc-900/40 border border-white/5 text-zinc-500 hover:border-white/10 hover:text-white transition-colors"
-                title="Duplicate directive"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
-
-              {/* Delete */}
-              <button 
-                onClick={() => deleteQuest(quest.id)}
-                className="p-1 rounded bg-zinc-900/40 border border-white/5 text-zinc-500 hover:border-white/10 hover:text-rose-400 transition-colors"
-                title="Delete directive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Expandable Focus / Pomodoro Mode Selector */}
-        {focusChoiceQuestId === quest.id && (
-          <div className="p-3 bg-zinc-950/90 border border-cyan-500/20 rounded-lg space-y-2 animate-fadeIn max-w-lg">
-            <div className="flex justify-between items-center pb-1 border-b border-white/5">
-              <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider font-bold">
-                LAUNCH_POMODORO_FOCUS
-              </span>
-              <button
-                onClick={() => setFocusChoiceQuestId(null)}
-                className="text-zinc-600 hover:text-white"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-
-            <div className="text-[11px] text-zinc-400 font-sans">
-              Estimated task completion time is <span className="font-mono text-white font-bold">{quest.estimatedTime}m</span>. Choose your Pomodoro configuration:
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <button
-                onClick={() => {
-                  startFocusSession(quest.id, 25, 5);
-                  setFocusChoiceQuestId(null);
-                }}
-                className="p-2.5 bg-cyan-950/20 hover:bg-cyan-950/50 border border-cyan-500/20 hover:border-cyan-500/40 rounded text-left transition-all"
-              >
-                <span className="text-xs font-bold text-cyan-400 block font-mono">25 Min Work + 5 Min Rest</span>
-                <span className="text-[10px] text-zinc-500 block font-mono mt-0.5">
-                  Recommended: {Math.ceil(quest.estimatedTime / 25)} Focus Cycles
-                </span>
-              </button>
-
-              <button
-                onClick={() => {
-                  startFocusSession(quest.id, 50, 10);
-                  setFocusChoiceQuestId(null);
-                }}
-                className="p-2.5 bg-cyan-950/20 hover:bg-cyan-950/50 border border-cyan-500/20 hover:border-cyan-500/40 rounded text-left transition-all"
-              >
-                <span className="text-xs font-bold text-cyan-400 block font-mono">50 Min Work + 10 Min Rest</span>
-                <span className="text-[10px] text-zinc-500 block font-mono mt-0.5">
-                  Recommended: {Math.ceil(quest.estimatedTime / 50)} Focus Cycles
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Right side XP & select indicator */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] font-mono font-bold text-emerald-400/90">
+            +{quest.xp} XP
+          </span>
+          <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+            isSelected ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee]' : 'bg-transparent'
+          }`} />
+        </div>
       </motion.div>
     );
   };
 
-  return (
-    <div className="space-y-4" id="active-quests-panel">
+  const upperDashboardJSX = (
+    <div className="space-y-4" id="active-quests-panel-upper">
       {/* Active Focus Session Banner (if running) */}
       {activeFocusSession && (
         <div className="glass-panel border-cyan-500/30 bg-cyan-950/10 p-4 rounded-lg mb-4 shadow-[0_0_15px_rgba(6,182,212,0.1)] relative overflow-hidden" id="pomodoro-focus-panel-directives">
@@ -1670,26 +1388,26 @@ export const ActiveDirectives: React.FC = () => {
         )}
       </div>
 
-      {/* Strategy 2: Adaptive Load Energy Filter Bar */}
+      {/* Strategy 2: Adaptive Load Difficulty Filter Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-zinc-950/45 border border-white/5 rounded-lg gap-3">
         <div className="flex items-center gap-2.5">
           <Sliders className="h-4 w-4 text-cyan-400" />
           <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
-            ADAPTIVE_LOAD_ENERGY_LEVEL_FILTER:
+            ADAPTIVE_LOAD_DIFFICULTY_FILTER:
           </span>
         </div>
         <div className="flex gap-1.5 w-full sm:w-auto overflow-x-auto">
-          {(['All', 'Low', 'Medium', 'High'] as const).map(level => (
+          {(['All', 'Easy', 'Normal', 'Hard', 'Boss'] as const).map(level => (
             <button
               key={level}
-              onClick={() => setEnergyFilter(level)}
+              onClick={() => setDifficultyFilter(level)}
               className={`px-3 py-1 text-[10px] font-mono rounded border transition-all duration-200 uppercase whitespace-nowrap ${
-                energyFilter === level
+                difficultyFilter === level
                   ? 'bg-cyan-950 text-cyan-400 border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.1)] font-bold'
                   : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
               }`}
             >
-              {level === 'All' ? '🌌 ALL_LOAD' : level === 'Low' ? '⚡ LOW' : level === 'Medium' ? '⚡⚡ MED' : '⚡⚡⚡ HIGH'}
+              {level === 'All' ? '🌌 ALL_DIFFICULTIES' : level === 'Easy' ? '🟢 EASY' : level === 'Normal' ? '🟡 NORMAL' : level === 'Hard' ? '🟠 HARD' : '🔴 BOSS'}
             </button>
           ))}
         </div>
@@ -1713,219 +1431,564 @@ export const ActiveDirectives: React.FC = () => {
           </button>
         </div>
       )}
+    </div>
+  );
 
-      {/* COMPACTED UNIFIED TERMINAL CONSOLE */}
-      <div 
-        className={`glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-[550px] ${
-          terminalTab === 'today'
-            ? 'border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)]'
-            : terminalTab === 'tomorrow'
-            ? 'border-purple-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(168,85,247,0.03)]'
-            : terminalTab === 'week'
-            ? 'border-emerald-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(16,185,129,0.03)]'
-            : terminalTab === 'deferred'
-            ? 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
-            : 'border-rose-500/35 bg-zinc-950/50 shadow-[0_0_20px_rgba(239,68,68,0.04)]'
-        }`} 
-        id="unified-terminal"
-      >
-        <div className={`absolute inset-0 pointer-events-none bg-[size:100%_4px] transition-all duration-300 ${
-          terminalTab === 'today'
-            ? 'bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)]'
-            : terminalTab === 'tomorrow'
-            ? 'bg-[linear-gradient(to_bottom,rgba(168,85,247,0.01)_1px,transparent_1px)]'
-            : terminalTab === 'week'
-            ? 'bg-[linear-gradient(to_bottom,rgba(16,185,129,0.01)_1px,transparent_1px)]'
-            : terminalTab === 'deferred'
-            ? 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
-            : 'bg-[linear-gradient(to_bottom,rgba(239,68,68,0.015)_1px,transparent_1px)]'
-        }`} />
-        
-        {/* Terminal Header with Window Controls & Styled Tabs */}
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center pb-3 border-b border-white/10 mb-4 shrink-0 gap-3">
-          <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-            {/* Terminal OS window indicator dots */}
-            <div className="flex items-center gap-1.5 mr-1.5 shrink-0">
-              <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+  const renderQuestTerminalHUD = () => {
+    // find the selected quest
+    let quest = state.quests.find(q => q.id === selectedQuestId);
+    
+    // Fallback: if no quest is selected, auto-select the first quest from the active list
+    const activeList = 
+      terminalTab === 'today' ? todayQuests :
+      terminalTab === 'tomorrow' ? tomorrowQuests :
+      terminalTab === 'week' ? weekQuests :
+      terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+
+    if (!quest && activeList.length > 0) {
+      quest = activeList[0];
+    }
+
+    if (!quest) {
+      return (
+        <div className="h-full flex flex-col justify-center items-center text-center p-6 border border-dashed border-cyan-500/10 rounded-lg bg-zinc-950/30">
+          <Terminal className="h-10 w-10 text-cyan-500/20 mb-3 animate-pulse" />
+          <p className="text-xs font-mono text-cyan-500/60 uppercase">SYSTEM_OPERATIONAL_LOG</p>
+          <p className="text-[10px] font-mono text-zinc-500 mt-2 max-w-xs leading-relaxed">
+            No directives active or selected in this sector. Choose a directive from the operational board to inspect parameters and engage.
+          </p>
+        </div>
+      );
+    }
+
+    const matchedGoal = state.goals.find(g => g.id === quest.goalId);
+    const finished = isQuestFinishedForToday(quest);
+    const linkedDocs = state.planningDocuments?.filter(doc => doc.linkedQuests?.includes(quest.id)) || [];
+
+    return (
+      <div className="h-full flex flex-col overflow-hidden text-left" id="quest-hud-terminal">
+        {/* HUD Top Bar */}
+        <div className="flex justify-between items-center pb-2 border-b border-cyan-500/15 shrink-0">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-400 font-bold uppercase tracking-wider">
+            <Cpu className="h-3.5 w-3.5 text-cyan-400 animate-spin" />
+            <span>DIRECTIVE_HUD_TERM :: {quest.id.slice(0, 8)}</span>
+          </div>
+          <span className="text-[9px] font-mono text-cyan-500/60">SECURE_CHANNEL</span>
+        </div>
+
+        {/* HUD Scrollable Main Area */}
+        <div className="flex-1 overflow-y-auto pr-1 py-3.5 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
+          {/* Header Title & Status */}
+          <div>
+            <div className="flex justify-between items-start gap-2">
+              <h3 className={`font-sans text-xs sm:text-sm font-bold leading-tight ${finished ? 'line-through text-zinc-500' : 'text-white'}`}>
+                {quest.name}
+              </h3>
+              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 px-2 py-0.5 rounded shrink-0">
+                +{quest.xp} XP
+              </span>
             </div>
-            
-            {/* Embedded interactive tab toggles */}
-            <div className="flex flex-wrap bg-zinc-900/90 p-0.5 rounded border border-white/5 shrink-0 gap-0.5 max-w-full">
-              <button
-                onClick={() => setTerminalTab('today')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
-                  terminalTab === 'today'
-                    ? 'bg-cyan-950 text-cyan-400 font-bold border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.05)]'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Terminal className="h-3 w-3" />
-                SYS_ACTIVE_TODAY ({todayQuests.length})
-              </button>
-              <button
-                onClick={() => setTerminalTab('tomorrow')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
-                  terminalTab === 'tomorrow'
-                    ? 'bg-purple-950 text-purple-400 font-bold border border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Calendar className="h-3 w-3" />
-                SYS_TOMORROW ({tomorrowQuests.length})
-              </button>
-              <button
-                onClick={() => setTerminalTab('week')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
-                  terminalTab === 'week'
-                    ? 'bg-emerald-950 text-emerald-400 font-bold border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.05)]'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Compass className="h-3 w-3" />
-                SYS_WEEK_HORIZON ({weekQuests.length})
-              </button>
-              <button
-                onClick={() => setTerminalTab('deferred')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
-                  terminalTab === 'deferred'
-                    ? 'bg-amber-950 text-amber-400 font-bold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                <Calendar className="h-3 w-3" />
-                SYS_DEFERRED_QUEUE ({tomorrowPostponedQuests.length})
-              </button>
-              <button
-                onClick={() => setTerminalTab('penalty')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono rounded uppercase transition-all duration-150 ${
-                  terminalTab === 'penalty'
-                    ? 'bg-rose-950 text-rose-400 font-bold border border-rose-500/20 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
-                    : 'text-zinc-500 hover:text-rose-400'
-                }`}
-              >
-                <Skull className="h-3 w-3 text-rose-500" />
-                SYS_PENALTY_RECOVERY ({penaltyQuests.length})
-              </button>
-            </div>
+            {quest.description && (
+              <p className="text-[11px] text-zinc-400 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed bg-zinc-950/40 p-2 rounded border border-white/5">
+                {quest.description}
+              </p>
+            )}
           </div>
 
-          {/* Dynamic state monitor badge */}
-          {terminalTab === 'today' ? (
-            <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
-              ONLINE_FLOW: {todayQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+          {/* Quick Info Grid */}
+          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Difficulty</span>
+              <span className={`font-bold ${
+                quest.difficulty === 'Easy' ? 'text-emerald-400' :
+                quest.difficulty === 'Normal' ? 'text-cyan-400' :
+                quest.difficulty === 'Hard' ? 'text-purple-400' : 'text-rose-400 font-extrabold animate-pulse'
+              }`}>
+                {quest.difficulty === 'Easy' ? '🟢 EASY' :
+                 quest.difficulty === 'Normal' ? '🟡 NORMAL' :
+                 quest.difficulty === 'Hard' ? '🟣 HARD' : '🔴 BOSS'}
+              </span>
             </div>
-          ) : terminalTab === 'tomorrow' ? (
-            <div className="text-[10px] font-mono text-purple-400/80 bg-purple-950/30 border border-purple-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
-              FORECAST: {tomorrowQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Category</span>
+              <span className="text-zinc-300 font-bold">{quest.type}</span>
             </div>
-          ) : terminalTab === 'week' ? (
-            <div className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/30 border border-emerald-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
-              7D_HORIZON: {weekQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+            {quest.recurrence && quest.recurrence !== 'None' && (
+              <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+                <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Recurrence</span>
+                <span className="text-cyan-400 font-bold">🔁 {quest.recurrence}</span>
+              </div>
+            )}
+            {quest.deadline && (
+              <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+                <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Target Date</span>
+                <span className="text-amber-400 font-bold">📅 {quest.deadline}</span>
+              </div>
+            )}
+            {matchedGoal && (
+              <div className="col-span-2 bg-zinc-950/50 p-2 rounded border border-white/5 flex justify-between items-center">
+                <div>
+                  <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Linked Goal</span>
+                  <span className="text-zinc-300 truncate font-semibold block max-w-[220px]">🎯 {matchedGoal.name}</span>
+                </div>
+              </div>
+            )}
+            {(() => {
+              if (!quest.listId) return null;
+              const matchedList = (state.lists || []).find(l => l.id === quest.listId);
+              if (!matchedList) return null;
+              const matchedFolder = matchedList.folderId ? (state.folders || []).find(f => f.id === matchedList.folderId) : null;
+              return (
+                <div className="col-span-2 bg-zinc-950/50 p-2 rounded border border-white/5">
+                  <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Directory Path</span>
+                  <span className="text-cyan-400 truncate font-semibold block" style={{ color: matchedFolder?.color }}>
+                    📋 {matchedFolder ? `${matchedFolder.name} › ${matchedList.name}` : matchedList.name}
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Subquests Section */}
+          <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-white/5 space-y-2">
+            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
+              <span>Subquests ({quest.subquests?.filter(s => s.completed).length || 0}/{quest.subquests?.length || 0})</span>
             </div>
-          ) : terminalTab === 'deferred' ? (
-            <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
-              QUEUED: {tomorrowPostponedQuests.length} DEFERRED
-            </div>
-          ) : (
-            <div className="text-[10px] font-mono text-rose-400 bg-rose-950/30 border border-rose-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0 animate-pulse">
-              RECOVERY_CON: {penaltyQuests.length} ACTIVE
+            {quest.subquests && quest.subquests.length > 0 ? (
+              <div className="space-y-1.5">
+                {quest.subquests.map(sq => (
+                  <div key={sq.id} className="flex items-center justify-between gap-2 group/hudsq">
+                    <button
+                      type="button"
+                      onClick={() => toggleSubQuest(quest.id, sq.id)}
+                      className="flex items-center gap-1.5 text-left text-zinc-300 hover:text-white transition-colors"
+                    >
+                      <span className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
+                        sq.completed 
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' 
+                          : 'border-white/10'
+                      }`}>
+                        {sq.completed && <Check className="h-2 w-2 stroke-[3]" />}
+                      </span>
+                      <span className={`font-sans text-[10.5px] ${sq.completed ? 'line-through text-zinc-500' : 'text-zinc-300'}`}>
+                        {sq.name}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSubQuest(quest.id, sq.id)}
+                      className="opacity-0 group-hover/hudsq:opacity-100 text-zinc-600 hover:text-rose-400 p-0.5 transition-all"
+                      title="Delete Subquest"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] font-mono text-zinc-500 italic">No subquests. Add one below to breakdown execution.</p>
+            )}
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const input = form.elements.namedItem('hudSubquestName') as HTMLInputElement;
+                if (input && input.value.trim()) {
+                  addSubQuest(quest.id, input.value.trim());
+                  input.value = '';
+                }
+              }}
+              className="flex gap-1.5 mt-2"
+            >
+              <input
+                type="text"
+                name="hudSubquestName"
+                placeholder="Break down task..."
+                className="bg-zinc-900 border border-white/5 rounded px-2 py-0.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 flex-1 font-sans"
+              />
+              <button
+                type="submit"
+                className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-400 px-2 py-0.5 rounded text-[10px] font-mono transition-colors shrink-0"
+              >
+                ADD
+              </button>
+            </form>
+          </div>
+
+          {/* Linked SOPs / Playbooks */}
+          {linkedDocs.length > 0 && (
+            <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+              <span className="text-[8px] font-mono text-zinc-400 font-bold uppercase tracking-wider block">📄 CONNECTED_OPERATIONAL_SOPs</span>
+              <div className="flex flex-wrap gap-1.5">
+                {linkedDocs.map(doc => (
+                  <div key={doc.id} className="text-[9px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-500/15 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <span>📂</span>
+                    <span className="max-w-[150px] truncate">{doc.name || doc.path.split('/').pop()?.replace('.md', '')}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Dynamic Body Log description box */}
-        {terminalTab === 'today' ? (
-          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-cyan-400/80">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
-            Running daily operational protocol. Completed objectives archive below.
-          </div>
-        ) : terminalTab === 'tomorrow' ? (
-          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-purple-400/80">root@pos-os:~#</span> cat /sys/tomorrow_operational_log<br/>
-            Simulating next-cycle directives. Anticipating objective schedules.
-          </div>
-        ) : terminalTab === 'week' ? (
-          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-emerald-400/80">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
-            Analyzing 7-day milestone projection. Balancing recurring workloads.
-          </div>
-        ) : terminalTab === 'deferred' ? (
-          <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
-            Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
-          </div>
-        ) : (
-          <div className="bg-zinc-900/60 border border-rose-950/40 rounded px-3 py-2 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-            <span className="text-rose-500">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
-            ACTIVE SYSTEM PENALTIES DETECTED. Complete these directives immediately to disable Recovery Mode restriction lock.
-          </div>
-        )}
-
-        {/* Dynamic unified Quest list scroll region */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-thin scrollbar-thumb-zinc-800">
-          {terminalTab === 'today' ? (
-            todayQuests.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
-                <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
-                <p className="text-[9px] text-zinc-600 font-mono mt-1">Use top CLI prompt to register a new directive.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {todayQuests.map(q => renderQuestCard(q, false))}
-              </AnimatePresence>
-            )
-          ) : terminalTab === 'tomorrow' ? (
-            tomorrowQuests.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
-                <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
-                <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {tomorrowQuests.map(q => renderQuestCard(q, true))}
-              </AnimatePresence>
-            )
-          ) : terminalTab === 'week' ? (
-            weekQuests.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
-                <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
-                <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {weekQuests.map(q => renderQuestCard(q, true))}
-              </AnimatePresence>
-            )
-          ) : terminalTab === 'deferred' ? (
-            tomorrowPostponedQuests.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
-                <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
-                <p className="text-[9px] text-zinc-600 font-mono mt-1">Postpone any active task to defer execution load.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {tomorrowPostponedQuests.map(q => renderQuestCard(q, true))}
-              </AnimatePresence>
-            )
-          ) : (
-            penaltyQuests.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
-                <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
-                <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
-                <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {penaltyQuests.map(q => renderQuestCard(q, false))}
-              </AnimatePresence>
-            )
+        {/* HUD Bottom Controller / Primary Actions */}
+        <div className="pt-2.5 border-t border-cyan-500/15 shrink-0 space-y-2 bg-zinc-950/20">
+          {/* POMODORO TRIGGER SECTION */}
+          {!finished && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFocusChoiceQuestId(focusChoiceQuestId === quest.id ? null : quest.id);
+                  startFocusSession(quest.id, 25);
+                }}
+                className="flex-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-400 font-bold font-mono text-xs py-1.5 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.05)]"
+              >
+                <Timer className="h-4 w-4 text-cyan-400 animate-pulse" />
+                <span>ENGAGE_FOCUS_POMODORO (25M)</span>
+              </button>
+            </div>
           )}
+
+          {/* CORE STATE CONTROLLERS */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {/* Complete/Reopen */}
+            <button
+              type="button"
+              onClick={() => {
+                if (finished) reopenQuest(quest.id);
+                else completeQuest(quest.id);
+              }}
+              className={`py-1 bg-zinc-900/60 border rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                finished 
+                  ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900' 
+                  : 'border-white/5 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/20'
+              }`}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>{finished ? 'REOPEN' : 'COMPLETE'}</span>
+            </button>
+
+            {/* Postpone / Move */}
+            {!finished ? (
+              <button
+                type="button"
+                onClick={() => handleMoveToTomorrow(quest.id)}
+                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-amber-500/20 hover:text-amber-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+                title="Postpone to tomorrow"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span>POSTPONE</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="py-1 bg-zinc-900/30 border border-white/5 text-zinc-600 rounded-lg text-[9px] font-mono font-bold uppercase flex flex-col items-center justify-center gap-0.5 cursor-not-allowed"
+                disabled
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span>POSTPONE</span>
+              </button>
+            )}
+
+            {/* Fail/Skip Penalty */}
+            {!finished ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Mark "${quest.name}" as "Won't Do"? It will activate an XP/momentum penalty.`)) {
+                    failQuest(quest.id);
+                  }
+                }}
+                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                <span>FAIL_SKIP</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="py-1 bg-zinc-900/30 border border-white/5 text-zinc-600 rounded-lg text-[9px] font-mono font-bold uppercase flex flex-col items-center justify-center gap-0.5 cursor-not-allowed"
+                disabled
+              >
+                <Ban className="h-3.5 w-3.5" />
+                <span>FAIL_SKIP</span>
+              </button>
+            )}
+
+            {/* Edit Option */}
+            <button
+              type="button"
+              onClick={() => startEditingQuest(quest)}
+              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-cyan-500/20 hover:text-cyan-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              <span>EDIT</span>
+            </button>
+
+            {/* Duplicate Option */}
+            <button
+              type="button"
+              onClick={() => duplicateQuest(quest.id)}
+              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-purple-500/20 hover:text-purple-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              <span>DUPLICATE</span>
+            </button>
+
+            {/* Delete Option */}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Are you sure you want to permanently delete "${quest.name}"?`)) {
+                  deleteQuest(quest.id);
+                  setSelectedQuestId(null);
+                }
+              }}
+              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-red-500/20 hover:text-red-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>DELETE</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4" id="active-quests-panel">
+      {upperDashboardJSX}
+
+      {/* COMPACTED UNIFIED TERMINAL CONSOLE */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 h-[620px]" id="unified-terminal-container">
+        {/* Left Column: Directives Board List */}
+        <div 
+          className={`lg:col-span-3 glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-full ${
+            terminalTab === 'today'
+              ? 'border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)]'
+              : terminalTab === 'tomorrow'
+              ? 'border-purple-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(168,85,247,0.03)]'
+              : terminalTab === 'week'
+              ? 'border-emerald-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(16,185,129,0.03)]'
+              : terminalTab === 'deferred'
+              ? 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
+              : 'border-rose-500/35 bg-zinc-950/50 shadow-[0_0_20px_rgba(239,68,68,0.04)]'
+          }`} 
+          id="unified-terminal"
+        >
+          <div className={`absolute inset-0 pointer-events-none bg-[size:100%_4px] transition-all duration-300 ${
+            terminalTab === 'today'
+              ? 'bg-[linear-gradient(to_bottom,rgba(6,182,212,0.01)_1px,transparent_1px)]'
+              : terminalTab === 'tomorrow'
+              ? 'bg-[linear-gradient(to_bottom,rgba(168,85,247,0.01)_1px,transparent_1px)]'
+              : terminalTab === 'week'
+              ? 'bg-[linear-gradient(to_bottom,rgba(16,185,129,0.01)_1px,transparent_1px)]'
+              : terminalTab === 'deferred'
+              ? 'bg-[linear-gradient(to_bottom,rgba(245,158,11,0.01)_1px,transparent_1px)]'
+              : 'bg-[linear-gradient(to_bottom,rgba(239,68,68,0.015)_1px,transparent_1px)]'
+          }`} />
+          
+          {/* Terminal Header with Window Controls & Styled Tabs */}
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center pb-3 border-b border-white/10 mb-4 shrink-0 gap-3">
+            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+              {/* Terminal OS window indicator dots */}
+              <div className="flex items-center gap-1.5 mr-1.5 shrink-0">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-500/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+              </div>
+              
+              {/* Embedded interactive tab toggles */}
+              <div className="flex flex-wrap bg-zinc-900/90 p-0.5 rounded border border-white/5 shrink-0 gap-0.5 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => setTerminalTab('today')}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
+                    terminalTab === 'today'
+                      ? 'bg-cyan-950 text-cyan-400 font-bold border border-cyan-500/20 shadow-[0_0_8px_rgba(6,182,212,0.05)]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <Terminal className="h-3 w-3" />
+                  TODAY ({todayQuests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTerminalTab('tomorrow')}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
+                    terminalTab === 'tomorrow'
+                      ? 'bg-purple-950 text-purple-400 font-bold border border-purple-500/20 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <Calendar className="h-3 w-3" />
+                  TOMORROW ({tomorrowQuests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTerminalTab('week')}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
+                    terminalTab === 'week'
+                      ? 'bg-emerald-950 text-emerald-400 font-bold border border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.05)]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <Compass className="h-3 w-3" />
+                  WEEK ({weekQuests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTerminalTab('deferred')}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
+                    terminalTab === 'deferred'
+                      ? 'bg-amber-950 text-amber-400 font-bold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <Calendar className="h-3 w-3" />
+                  DEFERRED ({tomorrowPostponedQuests.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTerminalTab('penalty')}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
+                    terminalTab === 'penalty'
+                      ? 'bg-rose-950 text-rose-400 font-bold border border-rose-500/20 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
+                      : 'text-zinc-500 hover:text-rose-400'
+                  }`}
+                >
+                  <Skull className="h-3 w-3 text-rose-500" />
+                  PENALTY ({penaltyQuests.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Dynamic state monitor badge */}
+            {terminalTab === 'today' ? (
+              <div className="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+                ACTIVE: {todayQuests.filter(q => !isQuestFinishedForToday(q)).length} LEFT
+              </div>
+            ) : terminalTab === 'tomorrow' ? (
+              <div className="text-[10px] font-mono text-purple-400/80 bg-purple-950/30 border border-purple-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+                FORECAST: {tomorrowQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+              </div>
+            ) : terminalTab === 'week' ? (
+              <div className="text-[10px] font-mono text-emerald-400/80 bg-emerald-950/30 border border-emerald-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+                7D_HORIZON: {weekQuests.filter(q => !isQuestFinishedForToday(q)).length} ACTIVE
+              </div>
+            ) : terminalTab === 'deferred' ? (
+              <div className="text-[10px] font-mono text-amber-400/80 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0">
+                DEFERRED: {tomorrowPostponedQuests.length}
+              </div>
+            ) : (
+              <div className="text-[10px] font-mono text-rose-400 bg-rose-950/30 border border-rose-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0 animate-pulse">
+                CONSTRAINTS: {penaltyQuests.length}
+              </div>
+            )}
+          </div>
+
+          {/* Dynamic Body Log description box */}
+          {terminalTab === 'today' ? (
+            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+              <span className="text-cyan-400/80">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
+              Running daily operational protocol. Completed objectives archive below.
+            </div>
+          ) : terminalTab === 'tomorrow' ? (
+            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+              <span className="text-purple-400/80">root@pos-os:~#</span> cat /sys/tomorrow_operational_log<br/>
+              Simulating next-cycle directives. Anticipating objective schedules.
+            </div>
+          ) : terminalTab === 'week' ? (
+            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+              <span className="text-emerald-400/80">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
+              Analyzing 7-day milestone projection. Balancing recurring workloads.
+            </div>
+          ) : terminalTab === 'deferred' ? (
+            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+              <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
+              Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
+            </div>
+          ) : (
+            <div className="bg-zinc-900/60 border border-rose-950/40 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
+              <span className="text-rose-500">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
+              ACTIVE SYSTEM PENALTIES DETECTED. Complete these directives immediately to disable Recovery Mode restriction lock.
+            </div>
+          )}
+
+          {/* Dynamic unified Quest list scroll region */}
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
+            {terminalTab === 'today' ? (
+              todayQuests.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
+                  <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                  <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
+                  <p className="text-[9px] text-zinc-600 font-mono mt-1">Use top CLI prompt to register a new directive.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {todayQuests.map(q => renderQuestCard(q, false))}
+                </AnimatePresence>
+              )
+            ) : terminalTab === 'tomorrow' ? (
+              tomorrowQuests.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
+                  <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                  <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
+                  <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {tomorrowQuests.map(q => renderQuestCard(q, true))}
+                </AnimatePresence>
+              )
+            ) : terminalTab === 'week' ? (
+              weekQuests.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
+                  <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                  <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
+                  <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {weekQuests.map(q => renderQuestCard(q, true))}
+                </AnimatePresence>
+              )
+            ) : terminalTab === 'deferred' ? (
+              tomorrowPostponedQuests.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
+                  <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                  <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
+                  <p className="text-[9px] text-zinc-600 font-mono mt-1">Postpone any active task to defer execution load.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {tomorrowPostponedQuests.map(q => renderQuestCard(q, true))}
+                </AnimatePresence>
+              )
+            ) : (
+              penaltyQuests.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
+                  <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
+                  <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {penaltyQuests.map(q => renderQuestCard(q, false))}
+                </AnimatePresence>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Quest HUD Terminal Inspector */}
+        <div 
+          className="lg:col-span-2 glass-panel rounded-lg p-5 border border-cyan-500/15 bg-zinc-950/60 shadow-[0_0_25px_rgba(6,182,212,0.03)] flex flex-col h-full relative overflow-hidden"
+          id="unified-hud-inspector"
+        >
+          {renderQuestTerminalHUD()}
         </div>
       </div>
     </div>

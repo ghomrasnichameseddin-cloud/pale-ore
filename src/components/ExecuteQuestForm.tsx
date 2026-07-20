@@ -21,7 +21,6 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestImportant, setNewQuestImportant] = useState(false);
   const [newQuestIsPenalty, setNewQuestIsPenalty] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
-  const [newQuestEnergy, setNewQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [newQuestDeadline, setNewQuestDeadline] = useState('');
 
   // UI State: Advanced Parameters Collapsible Drawer
@@ -91,7 +90,7 @@ export const ExecuteQuestForm: React.FC = () => {
       recurrence: finalRecurrence,
       deadline: newQuestDeadline || systemDate,
       important: isImportant,
-      energyLevel: newQuestEnergy,
+      energyLevel: 'Medium',
       isPenalty: newQuestIsPenalty || newQuestType === 'Penalty'
     });
 
@@ -101,7 +100,6 @@ export const ExecuteQuestForm: React.FC = () => {
     setNewQuestRecurrence('None');
     setNewQuestImportant(false);
     setNewQuestIsPenalty(false);
-    setNewQuestEnergy('Medium');
     setNewQuestDeadline('');
   };
 
@@ -112,7 +110,6 @@ export const ExecuteQuestForm: React.FC = () => {
     newQuestListId !== '' || 
     newQuestSkills.length > 0 || 
     newQuestDeadline !== '' || 
-    newQuestEnergy !== 'Medium' || 
     newQuestImportant || 
     newQuestIsPenalty;
 
@@ -260,8 +257,8 @@ export const ExecuteQuestForm: React.FC = () => {
           {/* Expandable Advanced Area */}
           {isAdvancedOpen && (
             <div className="mt-3.5 p-4 bg-zinc-950/60 rounded-lg border border-white/5 space-y-4 animate-fadeIn">
-              {/* Row 1: Recurrence, Deadline, Energy */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Row 1: Recurrence, Deadline */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Recurrence Selection */}
                 <div>
                   <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
@@ -292,22 +289,6 @@ export const ExecuteQuestForm: React.FC = () => {
                     onChange={(e) => setNewQuestDeadline(e.target.value)}
                     className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all"
                   />
-                </div>
-
-                {/* Energy level selection */}
-                <div>
-                  <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-                    <Zap className="h-2.5 w-2.5" /> Energy Req
-                  </label>
-                  <select 
-                    value={newQuestEnergy}
-                    onChange={(e) => setNewQuestEnergy(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer"
-                  >
-                    <option value="Low">⚡ Low</option>
-                    <option value="Medium">⚡⚡ Medium</option>
-                    <option value="High">⚡⚡⚡ High</option>
-                  </select>
                 </div>
               </div>
 
