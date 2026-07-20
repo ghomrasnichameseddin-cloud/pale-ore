@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { PlanningDocument } from '../types';
 import { 
@@ -73,31 +73,16 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
   // Organize documents by virtual folders
   const folderStructure = useMemo(() => {
-    const folders: Record<string, PlanningDocument[]> = {
-      '00 Vision': [],
-      '01 Strategies': [],
-      '02 Master Plans': [],
-      '03 Tactical Playbooks': [],
-      '04 Operations': [],
-      '05 SOPs': [],
-      '06 Frameworks': [],
-      '07 Reviews': [],
-      'Archive': [],
-    };
+    const folders: Record<string, PlanningDocument[]> = {};
 
     state.planningDocuments.forEach(doc => {
       // Extract top folder name
       const parts = doc.path.split('/');
-      const topFolder = parts[0];
-      if (folders[topFolder] !== undefined) {
-        folders[topFolder].push(doc);
-      } else {
-        // Fallback or custom user folder
-        if (!folders[topFolder]) {
-          folders[topFolder] = [];
-        }
-        folders[topFolder].push(doc);
+      const topFolder = parts[0] || 'Unsorted';
+      if (!folders[topFolder]) {
+        folders[topFolder] = [];
       }
+      folders[topFolder].push(doc);
     });
 
     // Sort files within each folder alphabetically
@@ -105,8 +90,22 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       folders[k].sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    return folders;
+    // Return folders sorted alphabetically by folder name
+    const sortedFolders: Record<string, PlanningDocument[]> = {};
+    Object.keys(folders).sort().forEach(key => {
+      sortedFolders[key] = folders[key];
+    });
+
+    return sortedFolders;
   }, [state.planningDocuments]);
+
+  // Sync newFileFolder to first available folder if current one is deleted/renamed
+  useEffect(() => {
+    const folders = Object.keys(folderStructure);
+    if (folders.length > 0 && !folders.includes(newFileFolder) && newFileFolder !== '__custom__') {
+      setNewFileFolder(folders[0]);
+    }
+  }, [folderStructure, newFileFolder]);
 
   // Filtered folder structure based on search
   const filteredFolderStructure = useMemo(() => {

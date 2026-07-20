@@ -496,6 +496,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             timeLeft: newTimeLeft,
             mode: currentMode,
             completedCycles,
+            timeSpent: (session.timeSpent || 0) + elapsedSeconds,
             lastUpdated: Date.now()
           };
         }
@@ -541,12 +542,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             timeLeft: nextDuration * 60,
             completedCycles: nextCycles,
             status: 'paused',
+            timeSpent: (prev.timeSpent || 0) + elapsed,
             lastUpdated: now
           };
         }
         return {
           ...prev,
           timeLeft: prev.timeLeft - elapsed,
+          timeSpent: (prev.timeSpent || 0) + elapsed,
           lastUpdated: now
         };
       });
@@ -631,6 +634,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timeLeft: workTime * 60,
       completedCycles: 0,
       estimatedCycles: estCycles,
+      timeSpent: 0,
       lastUpdated: Date.now()
     });
   };

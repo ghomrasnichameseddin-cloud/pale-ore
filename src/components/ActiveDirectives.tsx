@@ -12,7 +12,7 @@ export const ActiveDirectives: React.FC = () => {
   const { 
     state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
-    startFocusSession, activeFocusSession, stopFocusSession,
+    startFocusSession, activeFocusSession, pauseFocusSession, resumeFocusSession, stopFocusSession,
     isQuestFinishedForToday,
     isQuestScheduledForDate,
     systemDate,
@@ -1471,8 +1471,8 @@ export const ActiveDirectives: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-mono bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20 font-bold uppercase tracking-wider">
-                    {activeFocusSession.mode === 'work' ? '🟢 WORK FOCUS' : '🟡 REST PHASE'}
+                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border font-bold uppercase tracking-wider ${activeFocusSession.status === 'paused' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}`}>
+                    {activeFocusSession.status === 'paused' ? '⏸️ PAUSED' : activeFocusSession.mode === 'work' ? '🟢 WORK FOCUS' : '🟡 REST PHASE'}
                   </span>
                   <span className="text-[9px] font-mono text-zinc-500">
                     CYCLE {activeFocusSession.completedCycles + 1} OF {activeFocusSession.estimatedCycles}
@@ -1481,15 +1481,39 @@ export const ActiveDirectives: React.FC = () => {
                 <h5 className="text-xs font-sans font-bold text-white mt-1">
                   Focusing: <span className="text-cyan-300">"{activeFocusSession.questName}"</span>
                 </h5>
+                <div className="text-[10px] font-mono text-zinc-400 mt-1 flex items-center gap-1.5">
+                  <span>SESSION ELAPSED:</span>
+                  <span className="text-cyan-400 font-bold bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10">
+                    {String(Math.floor((activeFocusSession.timeSpent || 0) / 60)).padStart(2, '0')}m {String((activeFocusSession.timeSpent || 0) % 60).padStart(2, '0')}s
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="font-mono text-xl md:text-2xl font-bold text-white tracking-wider">
+              <div className={`font-mono text-xl md:text-2xl font-bold tracking-wider ${activeFocusSession.status === 'paused' ? 'text-zinc-500' : 'text-white'}`}>
                 {String(Math.floor(activeFocusSession.timeLeft / 60)).padStart(2, '0')}:{String(activeFocusSession.timeLeft % 60).padStart(2, '0')}
               </div>
 
               <div className="flex items-center gap-1.5">
+                {activeFocusSession.status === 'running' ? (
+                  <button
+                    onClick={pauseFocusSession}
+                    className="p-1.5 bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-400 rounded transition-all"
+                    title="Pause Focus Session"
+                  >
+                    <Pause className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={resumeFocusSession}
+                    className="p-1.5 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-400 rounded transition-all animate-pulse"
+                    title="Resume Focus Session"
+                  >
+                    <Play className="h-4 w-4" />
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     if (window.confirm("Complete the associated quest now? This will award standard XP and stop the focus timer.")) {

@@ -135,6 +135,7 @@ export interface ActiveFocusSession {
   completedCycles: number;
   estimatedCycles: number;
   lastUpdated?: number; // timestamp in ms
+  timeSpent?: number; // total time spent in this session in seconds
 }
 
 export interface PlanningDocument {
