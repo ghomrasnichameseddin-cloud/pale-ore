@@ -75,10 +75,8 @@ export interface Quest {
   deadline: string | null; // YYYY-MM-DD
   completedAt: string | null; // ISO Timestamp when completed
   createdAt: string;
-  important?: boolean;
   subquests?: SubQuest[];
   energyLevel?: 'Low' | 'Medium' | 'High';
-  isPenalty?: boolean;
 }
 
 export interface Skill {

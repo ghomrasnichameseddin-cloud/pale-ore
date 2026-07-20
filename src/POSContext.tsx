@@ -716,7 +716,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Find ALL quests active on oldDate that were left unchecked (incomplete)
       const uncheckedQuests = prev.quests.filter(q => {
         if (q.status !== 'Active') return false;
-        if (q.isPenalty || q.type === 'Penalty') return false;
+        if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
 
         // Check if recurring
         if (q.recurrence && q.recurrence !== 'None') {
@@ -747,7 +747,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         else if (q.difficulty === 'Hard') penaltyXp = 100;
         else if (q.difficulty === 'Boss') penaltyXp = 250;
 
-        const isCritical = q.important || q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
+        const isCritical = q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
         const finalPenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
 
         const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
@@ -786,10 +786,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           status: 'Active' as const,
           difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
           type: 'Penalty',
-          isPenalty: true,
           estimatedTime: 15,
           recurrence: 'None',
-          important: true,
           energyLevel: 'Medium',
           deadline: q.deadline || new Date().toISOString().split('T')[0],
           createdAt: new Date().toISOString(),
@@ -1294,14 +1292,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remainingQuests = prev.quests.filter(q => q.id !== id);
       const deletedQuest = prev.quests.find(q => q.id === id);
       const isDeactivatingQuest = deletedQuest 
-        ? (deletedQuest.type.toUpperCase() === 'PENALTY' || deletedQuest.type.toUpperCase() === 'RECOVERY' || !!deletedQuest.isPenalty)
+        ? (deletedQuest.type.toUpperCase() === 'PENALTY' || deletedQuest.type.toUpperCase() === 'RECOVERY')
         : false;
 
       let newRecoveryMode = prev.profile.recoveryMode;
       if (isDeactivatingQuest) {
         const remainingDeactivatingQuestsCount = remainingQuests.filter(q => 
           q.status === 'Active' && 
-          (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY' || !!q.isPenalty)
+          (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY')
         ).length;
         if (remainingDeactivatingQuestsCount === 0) {
           newRecoveryMode = false;
@@ -1385,12 +1383,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const isDeactivatingQuest = 
         questToComplete.type.toUpperCase() === 'PENALTY' || 
-        questToComplete.type.toUpperCase() === 'RECOVERY' || 
-        !!questToComplete.isPenalty;
+        questToComplete.type.toUpperCase() === 'RECOVERY';
 
       const remainingDeactivatingQuestsCount = updatedQuests.filter(q => 
         q.status === 'Active' && 
-        (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY' || !!q.isPenalty) && 
+        (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') && 
         q.id !== id
       ).length;
 
@@ -1471,7 +1468,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else if (questToFail.difficulty === 'Hard') penaltyXp = 100;
     else if (questToFail.difficulty === 'Boss') penaltyXp = 250;
 
-    const isImportant = questToFail.important || questToFail.type === 'Main' || questToFail.type === 'Boss' || questToFail.difficulty === 'Hard' || questToFail.difficulty === 'Boss';
+    const isImportant = questToFail.type === 'Main' || questToFail.type === 'Boss' || questToFail.difficulty === 'Hard' || questToFail.difficulty === 'Boss';
     const finalPenaltyXp = isImportant ? penaltyXp * 1.5 : penaltyXp;
 
     const xpHistoryId = `h-fail-${Date.now()}`;
@@ -1507,10 +1504,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'Active' as const,
         difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
         type: 'Penalty',
-        isPenalty: true,
         estimatedTime: 15,
         recurrence: 'None',
-        important: true,
         energyLevel: 'Medium',
         deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
         createdAt: new Date().toISOString(),

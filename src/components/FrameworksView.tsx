@@ -121,9 +121,9 @@ export const FrameworksView: React.FC = () => {
         else if (savedQuad === 'Q3') q3.push(q);
         else if (savedQuad === 'Q4') q4.push(q);
       } else {
-        // Fallback mapping based on quest importance & difficulty
-        if (q.important && q.type === 'Penalty') q1.push(q);
-        else if (q.important || q.difficulty === 'Boss' || q.difficulty === 'Hard') q2.push(q);
+        // Fallback mapping based on quest type & difficulty
+        if (q.type === 'Penalty') q1.push(q);
+        else if (q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss') q2.push(q);
         else if (q.difficulty === 'Normal') q2.push(q);
         else if (q.recurrence && q.recurrence !== 'None') q3.push(q);
         else q4.push(q);
@@ -1146,7 +1146,7 @@ const QuestMiniCard: React.FC<QuestMiniCardProps> = ({
   const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   const getPriorityColor = (q: Quest) => {
-    if (q.important || q.difficulty === 'Boss' || q.difficulty === 'Hard') return 'text-rose-400 border-rose-500/20 bg-rose-950/10';
+    if (q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Boss' || q.difficulty === 'Hard') return 'text-rose-400 border-rose-500/20 bg-rose-950/10';
     if (q.difficulty === 'Normal') return 'text-amber-400 border-amber-500/20 bg-amber-950/10';
     return 'text-zinc-400 border-zinc-700 bg-zinc-950';
   };
@@ -1160,7 +1160,7 @@ const QuestMiniCard: React.FC<QuestMiniCardProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className={`text-[8px] font-mono px-1.5 py-0.2 rounded border uppercase font-bold tracking-widest shrink-0 ${getPriorityColor(quest)}`}>
-            {quest.important ? 'URGENT' : quest.difficulty}
+            {quest.difficulty}
           </span>
           <span className="text-[10px] font-mono text-zinc-500 shrink-0">
             {quest.estimatedTime}m

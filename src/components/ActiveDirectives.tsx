@@ -496,8 +496,6 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestGoal, setEditQuestGoal] = useState<string>('');
   const [editQuestListId, setEditQuestListId] = useState<string>('');
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
-  const [editQuestImportant, setEditQuestImportant] = useState(false);
-  const [editQuestIsPenalty, setEditQuestIsPenalty] = useState(false);
   const [editQuestDescription, setEditQuestDescription] = useState('');
   const [editQuestDeadline, setEditQuestDeadline] = useState('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
@@ -522,8 +520,6 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestXp(quest.xp);
     setEditQuestGoal(quest.goalId || '');
     setEditQuestListId(quest.listId || '');
-    setEditQuestImportant(quest.important || false);
-    setEditQuestIsPenalty(quest.isPenalty || false);
     setEditQuestDescription(quest.description || '');
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
@@ -570,8 +566,6 @@ export const ActiveDirectives: React.FC = () => {
       goalId: editQuestGoal ? editQuestGoal : null,
       listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
-      important: editQuestImportant,
-      isPenalty: editQuestIsPenalty,
       description: editQuestDescription,
       energyLevel: 'Medium',
       deadline: editQuestDeadline ? editQuestDeadline : null,
@@ -584,7 +578,7 @@ export const ActiveDirectives: React.FC = () => {
   const baseQuests = state.quests.filter(q => {
     // 1. Recovery Mode Filter
     if (state.profile.recoveryMode) {
-      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty' && !q.isPenalty) return false;
+      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
     }
 
     // 2. Folder & List filters
@@ -706,12 +700,12 @@ export const ActiveDirectives: React.FC = () => {
     return q.status === 'Active' && q.deadline && q.deadline > todayStr;
   });
 
-  // 5. Penalty quests: Active and isPenalty or type === 'Penalty'
+  // 5. Penalty quests: Active and type === 'Penalty'
   const penaltyQuests = state.quests.filter(q => {
     if (q.status !== 'Active') return false;
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
-    return q.isPenalty || q.type === 'Penalty';
+    return q.type === 'Penalty';
   });
 
   const handleMoveToTomorrow = (questId: string) => {
@@ -939,7 +933,7 @@ export const ActiveDirectives: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>
                 <select 
@@ -964,36 +958,6 @@ export const ActiveDirectives: React.FC = () => {
                   onChange={(e) => setEditQuestDeadline(e.target.value)}
                   className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white font-mono"
                 />
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">High Priority</label>
-                <button
-                  type="button"
-                  onClick={() => setEditQuestImportant(!editQuestImportant)}
-                  className={`w-full bg-zinc-900 border rounded p-1 text-xs font-mono transition-all duration-200 flex items-center justify-center gap-1 ${
-                    editQuestImportant 
-                      ? 'border-rose-500/50 text-rose-400 bg-rose-950/20 font-bold' 
-                      : 'border-white/10 text-zinc-500 hover:border-white/20'
-                  }`}
-                >
-                  {editQuestImportant ? '⚠️ YES' : 'NO'}
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Enforce Penalty</label>
-                <button
-                  type="button"
-                  onClick={() => setEditQuestIsPenalty(!editQuestIsPenalty)}
-                  className={`w-full bg-zinc-900 border rounded p-1 text-xs font-mono transition-all duration-200 flex items-center justify-center gap-1 ${
-                    editQuestIsPenalty 
-                      ? 'border-amber-500/50 text-amber-400 bg-amber-950/20 font-bold' 
-                      : 'border-white/10 text-zinc-500 hover:border-white/20'
-                  }`}
-                >
-                  {editQuestIsPenalty ? '💀 YES' : 'NO'}
-                </button>
               </div>
             </div>
 

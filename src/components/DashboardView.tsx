@@ -29,7 +29,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     isQuestScheduledForDate(q, systemDate)
   );
   
-  const frogOfTheDay = activeQuests.find(q => q.important) || 
+  const frogOfTheDay = activeQuests.find(q => q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Boss' || q.difficulty === 'Hard') || 
                        (activeQuests.length > 0 ? [...activeQuests].sort((a, b) => b.xp - a.xp)[0] : null);
   const overdueQuests = activeQuests;
 

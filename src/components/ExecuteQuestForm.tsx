@@ -18,8 +18,6 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestSkills, setNewQuestSkills] = useState<string[]>([]);
   const [newQuestDuration, setNewQuestDuration] = useState<number>(30);
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
-  const [newQuestImportant, setNewQuestImportant] = useState(false);
-  const [newQuestIsPenalty, setNewQuestIsPenalty] = useState(false);
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [newQuestDeadline, setNewQuestDeadline] = useState('');
 
@@ -58,9 +56,6 @@ export const ExecuteQuestForm: React.FC = () => {
     else if (newQuestDiff === 'Hard') xp = 200;
     else if (newQuestDiff === 'Boss') xp = 500;
 
-    const autoImportant = newQuestType === 'Main' || newQuestType === 'Boss' || newQuestDiff === 'Hard' || newQuestDiff === 'Boss';
-    const isImportant = newQuestImportant || autoImportant;
-
     // Compile Recurrence
     let finalRecurrence: QuestRecurrence = 'None';
     if (newQuestRecurrence === 'Custom') {
@@ -89,17 +84,13 @@ export const ExecuteQuestForm: React.FC = () => {
       type: newQuestType,
       recurrence: finalRecurrence,
       deadline: newQuestDeadline || systemDate,
-      important: isImportant,
-      energyLevel: 'Medium',
-      isPenalty: newQuestIsPenalty || newQuestType === 'Penalty'
+      energyLevel: 'Medium'
     });
 
     setNewQuestName('');
     setNewQuestDescription('');
     setNewQuestSkills([]);
     setNewQuestRecurrence('None');
-    setNewQuestImportant(false);
-    setNewQuestIsPenalty(false);
     setNewQuestDeadline('');
   };
 
@@ -109,9 +100,7 @@ export const ExecuteQuestForm: React.FC = () => {
     newQuestGoal !== '' || 
     newQuestListId !== '' || 
     newQuestSkills.length > 0 || 
-    newQuestDeadline !== '' || 
-    newQuestImportant || 
-    newQuestIsPenalty;
+    newQuestDeadline !== '';
 
   return (
     <div className="glass-panel rounded-lg p-5 border border-white/5 bg-zinc-900/40 relative overflow-hidden" id="quick-add-panel">
@@ -246,8 +235,6 @@ export const ExecuteQuestForm: React.FC = () => {
                   {newQuestGoal && <span className="text-purple-400">🎯 Goal</span>}
                   {newQuestListId && <span className="text-blue-400">📋 List</span>}
                   {newQuestSkills.length > 0 && <span className="text-amber-400">⚡ {newQuestSkills.length} Skills</span>}
-                  {newQuestImportant && <span className="text-rose-400 font-bold">⚠️ CRIT</span>}
-                  {newQuestIsPenalty && <span className="text-orange-400 font-bold">💀 PENALTY</span>}
                 </div>
               )}
               {isAdvancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -424,51 +411,6 @@ export const ExecuteQuestForm: React.FC = () => {
                       </optgroup>
                     )}
                   </select>
-                </div>
-              </div>
-
-              {/* Row 3: Critical and Penalty selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Critical Toggle */}
-                <div>
-                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-                    <AlertTriangle className="h-3 w-3" /> High Priority Modifier
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setNewQuestImportant(!newQuestImportant)}
-                    className={`w-full bg-zinc-950 border rounded-lg p-2 text-xs font-mono transition-all duration-200 flex items-center justify-between px-3 ${
-                      newQuestImportant 
-                        ? 'border-rose-500/30 text-rose-400 bg-rose-950/20 font-bold' 
-                        : 'border-white/5 text-zinc-500 hover:text-zinc-400 hover:border-white/10'
-                    }`}
-                  >
-                    <span>CRITICAL DIRECTIVE</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${newQuestImportant ? 'bg-rose-500/20 border border-rose-500/30' : 'bg-zinc-900 border border-white/5'}`}>
-                      {newQuestImportant ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
-                  </button>
-                </div>
-
-                {/* Penalty Toggle */}
-                <div>
-                  <span className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-                    <Skull className="h-3 w-3" /> Failure Penalty Modifier
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setNewQuestIsPenalty(!newQuestIsPenalty)}
-                    className={`w-full bg-zinc-950 border rounded-lg p-2 text-xs font-mono transition-all duration-200 flex items-center justify-between px-3 ${
-                      newQuestIsPenalty 
-                        ? 'border-amber-500/30 text-amber-400 bg-amber-950/20 font-bold' 
-                        : 'border-white/5 text-zinc-500 hover:text-zinc-400 hover:border-white/10'
-                    }`}
-                  >
-                    <span>ENFORCE PENALTY ON FAIL</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${newQuestIsPenalty ? 'bg-amber-500/20 border border-amber-500/30' : 'bg-zinc-900 border border-white/5'}`}>
-                      {newQuestIsPenalty ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
-                  </button>
                 </div>
               </div>
 
