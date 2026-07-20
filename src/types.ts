@@ -134,6 +134,7 @@ export interface ActiveFocusSession {
   timeLeft: number; // in seconds
   completedCycles: number;
   estimatedCycles: number;
+  lastUpdated?: number; // timestamp in ms
 }
 
 export interface PlanningDocument {

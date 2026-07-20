@@ -473,7 +473,34 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeFocusSession, setActiveFocusSession] = useState<ActiveFocusSession | null>(() => {
     try {
       const saved = localStorage.getItem('pale_ore_pos_focus_session');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const session = JSON.parse(saved) as ActiveFocusSession;
+      if (session && session.status === 'running' && session.lastUpdated) {
+        const elapsedSeconds = Math.floor((Date.now() - session.lastUpdated) / 1000);
+        if (elapsedSeconds > 0) {
+          let newTimeLeft = session.timeLeft - elapsedSeconds;
+          let currentMode = session.mode;
+          let completedCycles = session.completedCycles;
+          
+          while (newTimeLeft <= 0) {
+            const cycleLength = currentMode === 'work' ? session.totalWorkTime * 60 : session.totalRestTime * 60;
+            newTimeLeft += cycleLength;
+            if (currentMode === 'work') {
+              completedCycles += 1;
+            }
+            currentMode = currentMode === 'work' ? 'rest' : 'work';
+          }
+          
+          return {
+            ...session,
+            timeLeft: newTimeLeft,
+            mode: currentMode,
+            completedCycles,
+            lastUpdated: Date.now()
+          };
+        }
+      }
+      return session;
     } catch {
       return null;
     }
@@ -493,7 +520,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const timer = setInterval(() => {
       setActiveFocusSession(prev => {
         if (!prev || prev.status !== 'running') return prev;
-        if (prev.timeLeft <= 1) {
+        const now = Date.now();
+        const lastUpd = prev.lastUpdated || now;
+        const elapsed = Math.max(1, Math.floor((now - lastUpd) / 1000));
+
+        if (prev.timeLeft <= elapsed) {
           const nextMode = prev.mode === 'work' ? 'rest' : 'work';
           const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
           const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
@@ -509,12 +540,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             mode: nextMode,
             timeLeft: nextDuration * 60,
             completedCycles: nextCycles,
-            status: 'paused'
+            status: 'paused',
+            lastUpdated: now
           };
         }
         return {
           ...prev,
-          timeLeft: prev.timeLeft - 1
+          timeLeft: prev.timeLeft - elapsed,
+          lastUpdated: now
         };
       });
     }, 1000);
@@ -537,6 +570,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timestamp: new Date().toISOString(),
         skillIds: []
       };
+
+      // Automatically complete the associated quest since the work block duration completed!
+      if (activeFocusSession.mode === 'rest') {
+        completeQuest(activeFocusSession.questId);
+      }
 
       setState(prev => {
         const prevMinutes = prev.profile.focusMinutesToday || 0;
@@ -592,7 +630,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'running',
       timeLeft: workTime * 60,
       completedCycles: 0,
-      estimatedCycles: estCycles
+      estimatedCycles: estCycles,
+      lastUpdated: Date.now()
     });
   };
 
@@ -601,7 +640,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resumeFocusSession = () => {
-    setActiveFocusSession(prev => prev ? { ...prev, status: 'running' } : null);
+    setActiveFocusSession(prev => prev ? { ...prev, status: 'running', lastUpdated: Date.now() } : null);
   };
 
   const stopFocusSession = () => {

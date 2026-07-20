@@ -38,6 +38,11 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
   const [isCreatingFile, setIsCreatingFile] = useState<boolean>(false);
   const [newFileName, setNewFileName] = useState<string>('');
   const [newFileFolder, setNewFileFolder] = useState<string>('00 Vision');
+  const [customFolder, setCustomFolder] = useState<string>('');
+
+  // Folder editing / renaming state
+  const [editingFolder, setEditingFolder] = useState<string | null>(null);
+  const [folderRenameValue, setFolderRenameValue] = useState<string>('');
 
   // Editing state for current document content
   const [editContent, setEditContent] = useState<string>('');
@@ -325,13 +330,17 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       finalName += '.md';
     }
 
-    const fullPath = `${newFileFolder}/${finalName}`;
-    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured contents here aligned with your ${newFileFolder.replace(/^\d+\s+/, '')} strategies.`;
+    const targetFolder = newFileFolder === '__custom__' ? customFolder.trim() : newFileFolder;
+    if (!targetFolder) return;
+
+    const fullPath = `${targetFolder}/${finalName}`;
+    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured contents here aligned with your ${targetFolder.replace(/^\d+\s+/, '')} strategies.`;
     
     const newId = addPlanningDocument(fullPath, finalName, defaultMarkdown);
     
     // Reset inputs
     setNewFileName('');
+    setCustomFolder('');
     setIsCreatingFile(false);
     setSelectedDocId(newId);
     setIsEditMode(true);
@@ -344,6 +353,53 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
         setSelectedDocId('pdoc-00-1');
         setIsEditMode(false);
       }
+    }
+  };
+
+  const handleRenameFolder = (oldFolderName: string, newFolderName: string) => {
+    const trimmedNewName = newFolderName.trim();
+    if (!trimmedNewName || trimmedNewName === oldFolderName) {
+      setEditingFolder(null);
+      return;
+    }
+
+    // Update all files in this folder to have the new folder path
+    const docsToUpdate = state.planningDocuments.filter(doc => doc.path.startsWith(oldFolderName + '/'));
+    docsToUpdate.forEach(doc => {
+      const restOfPath = doc.path.substring(oldFolderName.length + 1);
+      updatePlanningDocument(doc.id, {
+        path: `${trimmedNewName}/${restOfPath}`
+      });
+    });
+
+    // Update folder expansion state if it was expanded
+    if (expandedFolders[oldFolderName] !== undefined) {
+      setExpandedFolders(prev => {
+        const copy = { ...prev };
+        const oldState = copy[oldFolderName];
+        delete copy[oldFolderName];
+        copy[trimmedNewName] = oldState;
+        return copy;
+      });
+    }
+
+    setEditingFolder(null);
+  };
+
+  const handleDeleteFolder = (folderName: string) => {
+    const filesInFolder = state.planningDocuments.filter(doc => doc.path.startsWith(folderName + '/'));
+    const message = filesInFolder.length > 0 
+      ? `Are you sure you want to delete the folder "${folderName}" and all of its ${filesInFolder.length} files? This action is local-only but irreversible.`
+      : `Are you sure you want to delete the folder "${folderName}"?`;
+
+    if (window.confirm(message)) {
+      filesInFolder.forEach(doc => {
+        deletePlanningDocument(doc.id);
+        if (selectedDocId === doc.id) {
+          setSelectedDocId('pdoc-00-1');
+          setIsEditMode(false);
+        }
+      });
     }
   };
 
@@ -416,20 +472,82 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
             return (
               <div key={folderName} className="space-y-0.5">
                 {/* Folder Header Row */}
-                <button
-                  onClick={() => toggleFolder(folderName)}
-                  className="w-full flex items-center justify-between text-left px-2 py-1.5 rounded hover:bg-white/[0.02] text-xs font-mono font-bold tracking-wide text-zinc-400 hover:text-white transition group"
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <span className="text-[10px] text-zinc-600">
-                      {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
-                    </span>
-                    <span>{folderEmoji} {folderName}</span>
-                  </div>
-                  <span className="text-[9px] bg-zinc-950 px-1.5 py-0.5 rounded border border-white/5 text-zinc-500 group-hover:text-zinc-300">
-                    {filteredFolderStructure[folderName].length}
-                  </span>
-                </button>
+                <div className="group/folder flex items-center justify-between rounded hover:bg-white/[0.02] transition">
+                  {editingFolder === folderName ? (
+                    <div className="flex items-center gap-1.5 p-1 w-full">
+                      <input
+                        type="text"
+                        value={folderRenameValue}
+                        onChange={(e) => setFolderRenameValue(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-cyan-500/50 rounded px-1.5 py-0.5 text-xs font-mono text-zinc-300 focus:outline-none"
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRenameFolder(folderName, folderRenameValue);
+                        }}
+                        className="px-1.5 py-0.5 bg-cyan-950 text-cyan-400 hover:bg-cyan-900 border border-cyan-500/30 rounded text-[9px] font-mono shrink-0"
+                      >
+                        SAVE
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingFolder(null);
+                        }}
+                        className="px-1.5 py-0.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 border border-white/5 rounded text-[9px] font-mono shrink-0"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => toggleFolder(folderName)}
+                        className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-400 hover:text-white transition"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-[10px] text-zinc-600">
+                            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+                          </span>
+                          <span>{folderEmoji} {folderName}</span>
+                        </div>
+                      </button>
+                      
+                      <div className="flex items-center gap-1 pr-2">
+                        {/* Folder controls - visible on hover */}
+                        <div className="opacity-0 group-hover/folder:opacity-100 flex items-center gap-1.5 mr-1.5 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingFolder(folderName);
+                              setFolderRenameValue(folderName);
+                            }}
+                            className="p-0.5 text-zinc-500 hover:text-cyan-400 transition"
+                            title="Rename Folder"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFolder(folderName);
+                            }}
+                            className="p-0.5 text-zinc-500 hover:text-rose-400 transition"
+                            title="Delete Folder"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <span className="text-[9px] bg-zinc-950 px-1.5 py-0.5 rounded border border-white/5 text-zinc-500">
+                          {filteredFolderStructure[folderName].length}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 {/* Folder Children Files */}
                 {isExpanded && (
@@ -499,7 +617,22 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     {Object.keys(folderStructure).map(f => (
                       <option key={f} value={f}>{getFolderEmoji(f)} {f}</option>
                     ))}
+                    <option value="__custom__">📁 [+ CREATE NEW FOLDER...]</option>
                   </select>
+
+                  {newFileFolder === '__custom__' && (
+                    <div className="mt-2">
+                      <label className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">NEW FOLDER NAME</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. 08 My Special Plans"
+                        value={customFolder}
+                        onChange={(e) => setCustomFolder(e.target.value)}
+                        className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/50 placeholder-zinc-600"
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
