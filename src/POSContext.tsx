@@ -106,6 +106,7 @@ interface POSContextType {
   getWeekdayStr: (dateStr: string) => string;
   systemDate: string;
   setSystemDate: (date: string) => void;
+  syncWithRealClock: () => void;
   selectedFolderId: string | null;
   setSelectedFolderId: (id: string | null) => void;
   selectedListId: string | null;
@@ -867,6 +868,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const syncWithRealClock = () => {
+    const realToday = new Date().toISOString().split('T')[0];
+    setSystemDate(realToday);
+  };
+
   // Run cycle reset check on mount and periodically at midnight
   useEffect(() => {
     const runCycleReset = () => {
@@ -874,13 +880,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState(prev => {
         const currentSimulated = prev.systemDate || realToday;
         
-        // If the simulated date matches yesterday's calendar date, and it has crossed to a new real day,
-        // we can automatically advance the simulated date to match the new calendar date.
+        // If current simulated date is behind real clock, auto-advance to real date
         let nextSimulated = currentSimulated;
         if (currentSimulated !== realToday) {
           const daysDiff = getDaysDifference(currentSimulated, realToday);
-          // If it's a natural calendar advancement, auto-advance it
-          if (daysDiff === 1) {
+          if (daysDiff >= 1) {
             nextSimulated = realToday;
           }
         }
@@ -2370,6 +2374,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getWeekdayStr,
       systemDate: state.systemDate || new Date().toISOString().split('T')[0],
       setSystemDate,
+      syncWithRealClock,
       selectedFolderId,
       setSelectedFolderId,
       selectedListId,

@@ -25,10 +25,13 @@ function AppContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
 
-  const { state, getPlayerLevelInfo, systemDate, setSystemDate } = usePOS();
+  const { state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock } = usePOS();
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
+
+  const realTodayDate = new Date().toISOString().split('T')[0];
+  const isRealTodaySynced = systemDate === realTodayDate;
 
   const shiftDate = (days: number) => {
     try {
@@ -123,12 +126,26 @@ function AppContent() {
                 </span>
                 <span>{systemTime.toLocaleTimeString()}</span>
               </div>
-              <div className="flex items-center justify-between w-full bg-zinc-900 border border-white/5 rounded-lg px-2 py-1.5 mt-1">
-                <div className="flex items-center gap-1 text-[10px] font-mono text-zinc-400">
-                  <Calendar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-                  <span>DATE:</span>
+              <div className="flex flex-col gap-1.5 w-full bg-zinc-900 border border-white/5 rounded-lg p-2 mt-1">
+                <div className="flex items-center justify-between text-[10px] font-mono">
+                  <div className="flex items-center gap-1 text-zinc-400">
+                    <Calendar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                    <span>SYS_DATE</span>
+                  </div>
+                  <button
+                    onClick={syncWithRealClock}
+                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold flex items-center gap-1 transition ${
+                      isRealTodaySynced 
+                        ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20' 
+                        : 'bg-amber-950/60 text-amber-300 border-amber-500/30 hover:bg-amber-900/80'
+                    }`}
+                    title={isRealTodaySynced ? "Synchronized with system clock" : "Click to sync with real system clock"}
+                  >
+                    <RefreshCw className={`h-2.5 w-2.5 ${isRealTodaySynced ? '' : 'animate-spin'}`} />
+                    {isRealTodaySynced ? 'SYNCED' : 'SYNC NOW'}
+                  </button>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between gap-1">
                   <button 
                     onClick={() => shiftDate(-1)} 
                     className="p-1 hover:bg-white/5 text-zinc-400 hover:text-white rounded transition"
@@ -140,7 +157,7 @@ function AppContent() {
                     type="date"
                     value={systemDate}
                     onChange={(e) => setSystemDate(e.target.value)}
-                    className="bg-zinc-950 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/50"
+                    className="bg-zinc-950 border border-white/10 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-300 text-center focus:outline-none focus:border-cyan-500/50"
                   />
                   <button 
                     onClick={() => shiftDate(1)} 
@@ -262,9 +279,19 @@ function AppContent() {
                 <Calendar className="h-3 w-3 text-cyan-400 shrink-0" />
                 SYS_DATE
               </span>
-              <span className="text-[9px] font-mono text-cyan-500 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10 uppercase tracking-widest font-black">
-                OPERATIONAL
-              </span>
+              <button
+                onClick={syncWithRealClock}
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold flex items-center gap-1 transition ${
+                  isRealTodaySynced 
+                    ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20' 
+                    : 'bg-amber-950/60 text-amber-300 border-amber-500/30 hover:bg-amber-900/80'
+                }`}
+                title={isRealTodaySynced ? "Synchronized with system clock" : "Click to sync with real system clock"}
+                id="sys-date-sync-btn"
+              >
+                <RefreshCw className={`h-2.5 w-2.5 ${isRealTodaySynced ? '' : 'animate-spin'}`} />
+                {isRealTodaySynced ? 'SYNCED' : 'SYNC NOW'}
+              </button>
             </div>
 
             <div className="flex items-center justify-between gap-1">
