@@ -4,6 +4,7 @@ import {
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument
 } from './types';
 import { INITIAL_STATE } from './initialState';
+import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec } from './jobsAndTitles';
 
 interface POSContextType {
   state: POSState;
@@ -73,6 +74,16 @@ interface POSContextType {
   // Profile Adjustments
   toggleRecoveryMode: () => void;
   updateProfileFocus: (focusText: string, goalId: string | null) => void;
+  updateJob: (jobId: string) => void;
+  updateTitle: (titleId: string) => void;
+  addCustomJob: (job: Omit<JobSpec, 'id' | 'isCustom'>) => string;
+  updateJobSpec: (job: JobSpec) => void;
+  deleteJobSpec: (jobId: string) => void;
+  deleteCustomJob: (jobId: string) => void;
+  addCustomTitle: (title: Omit<TitleSpec, 'id' | 'isCustom'>) => string;
+  updateTitleSpec: (title: TitleSpec) => void;
+  deleteTitleSpec: (titleId: string) => void;
+  deleteCustomTitle: (titleId: string) => void;
   resetAllData: () => void;
   resetLevelAndXp: () => void;
   clearAllQuests: () => void;
@@ -1326,13 +1337,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const completedTimestamp = new Date().toISOString();
     
+    // Calculate Job Perk XP Bonus
+    const activeJob = getActiveJob(state.profile.jobId);
+    let earnedXp = questToComplete.xp;
+    if (activeJob.id === 'job-cyber-architect' && questToComplete.type === 'Main') {
+      earnedXp = Math.round(earnedXp * 1.10);
+    } else if (activeJob.id === 'job-code-alchemist' && questToComplete.relatedSkills && questToComplete.relatedSkills.length > 0) {
+      earnedXp = Math.round(earnedXp * 1.15);
+    } else if (activeJob.id === 'job-strategy-commander' && (questToComplete.difficulty === 'Hard' || questToComplete.difficulty === 'Boss')) {
+      earnedXp = Math.round(earnedXp * 1.15);
+    } else if (activeJob.id === 'job-quantum-polymath') {
+      earnedXp = Math.round(earnedXp * 1.10);
+    }
+
     // Create XP History entry
     const xpHistoryId = `h-${Date.now()}`;
     const newHistoryEntry: XPHistoryEntry = {
       id: xpHistoryId,
       questId: questToComplete.id,
       questName: questToComplete.name,
-      xp: questToComplete.xp,
+      xp: earnedXp,
       timestamp: completedTimestamp,
       skillIds: questToComplete.relatedSkills
     };
@@ -1961,6 +1985,136 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const updateJob = (jobId: string) => {
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        jobId
+      }
+    }));
+  };
+
+  const updateTitle = (titleId: string) => {
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        equippedTitleId: titleId
+      }
+    }));
+  };
+
+  const addCustomJob = (job: Omit<JobSpec, 'id' | 'isCustom'>): string => {
+    const id = `cjob-${Date.now()}`;
+    const newJob: JobSpec = {
+      ...job,
+      id,
+      isCustom: true
+    };
+    setState(prev => ({
+      ...prev,
+      customJobs: [...(prev.customJobs || []), newJob]
+    }));
+    return id;
+  };
+
+  const updateJobSpec = (updatedJob: JobSpec) => {
+    setState(prev => {
+      const customJobs = prev.customJobs || [];
+      const index = customJobs.findIndex(j => j.id === updatedJob.id);
+      let newCustomJobs: JobSpec[];
+      if (index >= 0) {
+        newCustomJobs = [...customJobs];
+        newCustomJobs[index] = updatedJob;
+      } else {
+        newCustomJobs = [...customJobs, updatedJob];
+      }
+      return {
+        ...prev,
+        customJobs: newCustomJobs
+      };
+    });
+  };
+
+  const deleteJobSpec = (jobId: string) => {
+    setState(prev => {
+      const newCustomJobs = (prev.customJobs || []).filter(j => j.id !== jobId);
+      const newDeletedJobIds = Array.from(new Set([...(prev.deletedJobIds || []), jobId]));
+      const allJobsRemaining = getAllJobs(newCustomJobs, newDeletedJobIds);
+      const fallbackJobId = allJobsRemaining[0]?.id || 'job-cyber-architect';
+
+      return {
+        ...prev,
+        customJobs: newCustomJobs,
+        deletedJobIds: newDeletedJobIds,
+        profile: {
+          ...prev.profile,
+          jobId: prev.profile.jobId === jobId ? fallbackJobId : prev.profile.jobId
+        }
+      };
+    });
+  };
+
+  const deleteCustomJob = (jobId: string) => {
+    deleteJobSpec(jobId);
+  };
+
+  const addCustomTitle = (title: Omit<TitleSpec, 'id' | 'isCustom'>): string => {
+    const id = `ctitle-${Date.now()}`;
+    const newTitle: TitleSpec = {
+      ...title,
+      id,
+      isCustom: true
+    };
+    setState(prev => ({
+      ...prev,
+      customTitles: [...(prev.customTitles || []), newTitle]
+    }));
+    return id;
+  };
+
+  const updateTitleSpec = (updatedTitle: TitleSpec) => {
+    setState(prev => {
+      const customTitles = prev.customTitles || [];
+      const index = customTitles.findIndex(t => t.id === updatedTitle.id);
+      let newCustomTitles: TitleSpec[];
+      if (index >= 0) {
+        newCustomTitles = [...customTitles];
+        newCustomTitles[index] = updatedTitle;
+      } else {
+        newCustomTitles = [...customTitles, updatedTitle];
+      }
+      return {
+        ...prev,
+        customTitles: newCustomTitles
+      };
+    });
+  };
+
+  const deleteTitleSpec = (titleId: string) => {
+    setState(prev => {
+      const newCustomTitles = (prev.customTitles || []).filter(t => t.id !== titleId);
+      const newDeletedTitleIds = Array.from(new Set([...(prev.deletedTitleIds || []), titleId]));
+      const allTitlesRemaining = getAllTitles(newCustomTitles, newDeletedTitleIds);
+      const fallbackTitleId = allTitlesRemaining[0]?.id || 'title-novice-operator';
+
+      return {
+        ...prev,
+        customTitles: newCustomTitles,
+        deletedTitleIds: newDeletedTitleIds,
+        profile: {
+          ...prev.profile,
+          equippedTitleId: prev.profile.equippedTitleId === titleId ? fallbackTitleId : prev.profile.equippedTitleId
+        }
+      };
+    });
+  };
+
+  const deleteCustomTitle = (titleId: string) => {
+    deleteTitleSpec(titleId);
+  };
+
   const resetAllData = () => {
     setState(INITIAL_STATE);
   };
@@ -2188,6 +2342,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateAttributeBase,
       toggleRecoveryMode,
       updateProfileFocus,
+      updateJob,
+      updateTitle,
+      addCustomJob,
+      updateJobSpec,
+      deleteJobSpec,
+      deleteCustomJob,
+      addCustomTitle,
+      updateTitleSpec,
+      deleteTitleSpec,
+      deleteCustomTitle,
       resetAllData,
       resetLevelAndXp,
       clearAllQuests,

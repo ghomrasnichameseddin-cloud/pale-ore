@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { POSProvider, usePOS } from './POSContext';
+import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
 import { QuestsView } from './components/QuestsView';
 import { GoalsView } from './components/GoalsView';
@@ -26,6 +27,8 @@ function AppContent() {
 
   const { state, getPlayerLevelInfo, systemDate, setSystemDate } = usePOS();
   const playerInfo = getPlayerLevelInfo();
+  const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+  const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
 
   const shiftDate = (days: number) => {
     try {
@@ -180,6 +183,18 @@ function AppContent() {
 
             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
               <div className="bg-cyan-500 h-full rounded" style={{ width: `${playerInfo.progress}%` }} />
+            </div>
+
+            {/* Active Class & Title Badge in Sidebar */}
+            <div className="pt-1.5 border-t border-white/5 space-y-1">
+              <div className="flex items-center justify-between text-[9px] font-mono">
+                <span className="text-zinc-500">CLASS:</span>
+                <span className="text-purple-300 font-bold truncate max-w-[110px]">{activeJob.name}</span>
+              </div>
+              <div className="flex items-center justify-between text-[9px] font-mono">
+                <span className="text-zinc-500">TITLE:</span>
+                <span className="text-cyan-400 font-bold truncate max-w-[110px]">[{activeTitle.badge}]</span>
+              </div>
             </div>
 
             <div className="flex justify-between items-center pt-1.5 border-t border-white/5 text-[8px] font-mono">

@@ -30,9 +30,15 @@ export const INITIAL_STATE: POSState = {
     currentBossQuestId: null,
     focusMinutesToday: 0,
     focusStreak: 0,
-    lastFocusDate: ''
+    lastFocusDate: '',
+    jobId: 'job-cyber-architect',
+    equippedTitleId: 'title-novice-operator'
   },
   xpHistory: [],
   systemDate: new Date().toISOString().split('T')[0],
-  planningDocuments: DEFAULT_PLANNING_DOCS
+  planningDocuments: DEFAULT_PLANNING_DOCS,
+  customJobs: [],
+  customTitles: [],
+  deletedJobIds: [],
+  deletedTitleIds: []
 };

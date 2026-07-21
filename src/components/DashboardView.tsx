@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
+import { getActiveJob, getActiveTitle } from '../jobsAndTitles';
+import { JobTitleModal } from './JobTitleModal';
 import { 
   Shield, Flame, Clock, Swords, CheckSquare, Square,
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
-  Sliders, Timer, Zap
+  Sliders, Timer, Zap, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,9 +22,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [focusText, setFocusText] = useState(state.profile.currentFocus);
   const [focusGoal, setFocusGoal] = useState(state.profile.focusGoalId || '');
   const [isEditingFocus, setIsEditingFocus] = useState(false);
+  const [isJobTitleModalOpen, setIsJobTitleModalOpen] = useState(false);
 
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
+  const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+  const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
   const activeQuests = state.quests.filter(q => 
     q.status === 'Active' && 
     !isQuestFinishedForToday(q) && 
@@ -78,18 +83,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             {/* Background vector accents */}
             <div className="absolute right-0 top-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start flex-wrap gap-4">
               <div>
                 <span className="text-xs font-mono text-cyan-400 tracking-wider uppercase">PLAYER SIGNATURE</span>
                 <h3 className="font-display text-3xl font-extrabold text-white mt-1 uppercase tracking-tight">
                   {state.profile.recoveryMode ? 'RECOVERING_OPERATOR' : 'SOLE_PROGRESSOR'}
                 </h3>
+
+                {/* Job & Title Badges */}
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="text-[10px] font-mono font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+                    <Star className="h-3.5 w-3.5 text-cyan-400" />
+                    [{activeTitle.badge}] {activeTitle.name}
+                  </span>
+
+                  <span className="text-[10px] font-mono font-bold bg-purple-500/10 border border-purple-500/30 text-purple-300 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
+                    <Shield className="h-3.5 w-3.5 text-purple-400" />
+                    CLASS: {activeJob.name}
+                  </span>
+
+                  <button
+                    onClick={() => setIsJobTitleModalOpen(true)}
+                    className="text-[10px] font-mono font-bold bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/40 text-zinc-300 hover:text-cyan-300 px-2.5 py-1 rounded-md transition-all flex items-center gap-1"
+                  >
+                    <Sliders className="h-3 w-3 text-cyan-400" /> EDIT CAREER & TITLES
+                  </button>
+                </div>
               </div>
               <div className="text-right">
                 <span className="text-xs font-mono text-zinc-500">POS RANK</span>
                 <p className="text-lg font-display font-bold text-cyan-400 tracking-wide uppercase mt-0.5">
                   {levelInfo.rank}
                 </p>
+                <div className="text-[10px] font-mono text-zinc-500 mt-1">
+                  PERK: <span className="text-cyan-300 font-bold">{activeJob.perk}</span>
+                </div>
               </div>
             </div>
 
@@ -559,6 +587,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
 
       </div>
+
+      <JobTitleModal 
+        isOpen={isJobTitleModalOpen} 
+        onClose={() => setIsJobTitleModalOpen(false)} 
+      />
     </div>
   );
 };

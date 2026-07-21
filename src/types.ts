@@ -1,3 +1,5 @@
+import type { JobSpec, TitleSpec } from './jobsAndTitles';
+
 export type GoalStatus = 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
 export type GoalPriority = 'Low' | 'Medium' | 'High';
 
@@ -111,6 +113,8 @@ export interface UserProfile {
   focusMinutesToday?: number;
   focusStreak?: number;
   lastFocusDate?: string;
+  jobId?: string;
+  equippedTitleId?: string;
 }
 
 export interface XPHistoryEntry {
@@ -161,4 +165,8 @@ export interface POSState {
   xpHistory: XPHistoryEntry[];
   systemDate: string; // format YYYY-MM-DD
   planningDocuments: PlanningDocument[];
+  customJobs?: JobSpec[];
+  customTitles?: TitleSpec[];
+  deletedJobIds?: string[];
+  deletedTitleIds?: string[];
 }
