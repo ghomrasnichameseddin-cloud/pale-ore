@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { POSProvider, usePOS } from './POSContext';
+import { getLocalDateString } from './initialState';
 import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
 import { QuestsView } from './components/QuestsView';
@@ -30,14 +31,15 @@ function AppContent() {
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
 
-  const realTodayDate = new Date().toISOString().split('T')[0];
+  const realTodayDate = getLocalDateString();
   const isRealTodaySynced = systemDate === realTodayDate;
 
   const shiftDate = (days: number) => {
     try {
-      const current = new Date(systemDate);
+      const [y, m, d] = systemDate.split('-').map(Number);
+      const current = new Date(y, m - 1, d);
       current.setDate(current.getDate() + days);
-      setSystemDate(current.toISOString().split('T')[0]);
+      setSystemDate(getLocalDateString(current));
     } catch (e) {
       console.error(e);
     }

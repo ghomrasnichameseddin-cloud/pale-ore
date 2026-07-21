@@ -1,6 +1,13 @@
 import { POSState } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 
+export const getLocalDateString = (d = new Date()): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const INITIAL_STATE: POSState = {
   goals: [],
   projects: [],
@@ -35,7 +42,7 @@ export const INITIAL_STATE: POSState = {
     equippedTitleId: 'title-novice-operator'
   },
   xpHistory: [],
-  systemDate: new Date().toISOString().split('T')[0],
+  systemDate: getLocalDateString(),
   planningDocuments: DEFAULT_PLANNING_DOCS,
   customJobs: [],
   customTitles: [],

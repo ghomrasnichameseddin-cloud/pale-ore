@@ -3,7 +3,16 @@ import {
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument
 } from './types';
-import { INITIAL_STATE } from './initialState';
+import { INITIAL_STATE, getLocalDateString } from './initialState';
+
+export const getSystemTimestamp = (systemDateStr?: string): string => {
+  const dateStr = systemDateStr || getLocalDateString();
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${dateStr}T${hours}:${minutes}:${seconds}`;
+};
 import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec } from './jobsAndTitles';
 
 interface POSContextType {
@@ -229,11 +238,11 @@ const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] 
 
 const getDaysDifference = (dateStr1: string, dateStr2: string): number => {
   try {
-    const d1 = new Date(dateStr1.split('T')[0]);
-    const d2 = new Date(dateStr2.split('T')[0]);
-    d1.setHours(0, 0, 0, 0);
-    d2.setHours(0, 0, 0, 0);
-    const diffTime = d2.getTime() - d1.getTime();
+    const [y1, m1, d1] = dateStr1.split('T')[0].split('-').map(Number);
+    const [y2, m2, d2] = dateStr2.split('T')[0].split('-').map(Number);
+    const date1 = new Date(y1, m1 - 1, d1);
+    const date2 = new Date(y2, m2 - 1, d2);
+    const diffTime = date2.getTime() - date1.getTime();
     return Math.round(diffTime / (1000 * 60 * 60 * 24));
   } catch (e) {
     return 0;
@@ -869,14 +878,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const syncWithRealClock = () => {
-    const realToday = new Date().toISOString().split('T')[0];
+    const realToday = getLocalDateString();
     setSystemDate(realToday);
   };
 
   // Run cycle reset check on mount and periodically at midnight
   useEffect(() => {
     const runCycleReset = () => {
-      const realToday = new Date().toISOString().split('T')[0];
+      const realToday = getLocalDateString();
       setState(prev => {
         const currentSimulated = prev.systemDate || realToday;
         
@@ -1339,7 +1348,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // If it's a non-recurring quest and is already completed, ignore
     if ((!questToComplete.recurrence || questToComplete.recurrence === 'None') && questToComplete.status === 'Completed') return;
 
-    const completedTimestamp = new Date().toISOString();
+    const completedTimestamp = getSystemTimestamp(state.systemDate);
     
     // Calculate Job Perk XP Bonus
     const activeJob = getActiveJob(state.profile.jobId);
@@ -2372,7 +2381,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isQuestFinishedForToday,
       isQuestScheduledForDate,
       getWeekdayStr,
-      systemDate: state.systemDate || new Date().toISOString().split('T')[0],
+      systemDate: state.systemDate || getLocalDateString(),
       setSystemDate,
       syncWithRealClock,
       selectedFolderId,
