@@ -4,14 +4,16 @@ import { Skill, Goal, Project, Quest } from '../types';
 import { 
   Award, Sparkles, Plus, Trash2, Edit2, CheckCircle2, 
   Circle, BarChart, ExternalLink, Target, Briefcase, ListTodo,
-  Tag, Lock, Check, Crown
+  Tag, Lock, Check, Crown, Search, Archive, ArchiveRestore,
+  GitMerge, Layers, Filter, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const SkillsView: React.FC = () => {
   const { 
-    state, addSkill, updateSkillName, updateSkillTier, updateSkillParent, deleteSkill, clearAllSkills, getSkillXpAndLevel, 
-    getGoalProgress, getProjectProgress, equipSkillTitle
+    state, addSkill, updateSkillName, updateSkillTier, updateSkillParent, 
+    toggleArchiveSkill, mergeSkills, deleteSkill, deleteUnusedSkills, clearAllSkills, 
+    getSkillXpAndLevel, getGoalProgress, getProjectProgress, equipSkillTitle
   } = usePOS();
 
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(state.skills[0]?.id || null);
@@ -22,11 +24,16 @@ export const SkillsView: React.FC = () => {
   const [newSkillTier, setNewSkillTier] = useState<'Primary' | 'Secondary'>('Primary');
   const [newSkillParentId, setNewSkillParentId] = useState<string>('');
 
-  // Filter tabs state
-  const [filterTier, setFilterTier] = useState<'All' | 'Primary' | 'Secondary'>('All');
+  // Search & Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Archived' | 'Primary' | 'Secondary' | 'Unused'>('Active');
 
-  // Empty all skills confirmation state
+  // Confirmation modals
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  const [showCleanUnusedConfirm, setShowCleanUnusedConfirm] = useState(false);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeSourceId, setMergeSourceId] = useState('');
+  const [mergeTargetId, setMergeTargetId] = useState('');
 
   // Editing skill name states
   const [isEditingSkill, setIsEditingSkill] = useState(false);
@@ -34,6 +41,20 @@ export const SkillsView: React.FC = () => {
 
   const selectedSkill = state.skills.find(s => s.id === selectedSkillId);
   const selectedSkillStats = selectedSkill ? getSkillXpAndLevel(selectedSkill.id) : null;
+
+  // Calculate unused skills count
+  const unusedSkillsList = state.skills.filter(s => {
+    const hasGoal = state.goals.some(g => g.relatedSkills.includes(s.id));
+    const hasQuest = state.quests.some(q => q.relatedSkills.includes(s.id));
+    const hasXpHistory = state.xpHistory.some(h => h.skillIds && h.skillIds.includes(s.id));
+    return !hasGoal && !hasQuest && !hasXpHistory;
+  });
+  const unusedSkillsCount = unusedSkillsList.length;
+
+  const activeSkillsCount = state.skills.filter(s => !s.archived).length;
+  const archivedSkillsCount = state.skills.filter(s => s.archived).length;
+  const primarySkillsCount = state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length;
+  const secondarySkillsCount = state.skills.filter(s => s.tier === 'Secondary').length;
 
   // Handle skill creation
   const handleCreateSkill = (e: React.FormEvent) => {
@@ -85,6 +106,57 @@ export const SkillsView: React.FC = () => {
     setShowEmptyConfirm(false);
   };
 
+  // Handle clean unused skills
+  const handleCleanUnusedSkills = () => {
+    const deletedCount = deleteUnusedSkills();
+    setShowCleanUnusedConfirm(false);
+    const remaining = state.skills.filter(s => !s.archived);
+    if (!remaining.some(s => s.id === selectedSkillId)) {
+      setSelectedSkillId(remaining[0]?.id || null);
+    }
+  };
+
+  // Handle merge skills submit
+  const handleMergeSkillsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mergeSourceId || !mergeTargetId || mergeSourceId === mergeTargetId) {
+      alert('Please select two distinct skills to merge.');
+      return;
+    }
+    const sourceSkill = state.skills.find(s => s.id === mergeSourceId);
+    const targetSkill = state.skills.find(s => s.id === mergeTargetId);
+    if (!sourceSkill || !targetSkill) return;
+
+    if (window.confirm(`Merge skill "${sourceSkill.name}" into "${targetSkill.name}"? All related quests, goals, and history will be reassigned to "${targetSkill.name}", and "${sourceSkill.name}" will be deleted.`)) {
+      mergeSkills(mergeSourceId, mergeTargetId);
+      setShowMergeModal(false);
+      setSelectedSkillId(targetSkill.id);
+      setMergeSourceId('');
+      setMergeTargetId('');
+    }
+  };
+
+  // Filter skills list
+  const filteredSkills = state.skills.filter(skill => {
+    // Search query filter
+    if (searchQuery.trim() && !skill.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
+      return false;
+    }
+
+    // Filter status tabs
+    if (filterStatus === 'Active') return !skill.archived;
+    if (filterStatus === 'Archived') return !!skill.archived;
+    if (filterStatus === 'Primary') return (skill.tier || 'Primary') === 'Primary';
+    if (filterStatus === 'Secondary') return skill.tier === 'Secondary';
+    if (filterStatus === 'Unused') {
+      const hasGoal = state.goals.some(g => g.relatedSkills.includes(skill.id));
+      const hasQuest = state.quests.some(q => q.relatedSkills.includes(skill.id));
+      const hasXpHistory = state.xpHistory.some(h => h.skillIds && h.skillIds.includes(skill.id));
+      return !hasGoal && !hasQuest && !hasXpHistory;
+    }
+    return true; // 'All'
+  });
+
   // Find related goals/projects/quests for selected skill
   const relatedGoals = selectedSkill 
     ? state.goals.filter(g => g.relatedSkills.includes(selectedSkill.id)) 
@@ -102,20 +174,41 @@ export const SkillsView: React.FC = () => {
       
       {/* LEFT PANEL: SKILLS DIRECTORY */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="flex justify-between items-center pb-2 border-b border-white/5">
-          <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">SKILL_TRACKS ({state.skills.length})</span>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2 border-b border-white/5 gap-2">
+          <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
+            SKILL_TRACKS ({state.skills.length})
+          </span>
+          <div className="flex flex-wrap gap-1.5">
             <button 
-              onClick={() => { setShowAddSkill(!showAddSkill); setShowEmptyConfirm(false); }}
-              className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+              onClick={() => { setShowAddSkill(!showAddSkill); setShowEmptyConfirm(false); setShowCleanUnusedConfirm(false); setShowMergeModal(false); }}
+              className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-cyan-500/30 text-cyan-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
+              title="Create a new skill track"
             >
               <Plus className="h-3 w-3" />
-              CREATE CUSTOM
+              CREATE
             </button>
+            <button 
+              onClick={() => { setShowMergeModal(!showMergeModal); setShowAddSkill(false); setShowEmptyConfirm(false); setShowCleanUnusedConfirm(false); }}
+              className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-fuchsia-500/30 text-fuchsia-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
+              title="Merge redundant skills together"
+            >
+              <GitMerge className="h-3 w-3" />
+              MERGE
+            </button>
+            {unusedSkillsCount > 0 && (
+              <button 
+                onClick={() => { setShowCleanUnusedConfirm(!showCleanUnusedConfirm); setShowAddSkill(false); setShowEmptyConfirm(false); setShowMergeModal(false); }}
+                className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-amber-500/30 text-amber-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                title="Clean skills with 0 XP and no links"
+              >
+                <Layers className="h-3 w-3" />
+                CLEAN UNUSED ({unusedSkillsCount})
+              </button>
+            )}
             {state.skills.length > 0 && (
               <button 
-                onClick={() => { setShowEmptyConfirm(!showEmptyConfirm); setShowAddSkill(false); }}
-                className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-rose-500/30 text-rose-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+                onClick={() => { setShowEmptyConfirm(!showEmptyConfirm); setShowAddSkill(false); setShowCleanUnusedConfirm(false); setShowMergeModal(false); }}
+                className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-rose-500/30 text-rose-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
               >
                 <Trash2 className="h-3 w-3" />
                 EMPTY ALL
@@ -123,6 +216,94 @@ export const SkillsView: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Merge Skills Modal / Form */}
+        {showMergeModal && (
+          <form onSubmit={handleMergeSkillsSubmit} className="p-4 bg-zinc-950 border border-fuchsia-500/30 rounded-lg space-y-3 shadow-[0_0_15px_rgba(217,70,239,0.05)]">
+            <h4 className="text-xs font-mono text-fuchsia-400 uppercase tracking-wider flex items-center gap-1.5 font-bold">
+              <GitMerge className="h-3.5 w-3.5" /> CONSOLIDATE & MERGE SKILLS
+            </h4>
+            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+              Combine duplicate or redundant skills into a single track. All associated goals, directives, and history will transfer automatically to the target skill.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Source Skill (To Remove)</label>
+                <select
+                  value={mergeSourceId}
+                  onChange={(e) => setMergeSourceId(e.target.value)}
+                  className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-rose-300 font-mono focus:outline-none focus:border-rose-500"
+                  required
+                >
+                  <option value="">-- Select Skill --</option>
+                  {state.skills.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Target Skill (Destination)</label>
+                <select
+                  value={mergeTargetId}
+                  onChange={(e) => setMergeTargetId(e.target.value)}
+                  className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
+                  required
+                >
+                  <option value="">-- Select Target --</option>
+                  {state.skills.filter(s => s.id !== mergeSourceId).map(s => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1 border-t border-white/5">
+              <button 
+                type="button" 
+                onClick={() => setShowMergeModal(false)}
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                CANCEL
+              </button>
+              <button 
+                type="submit"
+                disabled={!mergeSourceId || !mergeTargetId || mergeSourceId === mergeTargetId}
+                className="bg-fuchsia-950 hover:bg-fuchsia-900 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-mono px-3.5 py-1 rounded transition-colors disabled:opacity-50"
+              >
+                EXECUTE_MERGE
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Clean Unused Confirmation */}
+        {showCleanUnusedConfirm && (
+          <div className="p-4 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-3">
+            <h4 className="text-xs font-mono text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5" /> PURGE UNUSED SKILLS ({unusedSkillsCount})
+            </h4>
+            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+              Found <strong>{unusedSkillsCount}</strong> skills with 0 XP and no linked goals or directives ({unusedSkillsList.map(s => `"${s.name}"`).join(', ')}). Cleaning them up will declutter your active skill lists immediately.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button 
+                type="button" 
+                onClick={() => setShowCleanUnusedConfirm(false)}
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                CANCEL
+              </button>
+              <button 
+                type="button"
+                onClick={handleCleanUnusedSkills}
+                className="bg-amber-950 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-mono px-3 py-1 rounded transition-colors"
+              >
+                PURGE {unusedSkillsCount} UNUSED SKILLS
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Empty All Skills Confirmation */}
         {showEmptyConfirm && (
@@ -236,51 +417,83 @@ export const SkillsView: React.FC = () => {
           </form>
         )}
 
-        {/* Filter tabs */}
-        <div className="flex bg-zinc-950/60 p-1 border border-white/5 rounded-lg gap-1">
-          {([
-            { id: 'All', label: 'ALL TRACKS' },
-            { id: 'Primary', label: 'PRIMARY' },
-            { id: 'Secondary', label: 'SECONDARY' }
-          ] as const).map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setFilterTier(tab.id)}
-              className={`flex-1 py-1 px-2 text-[10px] font-mono rounded transition-all uppercase ${
-                filterTier === tab.id
-                  ? 'bg-zinc-900 border border-white/10 text-white font-bold'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Search & Filter Controls */}
+        <div className="space-y-2">
+          {/* Search Box */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+            <input 
+              type="text"
+              placeholder="Search skill tracks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-950/80 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')} 
+                className="absolute right-2.5 top-2 text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
+              >
+                CLEAR
+              </button>
+            )}
+          </div>
+
+          {/* Filter Pill Tabs */}
+          <div className="flex flex-wrap bg-zinc-950/60 p-1 border border-white/5 rounded-lg gap-1">
+            {([
+              { id: 'Active', label: `ACTIVE (${activeSkillsCount})` },
+              { id: 'All', label: `ALL (${state.skills.length})` },
+              { id: 'Primary', label: `PRIMARY (${primarySkillsCount})` },
+              { id: 'Secondary', label: `SECONDARY (${secondarySkillsCount})` },
+              { id: 'Archived', label: `ARCHIVED (${archivedSkillsCount})` },
+              { id: 'Unused', label: `UNUSED (${unusedSkillsCount})` }
+            ] as const).map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilterStatus(tab.id)}
+                className={`flex-1 min-w-[70px] py-1 px-1.5 text-[9px] font-mono rounded transition-all uppercase whitespace-nowrap text-center ${
+                  filterStatus === tab.id
+                    ? 'bg-zinc-900 border border-white/10 text-white font-bold'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Skills grid list */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1">
-          {state.skills
-            .filter(skill => {
-              if (filterTier === 'All') return true;
-              const tier = skill.tier || 'Primary';
-              return tier === filterTier;
-            })
-            .map(skill => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[580px] overflow-y-auto pr-1">
+          {filteredSkills.length === 0 ? (
+            <div className="col-span-2 p-8 text-center bg-zinc-950/30 border border-dashed border-white/5 rounded-lg">
+              <p className="text-xs font-mono text-zinc-500">No skill tracks matched your filter criteria.</p>
+            </div>
+          ) : (
+            filteredSkills.map(skill => {
               const isSelected = skill.id === selectedSkillId;
               const stats = getSkillXpAndLevel(skill.id);
               const tier = skill.tier || 'Primary';
               const isPrimary = tier === 'Primary';
+              const isArchived = !!skill.archived;
+
+              // Find active/total linked quests count
+              const linkedQuests = state.quests.filter(q => q.relatedSkills.includes(skill.id));
+              const activeLinkedCount = linkedQuests.filter(q => q.status === 'Active').length;
 
               return (
                 <div
                   key={skill.id}
                   className={`group relative rounded-lg border transition-all p-4 space-y-3 flex flex-col justify-between ${
-                    isSelected 
-                      ? isPrimary 
-                        ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
-                        : 'bg-zinc-900/80 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.05)]'
-                      : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
+                    isArchived
+                      ? 'bg-zinc-950/20 border-white/5 opacity-60 hover:opacity-100'
+                      : isSelected 
+                        ? isPrimary 
+                          ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
+                          : 'bg-zinc-900/80 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.05)]'
+                        : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
                   }`}
                 >
                   {/* Clickable area for selection */}
@@ -292,14 +505,19 @@ export const SkillsView: React.FC = () => {
                     className="cursor-pointer space-y-3 flex-1 w-full"
                   >
                     <div className="space-y-1 w-full">
-                      <div className="flex justify-between items-start gap-1 pr-6">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex justify-between items-start gap-1 pr-14">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] font-mono text-zinc-500 uppercase">LVL_{stats.level}</span>
                           <span className={`text-[8px] font-mono px-1 rounded uppercase font-semibold ${
                             isPrimary ? 'text-cyan-400 bg-cyan-950/40' : 'text-fuchsia-400 bg-fuchsia-950/40'
                           }`}>
                             {tier}
                           </span>
+                          {isArchived && (
+                            <span className="text-[8px] font-mono px-1 rounded uppercase font-semibold text-amber-400 bg-amber-950/40 border border-amber-500/20">
+                              ARCHIVED
+                            </span>
+                          )}
                         </div>
                         <span className={`text-[9px] font-mono font-bold bg-zinc-950 px-1 rounded uppercase ${
                           isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
@@ -307,7 +525,7 @@ export const SkillsView: React.FC = () => {
                           MSTRY {stats.mastery}%
                         </span>
                       </div>
-                       <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                      <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                         {skill.name}
                       </h4>
                       {skill.equippedTitle && (
@@ -338,6 +556,12 @@ export const SkillsView: React.FC = () => {
                           </div>
                         ) : null;
                       })()}
+
+                      {activeLinkedCount > 0 && (
+                        <div className="pt-0.5 text-[9px] font-mono text-zinc-500">
+                          🎯 {activeLinkedCount} active directive{activeLinkedCount > 1 ? 's' : ''}
+                        </div>
+                      )}
                     </div>
 
                     {/* Progress bar */}
@@ -357,26 +581,39 @@ export const SkillsView: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Individual separate delete button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`Are you sure you want to delete the skill "${skill.name}"? This action is permanent.`)) {
-                        deleteSkill(skill.id);
-                        if (selectedSkillId === skill.id) {
-                          const remaining = state.skills.filter(s => s.id !== skill.id);
-                          setSelectedSkillId(remaining[0]?.id || null);
+                  {/* Top-right Actions: Archive / Delete */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleArchiveSkill(skill.id);
+                      }}
+                      className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-amber-400 transition-colors"
+                      title={isArchived ? "Unarchive Skill" : "Archive Skill"}
+                    >
+                      {isArchived ? <ArchiveRestore className="h-3.5 w-3.5 text-amber-400" /> : <Archive className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to delete the skill "${skill.name}"? This action is permanent.`)) {
+                          deleteSkill(skill.id);
+                          if (selectedSkillId === skill.id) {
+                            const remaining = state.skills.filter(s => s.id !== skill.id);
+                            setSelectedSkillId(remaining[0]?.id || null);
+                          }
                         }
-                      }
-                    }}
-                    className="absolute top-3 right-3 p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title="Delete Skill Track"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                      }}
+                      className="p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors"
+                      title="Delete Skill Track"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               );
-            })}
+            })
+          )}
         </div>
       </div>
 
@@ -385,7 +622,7 @@ export const SkillsView: React.FC = () => {
         {selectedSkill && selectedSkillStats ? (
           <div className="glass-panel rounded-lg p-6 space-y-6">
             
-            {/* Header with edit / delete */}
+            {/* Header with edit / archive / delete */}
             <div className="flex justify-between items-start border-b border-white/5 pb-4 gap-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -393,6 +630,11 @@ export const SkillsView: React.FC = () => {
                   <span className={`text-xs font-mono uppercase tracking-wider ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`}>
                     {(selectedSkill.tier || 'Primary').toUpperCase()}_SKILL_TRACK
                   </span>
+                  {selectedSkill.archived && (
+                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/40 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase">
+                      ARCHIVED
+                    </span>
+                  )}
                 </div>
 
                 {isEditingSkill ? (
@@ -427,6 +669,14 @@ export const SkillsView: React.FC = () => {
 
               {!isEditingSkill && (
                 <div className="flex flex-wrap gap-1.5 shrink-0 justify-end">
+                  <button 
+                    onClick={() => toggleArchiveSkill(selectedSkill.id)}
+                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400 rounded text-[10px] font-mono flex items-center gap-1"
+                    title="Archive or unarchive this skill"
+                  >
+                    {selectedSkill.archived ? <ArchiveRestore className="h-3 w-3" /> : <Archive className="h-3 w-3" />}
+                    <span>{selectedSkill.archived ? 'UNARCHIVE' : 'ARCHIVE'}</span>
+                  </button>
                   <button 
                     onClick={() => {
                       const currentTier = selectedSkill.tier || 'Primary';

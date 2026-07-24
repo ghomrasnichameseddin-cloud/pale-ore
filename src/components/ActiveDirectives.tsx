@@ -499,6 +499,7 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestDescription, setEditQuestDescription] = useState('');
   const [editQuestDeadline, setEditQuestDeadline] = useState('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
+  const [editQuestDuration, setEditQuestDuration] = useState<number>(30);
 
   // Custom recurrence edit states
   const [editCustomRecurrenceType, setEditCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -523,6 +524,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestDescription(quest.description || '');
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
+    setEditQuestDuration(quest.estimatedTime || 30);
 
     const rec = quest.recurrence || 'None';
     if (rec.startsWith('Custom:')) {
@@ -563,6 +565,7 @@ export const ActiveDirectives: React.FC = () => {
       difficulty: editQuestDiff,
       type: editQuestType,
       xp: editQuestXp,
+      estimatedTime: editQuestDuration,
       goalId: editQuestGoal ? editQuestGoal : null,
       listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
@@ -766,7 +769,7 @@ export const ActiveDirectives: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Difficulty</label>
                 <select 
@@ -795,6 +798,18 @@ export const ActiveDirectives: React.FC = () => {
                   value={editQuestXp}
                   onChange={(e) => setEditQuestXp(Number(e.target.value))}
                   className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white text-center font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Est. Duration (Mins)</label>
+                <input 
+                  type="number"
+                  min="1"
+                  max="1440"
+                  value={editQuestDuration}
+                  onChange={(e) => setEditQuestDuration(Math.max(1, Number(e.target.value)))}
+                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-cyan-400 text-center font-mono"
                 />
               </div>
             </div>
@@ -1494,6 +1509,10 @@ export const ActiveDirectives: React.FC = () => {
             <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
               <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Category</span>
               <span className="text-zinc-300 font-bold">{quest.type}</span>
+            </div>
+            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Est. Duration</span>
+              <span className="text-cyan-400 font-bold">⏱️ {quest.estimatedTime || 30} mins</span>
             </div>
             {quest.recurrence && quest.recurrence !== 'None' && (
               <div className="bg-zinc-950/50 p-2 rounded border border-white/5">

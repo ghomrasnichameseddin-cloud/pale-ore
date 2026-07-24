@@ -92,6 +92,7 @@ export interface Skill {
   equippedTitle?: string;
   tier?: 'Primary' | 'Secondary';
   parentId?: string | null;
+  archived?: boolean;
 }
 
 export interface Attribute {

@@ -73,7 +73,10 @@ interface POSContextType {
   updateSkillName: (id: string, name: string) => void;
   updateSkillTier: (id: string, tier: 'Primary' | 'Secondary') => void;
   updateSkillParent: (id: string, parentId: string | null) => void;
+  toggleArchiveSkill: (id: string) => void;
+  mergeSkills: (sourceSkillId: string, targetSkillId: string) => void;
   deleteSkill: (id: string) => void;
+  deleteUnusedSkills: () => number;
   clearAllSkills: () => void;
   equipSkillTitle: (id: string, title: string) => void;
   
@@ -1941,6 +1944,59 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const toggleArchiveSkill = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, archived: !s.archived } : s)
+    }));
+  };
+
+  const mergeSkills = (sourceSkillId: string, targetSkillId: string) => {
+    if (sourceSkillId === targetSkillId) return;
+    setState(prev => {
+      const sourceSkill = prev.skills.find(s => s.id === sourceSkillId);
+      const targetSkill = prev.skills.find(s => s.id === targetSkillId);
+      if (!sourceSkill || !targetSkill) return prev;
+
+      // Transfer related skills in goals and quests
+      const updatedGoals = prev.goals.map(g => {
+        if (g.relatedSkills.includes(sourceSkillId)) {
+          const newSkills = Array.from(new Set([...g.relatedSkills.filter(id => id !== sourceSkillId), targetSkillId]));
+          return { ...g, relatedSkills: newSkills };
+        }
+        return g;
+      });
+
+      const updatedQuests = prev.quests.map(q => {
+        if (q.relatedSkills.includes(sourceSkillId)) {
+          const newSkills = Array.from(new Set([...q.relatedSkills.filter(id => id !== sourceSkillId), targetSkillId]));
+          return { ...q, relatedSkills: newSkills };
+        }
+        return q;
+      });
+
+      // Update XP history entries that referenced sourceSkillId
+      const updatedXpHistory = prev.xpHistory.map(h => {
+        if (h.skillIds && h.skillIds.includes(sourceSkillId)) {
+          const newSkills = Array.from(new Set([...h.skillIds.filter(id => id !== sourceSkillId), targetSkillId]));
+          return { ...h, skillIds: newSkills };
+        }
+        return h;
+      });
+
+      // Remove source skill
+      const remainingSkills = prev.skills.filter(s => s.id !== sourceSkillId);
+
+      return {
+        ...prev,
+        goals: updatedGoals,
+        quests: updatedQuests,
+        xpHistory: updatedXpHistory,
+        skills: remainingSkills
+      };
+    });
+  };
+
   const deleteSkill = (id: string) => {
     setState(prev => ({
       ...prev,
@@ -1949,6 +2005,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       goals: prev.goals.map(g => ({ ...g, relatedSkills: g.relatedSkills.filter(sid => sid !== id) })),
       quests: prev.quests.map(q => ({ ...q, relatedSkills: q.relatedSkills.filter(sid => sid !== id) }))
     }));
+  };
+
+  const deleteUnusedSkills = (): number => {
+    let deletedCount = 0;
+    setState(prev => {
+      const unusedSkillIds = prev.skills.filter(s => {
+        const hasGoal = prev.goals.some(g => g.relatedSkills.includes(s.id));
+        const hasQuest = prev.quests.some(q => q.relatedSkills.includes(s.id));
+        const hasXpHistory = prev.xpHistory.some(h => h.skillIds && h.skillIds.includes(s.id));
+        return !hasGoal && !hasQuest && !hasXpHistory;
+      }).map(s => s.id);
+
+      deletedCount = unusedSkillIds.length;
+      if (deletedCount === 0) return prev;
+
+      return {
+        ...prev,
+        skills: prev.skills.filter(s => !unusedSkillIds.includes(s.id))
+      };
+    });
+    return deletedCount;
   };
 
   const clearAllSkills = () => {
@@ -2349,7 +2426,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateSkillName,
       updateSkillTier,
       updateSkillParent,
+      toggleArchiveSkill,
+      mergeSkills,
       deleteSkill,
+      deleteUnusedSkills,
       clearAllSkills,
       equipSkillTitle,
       updateAttributeBase,
