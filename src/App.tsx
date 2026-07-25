@@ -11,11 +11,14 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
 import { PlanningView } from './components/PlanningView';
 import { FrameworksView } from './components/FrameworksView';
+import { SystemMessageBox } from './components/SystemMessageBox';
+import { FocusTimerOverlay } from './components/FocusTimerOverlay';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
-  Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass
+  Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
+  Inbox, Timer, Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,8 +28,11 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemTime, setSystemTime] = useState(new Date());
+  const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
+  const [isInboxModalOpen, setIsInboxModalOpen] = useState(false);
 
-  const { state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock } = usePOS();
+  const { state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, activeFocusSession } = usePOS();
+  const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
@@ -76,13 +82,37 @@ function AppContent() {
           </span>
         </div>
         
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-zinc-400 hover:text-white p-1"
-          id="mobile-menu-toggle"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsFocusModalOpen(true)}
+            className="p-1.5 bg-zinc-900 border border-white/10 text-cyan-400 rounded relative"
+            title="Focus Timer"
+          >
+            <Timer className="h-4 w-4" />
+            {activeFocusSession && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsInboxModalOpen(true)}
+            className="p-1.5 bg-zinc-900 border border-white/10 text-amber-400 rounded relative"
+            title="System Inbox"
+          >
+            <Inbox className="h-4 w-4" />
+            {unreadMessagesCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+            )}
+          </button>
+
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="text-zinc-400 hover:text-white p-1"
+            id="mobile-menu-toggle"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {/* MOBILE COLLAPSIBLE DRAWER */}
@@ -256,6 +286,51 @@ function AppContent() {
             })}
           </nav>
 
+          {/* QUICK TERMINAL ACTIONS (POMODORO & SYSTEM INBOX) */}
+          <div className="pt-3 space-y-2 border-t border-white/5">
+            <button
+              onClick={() => setIsFocusModalOpen(true)}
+              className={`w-full flex items-center justify-between p-2.5 rounded text-xs font-mono transition-all border ${
+                activeFocusSession
+                  ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300 font-bold shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                  : 'bg-zinc-900/60 hover:bg-zinc-850 border-white/5 text-zinc-400 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Timer className={`h-4 w-4 ${activeFocusSession ? 'text-cyan-400 animate-pulse' : 'text-zinc-500'}`} />
+                <span>FOCUS TIMER</span>
+              </div>
+              {activeFocusSession ? (
+                <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                  {Math.floor(activeFocusSession.timeLeft / 60)}M
+                </span>
+              ) : (
+                <span className="text-[9px] text-zinc-600">OFF</span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setIsInboxModalOpen(true)}
+              className={`w-full flex items-center justify-between p-2.5 rounded text-xs font-mono transition-all border ${
+                unreadMessagesCount > 0
+                  ? 'bg-amber-950/40 border-amber-500/30 text-amber-300 font-bold'
+                  : 'bg-zinc-900/60 hover:bg-zinc-850 border-white/5 text-zinc-400 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Inbox className={`h-4 w-4 ${unreadMessagesCount > 0 ? 'text-amber-400' : 'text-zinc-500'}`} />
+                <span>SYSTEM INBOX</span>
+              </div>
+              {unreadMessagesCount > 0 ? (
+                <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">
+                  {unreadMessagesCount} NEW
+                </span>
+              ) : (
+                <span className="text-[9px] text-zinc-600">0</span>
+              )}
+            </button>
+          </div>
+
         </div>
 
         {/* SIDEBAR FOOTER (CLOCK & RECOVERY BADGE) */}
@@ -352,6 +427,28 @@ function AppContent() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* FOCUS TIMER OVERLAY WIDGET / MODAL */}
+      <FocusTimerOverlay 
+        isOpenModal={isFocusModalOpen} 
+        onCloseModal={() => setIsFocusModalOpen(false)} 
+      />
+
+      {/* GLOBAL SYSTEM INBOX MODAL OVERLAY */}
+      <AnimatePresence>
+        {isInboxModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-2xl w-full"
+            >
+              <SystemMessageBox onClose={() => setIsInboxModalOpen(false)} />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

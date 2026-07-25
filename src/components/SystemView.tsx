@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
+import { SystemMessageBox } from './SystemMessageBox';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
   Check, ShieldAlert, Award
@@ -67,6 +68,9 @@ export const SystemView: React.FC = () => {
           CORE_CONTROLS • Direct override controls of the progression database
         </p>
       </div>
+
+      {/* SYSTEM MESSAGE BOX PANEL */}
+      <SystemMessageBox />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         

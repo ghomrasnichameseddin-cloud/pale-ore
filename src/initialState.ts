@@ -47,5 +47,27 @@ export const INITIAL_STATE: POSState = {
   customJobs: [],
   customTitles: [],
   deletedJobIds: [],
-  deletedTitleIds: []
+  deletedTitleIds: [],
+  messages: [
+    {
+      id: 'msg-sys-init',
+      sender: 'SYSTEM',
+      category: 'alert',
+      title: 'Progression Operating System Online',
+      content: 'PALE ORE POS v2.6 active. Real-time synchronization and local storage pipeline active.',
+      timestamp: new Date().toISOString(),
+      read: false,
+      priority: 'high'
+    },
+    {
+      id: 'msg-pomo-ready',
+      sender: 'FOCUS_BOT',
+      category: 'note',
+      title: 'Pomodoro Engine Calibrated',
+      content: 'Engage 25m or custom focus intervals on directives to stack XP, build focus streaks, and elevate momentum.',
+      timestamp: new Date().toISOString(),
+      read: false,
+      priority: 'medium'
+    }
+  ]
 };

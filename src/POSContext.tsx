@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
-  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument
+  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage
 } from './types';
 import { INITIAL_STATE, getLocalDateString } from './initialState';
 
@@ -18,13 +18,22 @@ import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec } from './jo
 interface POSContextType {
   state: POSState;
   
+  // System Messages
+  addSystemMessage: (msg: Omit<SystemMessage, 'id' | 'timestamp' | 'read'>) => string;
+  markSystemMessageRead: (id: string) => void;
+  markAllSystemMessagesRead: () => void;
+  deleteSystemMessage: (id: string) => void;
+  clearAllSystemMessages: () => void;
+
   // Pomodoro Focus Timer
   activeFocusSession: ActiveFocusSession | null;
-  startFocusSession: (questId: string, workTime: number, restTime: number) => void;
+  startFocusSession: (questId: string | null, workTime?: number, restTime?: number, estimatedCycles?: number) => void;
   pauseFocusSession: () => void;
   resumeFocusSession: () => void;
   stopFocusSession: () => void;
-  completeFocusCycle: (questId: string) => void;
+  skipFocusStage: () => void;
+  adjustFocusSessionTime: (deltaMinutes: number) => void;
+  completeFocusCycle: (questId: string | null) => void;
   
   // Goals CRUD
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => string;
@@ -385,7 +394,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
             xpHistory: parsed.xpHistory || [],
             systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
-            planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments
+            planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
+            messages: parsed.messages || INITIAL_STATE.messages || []
           };
         }
       }
@@ -582,6 +592,50 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(timer);
   }, [activeFocusSession?.status]);
 
+  // System Messages Management
+  const addSystemMessage = (msg: Omit<SystemMessage, 'id' | 'timestamp' | 'read'>): string => {
+    const id = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newMsg: SystemMessage = {
+      ...msg,
+      id,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+    setState(prev => ({
+      ...prev,
+      messages: [newMsg, ...(prev.messages || [])]
+    }));
+    return id;
+  };
+
+  const markSystemMessageRead = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      messages: (prev.messages || []).map(m => m.id === id ? { ...m, read: true } : m)
+    }));
+  };
+
+  const markAllSystemMessagesRead = () => {
+    setState(prev => ({
+      ...prev,
+      messages: (prev.messages || []).map(m => ({ ...m, read: true }))
+    }));
+  };
+
+  const deleteSystemMessage = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      messages: (prev.messages || []).filter(m => m.id !== id)
+    }));
+  };
+
+  const clearAllSystemMessages = () => {
+    setState(prev => ({
+      ...prev,
+      messages: []
+    }));
+  };
+
   useEffect(() => {
     if (!activeFocusSession) return;
     if (activeFocusSession.completedCycles > 0) {
@@ -599,9 +653,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       // Automatically complete the associated quest since the work block duration completed!
-      if (activeFocusSession.mode === 'rest') {
+      if (activeFocusSession.mode === 'rest' && activeFocusSession.questId) {
         completeQuest(activeFocusSession.questId);
       }
+
+      // Automatically dispatch a System Message regarding completed block
+      addSystemMessage({
+        sender: 'FOCUS_BOT',
+        category: 'achievement',
+        title: 'Focus Cycle Complete',
+        content: `Completed ${cycleMinutes}m work block for "${activeFocusSession.questName}". +15 XP awarded!`,
+        priority: 'high'
+      });
 
       setState(prev => {
         const prevMinutes = prev.profile.focusMinutesToday || 0;
@@ -642,24 +705,37 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [activeFocusSession?.completedCycles]);
 
-  const startFocusSession = (questId: string, workTime: number, restTime: number) => {
-    const quest = state.quests.find(q => q.id === questId);
-    if (!quest) return;
-    const estTime = quest.estimatedTime || 30;
-    const estCycles = Math.ceil(estTime / workTime);
+  const startFocusSession = (questId: string | null = null, workTime = 25, restTime = 5, estimatedCycles = 1) => {
+    let questName = "General Deep Focus Session";
+    if (questId) {
+      const quest = state.quests.find(q => q.id === questId);
+      if (quest) {
+        questName = quest.name;
+        const estTime = quest.estimatedTime || 30;
+        estimatedCycles = Math.max(1, Math.ceil(estTime / workTime));
+      }
+    }
     
     setActiveFocusSession({
       questId,
-      questName: quest.name,
+      questName,
       totalWorkTime: workTime,
       totalRestTime: restTime,
       mode: 'work',
       status: 'running',
       timeLeft: workTime * 60,
       completedCycles: 0,
-      estimatedCycles: estCycles,
+      estimatedCycles,
       timeSpent: 0,
       lastUpdated: Date.now()
+    });
+
+    addSystemMessage({
+      sender: 'FOCUS_BOT',
+      category: 'note',
+      title: 'Focus Session Engaged',
+      content: `Engaged ${workTime}m work / ${restTime}m break focus session for "${questName}". Concentration lock active.`,
+      priority: 'medium'
     });
   };
 
@@ -672,10 +748,48 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const stopFocusSession = () => {
+    if (activeFocusSession) {
+      addSystemMessage({
+        sender: 'FOCUS_BOT',
+        category: 'note',
+        title: 'Focus Session Ended',
+        content: `Session for "${activeFocusSession.questName}" stopped. Completed ${activeFocusSession.completedCycles} cycles.`,
+        priority: 'low'
+      });
+    }
     setActiveFocusSession(null);
   };
 
-  const completeFocusCycle = (questId: string) => {
+  const skipFocusStage = () => {
+    setActiveFocusSession(prev => {
+      if (!prev) return null;
+      const nextMode = prev.mode === 'work' ? 'rest' : 'work';
+      const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
+      const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
+      return {
+        ...prev,
+        mode: nextMode,
+        timeLeft: nextDuration * 60,
+        completedCycles: nextCycles,
+        status: 'running',
+        lastUpdated: Date.now()
+      };
+    });
+  };
+
+  const adjustFocusSessionTime = (deltaMinutes: number) => {
+    setActiveFocusSession(prev => {
+      if (!prev) return null;
+      const newTimeLeft = Math.max(10, prev.timeLeft + deltaMinutes * 60);
+      return {
+        ...prev,
+        timeLeft: newTimeLeft,
+        lastUpdated: Date.now()
+      };
+    });
+  };
+
+  const completeFocusCycle = (questId: string | null = null) => {
     setActiveFocusSession(prev => {
       if (!prev) return null;
       const nextMode = prev.mode === 'work' ? 'rest' : 'work';
@@ -2386,11 +2500,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <POSContext.Provider value={{
       state,
+      addSystemMessage,
+      markSystemMessageRead,
+      markAllSystemMessagesRead,
+      deleteSystemMessage,
+      clearAllSystemMessages,
       activeFocusSession,
       startFocusSession,
       pauseFocusSession,
       resumeFocusSession,
       stopFocusSession,
+      skipFocusStage,
+      adjustFocusSessionTime,
       completeFocusCycle,
       addGoal,
       updateGoal,

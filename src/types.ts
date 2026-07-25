@@ -127,8 +127,19 @@ export interface XPHistoryEntry {
   skillIds: string[];
 }
 
+export interface SystemMessage {
+  id: string;
+  sender: 'SYSTEM' | 'OPERATOR' | 'FOCUS_BOT' | 'PROGRESS_ENGINE';
+  category: 'alert' | 'achievement' | 'log' | 'note' | 'warning';
+  title: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+  priority?: 'low' | 'medium' | 'high';
+}
+
 export interface ActiveFocusSession {
-  questId: string;
+  questId: string | null;
   questName: string;
   totalWorkTime: number; // in minutes
   totalRestTime: number;  // in minutes
@@ -170,4 +181,5 @@ export interface POSState {
   customTitles?: TitleSpec[];
   deletedJobIds?: string[];
   deletedTitleIds?: string[];
+  messages?: SystemMessage[];
 }
