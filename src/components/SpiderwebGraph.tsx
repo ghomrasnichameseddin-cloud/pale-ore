@@ -25,6 +25,8 @@ export interface GraphNode {
   angle: number;
   color: string;
   isModifiedRecently?: boolean;
+  skillTier?: 'Primary' | 'Secondary';
+  parentId?: string | null;
 }
 
 export interface GraphLink {
@@ -47,7 +49,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<NodeType | 'all'>('all');
+  const [activeFilter, setActiveFilter] = useState<NodeType | 'all' | 'primary_skill' | 'secondary_skill'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [showModifiedOnly, setShowModifiedOnly] = useState(false);
@@ -308,13 +310,17 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       }
     });
 
-    // 7. SKILLS (Ring 4 - Outer Ring)
+    // 7. SKILLS (Ring 4 Primary Skills & Satellite Secondary Skills)
     const skills = state.skills || [];
-    skills.forEach((skill, idx) => {
-      let angle = (idx / Math.max(skills.length, 1)) * 2 * Math.PI - 0.2;
-      const parentAttrNode = skill.attributeId ? nMap.get(skill.attributeId) : null;
+    const primarySkills = skills.filter(s => (s.tier || 'Primary') === 'Primary');
+    const secondarySkills = skills.filter(s => s.tier === 'Secondary');
+
+    // 7A. Primary Skills (Ring 4)
+    primarySkills.forEach((skill, idx) => {
+      let angle = (idx / Math.max(primarySkills.length, 1)) * 2 * Math.PI - 0.2;
+      const parentAttrNode = (skill as any).attributeId ? nMap.get((skill as any).attributeId) : null;
       if (parentAttrNode) {
-        angle = parentAttrNode.angle + ((idx % 5 - 2) * 0.18);
+        angle = parentAttrNode.angle + ((idx % 4 - 1.5) * 0.22);
       }
 
       const r = ringRadii[4];
@@ -327,36 +333,98 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         type: 'skill',
         level: skill.level,
         progress: skill.progress,
+        skillTier: 'Primary',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
-        radius: 9,
+        radius: 12, // Larger node for Primary Skill
         ring: 4,
         angle,
-        color: '#0284c7', // Sky blue
+        color: '#2563eb', // Vibrant Sapphire Blue
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
 
-      // Link Skill -> Attribute
-      if (skill.attributeId && nMap.has(skill.attributeId)) {
+      // Link Primary Skill -> Attribute
+      if ((skill as any).attributeId && nMap.has((skill as any).attributeId)) {
         linkList.push({
           id: `link-skill-attr-${skill.id}`,
           source: skill.id,
-          target: skill.attributeId,
+          target: (skill as any).attributeId,
           sourceType: 'skill',
           targetType: 'attribute',
           isModifiedRecently: isRecentlyModified
         });
       }
 
-      // Link Skill -> Quests that train this skill
+      // Link Primary Skill -> Quests that train this skill
       quests.forEach(q => {
         if (q.skillIds && q.skillIds.includes(skill.id) && nMap.has(q.id)) {
           linkList.push({
             id: `link-quest-skill-${q.id}-${skill.id}`,
             source: q.id,
             target: skill.id,
+            sourceType: 'quest',
+            targetType: 'skill',
+            isModifiedRecently: isRecentlyModified
+          });
+        }
+      });
+    });
+
+    // 7B. Secondary Skills (Satellite Sub-Orbit connected to Parent Primary Skill)
+    secondarySkills.forEach((secSkill, idx) => {
+      const parentNode = secSkill.parentId ? nMap.get(secSkill.parentId) : null;
+      let angle = (idx / Math.max(secondarySkills.length, 1)) * 2 * Math.PI + 0.15;
+      let r = ringRadii[4] + 32; // Satellite sub-orbit
+
+      if (parentNode) {
+        // Position satellite near parent Primary Skill
+        angle = parentNode.angle + ((idx % 3 - 1) * 0.2);
+      }
+
+      const isRecentlyModified = secSkill.level > 1 || secSkill.xp > 0;
+      if (isRecentlyModified) modSet.add(secSkill.id);
+
+      const node: GraphNode = {
+        id: secSkill.id,
+        name: secSkill.name,
+        type: 'skill',
+        level: secSkill.level,
+        progress: secSkill.progress,
+        skillTier: 'Secondary',
+        parentId: secSkill.parentId || null,
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: 8, // Compact satellite node
+        ring: 4,
+        angle,
+        color: '#818cf8', // Indigo / Violet
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+
+      // Link Secondary Skill -> Parent Primary Skill
+      if (secSkill.parentId && nMap.has(secSkill.parentId)) {
+        linkList.push({
+          id: `link-sec-pri-skill-${secSkill.id}`,
+          source: secSkill.id,
+          target: secSkill.parentId,
+          sourceType: 'skill',
+          targetType: 'skill',
+          label: 'Child Skill',
+          isModifiedRecently: isRecentlyModified
+        });
+      }
+
+      // Link Secondary Skill -> Quests that train this skill
+      quests.forEach(q => {
+        if (q.skillIds && q.skillIds.includes(secSkill.id) && nMap.has(q.id)) {
+          linkList.push({
+            id: `link-quest-secskill-${q.id}-${secSkill.id}`,
+            source: q.id,
+            target: secSkill.id,
             sourceType: 'quest',
             targetType: 'skill',
             isModifiedRecently: isRecentlyModified
@@ -413,7 +481,17 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
   const filteredNodes = useMemo(() => {
     return nodes.filter(node => {
       if (showModifiedOnly && !node.isModifiedRecently && node.type !== 'core') return false;
-      if (activeFilter !== 'all' && node.type !== activeFilter && node.type !== 'core') return false;
+      
+      if (activeFilter !== 'all' && node.type !== 'core') {
+        if (activeFilter === 'primary_skill') {
+          if (node.type !== 'skill' || node.skillTier !== 'Primary') return false;
+        } else if (activeFilter === 'secondary_skill') {
+          if (node.type !== 'skill' || node.skillTier !== 'Secondary') return false;
+        } else if (node.type !== activeFilter) {
+          return false;
+        }
+      }
+
       if (searchQuery.trim()) {
         return node.name.toLowerCase().includes(searchQuery.toLowerCase());
       }
@@ -544,7 +622,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
           { id: 'goal', label: 'GOALS' },
           { id: 'project', label: 'PROJECTS' },
           { id: 'quest', label: 'QUESTS' },
-          { id: 'skill', label: 'SKILLS' },
+          { id: 'skill', label: 'ALL SKILLS' },
+          { id: 'primary_skill', label: 'PRIMARY SKILLS' },
+          { id: 'secondary_skill', label: 'SECONDARY SKILLS' },
           { id: 'attribute', label: 'ATTRIBUTES' },
           { id: 'milestone', label: 'MILESTONES' }
         ].map(tab => (
@@ -669,18 +749,20 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                       stroke={
                         isConnectedToFocus 
                           ? '#38bdf8' 
+                          : link.sourceType === 'skill' && link.targetType === 'skill'
+                          ? '#818cf8'
                           : isLinkModified 
                           ? '#f59e0b' 
                           : '#475569'
                       }
                       strokeWidth={
-                        isConnectedToFocus ? 2.5 : isLinkModified ? 2 : 1
+                        isConnectedToFocus ? 2.5 : isLinkModified ? 2 : link.sourceType === 'skill' && link.targetType === 'skill' ? 1.5 : 1
                       }
                       strokeOpacity={
-                        isDimmed ? 0.08 : isConnectedToFocus ? 0.9 : isLinkModified ? 0.75 : 0.35
+                        isDimmed ? 0.08 : isConnectedToFocus ? 0.9 : isLinkModified ? 0.75 : link.sourceType === 'skill' && link.targetType === 'skill' ? 0.7 : 0.35
                       }
                       strokeDasharray={
-                        link.targetType === 'skill' ? '3 3' : undefined
+                        link.sourceType === 'skill' && link.targetType === 'skill' ? '3 3' : link.targetType === 'skill' ? '2 2' : undefined
                       }
                       className="transition-all duration-300"
                     />
@@ -736,6 +818,26 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         />
                       )}
 
+                      {/* Primary / Secondary Skill Distinctive Halos */}
+                      {node.type === 'skill' && node.skillTier === 'Primary' && (
+                        <circle 
+                          r={node.radius + 3.5} 
+                          fill="none" 
+                          stroke="#3b82f6" 
+                          strokeWidth="1.5" 
+                          strokeOpacity="0.8" 
+                        />
+                      )}
+                      {node.type === 'skill' && node.skillTier === 'Secondary' && (
+                        <circle 
+                          r={node.radius + 2.5} 
+                          fill="none" 
+                          stroke="#818cf8" 
+                          strokeWidth="1" 
+                          strokeDasharray="2 2" 
+                        />
+                      )}
+
                       {/* Main Node Circle */}
                       <circle 
                         r={node.radius} 
@@ -763,12 +865,21 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         <text
                           y={node.radius + 23}
                           textAnchor="middle"
-                          fill="#71717a"
+                          fill={
+                            node.type === 'skill' && node.skillTier === 'Primary'
+                              ? '#60a5fa'
+                              : node.type === 'skill' && node.skillTier === 'Secondary'
+                              ? '#a78bfa'
+                              : '#71717a'
+                          }
                           fontSize="7"
                           fontFamily="monospace"
+                          fontWeight={node.type === 'skill' ? 'bold' : 'normal'}
                           className="pointer-events-none uppercase"
                         >
-                          [{node.type}]
+                          {node.type === 'skill' 
+                            ? `[${node.skillTier === 'Primary' ? 'PRI' : 'SEC'}-SKILL]` 
+                            : `[${node.type}]`}
                         </text>
                       )}
                     </g>
@@ -785,7 +896,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
             <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-400" /> RING 1: GOALS TRACKS</div>
             <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" /> RING 2: PROJECTS & MILESTONES</div>
             <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-400" /> RING 3: QUEST DIRECTIVES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sky-400" /> RING 4: SKILLS & ATTRIBUTES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> RING 4: PRIMARY SKILLS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-400" /> SATELLITE: SECONDARY SKILLS</div>
           </div>
         </div>
 
@@ -823,6 +935,78 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                     </span>
                   </div>
                 </div>
+
+                {/* SKILL TIER SPECIFIC BADGE */}
+                {selectedNode.type === 'skill' && (
+                  <div className={`p-2 rounded-lg border text-xs font-mono flex items-center justify-between ${
+                    selectedNode.skillTier === 'Primary' 
+                      ? 'bg-blue-950/60 border-blue-500/40 text-blue-300' 
+                      : 'bg-indigo-950/60 border-indigo-500/40 text-indigo-300'
+                  }`}>
+                    <div className="flex items-center gap-1.5 font-bold">
+                      {selectedNode.skillTier === 'Primary' ? (
+                        <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                      ) : (
+                        <Layers className="h-3.5 w-3.5 text-indigo-400" />
+                      )}
+                      <span>{selectedNode.skillTier === 'Primary' ? 'PRIMARY SKILL TRACK' : 'SECONDARY SKILL TRACK'}</span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 uppercase">
+                      {selectedNode.skillTier}
+                    </span>
+                  </div>
+                )}
+
+                {/* SECONDARY SKILL -> PARENT PRIMARY SKILL LINK */}
+                {selectedNode.type === 'skill' && selectedNode.skillTier === 'Secondary' && selectedNode.parentId && (
+                  (() => {
+                    const parentNode = nodeMap.get(selectedNode.parentId);
+                    if (!parentNode) return null;
+                    return (
+                      <div className="bg-zinc-900/90 p-2 rounded-lg border border-indigo-500/30 space-y-1">
+                        <span className="text-[9px] font-mono text-indigo-400 uppercase font-bold block">
+                          PARENT PRIMARY SKILL:
+                        </span>
+                        <div 
+                          onClick={() => setSelectedNodeId(parentNode.id)}
+                          className="flex items-center justify-between p-1.5 bg-zinc-950 hover:bg-zinc-800 rounded border border-white/5 cursor-pointer text-xs font-mono text-white transition-colors"
+                        >
+                          <span className="truncate">{parentNode.name}</span>
+                          <ArrowRight className="h-3 w-3 text-indigo-400" />
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+
+                {/* PRIMARY SKILL -> CHILD SECONDARY SKILLS BREAKDOWN */}
+                {selectedNode.type === 'skill' && selectedNode.skillTier === 'Primary' && (
+                  (() => {
+                    const childSkills = (Array.from(nodeMap.values()) as GraphNode[]).filter(
+                      n => n.type === 'skill' && n.skillTier === 'Secondary' && n.parentId === selectedNode.id
+                    );
+                    if (childSkills.length === 0) return null;
+                    return (
+                      <div className="bg-zinc-900/90 p-2 rounded-lg border border-blue-500/30 space-y-1.5">
+                        <span className="text-[9px] font-mono text-blue-400 uppercase font-bold block">
+                          CHILD SECONDARY SKILLS ({childSkills.length}):
+                        </span>
+                        <div className="space-y-1 max-h-[100px] overflow-y-auto pr-1">
+                          {childSkills.map(child => (
+                            <div 
+                              key={child.id}
+                              onClick={() => setSelectedNodeId(child.id)}
+                              className="flex items-center justify-between p-1.5 bg-zinc-950 hover:bg-zinc-800 rounded border border-white/5 cursor-pointer text-xs font-mono text-indigo-300 transition-colors"
+                            >
+                              <span className="truncate">{child.name}</span>
+                              <span className="text-[9px] text-zinc-500">LVL {child.level}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
 
                 {/* ATTRIBUTES / STATS OF SELECTED NODE */}
                 <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/5 space-y-1.5 text-xs font-mono">
