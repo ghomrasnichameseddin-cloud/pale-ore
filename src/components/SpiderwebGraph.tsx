@@ -729,15 +729,10 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         ))}
       </div>
 
-      {/* ACTIVE CIRCUIT BANNER (WHEN A NODE IS CLICKED OR HOVERED) */}
-      <AnimatePresence>
-        {activeFocusNode && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-zinc-900/95 border border-cyan-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(6,182,212,0.15)]"
-          >
+      {/* ACTIVE CIRCUIT BANNER (RESERVED HEIGHT CONTAINER TO PREVENT LAYOUT SHIFT) */}
+      <div className="min-h-[58px] flex items-center">
+        {activeFocusNode ? (
+          <div className="w-full bg-zinc-900/95 border border-cyan-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-cyan-950 border border-cyan-500/50 text-cyan-400 shrink-0">
                 <Zap className="h-4 w-4 animate-pulse" />
@@ -787,9 +782,17 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                 CLEAR
               </button>
             </div>
-          </motion.div>
+          </div>
+        ) : (
+          <div className="w-full bg-zinc-950/40 border border-white/5 rounded-xl p-3 flex items-center justify-between text-xs font-mono text-zinc-500">
+            <span className="flex items-center gap-2">
+              <Compass className="h-4 w-4 text-cyan-400/70 shrink-0" />
+              HOVER OR CLICK ANY COMPONENT TO HIGHLIGHT & INSPECT ITS FULL CIRCUIT NETWORK
+            </span>
+            <span className="text-[10px] text-zinc-600 uppercase font-mono hidden sm:inline">RELATIONAL SPIDERWEB ACTIVE</span>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* MAIN SPIDERWEB CANVAS & INSPECTOR GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -971,7 +974,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           stroke={isSelected ? '#38bdf8' : '#a855f7'} 
                           strokeWidth="1.5" 
                           strokeOpacity="0.8" 
-                          className="circuit-node-pulse"
+                          className="pointer-events-none circuit-node-pulse"
                         />
                       )}
 
@@ -986,6 +989,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           strokeWidth="1.5" 
                           strokeDasharray="2 2"
                           filter="url(#glow-amber)"
+                          className="pointer-events-none"
                         />
                       )}
 
@@ -999,6 +1003,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           stroke="#3b82f6" 
                           strokeWidth="1.5" 
                           strokeOpacity="0.8" 
+                          className="pointer-events-none"
                         />
                       )}
                       {node.type === 'skill' && node.skillTier === 'Secondary' && (
@@ -1010,6 +1015,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           stroke="#818cf8" 
                           strokeWidth="1" 
                           strokeDasharray="2 2" 
+                          className="pointer-events-none"
                         />
                       )}
 
