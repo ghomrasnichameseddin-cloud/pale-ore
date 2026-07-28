@@ -1,8 +1,9 @@
 import React from 'react';
 import { usePOS } from '../POSContext';
+import { SpiderwebGraph } from './SpiderwebGraph';
 import { 
   BarChart3, Target, Award, Calendar, Flame, Activity, 
-  TrendingUp, TrendingDown, Clock, ShieldCheck, Zap 
+  TrendingUp, TrendingDown, Clock, ShieldCheck, Zap, Network
 } from 'lucide-react';
 
 export const AnalyticsView: React.FC = () => {
@@ -53,6 +54,9 @@ export const AnalyticsView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* SYSTEM COMPONENT SPIDERWEB GRAPH RELATIONSHIP VISUALIZER */}
+      <SpiderwebGraph />
 
       {/* MID ROW SUMMARY DETAILS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

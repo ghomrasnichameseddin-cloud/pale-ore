@@ -13,16 +13,17 @@ import { PlanningView } from './components/PlanningView';
 import { FrameworksView } from './components/FrameworksView';
 import { SystemMessageBox } from './components/SystemMessageBox';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
+import { SpiderwebGraph } from './components/SpiderwebGraph';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
-  Inbox, Timer, Bell
+  Inbox, Timer, Bell, Network
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'planning' | 'frameworks';
+type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -66,6 +67,7 @@ function AppContent() {
     { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
     { id: 'skills', label: 'SKILLS', icon: Award, desc: 'Competency tracks' },
     { id: 'analytics', label: 'ANALYTICS', icon: BarChart3, desc: 'Performance logs' },
+    { id: 'spiderweb', label: 'SPIDERWEB GRAPH', icon: Network, desc: 'Interactive component relationship map' },
     { id: 'system', label: 'SYSTEM', icon: Settings, desc: 'Direct manual override' }
   ];
 
@@ -423,6 +425,7 @@ function AppContent() {
             {activeTab === 'projects' && <ProjectsView />}
             {activeTab === 'skills' && <SkillsView />}
             {activeTab === 'analytics' && <AnalyticsView />}
+            {activeTab === 'spiderweb' && <SpiderwebGraph />}
             {activeTab === 'system' && <SystemView />}
           </motion.div>
         </AnimatePresence>
