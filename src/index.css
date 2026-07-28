@@ -7,6 +7,14 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html, body, #root {
+  background-color: #09090b;
+  color: #d4d4d8;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 /* Glassmorphism custom classes */
 .glass-panel {
   background: rgba(10, 10, 12, 0.7);

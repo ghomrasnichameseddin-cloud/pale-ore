@@ -812,18 +812,19 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
               <defs>
                 <style>{`
                   @keyframes circuitFlow {
-                    from { stroke-dashoffset: 20; }
+                    from { stroke-dashoffset: 24; }
                     to { stroke-dashoffset: 0; }
                   }
                   .circuit-active-line {
-                    animation: circuitFlow 1.2s linear infinite;
+                    stroke-dasharray: 6 6;
+                    animation: circuitFlow 1s linear infinite;
                   }
                   @keyframes circuitPulse {
-                    0%, 100% { opacity: 0.4; transform: scale(1); }
-                    50% { opacity: 0.95; transform: scale(1.18); }
+                    0%, 100% { opacity: 0.3; stroke-width: 1px; }
+                    50% { opacity: 1; stroke-width: 3px; }
                   }
                   .circuit-node-pulse {
-                    animation: circuitPulse 1.8s ease-in-out infinite;
+                    animation: circuitPulse 1.6s ease-in-out infinite;
                   }
                 `}</style>
 
@@ -929,26 +930,11 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           isDimmed ? 0.05 : isDirectFocusLink ? 0.95 : isCircuitLink ? 0.85 : isLinkModified ? 0.7 : 0.3
                         }
                         strokeDasharray={
-                          isCircuitLink ? '5 4' : link.targetType === 'skill' ? '3 3' : undefined
+                          isCircuitLink ? undefined : link.targetType === 'skill' ? '3 3' : undefined
                         }
                         filter={isCircuitLink ? 'url(#glow-circuit)' : undefined}
                         className={isCircuitLink ? 'circuit-active-line transition-all duration-300' : 'transition-all duration-300'}
                       />
-
-                      {/* ANIMATED PULSE SIGNAL CIRCLE ALONG ACTIVE CIRCUIT LINES */}
-                      {isCircuitLink && !isDimmed && (
-                        <circle
-                          r="2.5"
-                          fill={isDirectFocusLink ? '#38bdf8' : '#c084fc'}
-                          className="pointer-events-none"
-                        >
-                          <animateMotion
-                            path={`M ${sourceNode.x},${sourceNode.y} L ${targetNode.x},${targetNode.y}`}
-                            dur={isDirectFocusLink ? '1.5s' : '2.5s'}
-                            repeatCount="indefinite"
-                          />
-                        </circle>
-                      )}
                     </g>
                   );
                 })}
@@ -972,7 +958,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                       }}
                       onMouseEnter={() => setHoveredNodeId(node.id)}
                       onMouseLeave={() => setHoveredNodeId(null)}
-                      className="cursor-pointer transition-transform duration-200"
+                      className="cursor-pointer transition-opacity duration-200"
                       style={{ opacity: isDimmed ? 0.12 : 1 }}
                     >
                       {/* ACTIVE CIRCUIT PULSE HALO */}
