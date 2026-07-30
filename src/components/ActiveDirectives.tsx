@@ -797,6 +797,69 @@ export const ActiveDirectives: React.FC = () => {
     return counts;
   }, [terminalTab, baseQuests, difficultyFilter, todayStr, tomorrowStr, next7Days]);
 
+  const seedStarterQuests = () => {
+    addQuest({
+      name: 'Build High-Performance Core Architecture',
+      description: 'Implement key services, state models, and scalable data pipelines.',
+      difficulty: 'Hard',
+      type: 'Main',
+      xp: 250,
+      estimatedTime: 60,
+      deadline: todayStr,
+      recurrence: 'None',
+      subquests: [
+        { id: 'sq-1', name: 'Design context state interfaces', completed: true },
+        { id: 'sq-2', name: 'Optimize rendering cycles and memoization', completed: false }
+      ]
+    });
+    addQuest({
+      name: 'Refactor Database Indexing & Caching',
+      description: 'Improve search queries and cache hot data structures.',
+      difficulty: 'Normal',
+      type: 'Side',
+      xp: 120,
+      estimatedTime: 30,
+      deadline: todayStr,
+      recurrence: 'None',
+      subquests: []
+    });
+    addQuest({
+      name: '30-Minute Daily Deep Work Protocol',
+      description: 'Uninterrupted focus session on primary objectives.',
+      difficulty: 'Easy',
+      type: 'Habit',
+      xp: 80,
+      estimatedTime: 30,
+      deadline: todayStr,
+      recurrence: 'Daily',
+      subquests: []
+    });
+    addQuest({
+      name: 'Deploy Production Operational Cluster',
+      description: 'Verify deployment manifests, health probes, and SSL certificates.',
+      difficulty: 'Boss',
+      type: 'Boss',
+      xp: 400,
+      estimatedTime: 90,
+      deadline: todayStr,
+      recurrence: 'None',
+      subquests: []
+    });
+    addQuest({
+      name: 'Explore Micro-Interaction Polish',
+      description: 'Test framer-motion transitions and glow state effects.',
+      difficulty: 'Easy',
+      type: 'Optional',
+      xp: 50,
+      estimatedTime: 15,
+      deadline: todayStr,
+      recurrence: 'None',
+      subquests: []
+    });
+  };
+
+  const hasActiveFilters = categoryFilter !== 'All' || difficultyFilter !== 'All';
+
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
@@ -1705,6 +1768,7 @@ export const ActiveDirectives: React.FC = () => {
     const matchedGoal = state.goals.find(g => g.id === quest.goalId);
     const finished = isQuestFinishedForToday(quest);
     const linkedDocs = state.planningDocuments?.filter(doc => doc.linkedQuests?.includes(quest.id)) || [];
+    const cat = getCategoryDetails(quest.type);
 
     return (
       <div className="h-full flex flex-col overflow-hidden text-left" id="quest-hud-terminal">
@@ -2179,42 +2243,96 @@ export const ActiveDirectives: React.FC = () => {
               if (activeQuests.length === 0) {
                 if (terminalTab === 'today') {
                   return (
-                    <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
-                      <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                      <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
-                      <p className="text-[9px] text-zinc-600 font-mono mt-1">Use top CLI prompt or adjust active category filters above.</p>
+                    <div className="text-center py-12 px-4 border border-dashed border-cyan-500/15 rounded-lg bg-zinc-950/40">
+                      <Terminal className="h-8 w-8 text-cyan-400 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO ACTIVE DIRECTIVES IN THIS SECTOR</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1 max-w-sm mx-auto">
+                        {hasActiveFilters 
+                          ? 'Filters are currently filtering out directives. Reset filters or create a new directive.' 
+                          : 'No operational directives found for today. Seed starter directives or add one above.'}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                        {hasActiveFilters && (
+                          <button
+                            type="button"
+                            onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                            className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-cyan-300 rounded text-[11px] font-mono font-bold transition flex items-center gap-1.5"
+                          >
+                            <Sliders className="h-3.5 w-3.5 text-cyan-400" />
+                            <span>RESET ACTIVE FILTERS</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={seedStarterQuests}
+                          className="px-3.5 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 rounded text-[11px] font-mono font-bold transition shadow-[0_0_12px_rgba(6,182,212,0.15)] flex items-center gap-1.5"
+                        >
+                          <Terminal className="h-3.5 w-3.5 text-cyan-400" />
+                          <span>⚡ LOAD STARTER DIRECTIVES</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 }
                 if (terminalTab === 'tomorrow') {
                   return (
-                    <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
-                      <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                      <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
-                      <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
+                    <div className="text-center py-12 px-4 border border-dashed border-purple-500/15 rounded-lg bg-zinc-950/40">
+                      <Calendar className="h-8 w-8 text-purple-400 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO DIRECTIVES FORECAST FOR TOMORROW</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-purple-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
+                        >
+                          <Sliders className="h-3.5 w-3.5 text-purple-400" />
+                          <span>RESET FILTERS</span>
+                        </button>
+                      )}
                     </div>
                   );
                 }
                 if (terminalTab === 'week') {
                   return (
-                    <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
-                      <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                      <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
-                      <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
+                    <div className="text-center py-12 px-4 border border-dashed border-emerald-500/15 rounded-lg bg-zinc-950/40">
+                      <Compass className="h-8 w-8 text-emerald-400 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1">All upcoming days are clear of operational loads.</p>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-emerald-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
+                        >
+                          <Sliders className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>RESET FILTERS</span>
+                        </button>
+                      )}
                     </div>
                   );
                 }
                 if (terminalTab === 'deferred') {
                   return (
-                    <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
-                      <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                      <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
-                      <p className="text-[9px] text-zinc-600 font-mono mt-1">Postpone any active task to defer execution load.</p>
+                    <div className="text-center py-12 px-4 border border-dashed border-amber-500/15 rounded-lg bg-zinc-950/40">
+                      <Calendar className="h-8 w-8 text-amber-400 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO OBJECTIVES DELAYED OR POSTPONED</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1">Postpone any active task to defer execution load.</p>
+                      {hasActiveFilters && (
+                        <button
+                          type="button"
+                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-amber-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
+                        >
+                          <Sliders className="h-3.5 w-3.5 text-amber-400" />
+                          <span>RESET FILTERS</span>
+                        </button>
+                      )}
                     </div>
                   );
                 }
                 return (
-                  <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
+                  <div className="text-center py-12 px-4 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
                     <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
                     <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
                     <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
