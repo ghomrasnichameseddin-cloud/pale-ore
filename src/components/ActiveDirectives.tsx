@@ -4,9 +4,107 @@ import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
   Circle, CheckCircle2, Trash2, Edit3, Save, X, Skull, 
   Calendar, SkipForward, Play, Pause, Clock, Timer, 
-  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass
+  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+export const getCategoryDetails = (type: string) => {
+  const t = (type || '').toLowerCase();
+  if (t === 'main') {
+    return {
+      label: 'Main Quest',
+      shortLabel: 'Main',
+      icon: '🏆',
+      badgeClass: 'bg-amber-950/60 text-amber-300 border-amber-500/40',
+      borderLeftClass: 'border-l-4 border-l-amber-500',
+      textColor: 'text-amber-400',
+      bgHeader: 'bg-amber-950/40 border-amber-500/30 text-amber-300',
+      accentBg: 'bg-amber-500/10',
+    };
+  }
+  if (t === 'side') {
+    return {
+      label: 'Side Quest',
+      shortLabel: 'Side',
+      icon: '🎯',
+      badgeClass: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40',
+      borderLeftClass: 'border-l-4 border-l-cyan-500',
+      textColor: 'text-cyan-400',
+      bgHeader: 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300',
+      accentBg: 'bg-cyan-500/10',
+    };
+  }
+  if (t === 'boss') {
+    return {
+      label: 'Boss Encounter',
+      shortLabel: 'Boss',
+      icon: '🔥',
+      badgeClass: 'bg-rose-950/70 text-rose-300 border-rose-500/50 font-bold',
+      borderLeftClass: 'border-l-4 border-l-rose-500',
+      textColor: 'text-rose-400',
+      bgHeader: 'bg-rose-950/50 border-rose-500/40 text-rose-300',
+      accentBg: 'bg-rose-500/10',
+    };
+  }
+  if (t === 'habit') {
+    return {
+      label: 'Habit Quest',
+      shortLabel: 'Habit',
+      icon: '⚡',
+      badgeClass: 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40',
+      borderLeftClass: 'border-l-4 border-l-emerald-500',
+      textColor: 'text-emerald-400',
+      bgHeader: 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300',
+      accentBg: 'bg-emerald-500/10',
+    };
+  }
+  if (t === 'recovery') {
+    return {
+      label: 'Recovery Quest',
+      shortLabel: 'Recovery',
+      icon: '🛡️',
+      badgeClass: 'bg-teal-950/60 text-teal-300 border-teal-500/40',
+      borderLeftClass: 'border-l-4 border-l-teal-500',
+      textColor: 'text-teal-400',
+      bgHeader: 'bg-teal-950/40 border-teal-500/30 text-teal-300',
+      accentBg: 'bg-teal-500/10',
+    };
+  }
+  if (t === 'penalty') {
+    return {
+      label: 'Penalty Quest',
+      shortLabel: 'Penalty',
+      icon: '💀',
+      badgeClass: 'bg-red-950/80 text-red-300 border-red-500/60 font-black animate-pulse',
+      borderLeftClass: 'border-l-4 border-l-red-600',
+      textColor: 'text-red-400',
+      bgHeader: 'bg-red-950/60 border-red-500/50 text-red-300',
+      accentBg: 'bg-red-500/10',
+    };
+  }
+  if (t === 'optional') {
+    return {
+      label: 'Optional Quest',
+      shortLabel: 'Optional',
+      icon: '🌟',
+      badgeClass: 'bg-indigo-950/60 text-indigo-300 border-indigo-500/40',
+      borderLeftClass: 'border-l-4 border-l-indigo-500',
+      textColor: 'text-indigo-400',
+      bgHeader: 'bg-indigo-950/40 border-indigo-500/30 text-indigo-300',
+      accentBg: 'bg-indigo-500/10',
+    };
+  }
+  return {
+    label: type || 'General',
+    shortLabel: type || 'General',
+    icon: '📌',
+    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+    borderLeftClass: 'border-l-4 border-l-zinc-500',
+    textColor: 'text-zinc-400',
+    bgHeader: 'bg-zinc-900 border-zinc-700 text-zinc-300',
+    accentBg: 'bg-zinc-800/20',
+  };
+};
 
 export const ActiveDirectives: React.FC = () => {
   const { 
@@ -25,6 +123,8 @@ export const ActiveDirectives: React.FC = () => {
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss'>('All');
+  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional'>('All');
+  const [isGroupedByCategory, setIsGroupedByCategory] = useState(false);
   const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty'>('today');
 
   // Quick / Bulk Add States
@@ -629,11 +729,80 @@ export const ActiveDirectives: React.FC = () => {
   const tomorrowStr = getTomorrowStr();
   const next7Days = getNext7Days();
 
+  const matchesCategory = (q: Quest) => {
+    if (categoryFilter === 'All') return true;
+    return (q.type || 'Main').toLowerCase() === categoryFilter.toLowerCase();
+  };
+
+  // Compute category counts for active tab
+  const categoryCounts = useMemo(() => {
+    const tabQuests = baseQuests.filter(q => {
+      const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
+      if (!matchesDifficulty) return false;
+
+      if (terminalTab === 'today') {
+        const isFinished = isQuestFinishedForToday(q);
+        if (isFinished) return q.status !== 'Failed';
+        if (q.status !== 'Active') return false;
+        if (!isQuestScheduledForDate(q, todayStr)) return false;
+        return !q.deadline || q.deadline <= todayStr;
+      } else if (terminalTab === 'tomorrow') {
+        const isFinished = isQuestFinishedForToday(q);
+        const isRecurring = q.recurrence && q.recurrence !== 'None';
+        if (isFinished) return isRecurring;
+        if (q.status !== 'Active') return false;
+        return isQuestScheduledForDate(q, tomorrowStr) || q.deadline === tomorrowStr;
+      } else if (terminalTab === 'week') {
+        const isFinished = isQuestFinishedForToday(q);
+        if (q.status !== 'Active') return isFinished;
+        const isScheduledSomeDay = next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
+        const hasDeadlineThisWeek = q.deadline && q.deadline >= todayStr && q.deadline <= next7Days[6];
+        return isScheduledSomeDay || hasDeadlineThisWeek;
+      } else if (terminalTab === 'deferred') {
+        const isFinished = isQuestFinishedForToday(q);
+        const isRecurring = q.recurrence && q.recurrence !== 'None';
+        if (isFinished) return isRecurring;
+        return q.status === 'Active' && q.deadline && q.deadline > todayStr;
+      } else if (terminalTab === 'penalty') {
+        if (q.status !== 'Active') return false;
+        return q.type === 'Penalty';
+      }
+      return true;
+    });
+
+    const counts: Record<string, number> = {
+      All: tabQuests.length,
+      Main: 0,
+      Side: 0,
+      Boss: 0,
+      Habit: 0,
+      Recovery: 0,
+      Penalty: 0,
+      Optional: 0
+    };
+
+    tabQuests.forEach(q => {
+      const typeKey = (q.type || 'Main');
+      const normalized = 
+        typeKey.toLowerCase() === 'main' ? 'Main' :
+        typeKey.toLowerCase() === 'side' ? 'Side' :
+        typeKey.toLowerCase() === 'boss' ? 'Boss' :
+        typeKey.toLowerCase() === 'habit' ? 'Habit' :
+        typeKey.toLowerCase() === 'recovery' ? 'Recovery' :
+        typeKey.toLowerCase() === 'penalty' ? 'Penalty' :
+        typeKey.toLowerCase() === 'optional' ? 'Optional' : 'Main';
+      counts[normalized] = (counts[normalized] || 0) + 1;
+    });
+
+    return counts;
+  }, [terminalTab, baseQuests, difficultyFilter, todayStr, tomorrowStr, next7Days]);
+
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
+    if (!matchesCategory(q)) return false;
 
     if (isFinished) {
        return q.status !== 'Failed'; // Show completed today, exclude fails
@@ -652,6 +821,7 @@ export const ActiveDirectives: React.FC = () => {
   const tomorrowQuests = baseQuests.filter(q => {
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
+    if (!matchesCategory(q)) return false;
 
     const isFinished = isQuestFinishedForToday(q);
     const isRecurring = q.recurrence && q.recurrence !== 'None';
@@ -674,6 +844,7 @@ export const ActiveDirectives: React.FC = () => {
   const weekQuests = baseQuests.filter(q => {
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
+    if (!matchesCategory(q)) return false;
 
     const isFinished = isQuestFinishedForToday(q);
     if (q.status !== 'Active') {
@@ -694,6 +865,7 @@ export const ActiveDirectives: React.FC = () => {
     const isRecurring = q.recurrence && q.recurrence !== 'None';
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
+    if (!matchesCategory(q)) return false;
     
     if (isFinished) {
       // Completed recurring quests are queued for tomorrow/future cycles in the defer console
@@ -708,6 +880,7 @@ export const ActiveDirectives: React.FC = () => {
     if (q.status !== 'Active') return false;
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
+    if (!matchesCategory(q)) return false;
     return q.type === 'Penalty';
   });
 
@@ -1067,6 +1240,7 @@ export const ActiveDirectives: React.FC = () => {
 
     const finished = isQuestFinishedForToday(quest);
     const isSelected = selectedQuestId === quest.id;
+    const cat = getCategoryDetails(quest.type);
 
     return (
       <motion.div
@@ -1077,11 +1251,11 @@ export const ActiveDirectives: React.FC = () => {
         exit={{ opacity: 0, x: isDeferred ? 10 : -10 }}
         transition={{ duration: 0.15 }}
         onClick={() => setSelectedQuestId(quest.id)}
-        className={`p-2.5 bg-zinc-950/40 hover:bg-zinc-900/60 border rounded-lg flex items-center justify-between gap-3 cursor-pointer transition-all relative ${
+        className={`p-2.5 bg-zinc-950/50 hover:bg-zinc-900/70 border rounded-lg flex items-center justify-between gap-3 cursor-pointer transition-all relative ${cat.borderLeftClass} ${
           isSelected 
-            ? 'border-cyan-500 bg-cyan-950/20 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
+            ? 'border-cyan-500 bg-cyan-950/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]' 
             : finished 
-              ? 'border-emerald-500/10 bg-emerald-950/5 opacity-75' 
+              ? 'border-emerald-500/10 bg-emerald-950/5 opacity-70' 
               : isDeferred 
                 ? 'border-amber-500/10 hover:border-amber-500/20' 
                 : 'border-white/5 hover:border-white/10'
@@ -1105,7 +1279,7 @@ export const ActiveDirectives: React.FC = () => {
             title={finished ? "Reopen Quest" : "Complete Quest"}
           >
             {finished ? (
-              <CheckCircle2 className="h-4 w-4" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             ) : (
               <Circle className="h-4 w-4" />
             )}
@@ -1121,26 +1295,27 @@ export const ActiveDirectives: React.FC = () => {
 
               {/* Goal Relation Badge */}
               {matchedGoal && (
-                <span className="text-[8px] font-mono text-zinc-500 truncate max-w-[120px] bg-zinc-900/40 px-1.5 py-0.5 rounded">
+                <span className="text-[8px] font-mono text-zinc-400 truncate max-w-[120px] bg-zinc-900/60 px-1.5 py-0.5 rounded border border-white/5">
                   🎯 {matchedGoal.name}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              {/* Difficulty Badge */}
-              <span className={`text-[8px] font-mono uppercase px-1 py-0.5 rounded ${
-                quest.difficulty === 'Easy' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' :
-                quest.difficulty === 'Normal' ? 'bg-cyan-950/30 text-cyan-400 border border-cyan-500/10' :
-                quest.difficulty === 'Hard' ? 'bg-purple-950/30 text-purple-400 border border-purple-500/10' :
-                'bg-rose-950/40 text-rose-400 border border-rose-500/20 font-bold'
-              }`}>
-                {quest.difficulty}
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {/* Category Badge */}
+              <span className={`text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold flex items-center gap-1 ${cat.badgeClass}`}>
+                <span>{cat.icon}</span>
+                <span>{cat.shortLabel}</span>
               </span>
 
-              {/* Category */}
-              <span className="text-[8px] font-mono text-zinc-400 uppercase bg-zinc-900 px-1 py-0.5 rounded">
-                {quest.type}
+              {/* Difficulty Badge */}
+              <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border ${
+                quest.difficulty === 'Easy' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' :
+                quest.difficulty === 'Normal' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' :
+                quest.difficulty === 'Hard' ? 'bg-purple-950/40 text-purple-400 border border-purple-500/20' :
+                'bg-rose-950/60 text-rose-300 border border-rose-500/40 font-bold animate-pulse'
+              }`}>
+                {quest.difficulty}
               </span>
 
               {/* Recurrence */}
@@ -1385,28 +1560,97 @@ export const ActiveDirectives: React.FC = () => {
         )}
       </div>
 
-      {/* Strategy 2: Adaptive Load Difficulty Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-zinc-950/45 border border-white/5 rounded-lg gap-3">
-        <div className="flex items-center gap-2.5">
-          <Sliders className="h-4 w-4 text-cyan-400" />
-          <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
-            ADAPTIVE_LOAD_DIFFICULTY_FILTER:
-          </span>
-        </div>
-        <div className="flex gap-1.5 w-full sm:w-auto overflow-x-auto">
-          {(['All', 'Easy', 'Normal', 'Hard', 'Boss'] as const).map(level => (
+      {/* Strategy 2: Adaptive Load & Category Sector Filter Bar */}
+      <div className="p-3.5 bg-zinc-950/60 border border-white/5 rounded-lg space-y-3">
+        {/* Category Filter Row */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 pb-2.5 border-b border-white/5">
+          <div className="flex items-center gap-2 shrink-0">
+            <Layers className="h-4 w-4 text-cyan-400" />
+            <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider font-bold">
+              CATEGORY_SECTOR_FILTER:
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+            {[
+              { id: 'All', label: 'ALL CATEGORIES', icon: '🌌' },
+              { id: 'Main', label: 'MAIN', icon: '🏆' },
+              { id: 'Side', label: 'SIDE', icon: '🎯' },
+              { id: 'Boss', label: 'BOSS', icon: '🔥' },
+              { id: 'Habit', label: 'HABIT', icon: '⚡' },
+              { id: 'Recovery', label: 'RECOVERY', icon: '🛡️' },
+              { id: 'Penalty', label: 'PENALTY', icon: '💀' },
+              { id: 'Optional', label: 'OPTIONAL', icon: '🌟' }
+            ].map(catItem => {
+              const count = categoryCounts[catItem.id] || 0;
+              const isSelected = categoryFilter === catItem.id;
+              const catMeta = catItem.id !== 'All' ? getCategoryDetails(catItem.id) : null;
+
+              return (
+                <button
+                  key={catItem.id}
+                  type="button"
+                  onClick={() => setCategoryFilter(catItem.id as any)}
+                  className={`px-2.5 py-1 text-[9.5px] font-mono rounded-md border transition-all flex items-center gap-1 whitespace-nowrap ${
+                    isSelected
+                      ? catMeta 
+                        ? `${catMeta.bgHeader} font-bold shadow-[0_0_10px_rgba(255,255,255,0.05)]`
+                        : 'bg-cyan-950 text-cyan-300 border-cyan-500/50 font-bold shadow-[0_0_8px_rgba(6,182,212,0.15)]'
+                      : 'bg-zinc-900/80 border-white/5 text-zinc-400 hover:border-white/10 hover:text-zinc-200'
+                  }`}
+                >
+                  <span>{catItem.icon}</span>
+                  <span>{catItem.label}</span>
+                  <span className={`text-[8.5px] px-1 py-0.2 rounded font-mono ${
+                    isSelected ? 'bg-black/30 text-white font-bold' : 'bg-zinc-950 text-zinc-500'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* View Mode Toggle Button */}
             <button
-              key={level}
-              onClick={() => setDifficultyFilter(level)}
-              className={`px-3 py-1 text-[10px] font-mono rounded border transition-all duration-200 uppercase whitespace-nowrap ${
-                difficultyFilter === level
-                  ? 'bg-cyan-950 text-cyan-400 border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.1)] font-bold'
-                  : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
+              type="button"
+              onClick={() => setIsGroupedByCategory(!isGroupedByCategory)}
+              className={`ml-auto px-2.5 py-1 text-[9.5px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
+                isGroupedByCategory
+                  ? 'bg-purple-950/80 text-purple-300 border-purple-500/40 font-bold shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                  : 'bg-zinc-900 border-white/10 text-zinc-400 hover:text-white'
               }`}
+              title="Toggle Group By Category"
             >
-              {level === 'All' ? '🌌 ALL_DIFFICULTIES' : level === 'Easy' ? '🟢 EASY' : level === 'Normal' ? '🟡 NORMAL' : level === 'Hard' ? '🟠 HARD' : '🔴 BOSS'}
+              <Sliders className="h-3 w-3" />
+              <span>{isGroupedByCategory ? '📂 GROUPED BY CATEGORY' : '≡ LIST VIEW'}</span>
             </button>
-          ))}
+          </div>
+        </div>
+
+        {/* Difficulty Filter Row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
+            <Sliders className="h-3.5 w-3.5 text-zinc-500" />
+            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
+              DIFFICULTY_LEVEL_FILTER:
+            </span>
+          </div>
+          <div className="flex gap-1.5 w-full sm:w-auto overflow-x-auto">
+            {(['All', 'Easy', 'Normal', 'Hard', 'Boss'] as const).map(level => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setDifficultyFilter(level)}
+                className={`px-2.5 py-1 text-[9.5px] font-mono rounded border transition-all duration-200 uppercase whitespace-nowrap ${
+                  difficultyFilter === level
+                    ? 'bg-cyan-950 text-cyan-400 border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.1)] font-bold'
+                    : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
+                }`}
+              >
+                {level === 'All' ? '🌌 ALL_DIFFICULTIES' : level === 'Easy' ? '🟢 EASY' : level === 'Normal' ? '🟡 NORMAL' : level === 'Hard' ? '🟠 HARD' : '🔴 BOSS'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1506,9 +1750,12 @@ export const ActiveDirectives: React.FC = () => {
                  quest.difficulty === 'Hard' ? '🟣 HARD' : '🔴 BOSS'}
               </span>
             </div>
-            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
+            <div className={`p-2 rounded border border-white/5 ${cat.accentBg}`}>
               <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Category</span>
-              <span className="text-zinc-300 font-bold">{quest.type}</span>
+              <span className={`font-bold flex items-center gap-1 ${cat.textColor}`}>
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </span>
             </div>
             <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
               <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Est. Duration</span>
@@ -1920,67 +2167,116 @@ export const ActiveDirectives: React.FC = () => {
 
           {/* Dynamic unified Quest list scroll region */}
           <div className="flex-1 overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-zinc-800">
-            {terminalTab === 'today' ? (
-              todayQuests.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
-                  <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                  <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
-                  <p className="text-[9px] text-zinc-600 font-mono mt-1">Use top CLI prompt to register a new directive.</p>
+            {(() => {
+              const activeQuests = 
+                terminalTab === 'today' ? todayQuests :
+                terminalTab === 'tomorrow' ? tomorrowQuests :
+                terminalTab === 'week' ? weekQuests :
+                terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+
+              const isDeferredTab = terminalTab === 'tomorrow' || terminalTab === 'week' || terminalTab === 'deferred';
+
+              if (activeQuests.length === 0) {
+                if (terminalTab === 'today') {
+                  return (
+                    <div className="text-center py-16 border border-dashed border-cyan-500/10 rounded-lg">
+                      <Terminal className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-500 font-mono">NO ACTIVE DIRECTIVES LOGGED FOR THIS CYCLE</p>
+                      <p className="text-[9px] text-zinc-600 font-mono mt-1">Use top CLI prompt or adjust active category filters above.</p>
+                    </div>
+                  );
+                }
+                if (terminalTab === 'tomorrow') {
+                  return (
+                    <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
+                      <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
+                      <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
+                    </div>
+                  );
+                }
+                if (terminalTab === 'week') {
+                  return (
+                    <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
+                      <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
+                      <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
+                    </div>
+                  );
+                }
+                if (terminalTab === 'deferred') {
+                  return (
+                    <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
+                      <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
+                      <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
+                      <p className="text-[9px] text-zinc-600 font-mono mt-1">Postpone any active task to defer execution load.</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
+                    <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
+                    <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
+                  </div>
+                );
+              }
+
+              if (!isGroupedByCategory) {
+                return (
+                  <AnimatePresence mode="popLayout">
+                    {activeQuests.map(q => renderQuestCard(q, isDeferredTab))}
+                  </AnimatePresence>
+                );
+              }
+
+              // Group quests by Category
+              const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Penalty', 'Optional', 'General'];
+              const groups: Record<string, Quest[]> = {};
+              
+              activeQuests.forEach(q => {
+                const catKey = (q.type || 'Main');
+                const norm = 
+                  catKey.toLowerCase() === 'main' ? 'Main' :
+                  catKey.toLowerCase() === 'side' ? 'Side' :
+                  catKey.toLowerCase() === 'boss' ? 'Boss' :
+                  catKey.toLowerCase() === 'habit' ? 'Habit' :
+                  catKey.toLowerCase() === 'recovery' ? 'Recovery' :
+                  catKey.toLowerCase() === 'penalty' ? 'Penalty' :
+                  catKey.toLowerCase() === 'optional' ? 'Optional' : 'General';
+                if (!groups[norm]) groups[norm] = [];
+                groups[norm].push(q);
+              });
+
+              return (
+                <div className="space-y-4">
+                  {categoryOrder.map(catKey => {
+                    const catQuests = groups[catKey];
+                    if (!catQuests || catQuests.length === 0) return null;
+                    const catDetails = getCategoryDetails(catKey);
+
+                    return (
+                      <div key={catKey} className="space-y-2">
+                        <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${catDetails.bgHeader}`}>
+                          <div className="flex items-center gap-2">
+                            <span>{catDetails.icon}</span>
+                            <span className="uppercase tracking-wider">{catDetails.label}</span>
+                          </div>
+                          <span className={`text-[9px] px-2 py-0.5 rounded border font-mono ${catDetails.badgeClass}`}>
+                            {catQuests.length} {catQuests.length === 1 ? 'DIRECTIVE' : 'DIRECTIVES'}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5">
+                          <AnimatePresence mode="popLayout">
+                            {catQuests.map(q => renderQuestCard(q, isDeferredTab))}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {todayQuests.map(q => renderQuestCard(q, false))}
-                </AnimatePresence>
-              )
-            ) : terminalTab === 'tomorrow' ? (
-              tomorrowQuests.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-purple-500/10 rounded-lg">
-                  <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                  <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES FORECAST FOR TOMORROW</p>
-                  <p className="text-[9px] text-zinc-600 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
-                </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {tomorrowQuests.map(q => renderQuestCard(q, true))}
-                </AnimatePresence>
-              )
-            ) : terminalTab === 'week' ? (
-              weekQuests.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-emerald-500/10 rounded-lg">
-                  <Compass className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                  <p className="text-xs text-zinc-500 font-mono">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
-                  <p className="text-[9px] text-zinc-600 font-mono mt-1">All upcoming days are clear of operational loads.</p>
-                </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {weekQuests.map(q => renderQuestCard(q, true))}
-                </AnimatePresence>
-              )
-            ) : terminalTab === 'deferred' ? (
-              tomorrowPostponedQuests.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-amber-500/10 rounded-lg">
-                  <Calendar className="h-8 w-8 text-zinc-600 mx-auto mb-2 animate-pulse" />
-                  <p className="text-xs text-zinc-500 font-mono">NO OBJECTIVES DELAYED OR POSTPONED</p>
-                  <p className="text-[9px] text-zinc-600 font-mono mt-1">Postpone any active task to defer execution load.</p>
-                </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {tomorrowPostponedQuests.map(q => renderQuestCard(q, true))}
-                </AnimatePresence>
-              )
-            ) : (
-              penaltyQuests.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
-                  <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
-                  <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
-                </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {penaltyQuests.map(q => renderQuestCard(q, false))}
-                </AnimatePresence>
-              )
-            )}
+              );
+            })()}
           </div>
         </div>
 

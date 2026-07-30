@@ -6,6 +6,7 @@ import {
   Clock, Target, Folder, Calendar, AlertTriangle, Skull, 
   Layers, Brain, RefreshCw, Sparkles, Tag, Sparkle
 } from 'lucide-react';
+import { getCategoryDetails } from './ActiveDirectives';
 
 export const ExecuteQuestForm: React.FC = () => {
   const { state, addQuest, systemDate, selectedListId } = usePOS();
@@ -148,11 +149,22 @@ export const ExecuteQuestForm: React.FC = () => {
         {/* Primary Configuration Grid (Always Visible) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Category Type */}
-          <div>
-            <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-              <Layers className="h-3 w-3 text-zinc-500" />
-              Category
-            </label>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between mb-1">
+              <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                <Layers className="h-3 w-3 text-zinc-500" />
+                Category
+              </label>
+              {(() => {
+                const catMeta = getCategoryDetails(newQuestType);
+                return (
+                  <span className={`text-[8.5px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold flex items-center gap-1 ${catMeta.badgeClass}`}>
+                    <span>{catMeta.icon}</span>
+                    <span>{catMeta.shortLabel}</span>
+                  </span>
+                );
+              })()}
+            </div>
             <select 
               value={newQuestType}
               onChange={(e) => setNewQuestType(e.target.value as QuestType)}
