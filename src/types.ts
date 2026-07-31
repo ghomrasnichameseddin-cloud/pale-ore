@@ -164,6 +164,33 @@ export interface PlanningDocument {
   updatedAt: string;
 }
 
+export type SealRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Divine' | 'Forbidden';
+export type SealStatus = 'Locked' | 'Unsealing' | 'Broken';
+
+export interface PowerSeal {
+  id: string;
+  name: string;
+  description: string;
+  rarity: SealRarity;
+  status: SealStatus;
+  brokenAt?: string | null;
+  requiredLevel: number;
+  requiredRank?: string;
+  costXP: number;
+  requiredQuestId?: string | null;
+  requiredSkillId?: string | null;
+  requiredSkillLevel?: number;
+  buffName: string;
+  buffDescription: string;
+  xpBonusMultiplier?: number; // e.g. 1.15 (+15%)
+  momentumBoost?: number;
+  attributeBoosts?: { attributeId: string; boostAmount: number }[];
+  unlockedFeatures?: string[];
+  runeSymbol?: string;
+  colorTheme?: string;
+  createdAt: string;
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -173,6 +200,7 @@ export interface POSState {
   lists: QuestList[];
   skills: Skill[];
   attributes: Attribute[];
+  seals?: PowerSeal[];
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
   systemDate: string; // format YYYY-MM-DD

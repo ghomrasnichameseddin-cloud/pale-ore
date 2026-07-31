@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type NodeType = 'core' | 'goal' | 'project' | 'quest' | 'skill' | 'attribute' | 'milestone' | 'plan';
+export type NodeType = 'core' | 'goal' | 'project' | 'quest' | 'skill' | 'attribute' | 'milestone' | 'plan' | 'seal';
 
 export interface GraphNode {
   id: string;
@@ -348,6 +348,56 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       nMap.set(node.id, node);
     });
 
+    // 1I. POWER SEALS
+    const seals = state.seals || [];
+    seals.forEach((seal, idx) => {
+      let angle = (idx / Math.max(seals.length, 1)) * 2 * Math.PI + Math.PI / 4;
+      const reqQuestNode = seal.requiredQuestId ? nMap.get(seal.requiredQuestId) : null;
+      if (reqQuestNode) {
+        angle = reqQuestNode.angle + 0.15;
+      }
+
+      const r = ringRadii[2] + 45;
+      const isRecentlyModified = seal.status === 'Broken';
+      if (isRecentlyModified) modSet.add(seal.id);
+
+      const node: GraphNode = {
+        id: seal.id,
+        name: seal.name,
+        type: 'seal',
+        status: seal.status,
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: 11,
+        ring: 2,
+        angle,
+        color: seal.status === 'Broken' ? '#c084fc' : '#6b21a8', // Purple
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+
+      // Link seal to core player
+      addLink(seal.id, 'core-player', 'seal', 'core', seal.buffName, isRecentlyModified);
+
+      // Link seal to required quest
+      if (seal.requiredQuestId && nMap.has(seal.requiredQuestId)) {
+        addLink(seal.id, seal.requiredQuestId, 'seal', 'quest', 'Requires Quest', isRecentlyModified);
+      }
+
+      // Link seal to required skill
+      if (seal.requiredSkillId && nMap.has(seal.requiredSkillId)) {
+        addLink(seal.id, seal.requiredSkillId, 'seal', 'skill', 'Requires Skill', isRecentlyModified);
+      }
+
+      // Link seal to attribute boosts
+      (seal.attributeBoosts || []).forEach(b => {
+        if (nMap.has(b.attributeId)) {
+          addLink(seal.id, b.attributeId, 'seal', 'attribute', `+${b.boostAmount}`, isRecentlyModified);
+        }
+      });
+    });
+
     // =========================================================================
     // 2. EXHAUSTIVE CROSS-RELATION LINK BUILDING (CONNECTING EVERY COMPONENT)
     // =========================================================================
@@ -599,6 +649,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       case 'attribute': return <Activity className="h-3.5 w-3.5 text-emerald-400" />;
       case 'milestone': return <CheckCircle className="h-3.5 w-3.5 text-pink-400" />;
       case 'plan': return <FileText className="h-3.5 w-3.5 text-teal-400" />;
+      case 'seal': return <Sparkles className="h-3.5 w-3.5 text-purple-400" />;
       default: return <Info className="h-3.5 w-3.5 text-zinc-400" />;
     }
   };
@@ -613,6 +664,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       case 'attribute': return 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300';
       case 'milestone': return 'bg-pink-950/80 border-pink-500/40 text-pink-300';
       case 'plan': return 'bg-teal-950/80 border-teal-500/40 text-teal-300';
+      case 'seal': return 'bg-purple-950/80 border-purple-500/50 text-purple-300';
       default: return 'bg-zinc-900 border-zinc-700 text-zinc-300';
     }
   };
@@ -712,6 +764,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
           { id: 'primary_skill', label: 'PRIMARY SKILLS' },
           { id: 'secondary_skill', label: 'SECONDARY SKILLS' },
           { id: 'attribute', label: 'ATTRIBUTES' },
+          { id: 'seal', label: 'POWER SEALS' },
           { id: 'milestone', label: 'MILESTONES' },
           { id: 'plan', label: 'PLANS' }
         ].map(tab => (

@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
-  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState,
+  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage
 } from './types';
-import { INITIAL_STATE, getLocalDateString } from './initialState';
+import { INITIAL_STATE, DEFAULT_SEALS, getLocalDateString } from './initialState';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
   const dateStr = systemDateStr || getLocalDateString();
@@ -91,6 +91,14 @@ interface POSContextType {
   
   // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
   updateAttributeBase: (id: string, level: number) => void;
+  
+  // Power Seals CRUD & System Actions
+  addSeal: (seal: Omit<PowerSeal, 'id' | 'status' | 'brokenAt' | 'createdAt'>) => string;
+  updateSeal: (id: string, updates: Partial<PowerSeal>) => void;
+  deleteSeal: (id: string) => void;
+  breakSeal: (id: string) => { success: boolean; message: string };
+  relockSeal: (id: string) => void;
+  resetSealsToDefault: () => void;
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -1203,10 +1211,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         divider = 2;
       }
 
-      // Base level is what is in state, we add the earned levels
+      // Base level is what is in state, we add the earned levels & broken seal attribute boosts
       const baseLevel = attr.level;
       const extraLevels = Math.floor(relatedCount / divider);
-      const level = baseLevel + extraLevels;
+      
+      const brokenSealAttributeBoost = (state.seals || [])
+        .filter(s => s.status === 'Broken')
+        .flatMap(s => s.attributeBoosts || [])
+        .filter(b => b.attributeId === attr.id)
+        .reduce((sum, b) => sum + b.boostAmount, 0);
+
+      const level = baseLevel + extraLevels + brokenSealAttributeBoost;
       const progress = Math.round(((relatedCount % divider) / divider) * 100);
 
       return {
@@ -1478,6 +1493,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       earnedXp = Math.round(earnedXp * 1.15);
     } else if (activeJob.id === 'job-quantum-polymath') {
       earnedXp = Math.round(earnedXp * 1.10);
+    }
+
+    // Calculate Power Seal XP Bonus Multiplier
+    const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
+    const sealXpMultiplier = brokenSeals.reduce((acc, s) => acc * (s.xpBonusMultiplier || 1.0), 1.0);
+    if (sealXpMultiplier > 1.0) {
+      earnedXp = Math.round(earnedXp * sealXpMultiplier);
     }
 
     // Create XP History entry
@@ -2167,6 +2189,162 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  // POWER SEALS CRUD & ACTIONS
+  const addSeal = (seal: Omit<PowerSeal, 'id' | 'status' | 'brokenAt' | 'createdAt'>): string => {
+    const id = `seal-${Date.now()}`;
+    const newSeal: PowerSeal = {
+      ...seal,
+      id,
+      status: 'Locked',
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      seals: [...(prev.seals || []), newSeal]
+    }));
+    addSystemMessage({
+      sender: 'OPERATOR',
+      category: 'log',
+      title: 'Power Seal Formed',
+      content: `Constructed new ${seal.rarity} Power Seal "${seal.name}". Seal is currently locked.`,
+      priority: 'low'
+    });
+    return id;
+  };
+
+  const updateSeal = (id: string, updates: Partial<PowerSeal>) => {
+    setState(prev => ({
+      ...prev,
+      seals: (prev.seals || []).map(s => s.id === id ? { ...s, ...updates } : s)
+    }));
+  };
+
+  const deleteSeal = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      seals: (prev.seals || []).filter(s => s.id !== id)
+    }));
+  };
+
+  const relockSeal = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      seals: (prev.seals || []).map(s => s.id === id ? { ...s, status: 'Locked' as const, brokenAt: null } : s)
+    }));
+  };
+
+  const resetSealsToDefault = () => {
+    setState(prev => ({
+      ...prev,
+      seals: DEFAULT_SEALS
+    }));
+  };
+
+  const breakSeal = (id: string): { success: boolean; message: string } => {
+    const targetSeal = (state.seals || []).find(s => s.id === id);
+    if (!targetSeal) return { success: false, message: 'Seal not found in system manifest.' };
+    if (targetSeal.status === 'Broken') return { success: false, message: 'Seal is already shattered!' };
+
+    const playerInfo = getPlayerLevelInfo();
+    // 1. Level Requirement Check
+    if (playerInfo.level < targetSeal.requiredLevel) {
+      return { 
+        success: false, 
+        message: `Requires Level ${targetSeal.requiredLevel}+ (Current: Level ${playerInfo.level}). Complete more directives to level up.` 
+      };
+    }
+
+    // 2. Quest Requirement Check
+    if (targetSeal.requiredQuestId) {
+      const reqQuest = state.quests.find(q => q.id === targetSeal.requiredQuestId);
+      if (reqQuest && reqQuest.status !== 'Completed') {
+        return { 
+          success: false, 
+          message: `Requires completion of directive "${reqQuest.name}".` 
+        };
+      }
+    }
+
+    // 3. Skill Requirement Check
+    if (targetSeal.requiredSkillId && targetSeal.requiredSkillLevel) {
+      const skillInfo = getSkillXpAndLevel(targetSeal.requiredSkillId);
+      const reqSkill = state.skills.find(s => s.id === targetSeal.requiredSkillId);
+      if (skillInfo.level < targetSeal.requiredSkillLevel) {
+        return { 
+          success: false, 
+          message: `Requires Level ${targetSeal.requiredSkillLevel}+ in skill "${reqSkill?.name || 'Required Skill'}".` 
+        };
+      }
+    }
+
+    // 4. XP Cost Sacrifice Check
+    if (targetSeal.costXP > 0 && playerInfo.totalXp < targetSeal.costXP) {
+      return { 
+        success: false, 
+        message: `Insufficient XP reserves. Required: ${targetSeal.costXP} XP (Current Total: ${playerInfo.totalXp} XP).` 
+      };
+    }
+
+    const timestamp = getSystemTimestamp(state.systemDate);
+
+    // Deduct XP sacrifice if cost > 0 via a special XP History sacrifice entry
+    const xpEntries: XPHistoryEntry[] = [];
+    if (targetSeal.costXP > 0) {
+      xpEntries.push({
+        id: `h-seal-shatter-${Date.now()}`,
+        questId: null,
+        questName: `🔮 POWER SEAL SHATTERED: "${targetSeal.name}" (XP Sacrificed)`,
+        xp: -targetSeal.costXP,
+        timestamp,
+        skillIds: []
+      });
+    } else {
+      xpEntries.push({
+        id: `h-seal-shatter-${Date.now()}`,
+        questId: null,
+        questName: `🔮 POWER SEAL SHATTERED: "${targetSeal.name}"`,
+        xp: 100, // Bonus XP
+        timestamp,
+        skillIds: []
+      });
+    }
+
+    setState(prev => {
+      const updatedSeals = (prev.seals || []).map(s => 
+        s.id === id ? { ...s, status: 'Broken' as const, brokenAt: timestamp } : s
+      );
+
+      const updatedHistory = resolveRecoveredPenalties([...xpEntries, ...prev.xpHistory]);
+      const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
+      const level = calculatePlayerLevel(totalXp);
+
+      return {
+        ...prev,
+        seals: updatedSeals,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          momentum: Math.min(100, prev.profile.momentum + (targetSeal.momentumBoost || 10)),
+          xp: totalXp,
+          level
+        }
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: `🔮 POWER SEAL SHATTERED: ${targetSeal.name.toUpperCase()}`,
+      content: `UNSEALED! Granted Buff: "${targetSeal.buffName}" (${targetSeal.buffDescription}). Passive system multiplier active.`,
+      priority: 'high'
+    });
+
+    return { 
+      success: true, 
+      message: `🔮 SEAL BROKEN! Empowered with "${targetSeal.buffName}".` 
+    };
+  };
+
   // Profile Adjustments
   const toggleRecoveryMode = () => {
     setState(prev => ({
@@ -2554,6 +2732,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearAllSkills,
       equipSkillTitle,
       updateAttributeBase,
+      addSeal,
+      updateSeal,
+      deleteSeal,
+      breakSeal,
+      relockSeal,
+      resetSealsToDefault,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,

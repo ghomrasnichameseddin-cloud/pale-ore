@@ -11,6 +11,7 @@ import { AnalyticsView } from './components/AnalyticsView';
 import { SystemView } from './components/SystemView';
 import { PlanningView } from './components/PlanningView';
 import { FrameworksView } from './components/FrameworksView';
+import { SealingPowerView } from './components/SealingPowerView';
 import { SystemMessageBox } from './components/SystemMessageBox';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
 import { SpiderwebGraph } from './components/SpiderwebGraph';
@@ -19,11 +20,11 @@ import {
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
-  Inbox, Timer, Bell, Network
+  Inbox, Timer, Bell, Network, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
+type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'seals' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -66,6 +67,7 @@ function AppContent() {
     { id: 'goals', label: 'GOALS', icon: Target, desc: 'Long-term strategic tracks' },
     { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
     { id: 'skills', label: 'SKILLS', icon: Award, desc: 'Competency tracks' },
+    { id: 'seals', label: 'POWER SEALS', icon: Sparkles, desc: 'Unseal latent power & passive multipliers' },
     { id: 'analytics', label: 'ANALYTICS', icon: BarChart3, desc: 'Performance logs' },
     { id: 'spiderweb', label: 'SPIDERWEB GRAPH', icon: Network, desc: 'Interactive component relationship map' },
     { id: 'system', label: 'SYSTEM', icon: Settings, desc: 'Direct manual override' }
@@ -479,6 +481,7 @@ function AppContent() {
               {activeTab === 'goals' && <GoalsView />}
               {activeTab === 'projects' && <ProjectsView />}
               {activeTab === 'skills' && <SkillsView />}
+              {activeTab === 'seals' && <SealingPowerView />}
               {activeTab === 'analytics' && <AnalyticsView />}
               {activeTab === 'spiderweb' && <SpiderwebGraph />}
               {activeTab === 'system' && <SystemView />}
