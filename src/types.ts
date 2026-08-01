@@ -113,6 +113,7 @@ export interface Attribute {
 export interface UserProfile {
   level: number;
   xp: number;
+  coins: number;
   momentum: number; // 0 to 100 based on recent completions
   recoveryMode: boolean;
   currentFocus: string;
@@ -123,6 +124,7 @@ export interface UserProfile {
   lastFocusDate?: string;
   jobId?: string;
   equippedTitleId?: string;
+  focusShields?: number; // count of streak protection shields
 }
 
 export interface XPHistoryEntry {
@@ -199,6 +201,41 @@ export interface PowerSeal {
   createdAt: string;
 }
 
+export type ShopItemCategory = 'Real Life Reward' | 'System Perk' | 'Custom Personal';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  costCoins: number;
+  category: ShopItemCategory;
+  icon: string;
+  effectType?: 'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE';
+  value?: number; // e.g. amount of momentum or shield
+  isCustom?: boolean;
+  createdAt: string;
+}
+
+export interface RedeemedReward {
+  id: string;
+  itemId: string;
+  itemName: string;
+  costCoins: number;
+  category: ShopItemCategory;
+  icon: string;
+  redeemedAt: string; // ISO date/time
+  status: 'Available' | 'Used';
+  usedAt?: string | null;
+}
+
+export interface BatterySettings {
+  batterySaverMode: boolean; // Eco Defense toggle
+  autoEcoLowBattery: boolean; // Auto-enable if battery < 20%
+  animationThrottle: 'Full' | 'Reduced' | 'Off'; // Full 60fps, Reduced, Off
+  oledMode: boolean; // Pure #000 pitch black canvas for low screen power draw
+  maxFpsCap: number; // 60, 30, 15
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -209,6 +246,8 @@ export interface POSState {
   skills: Skill[];
   attributes: Attribute[];
   seals?: PowerSeal[];
+  shopItems?: ShopItem[];
+  inventory?: RedeemedReward[];
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
   systemDate: string; // format YYYY-MM-DD
@@ -218,4 +257,5 @@ export interface POSState {
   deletedJobIds?: string[];
   deletedTitleIds?: string[];
   messages?: SystemMessage[];
+  batterySettings?: BatterySettings;
 }

@@ -1,4 +1,4 @@
-import { POSState, PowerSeal } from './types';
+import { POSState, PowerSeal, ShopItem } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 
 export const getLocalDateString = (d = new Date()): string => {
@@ -7,6 +7,92 @@ export const getLocalDateString = (d = new Date()): string => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
+  {
+    id: 'shop-coffee-pass',
+    name: 'Artisanal Coffee Pass',
+    description: 'Redeem for 1 specialty coffee or matcha treat during a deep work session.',
+    costCoins: 40,
+    category: 'Real Life Reward',
+    icon: '☕',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-gaming-session',
+    name: '1-Hour Gaming Pass',
+    description: '1 hour of guilt-free video game time after completing your daily directives.',
+    costCoins: 75,
+    category: 'Real Life Reward',
+    icon: '🎮',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-cheat-meal',
+    name: 'Gourmet Cheat Meal',
+    description: 'Enjoy a favorite burger, pizza, or dessert treat with zero guilt.',
+    costCoins: 150,
+    category: 'Real Life Reward',
+    icon: '🍕',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-movie-night',
+    name: 'Cinema & Movie Night',
+    description: 'Watch a blockbuster movie or binge 2 episodes of your favorite show.',
+    costCoins: 100,
+    category: 'Real Life Reward',
+    icon: '🍿',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-book-pass',
+    name: 'New Book / Audiobook Pass',
+    description: 'Purchase a new book, audiobook, or learning course module.',
+    costCoins: 200,
+    category: 'Real Life Reward',
+    icon: '📚',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-focus-shield',
+    name: 'Focus Shield',
+    description: 'Protects 1 habit streak from breaking if a daily directive is missed.',
+    costCoins: 60,
+    category: 'System Perk',
+    icon: '🛡️',
+    effectType: 'PERK_FOCUS_SHIELD',
+    value: 1,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-momentum-elixir',
+    name: 'Momentum Overcharge Elixir',
+    description: 'Instantly adds +25 Momentum points to restore high-performance state.',
+    costCoins: 50,
+    category: 'System Perk',
+    icon: '⚡',
+    effectType: 'PERK_MOMENTUM_BOOST',
+    value: 25,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-xp-surge',
+    name: 'XP Surge Token',
+    description: 'Grants +50 instant bonus XP into your operator level progression.',
+    costCoins: 80,
+    category: 'System Perk',
+    icon: '✨',
+    effectType: 'PERK_XP_SURGE',
+    value: 50,
+    createdAt: new Date().toISOString()
+  }
+];
 
 export const DEFAULT_SEALS: PowerSeal[] = [
   {
@@ -123,9 +209,12 @@ export const INITIAL_STATE: POSState = {
     { id: 'a-9', name: 'Faith', level: 1, progress: 0, description: 'Spiritual alignment, reflection, and connection.' }
   ],
   seals: DEFAULT_SEALS,
+  shopItems: DEFAULT_SHOP_ITEMS,
+  inventory: [],
   profile: {
     level: 1,
     xp: 0,
+    coins: 150,
     momentum: 50,
     recoveryMode: false,
     currentFocus: '',
@@ -135,7 +224,8 @@ export const INITIAL_STATE: POSState = {
     focusStreak: 0,
     lastFocusDate: '',
     jobId: 'job-cyber-architect',
-    equippedTitleId: 'title-novice-operator'
+    equippedTitleId: 'title-novice-operator',
+    focusShields: 0
   },
   xpHistory: [],
   systemDate: getLocalDateString(),
@@ -165,5 +255,12 @@ export const INITIAL_STATE: POSState = {
       read: false,
       priority: 'medium'
     }
-  ]
+  ],
+  batterySettings: {
+    batterySaverMode: false,
+    autoEcoLowBattery: true,
+    animationThrottle: 'Full',
+    oledMode: false,
+    maxFpsCap: 60
+  }
 };

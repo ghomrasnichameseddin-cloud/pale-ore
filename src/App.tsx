@@ -12,6 +12,7 @@ import { SystemView } from './components/SystemView';
 import { PlanningView } from './components/PlanningView';
 import { FrameworksView } from './components/FrameworksView';
 import { SealingPowerView } from './components/SealingPowerView';
+import { RewardShopView } from './components/RewardShopView';
 import { SystemMessageBox } from './components/SystemMessageBox';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
 import { SpiderwebGraph } from './components/SpiderwebGraph';
@@ -20,11 +21,11 @@ import {
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
-  Inbox, Timer, Bell, Network, Sparkles
+  Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'seals' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
+type TabId = 'dashboard' | 'quests' | 'goals' | 'projects' | 'skills' | 'seals' | 'shop' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -33,7 +34,11 @@ function AppContent() {
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
   const [isInboxModalOpen, setIsInboxModalOpen] = useState(false);
 
-  const { state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, activeFocusSession } = usePOS();
+  const { 
+    state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
+    activeFocusSession, toggleBatterySaverMode 
+  } = usePOS();
+  const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -83,6 +88,7 @@ function AppContent() {
       items: [
         { id: 'skills', label: 'Skills', icon: Award, desc: 'Competency tracks' },
         { id: 'seals', label: 'Power Seals', icon: Sparkles, desc: 'Unseal latent power & passive multipliers' },
+        { id: 'shop', label: 'Reward Shop', icon: ShoppingBag, desc: 'Spend coins on treats & system perks' }
       ]
     },
     {
@@ -475,6 +481,30 @@ function AppContent() {
 
           {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE, TIME & EYE-RELAX CONTROLLER */}
           <div className="flex items-center gap-3">
+            {/* REWARD SHOP COIN BUTTON */}
+            <button
+              onClick={() => setActiveTab('shop')}
+              className="text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition bg-amber-950/80 text-amber-300 border-amber-500/40 hover:bg-amber-900 shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+              title="Open Reward Shop & Vouchers"
+            >
+              <Coins className="h-3.5 w-3.5 text-amber-400" />
+              <span>{state.profile.coins ?? 150} COINS</span>
+            </button>
+
+            {/* BATTERY SAVER / ECO DEFENSE TOGGLE BUTTON */}
+            <button
+              onClick={toggleBatterySaverMode}
+              className={`text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition ${
+                isBatterySaver
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                  : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-emerald-300'
+              }`}
+              title="Toggle PC Battery Saver & Thermal Protection Mode to eliminate GPU loads and save laptop battery"
+            >
+              <Zap className={`h-3.5 w-3.5 ${isBatterySaver ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
+              <span>{isBatterySaver ? '⚡ ECO / BATTERY SAVER' : 'PC ECO MODE'}</span>
+            </button>
+
             {/* EYE-RELAX TOGGLE BUTTON */}
             <button
               onClick={() => setEyeRelaxMode(!eyeRelaxMode)}
@@ -556,6 +586,7 @@ function AppContent() {
               {activeTab === 'projects' && <ProjectsView />}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'seals' && <SealingPowerView />}
+              {activeTab === 'shop' && <RewardShopView />}
               {activeTab === 'analytics' && <AnalyticsView />}
               {activeTab === 'spiderweb' && <SpiderwebGraph />}
               {activeTab === 'system' && <SystemView />}

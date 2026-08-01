@@ -54,3 +54,31 @@ html, body, #root {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* HARDWARE BATTERY SAVER / ECO DEFENSE MODE OVERRIDES */
+.battery-saver-active *,
+html.battery-saver-active * {
+  animation-play-state: paused !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.battery-saver-active .glass-panel,
+html.battery-saver-active .glass-panel {
+  backdrop-filter: none !important;
+  background-color: #0c0c0e !important;
+}
+
+/* OLED PURE BLACK DISPLAY MODE FOR MINIMUM DISPLAY POWER DRAW */
+.oled-mode-active,
+html.oled-mode-active,
+body.oled-mode-active,
+.oled-mode-active #root {
+  background-color: #000000 !important;
+}
+
+.oled-mode-active .glass-panel {
+  background-color: #000000 !important;
+  border-color: #1c1c22 !important;
+}
+

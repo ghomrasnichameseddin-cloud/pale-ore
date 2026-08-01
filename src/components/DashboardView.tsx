@@ -5,12 +5,12 @@ import { JobTitleModal } from './JobTitleModal';
 import { 
   Shield, Flame, Clock, Swords, CheckSquare, Square,
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
-  Sliders, Timer, Zap, Star
+  Sliders, Timer, Zap, Star, Coins, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface DashboardViewProps {
-  onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests') => void;
+  onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop') => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
@@ -121,20 +121,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-6 border-t border-white/5">
               {/* Level indicator */}
               <div className="bg-white/[0.02] border border-white/5 rounded p-3 flex flex-col justify-between">
                 <span className="text-[10px] font-mono text-zinc-500 uppercase">SYS_LEVEL</span>
-                <span className="text-3xl font-display font-bold text-white mt-2">LVL {levelInfo.level}</span>
+                <span className="text-2xl font-display font-bold text-white mt-1">LVL {levelInfo.level}</span>
               </div>
 
               {/* XP progress */}
-              <div className="bg-white/[0.02] border border-white/5 rounded p-3 md:col-span-2 flex flex-col justify-between">
+              <div className="bg-white/[0.02] border border-white/5 rounded p-3 lg:col-span-2 flex flex-col justify-between">
                 <div className="flex justify-between text-[10px] font-mono text-zinc-500 uppercase">
                   <span>ACCUMULATED_XP</span>
                   <span className="text-cyan-400 font-bold">{levelInfo.totalXp} XP</span>
                 </div>
-                <div className="mt-3 space-y-1.5">
+                <div className="mt-2 space-y-1">
                   <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
                     <div 
                       className="bg-cyan-500 h-full transition-all duration-500" 
@@ -143,7 +143,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   </div>
                   <div className="flex justify-between text-[9px] font-mono text-zinc-500">
                     <span>{levelInfo.xpIntoLevel} / {levelInfo.xpRequiredForNextLevel} XP</span>
-                    <span>{levelInfo.xpUntilNextLevel} XP TO LVL {levelInfo.level + 1}</span>
+                    <span>{levelInfo.xpUntilNextLevel} XP TO NEXT LVL</span>
                   </div>
                 </div>
               </div>
@@ -154,16 +154,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <span>MOMENTUM</span>
                   <Flame className={`h-3 w-3 ${state.profile.momentum > 50 ? 'text-orange-400 animate-pulse' : 'text-zinc-500'}`} />
                 </div>
-                <div className="text-2xl font-display font-bold text-white mt-1">
+                <div className="text-2xl font-display font-bold text-white mt-0.5">
                   {state.profile.momentum}%
                 </div>
-                <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden mt-2">
+                <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden mt-1">
                   <div 
                     className={`h-full transition-all duration-300 ${
                       state.profile.momentum > 75 ? 'bg-orange-500' : state.profile.momentum > 40 ? 'bg-cyan-500' : 'bg-zinc-600'
                     }`}
                     style={{ width: `${state.profile.momentum}%` }}
                   />
+                </div>
+              </div>
+
+              {/* Coins & Reward Shop Card */}
+              <div 
+                onClick={() => onNavigate?.('shop')}
+                className="bg-amber-950/20 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-400 rounded p-3 flex flex-col justify-between cursor-pointer transition group"
+              >
+                <div className="flex justify-between items-center text-[10px] font-mono text-amber-400 uppercase font-bold">
+                  <span>SHOP COINS</span>
+                  <ShoppingBag className="h-3 w-3 text-amber-400 group-hover:scale-110 transition" />
+                </div>
+                <div className="text-2xl font-mono font-extrabold text-amber-300 mt-0.5">
+                  {state.profile.coins ?? 150} 🪙
+                </div>
+                <div className="text-[9px] font-mono text-amber-400/80 underline font-semibold mt-1">
+                  OPEN SHOP REWARDS →
                 </div>
               </div>
             </div>

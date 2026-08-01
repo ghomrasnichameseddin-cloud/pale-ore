@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal,
-  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage
+  GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
+  ShopItem, RedeemedReward, ShopItemCategory, BatterySettings
 } from './types';
-import { INITIAL_STATE, DEFAULT_SEALS, getLocalDateString } from './initialState';
+import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString } from './initialState';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
   const dateStr = systemDateStr || getLocalDateString();
@@ -141,11 +142,22 @@ interface POSContextType {
   selectedListId: string | null;
   setSelectedListId: (id: string | null) => void;
 
+  // Battery Saver & Eco Defense Settings
+  updateBatterySettings: (updates: Partial<BatterySettings>) => void;
+  toggleBatterySaverMode: () => void;
+
   // Planning Documents Operations
   addPlanningDocument: (path: string, name: string, content: string) => string;
   updatePlanningDocument: (id: string, updates: Partial<PlanningDocument>) => void;
   deletePlanningDocument: (id: string) => void;
   linkPlanningDocToComponent: (id: string, type: 'goal' | 'project' | 'quest' | 'skill', componentId: string, link: boolean) => void;
+
+  // Reward Shop & Coins Operations
+  purchaseShopItem: (itemId: string) => { success: boolean; message: string };
+  useInventoryItem: (inventoryId: string) => { success: boolean; message: string };
+  addCustomShopItem: (item: Omit<ShopItem, 'id' | 'createdAt'>) => string;
+  deleteCustomShopItem: (itemId: string) => void;
+  addCoins: (amount: number, reason?: string) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -390,8 +402,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...parsed,
             profile: {
               ...INITIAL_STATE.profile,
-              ...(parsed.profile || {})
+              ...(parsed.profile || {}),
+              coins: parsed.profile?.coins ?? 150,
+              focusShields: parsed.profile?.focusShields ?? 0
             },
+            shopItems: (parsed.shopItems && parsed.shopItems.length > 0) ? parsed.shopItems : DEFAULT_SHOP_ITEMS,
+            inventory: parsed.inventory || [],
             goals: parsed.goals || [],
             projects: parsed.projects || [],
             milestones: parsed.milestones || [],
@@ -1524,6 +1540,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Calculate momentum boost (+10% on completion, cap 100)
     const newMomentum = Math.min(100, state.profile.momentum + 10);
 
+    // Calculate Coins Earned (+10% of earned XP + streak bonus)
+    const baseCoinsEarned = Math.max(5, Math.round(earnedXp / 10));
+    const streakCoinBonus = isRecurringOrHabit ? currentStreak * 2 : 0;
+    const totalCoinsEarned = baseCoinsEarned + streakCoinBonus;
+
     setState(prev => {
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
@@ -1596,6 +1617,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level,
+          coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           momentum: newMomentum,
           recoveryMode: newRecoveryMode
         }
@@ -2372,6 +2394,167 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // Reward Shop & Coins Operations
+  const purchaseShopItem = (itemId: string): { success: boolean; message: string } => {
+    const item = (state.shopItems || DEFAULT_SHOP_ITEMS).find(i => i.id === itemId);
+    if (!item) {
+      return { success: false, message: 'Shop item not found.' };
+    }
+
+    const currentCoins = state.profile.coins ?? 150;
+    if (currentCoins < item.costCoins) {
+      return {
+        success: false,
+        message: `Insufficient Coins! You have ${currentCoins} 🪙, but "${item.name}" costs ${item.costCoins} 🪙.`
+      };
+    }
+
+    const timestamp = getSystemTimestamp(state.systemDate);
+    const isPerkInstant = item.category === 'System Perk';
+
+    const newReward: RedeemedReward = {
+      id: `reward-${Date.now()}`,
+      itemId: item.id,
+      itemName: item.name,
+      costCoins: item.costCoins,
+      category: item.category,
+      icon: item.icon,
+      redeemedAt: timestamp,
+      status: isPerkInstant ? 'Used' : 'Available',
+      usedAt: isPerkInstant ? timestamp : null
+    };
+
+    let xpSurgeHistoryEntry: XPHistoryEntry | null = null;
+
+    setState(prev => {
+      const remainingCoins = (prev.profile.coins ?? 150) - item.costCoins;
+      let updatedProfile = { ...prev.profile, coins: remainingCoins };
+
+      // Apply instant perk effects
+      if (item.effectType === 'PERK_FOCUS_SHIELD') {
+        updatedProfile.focusShields = (updatedProfile.focusShields || 0) + (item.value || 1);
+      } else if (item.effectType === 'PERK_MOMENTUM_BOOST') {
+        updatedProfile.momentum = Math.min(100, updatedProfile.momentum + (item.value || 25));
+      } else if (item.effectType === 'PERK_XP_SURGE') {
+        xpSurgeHistoryEntry = {
+          id: `h-xp-surge-${Date.now()}`,
+          questId: null,
+          questName: `✨ XP SURGE TOKEN PURCHASED (+${item.value || 50} Bonus XP)`,
+          xp: item.value || 50,
+          timestamp,
+          skillIds: []
+        };
+      }
+
+      let updatedHistory = prev.xpHistory;
+      if (xpSurgeHistoryEntry) {
+        updatedHistory = [xpSurgeHistoryEntry, ...prev.xpHistory];
+        const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+        const level = calculatePlayerLevel(totalXp);
+        updatedProfile.xp = totalXp;
+        updatedProfile.level = level;
+      }
+
+      return {
+        ...prev,
+        profile: updatedProfile,
+        xpHistory: updatedHistory,
+        inventory: [newReward, ...(prev.inventory || [])]
+      };
+    });
+
+    addSystemMessage({
+      sender: 'OPERATOR',
+      category: 'achievement',
+      title: `🛍️ REWARD PURCHASED: ${item.name.toUpperCase()}`,
+      content: `Spent ${item.costCoins} Coins. ${isPerkInstant ? 'Perk applied instantly!' : 'Voucher added to your Inventory. Enjoy your treat!'}`
+    });
+
+    return {
+      success: true,
+      message: `Purchased "${item.name}" for ${item.costCoins} 🪙!`
+    };
+  };
+
+  const useInventoryItem = (inventoryId: string): { success: boolean; message: string } => {
+    const reward = (state.inventory || []).find(r => r.id === inventoryId);
+    if (!reward) {
+      return { success: false, message: 'Reward voucher not found.' };
+    }
+    if (reward.status === 'Used') {
+      return { success: false, message: 'This reward voucher has already been redeemed.' };
+    }
+
+    const timestamp = getSystemTimestamp(state.systemDate);
+
+    setState(prev => ({
+      ...prev,
+      inventory: (prev.inventory || []).map(r =>
+        r.id === inventoryId ? { ...r, status: 'Used' as const, usedAt: timestamp } : r
+      )
+    }));
+
+    addSystemMessage({
+      sender: 'OPERATOR',
+      category: 'achievement',
+      title: `🎉 REWARD CLAIMED: ${reward.itemName.toUpperCase()}`,
+      content: `Redeemed voucher for "${reward.itemName}". Great job investing in your productivity & rewards balance!`
+    });
+
+    return {
+      success: true,
+      message: `Successfully redeemed "${reward.itemName}"!`
+    };
+  };
+
+  const addCustomShopItem = (newItem: Omit<ShopItem, 'id' | 'createdAt'>): string => {
+    const id = `shop-custom-${Date.now()}`;
+    const timestamp = getSystemTimestamp(state.systemDate);
+    const item: ShopItem = {
+      ...newItem,
+      id,
+      isCustom: true,
+      createdAt: timestamp
+    };
+
+    setState(prev => ({
+      ...prev,
+      shopItems: [...(prev.shopItems || DEFAULT_SHOP_ITEMS), item]
+    }));
+
+    return id;
+  };
+
+  const deleteCustomShopItem = (itemId: string) => {
+    setState(prev => ({
+      ...prev,
+      shopItems: (prev.shopItems || DEFAULT_SHOP_ITEMS).filter(i => i.id !== itemId)
+    }));
+  };
+
+  const addCoins = (amount: number, reason?: string) => {
+    setState(prev => {
+      const current = prev.profile.coins ?? 150;
+      const nextCoins = Math.max(0, current + amount);
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          coins: nextCoins
+        }
+      };
+    });
+
+    if (reason) {
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'alert',
+        title: `🪙 COIN BALANCE UPDATED (${amount >= 0 ? '+' : ''}${amount} Coins)`,
+        content: reason
+      });
+    }
+  };
+
   // Profile Adjustments
   const toggleRecoveryMode = () => {
     setState(prev => ({
@@ -2672,7 +2855,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    // Workload Balance (Active Quests count / total estimated time)
     const activeQuests = state.quests.filter(q => q.status === 'Active');
     const totalActiveTime = activeQuests.reduce((sum, q) => sum + q.estimatedTime, 0);
     
@@ -2701,6 +2883,73 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalActiveTime
     };
   };
+
+  // Battery Saver & Eco Defense Functions
+  const updateBatterySettings = (updates: Partial<BatterySettings>) => {
+    setState(prev => {
+      const current = prev.batterySettings || {
+        batterySaverMode: false,
+        autoEcoLowBattery: true,
+        animationThrottle: 'Full',
+        oledMode: false,
+        maxFpsCap: 60
+      };
+      const updated = { ...current, ...updates };
+      
+      // Apply global DOM performance classes
+      if (typeof document !== 'undefined') {
+        if (updated.batterySaverMode || updated.animationThrottle === 'Off') {
+          document.documentElement.classList.add('battery-saver-active');
+        } else {
+          document.documentElement.classList.remove('battery-saver-active');
+        }
+
+        if (updated.oledMode) {
+          document.documentElement.classList.add('oled-mode-active');
+        } else {
+          document.documentElement.classList.remove('oled-mode-active');
+        }
+      }
+
+      return { ...prev, batterySettings: updated };
+    });
+  };
+
+  const toggleBatterySaverMode = () => {
+    const current = state.batterySettings?.batterySaverMode ?? false;
+    updateBatterySettings({ batterySaverMode: !current });
+  };
+
+  // Monitor real PC Battery status via Web Battery API if available
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      (navigator as any).getBattery().then((battery: any) => {
+        const checkBatteryLevel = () => {
+          if (battery.level <= 0.20 && !battery.charging) {
+            if (state.batterySettings?.autoEcoLowBattery && !state.batterySettings?.batterySaverMode) {
+              updateBatterySettings({ batterySaverMode: true });
+              addSystemMessage({
+                sender: 'SYSTEM',
+                category: 'alert',
+                title: '⚡ ECO DEFENSE AUTO-ENGAGED',
+                content: `PC Battery at Math.round(${battery.level * 100})%. Animations throttled and GPU load eliminated to protect hardware and battery longevity.`,
+                priority: 'high'
+              });
+            }
+          }
+        };
+
+        checkBatteryLevel();
+        battery.addEventListener('levelchange', checkBatteryLevel);
+        battery.addEventListener('chargingchange', checkBatteryLevel);
+
+        return () => {
+          battery.removeEventListener('levelchange', checkBatteryLevel);
+          battery.removeEventListener('chargingchange', checkBatteryLevel);
+        };
+      }).catch(() => {});
+    }
+  }, []);
 
   return (
     <POSContext.Provider value={{
@@ -2803,7 +3052,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addPlanningDocument,
       updatePlanningDocument,
       deletePlanningDocument,
-      linkPlanningDocToComponent
+      linkPlanningDocToComponent,
+      purchaseShopItem,
+      useInventoryItem,
+      addCustomShopItem,
+      deleteCustomShopItem,
+      addCoins,
+      updateBatterySettings,
+      toggleBatterySaverMode
     }}>
       {children}
     </POSContext.Provider>
