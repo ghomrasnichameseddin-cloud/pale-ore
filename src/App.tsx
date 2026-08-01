@@ -59,19 +59,43 @@ function AppContent() {
     return () => clearInterval(timer);
   }, []);
 
-  const navItems = [
-    { id: 'dashboard', label: 'DASHBOARD', icon: Activity, desc: 'Daily operations hub' },
-    { id: 'planning', label: 'PLANNING', icon: FolderOpen, desc: 'Vision, strategies, & SOPs' },
-    { id: 'frameworks', label: 'FRAMEWORKS', icon: Compass, desc: 'Interactive strategic models' },
-    { id: 'quests', label: 'QUESTS', icon: Swords, desc: 'All active and recurring quests' },
-    { id: 'goals', label: 'GOALS', icon: Target, desc: 'Long-term strategic tracks' },
-    { id: 'projects', label: 'PROJECTS', icon: Briefcase, desc: 'Operational blocks' },
-    { id: 'skills', label: 'SKILLS', icon: Award, desc: 'Competency tracks' },
-    { id: 'seals', label: 'POWER SEALS', icon: Sparkles, desc: 'Unseal latent power & passive multipliers' },
-    { id: 'analytics', label: 'ANALYTICS', icon: BarChart3, desc: 'Performance logs' },
-    { id: 'spiderweb', label: 'SPIDERWEB GRAPH', icon: Network, desc: 'Interactive component relationship map' },
-    { id: 'system', label: 'SYSTEM', icon: Settings, desc: 'Direct manual override' }
+  const [eyeRelaxMode, setEyeRelaxMode] = useState<boolean>(true);
+
+  const navCategories = [
+    {
+      title: 'OPERATIONS',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: Activity, desc: 'Daily operations hub' },
+        { id: 'quests', label: 'Quests & Habits', icon: Swords, desc: 'Active quests & recurring habit streaks' },
+      ]
+    },
+    {
+      title: 'STRATEGY & PLANNING',
+      items: [
+        { id: 'goals', label: 'Goals', icon: Target, desc: 'Long-term strategic tracks' },
+        { id: 'projects', label: 'Projects', icon: Briefcase, desc: 'Operational blocks' },
+        { id: 'planning', label: 'Planning & SOPs', icon: FolderOpen, desc: 'Vision, strategies, & SOPs' },
+        { id: 'frameworks', label: 'Strategic Models', icon: Compass, desc: 'Interactive strategic models' },
+      ]
+    },
+    {
+      title: 'MASTERY & POWER',
+      items: [
+        { id: 'skills', label: 'Skills', icon: Award, desc: 'Competency tracks' },
+        { id: 'seals', label: 'Power Seals', icon: Sparkles, desc: 'Unseal latent power & passive multipliers' },
+      ]
+    },
+    {
+      title: 'SYSTEM INSIGHTS',
+      items: [
+        { id: 'analytics', label: 'Analytics', icon: BarChart3, desc: 'Performance logs' },
+        { id: 'spiderweb', label: 'Spiderweb Graph', icon: Network, desc: 'Interactive relationship map' },
+        { id: 'system', label: 'System Control', icon: Settings, desc: 'Direct manual override' }
+      ]
+    }
   ];
+
+  const allNavItems = navCategories.flatMap(c => c.items);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-300 flex flex-col md:flex-row font-sans selection:bg-cyan-500/30 selection:text-white" id="pos-application-container">
@@ -126,32 +150,55 @@ function AppContent() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden fixed top-[53px] inset-x-0 bg-zinc-950 border-b border-white/10 z-30 p-4 space-y-3"
+            className="md:hidden fixed top-[53px] inset-x-0 bg-zinc-950/95 backdrop-blur-lg border-b border-white/10 z-30 p-4 space-y-4 max-h-[85vh] overflow-y-auto"
             id="mobile-navigation-drawer"
           >
-            <div className="grid grid-cols-2 gap-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as TabId);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`p-3 rounded-lg border text-left flex flex-col gap-1.5 transition-colors ${
-                      isActive 
-                        ? 'bg-zinc-900 border-cyan-500/30 text-white' 
-                        : 'bg-zinc-950/50 border-white/5 text-zinc-400'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-cyan-400" />
-                    <span className="text-xs font-mono font-bold tracking-wider">{item.label}</span>
-                  </button>
-                );
-              })}
+            {/* Eye-Relax Mode Toggle in Mobile Drawer */}
+            <div className="flex items-center justify-between bg-zinc-900 p-2.5 rounded-lg border border-white/5">
+              <span className="text-xs font-mono text-zinc-300 font-bold flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-purple-400" />
+                Eye-Relax Clean Layout
+              </span>
+              <button
+                onClick={() => setEyeRelaxMode(!eyeRelaxMode)}
+                className={`text-[10px] font-mono px-2 py-1 rounded border font-bold ${
+                  eyeRelaxMode ? 'bg-purple-900/80 text-purple-200 border-purple-500/40' : 'bg-zinc-800 text-zinc-400 border-white/10'
+                }`}
+              >
+                {eyeRelaxMode ? 'ENABLED' : 'DISABLED'}
+              </button>
             </div>
+
+            {navCategories.map(cat => (
+              <div key={cat.title} className="space-y-1.5">
+                <div className="text-[9px] font-mono font-bold text-zinc-500 tracking-wider uppercase px-1">
+                  {cat.title}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {cat.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id as TabId);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition-colors ${
+                          isActive 
+                            ? 'bg-zinc-900 border-cyan-500/40 text-white font-bold' 
+                            : 'bg-zinc-950/50 border-white/5 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-500'}`} />
+                        <span className="text-xs font-sans font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
 
             {/* Quick clock & Date Picker in mobile menu */}
             <div className="pt-2 border-t border-white/5 flex flex-col gap-2">
@@ -308,34 +355,41 @@ function AppContent() {
           </div>
 
           {/* NAVIGATION LINKS */}
-          <nav className="space-y-1" id="desktop-sidebar-nav">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as TabId)}
-                  className={`w-full flex items-center justify-between p-2 rounded text-xs font-mono transition-all duration-150 relative ${
-                    isActive 
-                      ? 'text-white font-bold bg-white/[0.04] border-l-2 border-cyan-400' 
-                      : 'text-zinc-500 border-l-2 border-transparent hover:text-zinc-300 hover:bg-white/[0.02]'
-                  }`}
-                  id={`nav-${item.id}`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-600'}`} />
-                    <span>{item.label}</span>
-                  </div>
+          <nav className="space-y-4" id="desktop-sidebar-nav">
+            {navCategories.map((cat) => (
+              <div key={cat.title} className="space-y-1">
+                <div className="text-[9px] font-mono font-bold text-zinc-500 tracking-wider uppercase px-2 mb-1">
+                  {cat.title}
+                </div>
+                {cat.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
                   
-                  {/* Active glowing cursor */}
-                  {isActive && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 glow-cyan shrink-0" />
-                  )}
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id as TabId)}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 relative ${
+                        isActive 
+                          ? 'text-white font-bold bg-white/[0.06] border-l-2 border-cyan-400' 
+                          : 'text-zinc-400 border-l-2 border-transparent hover:text-zinc-200 hover:bg-white/[0.02]'
+                      }`}
+                      id={`nav-${item.id}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-500'}`} />
+                        <span className="font-sans font-medium">{item.label}</span>
+                      </div>
+                      
+                      {/* Active glowing cursor */}
+                      {isActive && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 glow-cyan shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           {/* QUICK TERMINAL ACTIONS (POMODORO & SYSTEM INBOX) */}
@@ -406,15 +460,35 @@ function AppContent() {
       {/* MAIN VIEW CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* TOP SYSTEM HEADER BAR FOR DESKTOP */}
-        <header className="hidden md:flex items-center justify-between px-6 py-2.5 border-b border-white/10 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-widest">
-              {navItems.find(n => n.id === activeTab)?.label || activeTab}
+        <header className="hidden md:flex items-center justify-between px-6 py-3 border-b border-white/10 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-sans font-bold text-white uppercase tracking-wider">
+              {allNavItems.find(n => n.id === activeTab)?.label || activeTab}
             </span>
+            {eyeRelaxMode && (
+              <span className="text-[10px] font-mono text-purple-300 bg-purple-950/70 border border-purple-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
+                <Sparkles className="h-3 w-3 text-purple-400" />
+                Eye-Relax Active
+              </span>
+            )}
           </div>
 
-          {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE & TIME CONTROLLER */}
+          {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE, TIME & EYE-RELAX CONTROLLER */}
           <div className="flex items-center gap-3">
+            {/* EYE-RELAX TOGGLE BUTTON */}
+            <button
+              onClick={() => setEyeRelaxMode(!eyeRelaxMode)}
+              className={`text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition ${
+                eyeRelaxMode
+                  ? 'bg-purple-950/70 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.15)] hover:bg-purple-900/80'
+                  : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white'
+              }`}
+              title="Toggle Eye-Relax Mode for a clean, visually simple experience"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+              {eyeRelaxMode ? 'Eye-Relax View' : 'Pro Terminal'}
+            </button>
+
             <div className="flex items-center gap-2 bg-zinc-900 border border-cyan-500/30 rounded-lg px-2.5 py-1">
               <Calendar className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
               <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold">SYS DATE:</span>

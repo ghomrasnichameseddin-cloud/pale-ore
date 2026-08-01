@@ -423,7 +423,10 @@ export const SealingPowerView: React.FC = () => {
             const skillInfo = reqSkill ? getSkillXpAndLevel(reqSkill.id) : null;
             const meetsSkill = !reqSkill || (skillInfo && skillInfo.level >= (seal.requiredSkillLevel || 1));
 
-            const canBreak = !isBroken && meetsLevel && meetsXp && meetsQuest && meetsSkill;
+            const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+            const meetsStreak = !seal.requiredStreakDays || maxStreakInSystem >= seal.requiredStreakDays;
+
+            const canBreak = !isBroken && meetsLevel && meetsXp && meetsQuest && meetsSkill && meetsStreak;
 
             return (
               <motion.div
@@ -527,6 +530,14 @@ export const SealingPowerView: React.FC = () => {
                         <div className={`flex items-center justify-between ${meetsSkill ? 'text-emerald-400' : 'text-zinc-500'}`}>
                           <span>Skill "{reqSkill.name}" LVL {seal.requiredSkillLevel}+</span>
                           <span>{meetsSkill ? '✓ MET' : `LVL ${skillInfo?.level || 0}`}</span>
+                        </div>
+                      )}
+
+                      {/* Required streak */}
+                      {seal.requiredStreakDays && seal.requiredStreakDays > 0 && (
+                        <div className={`flex items-center justify-between ${meetsStreak ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                          <span>Habit Streak: {seal.requiredStreakDays}+ Days</span>
+                          <span>{meetsStreak ? '✓ MET' : `${maxStreakInSystem} DAYS`}</span>
                         </div>
                       )}
                     </div>

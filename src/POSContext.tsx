@@ -1484,7 +1484,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     // Calculate Job Perk XP Bonus
     const activeJob = getActiveJob(state.profile.jobId);
-    let earnedXp = questToComplete.xp;
+    // Calculate Habit Streak XP Bonus (+5% per streak day up to +50%)
+    const currentStreak = questToComplete.streakCount || 0;
+    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit';
+    let habitXpMultiplier = 1.0;
+    if (isRecurringOrHabit && currentStreak > 0) {
+      habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
+    }
+
+    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier);
     if (activeJob.id === 'job-cyber-architect' && questToComplete.type === 'Main') {
       earnedXp = Math.round(earnedXp * 1.10);
     } else if (activeJob.id === 'job-code-alchemist' && questToComplete.relatedSkills && questToComplete.relatedSkills.length > 0) {
@@ -1517,20 +1525,28 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newMomentum = Math.min(100, state.profile.momentum + 10);
 
     setState(prev => {
-      // Complete quest or update recurrence completion time
+      // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
-          if (q.recurrence && q.recurrence !== 'None') {
+          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit';
+          if (isRecurring) {
+            const isAlreadyCompletedToday = q.lastCompletedDate === state.systemDate;
+            const newStreak = isAlreadyCompletedToday ? (q.streakCount || 1) : ((q.streakCount || 0) + 1);
+            const newBest = Math.max(q.bestStreak || 0, newStreak);
             return {
               ...q,
               status: 'Active' as const, // Remain Active so it can be completed again!
-              completedAt: completedTimestamp // Track the latest completion timestamp
+              completedAt: completedTimestamp,
+              lastCompletedDate: state.systemDate,
+              streakCount: newStreak,
+              bestStreak: newBest
             };
           } else {
             return {
               ...q,
               status: 'Completed' as const,
-              completedAt: completedTimestamp
+              completedAt: completedTimestamp,
+              lastCompletedDate: state.systemDate
             };
           }
         }
@@ -2273,6 +2289,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { 
           success: false, 
           message: `Requires Level ${targetSeal.requiredSkillLevel}+ in skill "${reqSkill?.name || 'Required Skill'}".` 
+        };
+      }
+    }
+
+    // 3.5. Required Habit Streak Check
+    if (targetSeal.requiredStreakDays) {
+      const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+      if (maxStreakInSystem < targetSeal.requiredStreakDays) {
+        return {
+          success: false,
+          message: `Requires a ${targetSeal.requiredStreakDays}-day habit streak (Highest Active/Best Streak: ${maxStreakInSystem} days).`
         };
       }
     }

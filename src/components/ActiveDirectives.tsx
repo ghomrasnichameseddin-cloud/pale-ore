@@ -1388,6 +1388,13 @@ export const ActiveDirectives: React.FC = () => {
                 </span>
               )}
 
+              {/* Habit Streak Badge */}
+              {((quest.streakCount || 0) > 0 || (quest.bestStreak || 0) > 0 || quest.type === 'Habit') && (
+                <span className="text-[8px] font-mono text-amber-400 bg-amber-950/60 border border-amber-500/40 px-1.5 py-0.5 rounded flex items-center gap-0.5 font-bold">
+                  🔥 {quest.streakCount || 0}d STREAK {quest.bestStreak && quest.bestStreak > (quest.streakCount || 0) ? `(BEST: ${quest.bestStreak}d)` : ''}
+                </span>
+              )}
+
               {/* Deadline */}
               {quest.deadline && (
                 <span className="text-[8px] font-mono text-amber-400 bg-amber-950/20 px-1 py-0.5 rounded">

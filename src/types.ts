@@ -9,6 +9,8 @@ export interface Goal {
   description: string;
   status: GoalStatus;
   priority: GoalPriority;
+  horizon?: '30-Day Sprint' | 'Quarterly (Q1-Q4)' | 'Annual Vision' | 'Life Vision';
+  quarter?: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Annual';
   relatedSkills: string[]; // skill IDs
   estimatedCompletion: string;
   createdAt: string;
@@ -73,6 +75,11 @@ export interface Quest {
   relatedSkills: string[]; // skill IDs
   type: QuestType;
   recurrence?: QuestRecurrence;
+  streakCount?: number;
+  bestStreak?: number;
+  lastCompletedDate?: string | null;
+  cueTrigger?: string;
+  rewardPerk?: string;
   status: 'Active' | 'Completed' | 'Failed';
   deadline: string | null; // YYYY-MM-DD
   completedAt: string | null; // ISO Timestamp when completed
@@ -180,6 +187,7 @@ export interface PowerSeal {
   requiredQuestId?: string | null;
   requiredSkillId?: string | null;
   requiredSkillLevel?: number;
+  requiredStreakDays?: number;
   buffName: string;
   buffDescription: string;
   xpBonusMultiplier?: number; // e.g. 1.15 (+15%)

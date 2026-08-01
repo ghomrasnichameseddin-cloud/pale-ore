@@ -29,6 +29,7 @@ export const GoalsView: React.FC = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalDesc, setNewGoalDesc] = useState('');
   const [newGoalPriority, setNewGoalPriority] = useState<GoalPriority>('Medium');
+  const [newGoalHorizon, setNewGoalHorizon] = useState<'30-Day Sprint' | 'Quarterly (Q1-Q4)' | 'Annual Vision' | 'Life Vision'>('Quarterly (Q1-Q4)');
   const [newGoalEstDate, setNewGoalEstDate] = useState('');
   const [newGoalSkills, setNewGoalSkills] = useState<string[]>([]);
 
@@ -148,6 +149,7 @@ export const GoalsView: React.FC = () => {
       description: newGoalDesc,
       status: 'Active',
       priority: newGoalPriority,
+      horizon: newGoalHorizon,
       relatedSkills: newGoalSkills,
       estimatedCompletion: newGoalEstDate || 'No deadline specified'
     });
@@ -403,7 +405,7 @@ export const GoalsView: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Priority</label>
                 <select 
@@ -414,6 +416,20 @@ export const GoalsView: React.FC = () => {
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Planning Horizon</label>
+                <select 
+                  value={newGoalHorizon}
+                  onChange={(e) => setNewGoalHorizon(e.target.value as any)}
+                  className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-purple-300 focus:outline-none font-mono"
+                >
+                  <option value="30-Day Sprint">30-Day Sprint</option>
+                  <option value="Quarterly (Q1-Q4)">Quarterly (Q1-Q4)</option>
+                  <option value="Annual Vision">Annual Vision</option>
+                  <option value="Life Vision">Life Vision</option>
                 </select>
               </div>
 
@@ -527,7 +543,14 @@ export const GoalsView: React.FC = () => {
                     <span className={`text-[9px] font-mono uppercase border px-1.5 py-0.5 rounded ${statusColors[goal.status]}`}>
                       {statusIcons[goal.status]} {goal.status}
                     </span>
-                    <span className="text-[9px] font-mono text-zinc-500">PRIORITY_{goal.priority.toUpperCase()}</span>
+                    <div className="flex items-center gap-1">
+                      {goal.horizon && (
+                        <span className="text-[8.5px] font-mono uppercase bg-purple-950/60 border border-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">
+                          🌐 {goal.horizon}
+                        </span>
+                      )}
+                      <span className="text-[9px] font-mono text-zinc-500">PRIORITY_{goal.priority.toUpperCase()}</span>
+                    </div>
                   </div>
 
                   <h4 className={`font-sans font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
