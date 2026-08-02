@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, Coins, Plus, Trash2, CheckCircle, ShieldAlert, Sparkles, 
-  Coffee, Gamepad2, Utensils, Tv, BookOpen, Zap, Shield, Gift, Clock, Tag
+  Coffee, Gamepad2, Utensils, Tv, BookOpen, Zap, Shield, Gift, Clock, Tag,
+  Pencil, RotateCcw, Edit3
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { ShopItem, ShopItemCategory, RedeemedReward } from '../types';
@@ -14,12 +15,16 @@ export const RewardShopView: React.FC = () => {
     purchaseShopItem, 
     useInventoryItem, 
     addCustomShopItem, 
+    updateShopItem,
+    deleteShopItem,
     deleteCustomShopItem,
+    resetDefaultShopItems,
     addCoins 
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'system-perks' | 'custom' | 'inventory'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // New Custom Item Form State
@@ -29,7 +34,16 @@ export const RewardShopView: React.FC = () => {
   const [customCategory, setCustomCategory] = useState<ShopItemCategory>('Real Life Reward');
   const [customIcon, setCustomIcon] = useState('🎁');
 
-  const iconsList = ['🎁', '☕', '🍕', '🎮', '🍿', '📚', '🍦', '🍩', '🛍️', '✈️', '🎟️', '💆‍♂️', '🛡️', '⚡', '✨'];
+  // Edit Item Form State
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editCost, setEditCost] = useState<number>(50);
+  const [editCategory, setEditCategory] = useState<ShopItemCategory>('Real Life Reward');
+  const [editIcon, setEditIcon] = useState('🎁');
+  const [editEffectType, setEditEffectType] = useState<'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE'>('INVENTORY');
+  const [editValue, setEditValue] = useState<number>(1);
+
+  const iconsList = ['🎁', '☕', '🍕', '🎮', '🍿', '📚', '🍦', '🍩', '🛍️', '✈️', '🎟️', '💆‍♂️', '🛡️', '⚡', '✨', '👑', '🚀', '💎', '🎨', '🎯'];
 
   const coins = state.profile.coins ?? 150;
   const focusShields = state.profile.focusShields ?? 0;
@@ -80,6 +94,49 @@ export const RewardShopView: React.FC = () => {
     setCustomCost(50);
     setIsAddModalOpen(false);
     showToast(`Created custom reward "${customName}"!`, 'success');
+  };
+
+  const handleStartEdit = (item: ShopItem) => {
+    setEditingItem(item);
+    setEditName(item.name);
+    setEditDesc(item.description);
+    setEditCost(item.costCoins);
+    setEditCategory(item.category);
+    setEditIcon(item.icon);
+    setEditEffectType(item.effectType || 'INVENTORY');
+    setEditValue(item.value || 1);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editName.trim()) return;
+
+    const updated: ShopItem = {
+      ...editingItem,
+      name: editName.trim(),
+      description: editDesc.trim(),
+      costCoins: editCost,
+      category: editCategory,
+      icon: editIcon,
+      effectType: editEffectType,
+      value: editValue
+    };
+
+    updateShopItem(updated);
+    setEditingItem(null);
+    showToast(`Updated reward "${updated.name}"!`, 'success');
+  };
+
+  const handleDeleteItem = (item: ShopItem) => {
+    deleteShopItem(item.id);
+    showToast(`Deleted reward "${item.name}" from shop.`, 'success');
+  };
+
+  const handleResetDefaults = () => {
+    if (window.confirm('Reset shop catalog to default items? This will restore original items.')) {
+      resetDefaultShopItems();
+      showToast('Shop catalog reset to default rewards!', 'success');
+    }
   };
 
   const filteredItems = shopItems.filter(item => {
@@ -218,13 +275,23 @@ export const RewardShopView: React.FC = () => {
           </button>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="w-full sm:w-auto bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition"
-        >
-          <Plus className="h-4 w-4" />
-          CREATE CUSTOM REWARD
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={handleResetDefaults}
+            className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition"
+            title="Reset catalog to original default items"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            RESET CATALOG
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition"
+          >
+            <Plus className="h-4 w-4" />
+            CREATE CUSTOM REWARD
+          </button>
+        </div>
       </div>
 
       {/* INVENTORY / VOUCHERS VIEW TAB */}
@@ -333,15 +400,22 @@ export const RewardShopView: React.FC = () => {
                       </div>
                     </div>
 
-                    {item.isCustom && (
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => deleteCustomShopItem(item.id)}
-                        className="text-zinc-600 hover:text-rose-400 transition p-1"
-                        title="Delete custom reward"
+                        onClick={() => handleStartEdit(item)}
+                        className="text-zinc-500 hover:text-amber-300 transition p-1.5 rounded-lg hover:bg-white/5"
+                        title="Edit reward item contents"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item)}
+                        className="text-zinc-500 hover:text-rose-400 transition p-1.5 rounded-lg hover:bg-white/5"
+                        title="Delete reward item"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
 
                   <p className="text-xs text-zinc-400 font-sans leading-relaxed">
@@ -502,6 +576,159 @@ export const RewardShopView: React.FC = () => {
                   >
                     ADD TO REWARD CATALOG
                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* EDIT REWARD ITEM MODAL */}
+      <AnimatePresence>
+        {editingItem && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-900 border border-amber-500/40 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="font-bold text-white text-base font-display flex items-center gap-2">
+                  <Edit3 className="h-5 w-5 text-amber-400" />
+                  EDIT REWARD ITEM
+                </h3>
+                <button
+                  onClick={() => setEditingItem(null)}
+                  className="text-zinc-500 hover:text-white font-mono text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono text-zinc-400 uppercase mb-1">Reward Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500/60"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-zinc-400 uppercase mb-1">Description</label>
+                  <textarea
+                    rows={2}
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500/60 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-400 uppercase mb-1">Coin Price (🪙)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5000}
+                      value={editCost}
+                      onChange={(e) => setEditCost(Number(e.target.value))}
+                      className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500/60"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-400 uppercase mb-1">Category</label>
+                    <select
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value as ShopItemCategory)}
+                      className="w-full bg-zinc-950 border border-white/10 rounded-xl p-2.5 text-xs text-white font-mono focus:outline-none focus:border-amber-500/60"
+                    >
+                      <option value="Real Life Reward">Real Life Reward</option>
+                      <option value="Custom Personal">Custom Personal</option>
+                      <option value="System Perk">System Perk</option>
+                    </select>
+                  </div>
+                </div>
+
+                {editCategory === 'System Perk' && (
+                  <div className="grid grid-cols-2 gap-3 bg-zinc-950/80 p-3 rounded-xl border border-cyan-500/30">
+                    <div>
+                      <label className="block text-[10px] font-mono text-cyan-400 uppercase mb-1">Perk Effect Type</label>
+                      <select
+                        value={editEffectType}
+                        onChange={(e) => setEditEffectType(e.target.value as any)}
+                        className="w-full bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="INVENTORY">Standard Voucher</option>
+                        <option value="PERK_FOCUS_SHIELD">Focus Shield Token</option>
+                        <option value="PERK_MOMENTUM_BOOST">Momentum Boost</option>
+                        <option value="PERK_XP_SURGE">XP Surge Token</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-cyan-400 uppercase mb-1">Effect Value</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editValue}
+                        onChange={(e) => setEditValue(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-cyan-300 font-mono font-bold focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-mono text-zinc-400 uppercase mb-1.5">Choose Icon</label>
+                  <div className="flex flex-wrap gap-2 bg-zinc-950 p-3 rounded-xl border border-white/5">
+                    {iconsList.map(icon => (
+                      <button
+                        key={icon}
+                        type="button"
+                        onClick={() => setEditIcon(icon)}
+                        className={`h-9 w-9 rounded-lg text-lg flex items-center justify-center transition ${
+                          editIcon === icon
+                            ? 'bg-amber-500/30 border border-amber-400'
+                            : 'hover:bg-white/5 border border-transparent'
+                        }`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 flex items-center justify-between border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteItem(editingItem)}
+                    className="px-3 py-2 text-xs font-mono text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-500/30 rounded-xl transition flex items-center gap-1.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    DELETE ITEM
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingItem(null)}
+                      className="px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-mono font-bold text-xs px-5 py-2 rounded-xl transition shadow-md"
+                    >
+                      SAVE CHANGES
+                    </button>
+                  </div>
                 </div>
               </form>
             </motion.div>

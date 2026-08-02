@@ -156,7 +156,10 @@ interface POSContextType {
   purchaseShopItem: (itemId: string) => { success: boolean; message: string };
   useInventoryItem: (inventoryId: string) => { success: boolean; message: string };
   addCustomShopItem: (item: Omit<ShopItem, 'id' | 'createdAt'>) => string;
+  updateShopItem: (item: ShopItem) => void;
+  deleteShopItem: (itemId: string) => void;
   deleteCustomShopItem: (itemId: string) => void;
+  resetDefaultShopItems: () => void;
   addCoins: (amount: number, reason?: string) => void;
 }
 
@@ -2525,10 +2528,42 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return id;
   };
 
+  const updateShopItem = (updatedItem: ShopItem) => {
+    setState(prev => {
+      const currentItems = prev.shopItems && prev.shopItems.length > 0 ? prev.shopItems : DEFAULT_SHOP_ITEMS;
+      const index = currentItems.findIndex(i => i.id === updatedItem.id);
+      let nextItems: ShopItem[];
+      if (index >= 0) {
+        nextItems = [...currentItems];
+        nextItems[index] = updatedItem;
+      } else {
+        nextItems = [...currentItems, updatedItem];
+      }
+      return {
+        ...prev,
+        shopItems: nextItems
+      };
+    });
+  };
+
+  const deleteShopItem = (itemId: string) => {
+    setState(prev => {
+      const currentItems = prev.shopItems && prev.shopItems.length > 0 ? prev.shopItems : DEFAULT_SHOP_ITEMS;
+      return {
+        ...prev,
+        shopItems: currentItems.filter(i => i.id !== itemId)
+      };
+    });
+  };
+
   const deleteCustomShopItem = (itemId: string) => {
+    deleteShopItem(itemId);
+  };
+
+  const resetDefaultShopItems = () => {
     setState(prev => ({
       ...prev,
-      shopItems: (prev.shopItems || DEFAULT_SHOP_ITEMS).filter(i => i.id !== itemId)
+      shopItems: DEFAULT_SHOP_ITEMS
     }));
   };
 
@@ -3056,7 +3091,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       purchaseShopItem,
       useInventoryItem,
       addCustomShopItem,
+      updateShopItem,
+      deleteShopItem,
       deleteCustomShopItem,
+      resetDefaultShopItems,
       addCoins,
       updateBatterySettings,
       toggleBatterySaverMode
