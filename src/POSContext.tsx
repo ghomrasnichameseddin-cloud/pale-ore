@@ -694,12 +694,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       setState(prev => {
-        const prevMinutes = prev.profile.focusMinutesToday || 0;
-        const prevStreak = prev.profile.focusStreak || 0;
         const lastDate = prev.profile.lastFocusDate || '';
+        const isSameDay = lastDate === todayStr;
+        const prevMinutes = isSameDay ? (prev.profile.focusMinutesToday || 0) : 0;
+        const prevStreak = prev.profile.focusStreak || 0;
         
         let newStreak = prevStreak;
-        if (lastDate !== todayStr) {
+        if (!isSameDay) {
           if (lastDate === '') {
             newStreak = 1;
           } else {
@@ -1015,6 +1016,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           momentum: updatedMomentum,
           xp: totalXp,
           level,
+          focusMinutesToday: prev.profile.lastFocusDate === newDateStr ? prev.profile.focusMinutesToday : 0,
           recoveryMode: recoveryModeActivated ? true : prev.profile.recoveryMode
         }
       };
@@ -1073,6 +1075,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             momentum: updatedMomentum,
             xp: totalXp,
             level,
+            focusMinutesToday: prev.profile.lastFocusDate === nextSimulated ? prev.profile.focusMinutesToday : 0,
             recoveryMode: recoveryModeActivated ? true : prev.profile.recoveryMode
           }
         };
