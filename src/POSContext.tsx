@@ -1248,6 +1248,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return {
         ...attr,
+        baseLevel,
+        earnedBonus: extraLevels,
+        sealBoost: brokenSealAttributeBoost,
+        total: level,
         level,
         progress
       };

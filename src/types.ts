@@ -108,6 +108,11 @@ export interface Attribute {
   level: number;
   progress: number; // 0 to 100% to next level
   description: string;
+  icon?: string;
+  baseLevel?: number;
+  earnedBonus?: number;
+  sealBoost?: number;
+  total?: number;
 }
 
 export interface UserProfile {

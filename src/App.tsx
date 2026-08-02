@@ -17,11 +17,13 @@ import { SystemMessageBox } from './components/SystemMessageBox';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
 import { SpiderwebGraph } from './components/SpiderwebGraph';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
+import { SystemGuideModal } from './components/SystemGuideModal';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
-  Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap
+  Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
+  BookOpen, HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -33,6 +35,7 @@ function AppContent() {
   const [systemTime, setSystemTime] = useState(new Date());
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
   const [isInboxModalOpen, setIsInboxModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
@@ -117,6 +120,14 @@ function AppContent() {
         </div>
         
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsGuideModalOpen(true)}
+            className="p-1.5 bg-zinc-900 border border-cyan-500/30 text-cyan-400 rounded relative"
+            title="System Manual & Guide"
+          >
+            <BookOpen className="h-4 w-4" />
+          </button>
+
           <button
             onClick={() => setIsFocusModalOpen(true)}
             className="p-1.5 bg-zinc-900 border border-white/10 text-cyan-400 rounded relative"
@@ -441,6 +452,17 @@ function AppContent() {
                 <span className="text-[9px] text-zinc-600">0</span>
               )}
             </button>
+
+            <button
+              onClick={() => setIsGuideModalOpen(true)}
+              className="w-full flex items-center justify-between p-2 rounded text-xs font-mono transition-all border bg-cyan-950/40 border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/50 hover:text-white font-bold"
+            >
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-cyan-400" />
+                <span>SYSTEM MANUAL</span>
+              </div>
+              <span className="text-[8px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded">GUIDE</span>
+            </button>
           </div>
 
         </div>
@@ -481,6 +503,16 @@ function AppContent() {
 
           {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE, TIME & EYE-RELAX CONTROLLER */}
           <div className="flex items-center gap-3">
+            {/* SYSTEM GUIDE / MANUAL BUTTON */}
+            <button
+              onClick={() => setIsGuideModalOpen(true)}
+              className="text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition bg-cyan-950/80 text-cyan-300 border-cyan-500/40 hover:bg-cyan-900 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+              title="Open System Usage Guide & Manual"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
+              <span>SYSTEM GUIDE</span>
+            </button>
+
             {/* REWARD SHOP COIN BUTTON */}
             <button
               onClick={() => setActiveTab('shop')}
@@ -627,6 +659,13 @@ function AppContent() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* SYSTEM MANUAL & GUIDE MODAL */}
+      <SystemGuideModal 
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+        onNavigateTab={(tab) => setActiveTab(tab as TabId)}
+      />
 
     </div>
   );

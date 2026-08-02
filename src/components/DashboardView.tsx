@@ -45,6 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [directiveSearch, setDirectiveSearch] = useState('');
   const [directiveTypeFilter, setDirectiveTypeFilter] = useState<string>('ALL');
   const [directiveSort, setDirectiveSort] = useState<'XP' | 'TIME' | 'NAME'>('XP');
+  const [selectedAttributeName, setSelectedAttributeName] = useState<string | null>(null);
 
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
@@ -112,10 +113,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           (q.description && q.description.toLowerCase().includes(directiveSearch.toLowerCase()));
     if (!matchesSearch) return false;
 
-    if (directiveTypeFilter === 'ALL') return true;
-    if (directiveTypeFilter === 'MAIN') return q.type === 'Main' || q.type === 'Boss';
-    if (directiveTypeFilter === 'HABIT') return q.type === 'Habit' || q.recurrence === 'Daily';
-    if (directiveTypeFilter === 'SIDE') return q.type === 'Side' || q.type === 'Optional';
+    if (directiveTypeFilter === 'MAIN' && !(q.type === 'Main' || q.type === 'Boss')) return false;
+    if (directiveTypeFilter === 'HABIT' && !(q.type === 'Habit' || q.recurrence === 'Daily')) return false;
+    if (directiveTypeFilter === 'SIDE' && !(q.type === 'Side' || q.type === 'Optional')) return false;
+
+    if (selectedAttributeName) {
+      const attrLower = selectedAttributeName.toLowerCase();
+      if (attrLower === 'strength') {
+        return q.type === 'Boss' || q.difficulty === 'Hard' || q.relatedSkills.some(sId => {
+          const sk = state.skills.find(s => s.id === sId);
+          return sk?.name.toLowerCase().includes('fitness') || sk?.name.toLowerCase().includes('workout');
+        });
+      }
+      if (attrLower === 'focus') {
+        return q.type === 'Main' || q.type === 'Boss';
+      }
+      if (attrLower === 'knowledge') {
+        return q.relatedSkills.some(sId => {
+          const sk = state.skills.find(s => s.id === sId);
+          return ['programming', 'english', 'arabic', 'french', 'chess', 'coding'].some(k => sk?.name.toLowerCase().includes(k));
+        });
+      }
+      if (attrLower === 'discipline') {
+        return q.type === 'Habit' || q.recurrence === 'Daily' || q.type === 'Side';
+      }
+      if (attrLower === 'agility') {
+        return q.type === 'Side' || q.type === 'Optional' || q.estimatedTime <= 15;
+      }
+      if (attrLower === 'wisdom') {
+        return q.goalId !== null || q.projectId !== null;
+      }
+      if (attrLower === 'social') {
+        return q.relatedSkills.some(sId => {
+          const sk = state.skills.find(s => s.id === sId);
+          return ['writing', 'cooking', 'business', 'communication'].some(k => sk?.name.toLowerCase().includes(k));
+        });
+      }
+      if (attrLower === 'faith') {
+        return q.relatedSkills.some(sId => {
+          const sk = state.skills.find(s => s.id === sId);
+          return ['qur\'an', 'arabic', 'spirituality'].some(k => sk?.name.toLowerCase().includes(k));
+        });
+      }
+    }
+
     return true;
   }).sort((a, b) => {
     if (directiveSort === 'XP') return b.xp - a.xp;
@@ -366,7 +407,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* ATTRIBUTES MATRIX PREVIEW CARD */}
-          <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-3" id="dashboard-attributes-matrix">
+          <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4" id="dashboard-attributes-matrix">
             <div className="flex justify-between items-center border-b border-white/10 pb-2.5">
               <div className="flex items-center gap-2">
                 <Cpu className="h-4 w-4 text-purple-400" />
@@ -374,41 +415,164 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   CORE ATTRIBUTE CAPABILITIES MATRIX
                 </h3>
               </div>
-              {onNavigate && (
-                <button 
-                  onClick={() => onNavigate('analytics')}
-                  className="text-[10px] font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 transition"
-                >
-                  FULL MATRIX <ChevronRight className="h-3 w-3" />
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedAttributeName && (
+                  <button
+                    onClick={() => setSelectedAttributeName(null)}
+                    className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded transition"
+                  >
+                    RESET FILTER
+                  </button>
+                )}
+                {onNavigate && (
+                  <button 
+                    onClick={() => onNavigate('analytics')}
+                    className="text-[10px] font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 transition"
+                  >
+                    FULL MATRIX <ChevronRight className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
+            <p className="text-[10px] text-zinc-400 font-mono">
+              Click an attribute to inspect its mathematical breakdown, linked skills, and filter active directives.
+            </p>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {attributes.slice(0, 6).map(attr => (
-                <div key={attr.name} className="p-2.5 bg-zinc-950/80 border border-white/5 rounded-xl space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold text-zinc-300 flex items-center gap-1">
-                      <span>{attr.icon}</span>
-                      {attr.name}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-cyan-400">
-                      {attr.total}
-                    </span>
+              {attributes.slice(0, 6).map(attr => {
+                const totalVal = attr.total ?? attr.level;
+                const baseVal = attr.baseLevel ?? 10;
+                const bonusVal = attr.earnedBonus ?? (totalVal - baseVal);
+                const isSelected = selectedAttributeName === attr.name;
+
+                return (
+                  <div 
+                    key={attr.name} 
+                    onClick={() => setSelectedAttributeName(isSelected ? null : attr.name)}
+                    className={`p-3 rounded-xl border transition cursor-pointer space-y-1.5 ${
+                      isSelected
+                        ? 'bg-purple-950/50 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.25)] ring-1 ring-purple-400/50'
+                        : 'bg-zinc-950/80 border-white/10 hover:border-purple-500/40 hover:bg-zinc-900/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                        <span className="text-sm">{attr.icon}</span>
+                        {attr.name}
+                      </span>
+                      <span className="text-sm font-mono font-extrabold text-cyan-400">
+                        LVL {totalVal}
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-white/5">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-cyan-400 h-full rounded-full transition-all duration-300" 
+                        style={{ width: `${Math.min(100, (totalVal / 50) * 100)}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between text-[9px] font-mono text-zinc-400 pt-0.5">
+                      <span>BASE {baseVal}</span>
+                      <span className="text-purple-300 font-bold">BONUS +{bonusVal}</span>
+                    </div>
                   </div>
-                  <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
-                    <div 
-                      className="bg-purple-500 h-full rounded-full" 
-                      style={{ width: `${Math.min(100, (attr.total / 50) * 100)}%` }}
-                    />
+                );
+              })}
+            </div>
+
+            {/* ATTRIBUTE INSPECTOR & LINKED DIRECTIVES PANEL */}
+            {selectedAttributeName && (() => {
+              const selectedAttr = attributes.find(a => a.name === selectedAttributeName);
+              if (!selectedAttr) return null;
+
+              const totalVal = selectedAttr.total ?? selectedAttr.level;
+              const baseVal = selectedAttr.baseLevel ?? 10;
+              const bonusVal = selectedAttr.earnedBonus ?? 0;
+              const sealVal = selectedAttr.sealBoost ?? 0;
+
+              // Find matching skills
+              const relatedSkills = state.skills.filter(s => {
+                const nameL = selectedAttributeName.toLowerCase();
+                if (nameL === 'strength') return s.name.toLowerCase().includes('fitness');
+                if (nameL === 'knowledge') return ['programming', 'english', 'arabic', 'french', 'chess', 'coding'].some(k => s.name.toLowerCase().includes(k));
+                if (nameL === 'social') return ['writing', 'cooking', 'business'].some(k => s.name.toLowerCase().includes(k));
+                if (nameL === 'faith') return ['qur\'an', 'arabic', 'spirituality'].some(k => s.name.toLowerCase().includes(k));
+                return true;
+              });
+
+              return (
+                <div className="mt-3 p-4 bg-zinc-950/90 border border-purple-500/30 rounded-xl space-y-3 animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{selectedAttr.icon}</span>
+                      <div>
+                        <h4 className="text-xs font-mono font-bold text-white uppercase">
+                          {selectedAttr.name} Attribute Intelligence
+                        </h4>
+                        <p className="text-[10px] font-mono text-zinc-400">
+                          {selectedAttr.description}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedAttributeName(null)}
+                      className="text-zinc-500 hover:text-white text-xs font-mono"
+                    >
+                      ✕ CLOSE
+                    </button>
                   </div>
-                  <div className="flex justify-between text-[8px] font-mono text-zinc-500">
-                    <span>BASE {attr.base}</span>
-                    <span>BONUS +{attr.bonus}</span>
+
+                  {/* FORMULA BREAKDOWN GRID */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+                    <div className="p-2 bg-zinc-900/80 border border-white/5 rounded-lg">
+                      <span className="text-[9px] text-zinc-400 uppercase block">STARTING BASELINE</span>
+                      <span className="text-sm font-bold text-amber-300">{baseVal}</span>
+                    </div>
+                    <div className="p-2 bg-zinc-900/80 border border-white/5 rounded-lg">
+                      <span className="text-[9px] text-zinc-400 uppercase block">QUEST/SKILL EARNED</span>
+                      <span className="text-sm font-bold text-emerald-400">+{bonusVal}</span>
+                    </div>
+                    <div className="p-2 bg-zinc-900/80 border border-white/5 rounded-lg">
+                      <span className="text-[9px] text-zinc-400 uppercase block">SEAL & CLASS BOOST</span>
+                      <span className="text-sm font-bold text-purple-400">+{sealVal}</span>
+                    </div>
+                    <div className="p-2 bg-purple-950/60 border border-purple-500/40 rounded-lg">
+                      <span className="text-[9px] text-purple-300 font-bold uppercase block">TOTAL LEVEL</span>
+                      <span className="text-sm font-extrabold text-cyan-300">{totalVal}</span>
+                    </div>
+                  </div>
+
+                  {/* LINKED SKILLS & DIRECTIVES QUICK ACTION */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/5">
+                    <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono">
+                      <span className="text-zinc-400 font-bold uppercase">LINKED SKILLS:</span>
+                      {relatedSkills.length > 0 ? (
+                        relatedSkills.map(sk => (
+                          <span key={sk.id} className="bg-purple-950/60 border border-purple-500/30 text-purple-200 px-2 py-0.5 rounded-md">
+                            {sk.name} (LVL {sk.level})
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-zinc-500 italic">Grounded across all operational directives</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {onNavigate && (
+                        <button
+                          onClick={() => onNavigate('system')}
+                          className="text-[10px] font-mono text-zinc-400 hover:text-cyan-300 underline"
+                        >
+                          Calibrate Baseline in System →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
 
           {/* Strategy 1: Eat the Frog Priority Target */}
@@ -452,11 +616,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <div className="glass-panel rounded-2xl p-5 space-y-4" id="dashboard-active-directives">
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Swords className="h-4 w-4 text-cyan-400" />
                 <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  OPERATIONAL DIRECTIVES BOARD ({activeQuests.length})
+                  OPERATIONAL DIRECTIVES BOARD ({filteredDirectives.length})
                 </h3>
+                {selectedAttributeName && (
+                  <span className="text-[10px] font-mono bg-purple-950/80 border border-purple-500/40 text-purple-300 px-2 py-0.5 rounded-md flex items-center gap-1 font-bold">
+                    <span>⚡ FILTERED BY: {selectedAttributeName.toUpperCase()}</span>
+                    <button 
+                      onClick={() => setSelectedAttributeName(null)}
+                      className="hover:text-white ml-1 font-extrabold"
+                      title="Clear attribute filter"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
               </div>
 
               {/* DIRECTIVES SEARCH & FILTER CONTROL BAR */}
