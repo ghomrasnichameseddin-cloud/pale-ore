@@ -3,6 +3,21 @@ import type { JobSpec, TitleSpec } from './jobsAndTitles';
 export type GoalStatus = 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
 export type GoalPriority = 'Low' | 'Medium' | 'High';
 
+export interface SubGoal {
+  id: string;
+  name: string;
+  completed: boolean;
+  targetDate?: string;
+}
+
+export interface SubProject {
+  id: string;
+  name: string;
+  completed: boolean;
+  description?: string;
+  targetDate?: string;
+}
+
 export interface Goal {
   id: string;
   name: string;
@@ -14,6 +29,7 @@ export interface Goal {
   relatedSkills: string[]; // skill IDs
   estimatedCompletion: string;
   createdAt: string;
+  subGoals?: SubGoal[];
 }
 
 export interface Project {
@@ -24,6 +40,7 @@ export interface Project {
   status: 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
   estimatedTime: string;
   createdAt: string;
+  subProjects?: SubProject[];
 }
 
 export interface SubQuest {

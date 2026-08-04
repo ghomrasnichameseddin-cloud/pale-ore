@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export const GoalsView: React.FC = () => {
   const { 
     state, addGoal, updateGoal, deleteGoal, clearAllGoals,
+    addSubGoal, toggleSubGoal, deleteSubGoal,
     addProject, updateProject, deleteProject,
     addMilestone, updateMilestone, deleteMilestone,
     addQuest, updateQuest, deleteQuest, completeQuest, reopenQuest,
@@ -48,9 +49,17 @@ export const GoalsView: React.FC = () => {
   const [newProjEstTime, setNewProjEstTime] = useState('10 hours');
   const [newProjDesc, setNewProjDesc] = useState('');
 
-  // Create Milestone States
-  const [newMileName, setNewMileName] = useState('');
-  const [newMileProjId, setNewMileProjId] = useState('');
+  // Create SubGoal States
+  const [newSubGoalInput, setNewSubGoalInput] = useState('');
+  const [newSubGoalDate, setNewSubGoalDate] = useState('');
+
+  const handleAddSubGoalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGoal || !newSubGoalInput.trim()) return;
+    addSubGoal(selectedGoal.id, newSubGoalInput, newSubGoalDate || undefined);
+    setNewSubGoalInput('');
+    setNewSubGoalDate('');
+  };
 
   // Create Quest States (assigned to Goal)
   const [newQuestName, setNewQuestName] = useState('');
@@ -812,6 +821,98 @@ export const GoalsView: React.FC = () => {
                           })
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* MINI GOALS / SUB-GOALS BREAKDOWN */}
+                  <div className="pt-4 border-t border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <GitFork className="h-4 w-4 text-cyan-400" />
+                        MINI-GOALS & SUB-GOALS BREAKDOWN ({(selectedGoal.subGoals || []).filter(sg => sg.completed).length}/{(selectedGoal.subGoals || []).length})
+                      </h4>
+                      <span className="text-[10px] font-mono text-zinc-500">
+                        Break macro vision into actionable micro-milestones
+                      </span>
+                    </div>
+
+                    {/* Add Mini Goal Form */}
+                    <form onSubmit={handleAddSubGoalSubmit} className="flex flex-col sm:flex-row gap-2 bg-zinc-950/80 p-3 rounded-lg border border-cyan-500/20">
+                      <input 
+                        type="text" 
+                        placeholder="Enter mini-goal title (e.g. Master fundamental syntax, Build prototype)..."
+                        value={newSubGoalInput}
+                        onChange={(e) => setNewSubGoalInput(e.target.value)}
+                        className="flex-1 bg-zinc-900 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50"
+                      />
+                      <input 
+                        type="date" 
+                        value={newSubGoalDate}
+                        onChange={(e) => setNewSubGoalDate(e.target.value)}
+                        className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none"
+                      />
+                      <button 
+                        type="submit"
+                        className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 transition"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        ADD MINI GOAL
+                      </button>
+                    </form>
+
+                    {/* SubGoals Checklist */}
+                    <div className="space-y-2">
+                      {(!selectedGoal.subGoals || selectedGoal.subGoals.length === 0) ? (
+                        <div className="p-4 border border-dashed border-white/5 rounded-lg text-center">
+                          <p className="text-xs font-mono text-zinc-500">
+                            No mini-goals established yet. Deconstruct this goal into 3-5 smaller target milestones.
+                          </p>
+                        </div>
+                      ) : (
+                        selectedGoal.subGoals.map(sg => (
+                          <div 
+                            key={sg.id} 
+                            className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
+                              sg.completed 
+                                ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
+                                : 'bg-zinc-950 border-white/5 text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleSubGoal(selectedGoal.id, sg.id)}
+                                className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                                  sg.completed 
+                                    ? 'bg-emerald-500 border-emerald-400 text-black' 
+                                    : 'border-white/20 hover:border-cyan-400 text-transparent'
+                                }`}
+                              >
+                                ✓
+                              </button>
+                              <span className={`text-xs font-sans font-medium ${sg.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                                {sg.name}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {sg.targetDate && (
+                                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-white/5">
+                                  📅 {sg.targetDate}
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => deleteSubGoal(selectedGoal.id, sg.id)}
+                                className="text-zinc-600 hover:text-rose-400 p-1 transition"
+                                title="Delete mini-goal"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 

@@ -153,18 +153,11 @@ export const SystemView: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Eco Toggle Button */}
-          <button
-            onClick={toggleBatterySaverMode}
-            className={`px-5 py-2.5 text-xs font-mono font-bold rounded-xl border transition flex items-center gap-2 shadow-lg ${
-              batterySettings.batterySaverMode
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-white/10'
-            }`}
-          >
-            <Zap className={`h-4 w-4 ${batterySettings.batterySaverMode ? 'text-white animate-bounce' : 'text-emerald-400'}`} />
-            <span>{batterySettings.batterySaverMode ? 'DISENGAGE ECO MODE' : 'ENGAGE BATTERY SAVER'}</span>
-          </button>
+          {/* Permanent Eco Mode Indicator */}
+          <div className="px-5 py-2.5 text-xs font-mono font-bold rounded-xl border flex items-center gap-2 shadow-lg bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
+            <span>PERMANENT ECO DEFENSE ENGAGED</span>
+          </div>
         </div>
 
         {/* REAL-TIME BATTERY & THERMAL DIAGNOSTICS STATS */}
@@ -272,21 +265,14 @@ export const SystemView: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
                 <BatteryCharging className="h-4 w-4 text-emerald-400" />
-                Auto-Eco at &lt;20% Battery
+                Auto-Eco & Battery Defense
               </span>
-              <button
-                onClick={() => updateBatterySettings({ autoEcoLowBattery: !batterySettings.autoEcoLowBattery })}
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${
-                  batterySettings.autoEcoLowBattery ? 'bg-emerald-500' : 'bg-zinc-800'
-                }`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                  batterySettings.autoEcoLowBattery ? 'translate-x-5' : 'translate-x-0'
-                }`} />
-              </button>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
+                ALWAYS ACTIVE
+              </span>
             </div>
             <p className="text-[10px] font-sans text-zinc-400 leading-tight">
-              Automatically engages Eco Mode when laptop battery drops below 20% on battery power.
+              Permanently engaged to optimize system battery longevity and GPU load.
             </p>
           </div>
 
@@ -297,21 +283,12 @@ export const SystemView: React.FC = () => {
                 <Gauge className="h-4 w-4 text-purple-400" />
                 Animation & FPS Throttle
               </span>
-              <select
-                value={batterySettings.animationThrottle}
-                onChange={(e) => updateBatterySettings({ 
-                  animationThrottle: e.target.value as any,
-                  batterySaverMode: e.target.value === 'Off' ? true : batterySettings.batterySaverMode
-                })}
-                className="bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-[10px] font-mono text-zinc-200 focus:outline-none focus:border-emerald-500"
-              >
-                <option value="Full">Full (60 FPS)</option>
-                <option value="Reduced">Reduced (30 FPS)</option>
-                <option value="Off">Off (Static Eco)</option>
-              </select>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
+                OFF (STATIC ECO)
+              </span>
             </div>
             <p className="text-[10px] font-sans text-zinc-400 leading-tight">
-              Controls CSS animation frequencies and prevents dedicated GPU hardware wake-ups.
+              Animations permanently throttled to eliminate GPU hardware wake-ups and save power.
             </p>
           </div>
 

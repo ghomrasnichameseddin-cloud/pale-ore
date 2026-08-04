@@ -41,12 +41,18 @@ interface POSContextType {
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   deleteGoal: (id: string) => void;
   clearAllGoals: () => void;
+  addSubGoal: (goalId: string, name: string, targetDate?: string) => void;
+  toggleSubGoal: (goalId: string, subGoalId: string) => void;
+  deleteSubGoal: (goalId: string, subGoalId: string) => void;
   
   // Projects CRUD
   addProject: (project: Omit<Project, 'id' | 'createdAt'>) => string;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   clearAllProjects: () => void;
+  addSubProject: (projectId: string, name: string, description?: string, targetDate?: string) => void;
+  toggleSubProject: (projectId: string, subProjectId: string) => void;
+  deleteSubProject: (projectId: string, subProjectId: string) => void;
   
   // Milestones CRUD
   addMilestone: (milestone: Omit<Milestone, 'id' | 'createdAt'>) => string;
@@ -1306,6 +1312,53 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  // SUBGOALS CRUD
+  const addSubGoal = (goalId: string, name: string, targetDate?: string) => {
+    if (!name.trim()) return;
+    const newSubGoal = {
+      id: `sg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: name.trim(),
+      completed: false,
+      targetDate
+    };
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => {
+        if (g.id !== goalId) return g;
+        return {
+          ...g,
+          subGoals: [...(g.subGoals || []), newSubGoal]
+        };
+      })
+    }));
+  };
+
+  const toggleSubGoal = (goalId: string, subGoalId: string) => {
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => {
+        if (g.id !== goalId) return g;
+        return {
+          ...g,
+          subGoals: (g.subGoals || []).map(sg => sg.id === subGoalId ? { ...sg, completed: !sg.completed } : sg)
+        };
+      })
+    }));
+  };
+
+  const deleteSubGoal = (goalId: string, subGoalId: string) => {
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => {
+        if (g.id !== goalId) return g;
+        return {
+          ...g,
+          subGoals: (g.subGoals || []).filter(sg => sg.id !== subGoalId)
+        };
+      })
+    }));
+  };
+
   // CRUD FOR FOLDERS & LISTS
   const addFolder = (name: string, description?: string, color?: string): string => {
     const id = `f-${Date.now()}`;
@@ -1412,6 +1465,54 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       projects: [],
       milestones: [],
       quests: prev.quests.map(q => ({ ...q, projectId: null, milestoneId: null }))
+    }));
+  };
+
+  // SUBPROJECTS CRUD
+  const addSubProject = (projectId: string, name: string, description?: string, targetDate?: string) => {
+    if (!name.trim()) return;
+    const newSubProj = {
+      id: `sp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: name.trim(),
+      completed: false,
+      description,
+      targetDate
+    };
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          subProjects: [...(p.subProjects || []), newSubProj]
+        };
+      })
+    }));
+  };
+
+  const toggleSubProject = (projectId: string, subProjectId: string) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          subProjects: (p.subProjects || []).map(sp => sp.id === subProjectId ? { ...sp, completed: !sp.completed } : sp)
+        };
+      })
+    }));
+  };
+
+  const deleteSubProject = (projectId: string, subProjectId: string) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          subProjects: (p.subProjects || []).filter(sp => sp.id !== subProjectId)
+        };
+      })
     }));
   };
 
@@ -2599,13 +2700,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Profile Adjustments
   const toggleRecoveryMode = () => {
-    setState(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        recoveryMode: !prev.profile.recoveryMode
-      }
-    }));
+    // Recovery protocol toggle is restricted / locked by system override
+    return;
   };
 
   const updateProfileFocus = (focusText: string, goalId: string | null) => {
@@ -2930,21 +3026,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateBatterySettings = (updates: Partial<BatterySettings>) => {
     setState(prev => {
       const current = prev.batterySettings || {
-        batterySaverMode: false,
+        batterySaverMode: true,
         autoEcoLowBattery: true,
-        animationThrottle: 'Full',
+        animationThrottle: 'Off',
         oledMode: false,
         maxFpsCap: 60
       };
-      const updated = { ...current, ...updates };
+      const updated = { ...current, ...updates, batterySaverMode: true, animationThrottle: 'Off' };
       
       // Apply global DOM performance classes
       if (typeof document !== 'undefined') {
-        if (updated.batterySaverMode || updated.animationThrottle === 'Off') {
-          document.documentElement.classList.add('battery-saver-active');
-        } else {
-          document.documentElement.classList.remove('battery-saver-active');
-        }
+        document.documentElement.classList.add('battery-saver-active');
 
         if (updated.oledMode) {
           document.documentElement.classList.add('oled-mode-active');
@@ -2958,8 +3050,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleBatterySaverMode = () => {
-    const current = state.batterySettings?.batterySaverMode ?? false;
-    updateBatterySettings({ batterySaverMode: !current });
+    // Eco Mode is permanently enabled
+    updateBatterySettings({ batterySaverMode: true });
   };
 
   // Monitor real PC Battery status via Web Battery API if available
@@ -3013,10 +3105,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateGoal,
       deleteGoal,
       clearAllGoals,
+      addSubGoal,
+      toggleSubGoal,
+      deleteSubGoal,
       addProject,
       updateProject,
       deleteProject,
       clearAllProjects,
+      addSubProject,
+      toggleSubProject,
+      deleteSubProject,
       addMilestone,
       updateMilestone,
       deleteMilestone,

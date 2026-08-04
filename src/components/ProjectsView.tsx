@@ -9,6 +9,7 @@ import {
 export const ProjectsView: React.FC = () => {
   const { 
     state, addProject, updateProject, deleteProject, clearAllProjects,
+    addSubProject, toggleSubProject, deleteSubProject,
     getProjectProgress, getMilestoneProgress, completeQuest, reopenQuest, deleteQuest
   } = usePOS();
 
@@ -24,11 +25,17 @@ export const ProjectsView: React.FC = () => {
   const [newProjEstTime, setNewProjEstTime] = useState('20 hours');
   const [newProjDesc, setNewProjDesc] = useState('');
 
-  // Edit Project States
-  const [isEditingProj, setIsEditingProj] = useState(false);
-  const [editProjName, setEditProjName] = useState('');
-  const [editProjEstTime, setEditProjEstTime] = useState('');
-  const [editProjDesc, setEditProjDesc] = useState('');
+  // SubProject / Mini-Project States
+  const [newSubProjName, setNewSubProjName] = useState('');
+  const [newSubProjDate, setNewSubProjDate] = useState('');
+
+  const handleAddSubProjSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProj || !newSubProjName.trim()) return;
+    addSubProject(selectedProj.id, newSubProjName, undefined, newSubProjDate || undefined);
+    setNewSubProjName('');
+    setNewSubProjDate('');
+  };
 
   const selectedProj = state.projects.find(p => p.id === selectedProjId);
   const relatedGoal = selectedProj ? state.goals.find(g => g.id === selectedProj.goalId) : null;
@@ -430,6 +437,98 @@ export const ProjectsView: React.FC = () => {
                 <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
                   Active remaining quests: {remainingQuests.length}
                 </p>
+              </div>
+            </div>
+
+            {/* MINI-PROJECTS & SUB-PROJECTS BREAKDOWN */}
+            <div className="p-4 bg-zinc-950/80 border border-cyan-500/20 rounded-lg space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Briefcase className="h-4 w-4 text-cyan-400" />
+                  MINI-PROJECTS & SUB-TASKS ({(selectedProj.subProjects || []).filter(sp => sp.completed).length}/{(selectedProj.subProjects || []).length})
+                </h4>
+                <span className="text-[10px] font-mono text-zinc-500">
+                  Break project deliverables into sub-components
+                </span>
+              </div>
+
+              {/* Add SubProject Form */}
+              <form onSubmit={handleAddSubProjSubmit} className="flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter mini-project or sub-task name (e.g. Design UI components, Set up API routes)..."
+                  value={newSubProjName}
+                  onChange={(e) => setNewSubProjName(e.target.value)}
+                  className="flex-1 bg-zinc-900 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50"
+                />
+                <input 
+                  type="date" 
+                  value={newSubProjDate}
+                  onChange={(e) => setNewSubProjDate(e.target.value)}
+                  className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none"
+                />
+                <button 
+                  type="submit"
+                  className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 transition"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  ADD MINI PROJECT
+                </button>
+              </form>
+
+              {/* SubProjects Checklist */}
+              <div className="space-y-2">
+                {(!selectedProj.subProjects || selectedProj.subProjects.length === 0) ? (
+                  <div className="p-3 border border-dashed border-white/5 rounded text-center">
+                    <p className="text-xs font-mono text-zinc-500">
+                      No mini-projects created yet. Add sub-components to track detailed project execution.
+                    </p>
+                  </div>
+                ) : (
+                  selectedProj.subProjects.map(sp => (
+                    <div 
+                      key={sp.id} 
+                      className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
+                        sp.completed 
+                          ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
+                          : 'bg-zinc-900/60 border-white/5 text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleSubProject(selectedProj.id, sp.id)}
+                          className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                            sp.completed 
+                              ? 'bg-emerald-500 border-emerald-400 text-black' 
+                              : 'border-white/20 hover:border-cyan-400 text-transparent'
+                          }`}
+                        >
+                          ✓
+                        </button>
+                        <span className={`text-xs font-sans font-medium ${sp.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                          {sp.name}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {sp.targetDate && (
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-white/5">
+                            📅 {sp.targetDate}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => deleteSubProject(selectedProj.id, sp.id)}
+                          className="text-zinc-600 hover:text-rose-400 p-1 transition"
+                          title="Delete mini-project"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

@@ -67,7 +67,7 @@ function AppContent() {
     return () => clearInterval(timer);
   }, []);
 
-  const [eyeRelaxMode, setEyeRelaxMode] = useState<boolean>(true);
+  const eyeRelaxMode = true;
 
   const navCategories = [
     {
@@ -170,22 +170,6 @@ function AppContent() {
             className="md:hidden fixed top-[53px] inset-x-0 bg-zinc-950/95 backdrop-blur-lg border-b border-white/10 z-30 p-4 space-y-4 max-h-[85vh] overflow-y-auto"
             id="mobile-navigation-drawer"
           >
-            {/* Eye-Relax Mode Toggle in Mobile Drawer */}
-            <div className="flex items-center justify-between bg-zinc-900 p-2.5 rounded-lg border border-white/5">
-              <span className="text-xs font-mono text-zinc-300 font-bold flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                Eye-Relax Clean Layout
-              </span>
-              <button
-                onClick={() => setEyeRelaxMode(!eyeRelaxMode)}
-                className={`text-[10px] font-mono px-2 py-1 rounded border font-bold ${
-                  eyeRelaxMode ? 'bg-purple-900/80 text-purple-200 border-purple-500/40' : 'bg-zinc-800 text-zinc-400 border-white/10'
-                }`}
-              >
-                {eyeRelaxMode ? 'ENABLED' : 'DISABLED'}
-              </button>
-            </div>
-
             {navCategories.map(cat => (
               <div key={cat.title} className="space-y-1.5">
                 <div className="text-[9px] font-mono font-bold text-zinc-500 tracking-wider uppercase px-1">
@@ -493,24 +477,18 @@ function AppContent() {
             <span className="text-sm font-sans font-bold text-white uppercase tracking-wider">
               {allNavItems.find(n => n.id === activeTab)?.label || activeTab}
             </span>
-            {eyeRelaxMode && (
-              <span className="text-[10px] font-mono text-purple-300 bg-purple-950/70 border border-purple-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
-                <Sparkles className="h-3 w-3 text-purple-400" />
-                Eye-Relax Active
-              </span>
-            )}
           </div>
 
-          {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE, TIME & EYE-RELAX CONTROLLER */}
+          {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE & TIME CONTROLLER */}
           <div className="flex items-center gap-3">
             {/* SYSTEM GUIDE / MANUAL BUTTON */}
             <button
               onClick={() => setIsGuideModalOpen(true)}
               className="text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition bg-cyan-950/80 text-cyan-300 border-cyan-500/40 hover:bg-cyan-900 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-              title="Open System Usage Guide & Manual"
+              title="Open System Usage Guide & Manual (English / العربية)"
             >
               <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-              <span>SYSTEM GUIDE</span>
+              <span>SYSTEM GUIDE | الدليل</span>
             </button>
 
             {/* REWARD SHOP COIN BUTTON */}
@@ -521,34 +499,6 @@ function AppContent() {
             >
               <Coins className="h-3.5 w-3.5 text-amber-400" />
               <span>{state.profile.coins ?? 150} COINS</span>
-            </button>
-
-            {/* BATTERY SAVER / ECO DEFENSE TOGGLE BUTTON */}
-            <button
-              onClick={toggleBatterySaverMode}
-              className={`text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition ${
-                isBatterySaver
-                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                  : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-emerald-300'
-              }`}
-              title="Toggle PC Battery Saver & Thermal Protection Mode to eliminate GPU loads and save laptop battery"
-            >
-              <Zap className={`h-3.5 w-3.5 ${isBatterySaver ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
-              <span>{isBatterySaver ? '⚡ ECO / BATTERY SAVER' : 'PC ECO MODE'}</span>
-            </button>
-
-            {/* EYE-RELAX TOGGLE BUTTON */}
-            <button
-              onClick={() => setEyeRelaxMode(!eyeRelaxMode)}
-              className={`text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition ${
-                eyeRelaxMode
-                  ? 'bg-purple-950/70 text-purple-300 border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.15)] hover:bg-purple-900/80'
-                  : 'bg-zinc-900 text-zinc-400 border-white/10 hover:text-white'
-              }`}
-              title="Toggle Eye-Relax Mode for a clean, visually simple experience"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-              {eyeRelaxMode ? 'Eye-Relax View' : 'Pro Terminal'}
             </button>
 
             <div className="flex items-center gap-2 bg-zinc-900 border border-cyan-500/30 rounded-lg px-2.5 py-1">

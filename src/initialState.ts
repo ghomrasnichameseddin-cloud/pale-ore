@@ -257,9 +257,9 @@ export const INITIAL_STATE: POSState = {
     }
   ],
   batterySettings: {
-    batterySaverMode: false,
+    batterySaverMode: true,
     autoEcoLowBattery: true,
-    animationThrottle: 'Full',
+    animationThrottle: 'Off',
     oledMode: false,
     maxFpsCap: 60
   }

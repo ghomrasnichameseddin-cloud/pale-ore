@@ -7,7 +7,7 @@ import {
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
   Sliders, Timer, Zap, Star, Coins, ShoppingBag, Plus, Search,
   Filter, Target, FolderKanban, Sparkles, TrendingUp, BarChart2,
-  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle
+  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuestDifficulty, QuestType } from '../types';
@@ -227,16 +227,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           )}
 
           <button
-            onClick={toggleRecoveryMode}
-            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 border ${
-              state.profile.recoveryMode
-                ? 'bg-amber-950/60 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                : 'bg-zinc-950/40 text-zinc-400 border-white/10 hover:text-amber-300'
-            }`}
-            title="Toggle Recovery Protocol to lower workloads during fatigue"
+            disabled={true}
+            onClick={(e) => e.preventDefault()}
+            className="px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border bg-zinc-900/50 text-zinc-500 border-white/5 opacity-50 cursor-not-allowed pointer-events-none"
+            title="Recovery Protocol button is disabled by system policy"
           >
-            <Shield className={`h-3.5 w-3.5 ${state.profile.recoveryMode ? 'text-amber-400 animate-pulse' : ''}`} />
-            {state.profile.recoveryMode ? 'RECOVERY ON' : 'RECOVERY'}
+            <Lock className="h-3.5 w-3.5 text-zinc-500" />
+            <span>{state.profile.recoveryMode ? 'RECOVERY ON (LOCKED)' : 'RECOVERY (LOCKED)'}</span>
           </button>
         </div>
       </div>
@@ -380,20 +377,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </span>
               </div>
               <div 
-                onClick={toggleBatterySaverMode}
-                className={`border rounded-xl p-2.5 cursor-pointer transition flex flex-col justify-between ${
-                  isBatterySaver 
-                    ? 'bg-emerald-950/60 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.25)]' 
-                    : 'bg-zinc-950/80 hover:bg-zinc-900 border-white/10'
-                }`}
-                title="Toggle Eco Saver / Battery Defense mode"
+                className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-2.5 flex flex-col justify-between"
+                title="Hardware Eco & Battery Defense Mode is permanently active"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-mono text-zinc-400 uppercase font-bold">ECO MODE</span>
-                  <Zap className={`h-3.5 w-3.5 ${isBatterySaver ? 'text-emerald-400 animate-pulse' : 'text-zinc-500'}`} />
+                  <span className="text-[9px] font-mono text-emerald-400 uppercase font-bold">ECO MODE</span>
+                  <Zap className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
                 </div>
-                <span className={`text-xs font-mono font-bold mt-1 uppercase ${isBatterySaver ? 'text-emerald-300' : 'text-zinc-400'}`}>
-                  {isBatterySaver ? '⚡ HARDWARE ECO' : 'STANDARD'}
+                <span className="text-xs font-mono font-bold mt-1 uppercase text-emerald-300">
+                  ⚡ PERMANENT ECO
                 </span>
               </div>
             </div>
