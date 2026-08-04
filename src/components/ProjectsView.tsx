@@ -25,6 +25,12 @@ export const ProjectsView: React.FC = () => {
   const [newProjEstTime, setNewProjEstTime] = useState('20 hours');
   const [newProjDesc, setNewProjDesc] = useState('');
 
+  // Edit Project States
+  const [isEditingProj, setIsEditingProj] = useState(false);
+  const [editProjName, setEditProjName] = useState('');
+  const [editProjEstTime, setEditProjEstTime] = useState('');
+  const [editProjDesc, setEditProjDesc] = useState('');
+
   // SubProject / Mini-Project States
   const [newSubProjName, setNewSubProjName] = useState('');
   const [newSubProjDate, setNewSubProjDate] = useState('');

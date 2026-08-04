@@ -73,7 +73,7 @@ const RARITY_COLORS: Record<SealRarity, {
 };
 
 /* -------------------------------------------------------------------------- */
-/*             FEATURED POWER SEAL CRYSTAL / ORB WITH CHAINS COMPONENT         */
+/*             FEATURED POWER SEAL GEOMETRIC MAGIC FORMATION STAGE            */
 /* -------------------------------------------------------------------------- */
 interface SealCrystalOrbStageProps {
   seal: PowerSeal;
@@ -81,134 +81,229 @@ interface SealCrystalOrbStageProps {
   canBreak?: boolean;
 }
 
+const RARITY_MAGIC_COLORS: Record<SealRarity, {
+  stroke: string;
+  glow: string;
+  coreGradient: string;
+  sparkBg: string;
+  chainBorder: string;
+}> = {
+  Common: {
+    stroke: '#06b6d4',
+    glow: 'drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]',
+    coreGradient: 'from-cyan-400 via-blue-500 to-indigo-700',
+    sparkBg: 'bg-cyan-300',
+    chainBorder: 'border-cyan-500/50'
+  },
+  Rare: {
+    stroke: '#a855f7',
+    glow: 'drop-shadow-[0_0_14px_rgba(168,85,247,0.85)]',
+    coreGradient: 'from-purple-300 via-purple-500 to-indigo-900',
+    sparkBg: 'bg-purple-300',
+    chainBorder: 'border-purple-500/50'
+  },
+  Epic: {
+    stroke: '#10b981',
+    glow: 'drop-shadow-[0_0_14px_rgba(16,185,129,0.85)]',
+    coreGradient: 'from-emerald-300 via-teal-500 to-emerald-900',
+    sparkBg: 'bg-emerald-300',
+    chainBorder: 'border-emerald-500/50'
+  },
+  Legendary: {
+    stroke: '#f59e0b',
+    glow: 'drop-shadow-[0_0_16px_rgba(245,158,11,0.9)]',
+    coreGradient: 'from-amber-200 via-amber-500 to-orange-800',
+    sparkBg: 'bg-amber-300',
+    chainBorder: 'border-amber-500/60'
+  },
+  Divine: {
+    stroke: '#f43f5e',
+    glow: 'drop-shadow-[0_0_18px_rgba(244,63,94,0.95)]',
+    coreGradient: 'from-rose-200 via-pink-500 to-rose-900',
+    sparkBg: 'bg-rose-300',
+    chainBorder: 'border-rose-500/60'
+  },
+  Forbidden: {
+    stroke: '#8b5cf6',
+    glow: 'drop-shadow-[0_0_20px_rgba(139,92,246,1)]',
+    coreGradient: 'from-violet-300 via-purple-600 to-black',
+    sparkBg: 'bg-violet-300',
+    chainBorder: 'border-violet-500/70'
+  }
+};
+
 const SealCrystalOrbStage: React.FC<SealCrystalOrbStageProps> = ({ seal, isBroken }) => {
-  const rarity = seal.rarity;
-
-  const auraTheme: Record<SealRarity, {
-    orbGlow: string;
-    coreGradient: string;
-    ringColor: string;
-    sparkColor: string;
-  }> = {
-    Common: {
-      orbGlow: 'from-cyan-400 via-blue-500 to-indigo-600 shadow-[0_0_45px_rgba(6,182,212,0.65)]',
-      coreGradient: 'from-cyan-300 via-cyan-500 to-blue-700',
-      ringColor: 'border-cyan-400/50',
-      sparkColor: 'bg-cyan-300'
-    },
-    Rare: {
-      orbGlow: 'from-purple-400 via-indigo-500 to-fuchsia-600 shadow-[0_0_50px_rgba(168,85,247,0.75)]',
-      coreGradient: 'from-purple-300 via-purple-500 to-indigo-800',
-      ringColor: 'border-purple-400/50',
-      sparkColor: 'bg-purple-300'
-    },
-    Epic: {
-      orbGlow: 'from-emerald-400 via-teal-500 to-green-700 shadow-[0_0_50px_rgba(16,185,129,0.75)]',
-      coreGradient: 'from-emerald-300 via-teal-500 to-emerald-800',
-      ringColor: 'border-emerald-400/50',
-      sparkColor: 'bg-emerald-300'
-    },
-    Legendary: {
-      orbGlow: 'from-amber-300 via-orange-500 to-amber-700 shadow-[0_0_55px_rgba(245,158,11,0.85)]',
-      coreGradient: 'from-amber-200 via-amber-500 to-orange-700',
-      ringColor: 'border-amber-400/60',
-      sparkColor: 'bg-amber-300'
-    },
-    Divine: {
-      orbGlow: 'from-rose-300 via-pink-500 to-rose-700 shadow-[0_0_60px_rgba(244,63,94,0.9)]',
-      coreGradient: 'from-rose-200 via-pink-500 to-rose-800',
-      ringColor: 'border-rose-400/60',
-      sparkColor: 'bg-rose-300'
-    },
-    Forbidden: {
-      orbGlow: 'from-violet-500 via-purple-700 to-fuchsia-900 shadow-[0_0_65px_rgba(139,92,246,0.95)]',
-      coreGradient: 'from-violet-300 via-purple-600 to-black',
-      ringColor: 'border-violet-500/70',
-      sparkColor: 'bg-violet-300'
-    }
-  };
-
-  const theme = auraTheme[rarity] || auraTheme.Common;
+  const theme = RARITY_MAGIC_COLORS[seal.rarity] || RARITY_MAGIC_COLORS.Common;
+  const strokeColor = isBroken ? theme.stroke : '#71717a';
 
   return (
-    <div className="relative w-full h-48 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 rounded-xl border border-white/10 overflow-hidden flex items-center justify-center my-3 group/orb select-none">
+    <div className="relative w-full h-56 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center my-3 group/orb select-none shadow-2xl">
       
-      {/* BACKGROUND RUNIC PEDESTAL LIGHTING */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/50 via-black to-transparent pointer-events-none" />
-      
-      {/* ROTATING ARCANE RUNIC RING IN STAGE */}
-      <div className={`absolute h-40 w-40 rounded-full border border-dashed ${theme.ringColor} animate-[spin_25s_linear_infinite] opacity-30 pointer-events-none flex items-center justify-center`}>
-        <div className="h-32 w-32 rounded-full border border-dotted border-white/20 animate-[spin_15s_linear_infinite_reverse]" />
-      </div>
+      {/* BACKGROUND RADIAL SACRED AMBIENCE */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/60 via-black to-zinc-950 pointer-events-none" />
 
-      {/* FLOATING ENERGY SPARKS IF UNSEALED */}
+      {/* FLOATING UNSEALED ENERGY PARTICLES */}
       {isBroken && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className={`absolute bottom-3 left-1/4 w-1.5 h-1.5 rounded-full ${theme.sparkColor} animate-ping opacity-75`} />
-          <div className="absolute bottom-5 right-1/3 w-2 h-2 rounded-full bg-amber-300 animate-pulse opacity-80" />
-          <div className="absolute top-4 left-1/3 w-1 h-1 rounded-full bg-cyan-300 animate-ping opacity-60" />
-          <div className={`absolute top-3 right-1/4 w-1.5 h-1.5 rounded-full ${theme.sparkColor} animate-bounce opacity-70`} />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className={`absolute bottom-4 left-1/4 w-2 h-2 rounded-full ${theme.sparkBg} animate-ping opacity-90`} />
+          <div className="absolute bottom-8 right-1/3 w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse opacity-80" />
+          <div className="absolute top-6 left-1/3 w-2 h-2 rounded-full bg-cyan-300 animate-ping opacity-75" />
+          <div className={`absolute top-4 right-1/4 w-1.5 h-1.5 rounded-full ${theme.sparkBg} animate-bounce opacity-80`} />
+          <div className="absolute top-1/2 left-6 w-1 h-1 rounded-full bg-white animate-ping opacity-60" />
+          <div className="absolute bottom-1/3 right-8 w-1 h-1 rounded-full bg-purple-300 animate-ping opacity-70" />
         </div>
       )}
 
-      {/* CENTRAL GLOWING CRYSTAL ORB */}
-      <div className="relative z-10 flex flex-col items-center justify-center">
+      {/* SVG GEOMETRICALLY COMPLICATED MAGIC FORMATION (TRANSMUTATION ARRAY) */}
+      <div className={`relative w-48 h-48 flex items-center justify-center transition-all duration-700 ${isBroken ? theme.glow : ''}`}>
         
-        {/* THE CRYSTAL / ORB SPHERE */}
-        <div className={`relative h-24 w-24 rounded-full flex items-center justify-center transition-all duration-700 ${
-          isBroken
-            ? `bg-gradient-to-tr ${theme.coreGradient} ${theme.orbGlow} scale-105 animate-pulse`
-            : 'bg-gradient-to-tr from-zinc-900 via-zinc-800 to-zinc-950 border border-zinc-700/60 shadow-inner'
-        }`}>
+        {/* LAYER 1: OUTER RUNIC & CELESTIAL GLYPH RING (STATIONARY SACRED ARRAY) */}
+        <svg className="absolute inset-0 w-full h-full transition-opacity duration-700" viewBox="0 0 240 240" fill="none">
+          {/* Outer Tick Circle */}
+          <circle cx="120" cy="120" r="116" stroke={strokeColor} strokeWidth="1" strokeDasharray="2 4" opacity="0.6" />
+          {/* Outer Border Circles */}
+          <circle cx="120" cy="120" r="110" stroke={strokeColor} strokeWidth="1.5" opacity="0.8" />
+          <circle cx="120" cy="120" r="102" stroke={strokeColor} strokeWidth="1" strokeDasharray="8 4" opacity="0.7" />
+          <circle cx="120" cy="120" r="96" stroke={strokeColor} strokeWidth="0.8" opacity="0.5" />
+
+          {/* Radial Tick Lines at 12 Cardinal Points */}
+          {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => (
+            <line
+              key={deg}
+              x1={120 + 102 * Math.cos((deg * Math.PI) / 180)}
+              y1={120 + 102 * Math.sin((deg * Math.PI) / 180)}
+              x2={120 + 110 * Math.cos((deg * Math.PI) / 180)}
+              y2={120 + 110 * Math.sin((deg * Math.PI) / 180)}
+              stroke={strokeColor}
+              strokeWidth="1.5"
+              opacity="0.85"
+            />
+          ))}
+
+          {/* Arcane Rune Symbols in Outer Perimeter */}
+          {['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ'].map((symbol, idx) => {
+            const angle = (idx * 30 * Math.PI) / 180;
+            const x = 120 + 99 * Math.cos(angle);
+            const y = 120 + 99 * Math.sin(angle) + 3;
+            return (
+              <text
+                key={idx}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                fill={strokeColor}
+                fontSize="8"
+                fontWeight="bold"
+                opacity="0.85"
+              >
+                {symbol}
+              </text>
+            );
+          })}
+        </svg>
+
+        {/* LAYER 2: DOUBLE INTERLACED HEXAGRAM & SACRED GEOMETRY STAR MATRIX (STATIONARY) */}
+        <svg className="absolute inset-0 w-full h-full transition-opacity duration-700" viewBox="0 0 240 240" fill="none">
+          {/* Concentric Geometric Circle */}
+          <circle cx="120" cy="120" r="92" stroke={strokeColor} strokeWidth="1" strokeDasharray="12 4" opacity="0.6" />
+          <circle cx="120" cy="120" r="82" stroke={strokeColor} strokeWidth="1.5" opacity="0.75" />
+
+          {/* Hexagram 1 (6-pointed Star) */}
+          <polygon points="120,28 199,165 41,165" stroke={strokeColor} strokeWidth="1.2" fill="none" opacity="0.8" />
+          <polygon points="120,212 41,75 199,75" stroke={strokeColor} strokeWidth="1.2" fill="none" opacity="0.8" />
+
+          {/* Hexagram 2 (Rotated 30 degrees for 12-Pointed Magic Array) */}
+          <polygon points="166,41 166,199 28,120" stroke={strokeColor} strokeWidth="0.8" strokeDasharray="6 3" fill="none" opacity="0.6" />
+          <polygon points="74,41 212,120 74,199" stroke={strokeColor} strokeWidth="0.8" strokeDasharray="6 3" fill="none" opacity="0.6" />
+
+          {/* Bisecting Chords across Center */}
+          <line x1="120" y1="28" x2="120" y2="212" stroke={strokeColor} strokeWidth="0.8" opacity="0.4" />
+          <line x1="41" y1="75" x2="199" y2="165" stroke={strokeColor} strokeWidth="0.8" opacity="0.4" />
+          <line x1="41" y1="165" x2="199" y2="75" stroke={strokeColor} strokeWidth="0.8" opacity="0.4" />
+
+          {/* Inner Octagram / Rotated Squares */}
+          <rect x="71" y="71" width="98" height="98" stroke={strokeColor} strokeWidth="1" fill="none" opacity="0.5" />
+          <rect x="71" y="71" width="98" height="98" stroke={strokeColor} strokeWidth="1" fill="none" transform="rotate(45 120 120)" opacity="0.5" />
+        </svg>
+
+        {/* LAYER 3: INNER SACRED NODES & HEXAGONAL CORE MATRIX (STATIONARY) */}
+        <svg className="absolute inset-0 w-full h-full transition-opacity duration-700" viewBox="0 0 240 240" fill="none">
+          {/* Inner Runic Circles */}
+          <circle cx="120" cy="120" r="58" stroke={strokeColor} strokeWidth="1.5" opacity="0.8" />
+          <circle cx="120" cy="120" r="48" stroke={strokeColor} strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
+          <circle cx="120" cy="120" r="38" stroke={strokeColor} strokeWidth="1.2" opacity="0.8" />
+
+          {/* Inner Hexagon with Geometric Node Dots */}
+          <polygon points="120,62 170,91 170,149 120,178 70,149 70,91" stroke={strokeColor} strokeWidth="1.2" fill="none" opacity="0.85" />
           
-          {/* CRYSTAL FACET OVERLAY SHINE */}
-          <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.45),_transparent_60%)] pointer-events-none" />
+          {/* Geometric Vertex Circles (Node Points) */}
+          {[[120, 62], [170, 91], [170, 149], [120, 178], [70, 149], [70, 91]].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="3.5" fill={strokeColor} opacity="0.9" />
+          ))}
+
+          {/* Inner Star Array Lines */}
+          <line x1="120" y1="62" x2="120" y2="178" stroke={strokeColor} strokeWidth="0.8" opacity="0.5" />
+          <line x1="170" y1="91" x2="70" y2="149" stroke={strokeColor} strokeWidth="0.8" opacity="0.5" />
+          <line x1="170" y1="149" x2="70" y2="91" stroke={strokeColor} strokeWidth="0.8" opacity="0.5" />
+        </svg>
+
+        {/* CENTER SACRED GEM / RUNIC HEART */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
           
-          {/* FACETED CRYSTAL DIAMOND POLYGON IN CENTER */}
-          <div className={`relative h-14 w-14 rotate-45 border-2 transition-transform duration-500 ${
-            isBroken 
-              ? 'border-white/90 bg-white/25 shadow-[0_0_20px_rgba(255,255,255,0.8)]' 
-              : 'border-zinc-600/80 bg-zinc-900/90'
-          } flex items-center justify-center backdrop-blur-sm`}>
+          {/* GLOWING ORB / CRYSTAL SPHERE */}
+          <div className={`relative h-20 w-20 rounded-full flex items-center justify-center transition-all duration-700 ${
+            isBroken
+              ? `bg-gradient-to-tr ${theme.coreGradient} shadow-[0_0_35px_rgba(255,255,255,0.8)] scale-110 animate-pulse`
+              : 'bg-gradient-to-tr from-zinc-900 via-zinc-800 to-zinc-950 border border-zinc-700/80 shadow-inner'
+          }`}>
             
-            {/* INNER RUNIC SYMBOL IN CRYSTAL HEART */}
-            <span className={`-rotate-45 text-2xl font-bold select-none ${
-              isBroken ? 'text-white drop-shadow-[0_0_12px_rgba(255,255,255,1)]' : 'text-zinc-500 opacity-60'
-            }`}>
-              {seal.runeSymbol || '🔮'}
-            </span>
+            {/* SPHERE FACET LIGHT OVERLAY */}
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.5),_transparent_60%)] pointer-events-none" />
+            
+            {/* FACETED DIAMOND CORE POLYGON */}
+            <div className={`relative h-11 w-11 rotate-45 border-2 transition-transform duration-500 ${
+              isBroken 
+                ? 'border-white/90 bg-white/30 shadow-[0_0_20px_rgba(255,255,255,0.9)]' 
+                : 'border-zinc-600/80 bg-zinc-900/90'
+            } flex items-center justify-center backdrop-blur-sm`}>
+              
+              {/* INNER RUNIC EMBLEM */}
+              <span className={`-rotate-45 text-xl font-bold select-none ${
+                isBroken ? 'text-white drop-shadow-[0_0_12px_rgba(255,255,255,1)]' : 'text-zinc-500 opacity-60'
+              }`}>
+                {seal.runeSymbol || '🔮'}
+              </span>
+            </div>
+
+            {/* RADIANT UNSEALED AURA RING */}
+            {isBroken && (
+              <div className="absolute -inset-2.5 rounded-full border-2 border-dashed border-white/80 opacity-90 animate-pulse" />
+            )}
+
           </div>
-
-          {/* RADIANT UNSEALED AURA RING */}
-          {isBroken && (
-            <div className={`absolute -inset-2 rounded-full border-2 border-dashed ${theme.ringColor} animate-[spin_8s_linear_infinite]`} />
-          )}
-
         </div>
 
-        {/* PEDESTAL BASE */}
-        <div className="w-20 h-2.5 bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent rounded-full mt-2 shadow-lg border-t border-zinc-600/30" />
       </div>
 
-      {/* OVERLAY HEAVY CHAINS & SEAL SIGIL (BOUND / LOCKED STATE) */}
+      {/* OVERLAY HEAVY BINDING CHAINS & SEAL SIGIL (LOCKED STATE) */}
       {!isBroken && (
         <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
           
-          {/* SVG HEAVY METALLIC CHAINS CRISS-CROSSING OVER CRYSTAL */}
+          {/* SVG HEAVY METALLIC BINDING CHAINS */}
           <svg className="absolute inset-0 w-full h-full text-zinc-500" viewBox="0 0 200 120" fill="none">
             {/* Left-top to Right-bottom chain line */}
-            <path d="M 10 10 L 190 110" stroke="#52525b" strokeWidth="5" strokeDasharray="7 4" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-            <path d="M 10 10 L 190 110" stroke="#d4d4d8" strokeWidth="2" strokeDasharray="7 4" />
+            <path d="M 10 10 L 190 110" stroke="#3f3f46" strokeWidth="6" strokeDasharray="8 4" className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]" />
+            <path d="M 10 10 L 190 110" stroke="#a1a1aa" strokeWidth="2.5" strokeDasharray="8 4" />
             
             {/* Right-top to Left-bottom chain line */}
-            <path d="M 190 10 L 10 110" stroke="#52525b" strokeWidth="5" strokeDasharray="7 4" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-            <path d="M 190 10 L 10 110" stroke="#d4d4d8" strokeWidth="2" strokeDasharray="7 4" />
+            <path d="M 190 10 L 10 110" stroke="#3f3f46" strokeWidth="6" strokeDasharray="8 4" className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.95)]" />
+            <path d="M 190 10 L 10 110" stroke="#a1a1aa" strokeWidth="2.5" strokeDasharray="8 4" />
           </svg>
 
-          {/* CENTRAL HEAVY PADLOCK / RUNIC SEAL LOCK */}
-          <div className="relative z-30 p-2.5 bg-zinc-950/95 border-2 border-amber-500/80 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.4)] flex items-center justify-center gap-1.5">
+          {/* CENTRAL RUNIC PADLOCK SEAL BADGE */}
+          <div className="relative z-30 p-2.5 bg-zinc-950/95 border-2 border-amber-500/80 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-center gap-1.5 backdrop-blur-md">
             <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
-            <span className="text-[9px] font-mono font-bold text-amber-300 tracking-wider uppercase">
+            <span className="text-[9.5px] font-mono font-bold text-amber-300 tracking-wider uppercase">
               SEAL BOUND
             </span>
           </div>
@@ -216,30 +311,26 @@ const SealCrystalOrbStage: React.FC<SealCrystalOrbStageProps> = ({ seal, isBroke
         </div>
       )}
 
-      {/* SHATTERED CHAINS FLOATING (UNSEALED STATE) */}
+      {/* SHATTERED CHAINS FLOATING OUTWARD (UNSEALED STATE) */}
       {isBroken && (
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-          {/* Left broken chain segment */}
           <div className="absolute top-3 left-3 text-zinc-500/60 rotate-45 flex items-center gap-1">
             <div className="w-4 h-2 border-2 border-purple-400/60 rounded-full" />
             <div className="w-3 h-2 border-2 border-purple-400/40 rounded-full translate-y-2" />
             <span className="text-amber-400 text-xs animate-ping">⚡</span>
           </div>
 
-          {/* Right broken chain segment */}
           <div className="absolute top-3 right-3 text-zinc-500/60 -rotate-45 flex items-center gap-1">
             <span className="text-amber-400 text-xs animate-ping">⚡</span>
             <div className="w-4 h-2 border-2 border-purple-400/60 rounded-full" />
             <div className="w-3 h-2 border-2 border-purple-400/40 rounded-full translate-y-2" />
           </div>
 
-          {/* Bottom broken chain segment */}
           <div className="absolute bottom-2 left-6 text-zinc-500/50 rotate-12 flex items-center gap-1">
             <div className="w-4 h-2 border-2 border-zinc-600 rounded-full" />
             <span className="text-purple-400 text-[10px]">✧</span>
           </div>
 
-          {/* Bottom right broken chain segment */}
           <div className="absolute bottom-2 right-6 text-zinc-500/50 -rotate-12 flex items-center gap-1">
             <span className="text-purple-400 text-[10px]">✧</span>
             <div className="w-4 h-2 border-2 border-zinc-600 rounded-full" />
@@ -253,7 +344,7 @@ const SealCrystalOrbStage: React.FC<SealCrystalOrbStageProps> = ({ seal, isBroke
 
 export const SealingPowerView: React.FC = () => {
   const { 
-    state, addSeal, updateSeal, deleteSeal, breakSeal, relockSeal, getPlayerLevelInfo, getSkillXpAndLevel,
+    state, addXp, addSeal, updateSeal, deleteSeal, breakSeal, relockSeal, getPlayerLevelInfo, getSkillXpAndLevel,
     toggleBatterySaverMode
   } = usePOS();
 
@@ -424,18 +515,24 @@ export const SealingPowerView: React.FC = () => {
       {/* SACRED SEALING ALTAR BANNER & ROTATING RUNIC SIGIL */}
       <div className="p-6 bg-gradient-to-r from-purple-950/80 via-zinc-950 to-indigo-950/90 border border-purple-500/40 rounded-2xl relative overflow-hidden shadow-[0_0_35px_rgba(168,85,247,0.2)]">
         
-        {/* ROTATING SVG ARCANE RUNIC RING IN BACKGROUND */}
-        <div className="absolute -right-16 -bottom-16 w-80 h-80 opacity-15 pointer-events-none flex items-center justify-center">
-          <svg className="w-full h-full animate-[spin_60s_linear_infinite] text-purple-400" viewBox="0 0 200 200" fill="none">
-            <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
-            <circle cx="100" cy="100" r="75" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="60" stroke="currentColor" strokeWidth="0.5" strokeDasharray="8 4" />
-            <polygon points="100,10 178,145 22,145" stroke="currentColor" strokeWidth="0.8" />
-            <polygon points="100,190 22,55 178,55" stroke="currentColor" strokeWidth="0.8" />
-            <text x="100" y="22" textAnchor="middle" fill="currentColor" fontSize="10" fontFamily="serif">ᚠ</text>
-            <text x="178" y="100" textAnchor="middle" fill="currentColor" fontSize="10" fontFamily="serif">ᚢ</text>
-            <text x="100" y="185" textAnchor="middle" fill="currentColor" fontSize="10" fontFamily="serif">ᚦ</text>
-            <text x="22" y="100" textAnchor="middle" fill="currentColor" fontSize="10" fontFamily="serif">ᚨ</text>
+        {/* STATIONARY SVG ARCANE RUNIC RING IN BACKGROUND */}
+        <div className="absolute -right-16 -bottom-16 w-96 h-96 opacity-20 pointer-events-none flex items-center justify-center">
+          <svg className="w-full h-full text-purple-400" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="96" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 4" />
+            <circle cx="100" cy="100" r="90" stroke="currentColor" strokeWidth="1.2" />
+            <circle cx="100" cy="100" r="82" stroke="currentColor" strokeWidth="1" strokeDasharray="6 3" />
+            <circle cx="100" cy="100" r="68" stroke="currentColor" strokeWidth="0.8" />
+            <polygon points="100,10 178,145 22,145" stroke="currentColor" strokeWidth="1" />
+            <polygon points="100,190 22,55 178,55" stroke="currentColor" strokeWidth="1" />
+            <polygon points="145,22 145,178 10,100" stroke="currentColor" strokeWidth="0.6" strokeDasharray="4 2" />
+            <polygon points="55,22 190,100 55,178" stroke="currentColor" strokeWidth="0.6" strokeDasharray="4 2" />
+            <rect x="58" y="58" width="84" height="84" stroke="currentColor" strokeWidth="0.8" transform="rotate(45 100 100)" />
+            <circle cx="100" cy="100" r="42" stroke="currentColor" strokeWidth="1.2" />
+            <circle cx="100" cy="100" r="28" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4 2" />
+            <text x="100" y="18" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="serif">ᚠ</text>
+            <text x="182" y="103" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="serif">ᚢ</text>
+            <text x="100" y="188" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="serif">ᚦ</text>
+            <text x="18" y="103" textAnchor="middle" fill="currentColor" fontSize="8" fontFamily="serif">ᚨ</text>
           </svg>
         </div>
 
@@ -539,6 +636,37 @@ export const SealingPowerView: React.FC = () => {
           </div>
 
         </div>
+
+        {/* ARCANE RESONANCE SET BONUSES */}
+        <div className="mt-4 p-3.5 bg-zinc-950/90 border border-purple-500/30 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-wider">RESONANCE SYNERGY SETS:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 ${
+              brokenSeals.length >= 2 
+                ? 'bg-purple-900/80 text-purple-200 border-purple-500/60 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                : 'bg-zinc-900/80 text-zinc-500 border-white/5 opacity-60'
+            }`}>
+              {brokenSeals.length >= 2 ? '✦' : '✧'} DUAL ALIGNMENT (2+ Seals: Active)
+            </span>
+            <span className={`px-2.5 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 ${
+              brokenSeals.length >= 3 
+                ? 'bg-cyan-900/80 text-cyan-200 border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                : 'bg-zinc-900/80 text-zinc-500 border-white/5 opacity-60'
+            }`}>
+              {brokenSeals.length >= 3 ? '✦' : '✧'} TRINITY MASTERY (3+ Seals: Active)
+            </span>
+            <span className={`px-2.5 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 ${
+              brokenSeals.length >= 5 
+                ? 'bg-amber-900/80 text-amber-200 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                : 'bg-zinc-900/80 text-zinc-500 border-white/5 opacity-60'
+            }`}>
+              {brokenSeals.length >= 5 ? '✦' : '✧'} COSMIC OVERLORD (5+ Seals: Active)
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* UNSEAL FEEDBACK ALERT */}
@@ -558,7 +686,7 @@ export const SealingPowerView: React.FC = () => {
               {unsealMessage.isError ? (
                 <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
               ) : (
-                <Sparkles className="h-5 w-5 shrink-0 text-amber-400 animate-spin" />
+                <Sparkles className="h-5 w-5 shrink-0 text-amber-400 animate-pulse" />
               )}
               <span className="font-semibold">{unsealMessage.text}</span>
             </div>
@@ -833,10 +961,23 @@ export const SealingPowerView: React.FC = () => {
                       <span>{canBreak ? 'SHATTER CHAINS' : 'CHAIN-BOUND'}</span>
                     </button>
                   ) : (
-                    <span className="text-[10.5px] font-mono text-purple-300 font-bold flex items-center gap-1 bg-purple-950/80 border border-purple-500/40 px-2.5 py-1 rounded-lg shadow-sm">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-                      AWAKENED ORB
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          addXp(25);
+                          setUnsealMessage({ text: `✨ Arcane Resonance Pulse Channeled from "${seal.name}"! +25 System XP Granted!`, isError: false });
+                        }}
+                        className="px-2.5 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-500/60 text-[10px] font-mono font-bold text-purple-200 rounded-lg transition shadow-sm flex items-center gap-1"
+                        title="Channel localized energy surge from this unsealed orb"
+                      >
+                        <Zap className="h-3 w-3 text-amber-400 animate-pulse" />
+                        <span>CHANNEL PULSE</span>
+                      </button>
+                      <span className="text-[10.5px] font-mono text-purple-300 font-bold flex items-center gap-1 bg-purple-950/80 border border-purple-500/40 px-2.5 py-1.5 rounded-lg shadow-sm">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                        AWAKENED
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -857,7 +998,7 @@ export const SealingPowerView: React.FC = () => {
               className="max-w-md w-full bg-zinc-950 border border-purple-500/60 rounded-2xl p-6 space-y-5 shadow-[0_0_40px_rgba(168,85,247,0.3)] text-left relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-                <Wand2 className="h-36 w-36 text-purple-400 animate-spin" />
+                <Wand2 className="h-36 w-36 text-purple-400 animate-pulse" />
               </div>
 
               <div className="flex items-start justify-between border-b border-white/10 pb-3">

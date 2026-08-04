@@ -49,6 +49,10 @@ export const GoalsView: React.FC = () => {
   const [newProjEstTime, setNewProjEstTime] = useState('10 hours');
   const [newProjDesc, setNewProjDesc] = useState('');
 
+  // Create Milestone States
+  const [newMileName, setNewMileName] = useState('');
+  const [newMileProjId, setNewMileProjId] = useState('');
+
   // Create SubGoal States
   const [newSubGoalInput, setNewSubGoalInput] = useState('');
   const [newSubGoalDate, setNewSubGoalDate] = useState('');

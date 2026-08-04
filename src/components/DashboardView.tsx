@@ -733,15 +733,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       </div>
                       
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-1 rounded-lg">
+                        <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1 rounded-lg shadow-sm">
                           +{quest.xp} XP
                         </span>
-                        <button
-                          onClick={() => completeQuest(quest.id)}
-                          className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1"
-                        >
-                          <Check className="h-3.5 w-3.5" /> DONE
-                        </button>
                       </div>
                     </div>
                   );
