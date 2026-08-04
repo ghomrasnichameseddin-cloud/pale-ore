@@ -872,9 +872,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {state.profile.focusGoalId && (
                   <div className="flex items-center gap-1.5 pt-1">
                     <span className="text-[10px] font-mono text-zinc-400">🎯 LINKED TO:</span>
-                    <span className="text-[10px] font-mono text-cyan-400 truncate font-bold">
+                    <button 
+                      type="button"
+                      onClick={() => onNavigate?.('goals')}
+                      className="text-[10px] font-mono text-cyan-400 truncate font-bold hover:underline cursor-pointer"
+                    >
                       {state.goals.find(g => g.id === state.profile.focusGoalId)?.name}
-                    </span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -905,7 +909,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             ) : (
               <div className="space-y-2">
                 {activeGoals.map(goal => {
-                  const progress = getGoalProgress(goal.id);
+                  const progressVal = getGoalProgress(goal.id);
+                  const progressPercent = typeof progressVal === 'number' ? progressVal : 0;
+                  const goalQuestsCount = state.quests.filter(q => q.goalId === goal.id).length;
+                  const goalProjectsCount = (state.projects || []).filter(p => p.goalId === goal.id).length;
                   return (
                     <div 
                       key={goal.id} 
@@ -917,13 +924,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           {goal.name}
                         </span>
                         <span className="text-[10px] font-mono font-bold text-purple-400 shrink-0">
-                          {progress.percentage}%
+                          {progressPercent}%
                         </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
+                        <span>{goal.category || 'Strategic'}</span>
+                        <span>{goalQuestsCount} Directives • {goalProjectsCount} Projects</span>
                       </div>
                       <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
                         <div 
                           className="bg-purple-500 h-full rounded-full transition-all duration-300" 
-                          style={{ width: `${progress.percentage}%` }}
+                          style={{ width: `${progressPercent}%` }}
                         />
                       </div>
                     </div>
