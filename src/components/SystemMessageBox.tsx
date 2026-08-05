@@ -3,9 +3,10 @@ import { usePOS } from '../POSContext';
 import { SystemMessage } from '../types';
 import { 
   Inbox, Bell, ShieldAlert, Award, MessageSquare, AlertTriangle, 
-  Check, CheckCheck, Trash2, Send, Filter, Info, X, Terminal, Clock, RefreshCw
+  Check, CheckCheck, Trash2, Send, Filter, Info, X, Terminal, Clock, RefreshCw, Volume2, VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { soundSystem } from '../utils/soundEffects';
 
 interface SystemMessageBoxProps {
   compact?: boolean;
@@ -21,6 +22,7 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({ compact = fa
   const messages = state.messages || [];
   const unreadCount = messages.filter(m => !m.read).length;
 
+  const [isMuted, setIsMuted] = useState(soundSystem.getMuted());
   const [filterCategory, setFilterCategory] = useState<'all' | 'alert' | 'achievement' | 'note' | 'warning' | 'unread'>('all');
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
@@ -113,6 +115,27 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({ compact = fa
 
         {/* HEADER ACTIONS */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              const nextMute = !isMuted;
+              setIsMuted(nextMute);
+              soundSystem.setMuted(nextMute);
+              if (!nextMute) {
+                soundSystem.playNotification('achievement');
+              }
+            }}
+            className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors flex items-center gap-1 ${
+              isMuted 
+                ? 'bg-rose-950/30 border-rose-500/30 text-rose-400' 
+                : 'bg-zinc-900 border-white/10 text-cyan-400 hover:bg-zinc-800'
+            }`}
+            title={isMuted ? "Unmute system notification audio" : "Test chime & mute toggle"}
+          >
+            {isMuted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+            {isMuted ? 'MUTED' : 'AUDIO ON'}
+          </button>
+
           <button
             onClick={() => setIsDispatching(!isDispatching)}
             className={`text-[10px] font-mono px-2.5 py-1 rounded border font-bold uppercase flex items-center gap-1.5 transition-all ${

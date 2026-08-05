@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { SystemMessage } from '../types';
-import { Award, Bell, ShieldAlert, Terminal, MessageSquare, AlertTriangle, X, Inbox, Sparkles, ChevronRight } from 'lucide-react';
+import { Award, Bell, ShieldAlert, Terminal, MessageSquare, AlertTriangle, X, Inbox, Sparkles, ChevronRight, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { soundSystem } from '../utils/soundEffects';
 
 interface NotificationToastSystemProps {
   onOpenInbox?: () => void;
@@ -12,6 +13,7 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
   const { state, markSystemMessageRead } = usePOS();
   const [activeToast, setActiveToast] = useState<SystemMessage | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const [isMuted, setIsMuted] = useState(soundSystem.getMuted());
 
   const messages = state.messages || [];
 
@@ -23,8 +25,21 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
       const latest = unreadNew[unreadNew.length - 1];
       setActiveToast(latest);
       setSeenIds(prev => new Set(prev).add(latest.id));
+      
+      // Play synthesized notification sound chime
+      soundSystem.playNotification(latest.category);
     }
   }, [messages]);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextMute = !isMuted;
+    setIsMuted(nextMute);
+    soundSystem.setMuted(nextMute);
+    if (!nextMute) {
+      soundSystem.playNotification('note');
+    }
+  };
 
   // Auto hide after 7 seconds
   useEffect(() => {
@@ -119,14 +134,24 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="text-zinc-500 hover:text-white p-1 rounded transition shrink-0"
-                title="Dismiss"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={toggleMute}
+                  className="text-zinc-500 hover:text-cyan-400 p-1 rounded transition"
+                  title={isMuted ? "Unmute Notification Sounds" : "Mute Notification Sounds"}
+                >
+                  {isMuted ? <VolumeX className="h-4 w-4 text-rose-400" /> : <Volume2 className="h-4 w-4 text-cyan-400" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="text-zinc-500 hover:text-white p-1 rounded transition"
+                  title="Dismiss"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* ACTION FOOTER */}
