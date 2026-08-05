@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 export const GoalsView: React.FC = () => {
   const { 
     state, addGoal, updateGoal, deleteGoal, clearAllGoals,
-    addSubGoal, toggleSubGoal, deleteSubGoal,
+    addSubGoal, updateSubGoal, toggleSubGoal, deleteSubGoal,
     addProject, updateProject, deleteProject,
     addMilestone, updateMilestone, deleteMilestone,
     addQuest, updateQuest, deleteQuest, completeQuest, reopenQuest,
@@ -21,6 +21,11 @@ export const GoalsView: React.FC = () => {
 
   // Selected Goal ID
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(state.goals[0]?.id || null);
+  
+  // Editing SubGoal States
+  const [editingSubGoalId, setEditingSubGoalId] = useState<string | null>(null);
+  const [editSubGoalName, setEditSubGoalName] = useState('');
+  const [editSubGoalDate, setEditSubGoalDate] = useState('');
   
   // Empty all goals confirmation state
   const [showEmptyGoalsConfirm, setShowEmptyGoalsConfirm] = useState(false);
@@ -873,49 +878,106 @@ export const GoalsView: React.FC = () => {
                           </p>
                         </div>
                       ) : (
-                        selectedGoal.subGoals.map(sg => (
-                          <div 
-                            key={sg.id} 
-                            className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
-                              sg.completed 
-                                ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
-                                : 'bg-zinc-950 border-white/5 text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => toggleSubGoal(selectedGoal.id, sg.id)}
-                                className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
-                                  sg.completed 
-                                    ? 'bg-emerald-500 border-emerald-400 text-black' 
-                                    : 'border-white/20 hover:border-cyan-400 text-transparent'
-                                }`}
-                              >
-                                ✓
-                              </button>
-                              <span className={`text-xs font-sans font-medium ${sg.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
-                                {sg.name}
-                              </span>
-                            </div>
+                        selectedGoal.subGoals.map(sg => {
+                          const isEditing = editingSubGoalId === sg.id;
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              {sg.targetDate && (
-                                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-white/5">
-                                  📅 {sg.targetDate}
+                          if (isEditing) {
+                            return (
+                              <div key={sg.id} className="p-3 bg-zinc-900 border border-cyan-500/40 rounded-lg flex flex-col sm:flex-row gap-2">
+                                <input
+                                  type="text"
+                                  value={editSubGoalName}
+                                  onChange={(e) => setEditSubGoalName(e.target.value)}
+                                  className="flex-1 bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500"
+                                  placeholder="Mini Goal Name..."
+                                />
+                                <input
+                                  type="date"
+                                  value={editSubGoalDate}
+                                  onChange={(e) => setEditSubGoalDate(e.target.value)}
+                                  className="bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+                                />
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (editSubGoalName.trim()) {
+                                        updateSubGoal(selectedGoal.id, sg.id, { name: editSubGoalName.trim(), targetDate: editSubGoalDate || undefined });
+                                      }
+                                      setEditingSubGoalId(null);
+                                    }}
+                                    className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 text-xs px-2.5 py-1 rounded font-mono font-bold"
+                                  >
+                                    SAVE
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingSubGoalId(null)}
+                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono"
+                                  >
+                                    CANCEL
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div 
+                              key={sg.id} 
+                              className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
+                                sg.completed 
+                                  ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
+                                  : 'bg-zinc-950 border-white/5 text-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSubGoal(selectedGoal.id, sg.id)}
+                                  className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                                    sg.completed 
+                                      ? 'bg-emerald-500 border-emerald-400 text-black' 
+                                      : 'border-white/20 hover:border-cyan-400 text-transparent'
+                                  }`}
+                                >
+                                  ✓
+                                </button>
+                                <span className={`text-xs font-sans font-medium ${sg.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                                  {sg.name}
                                 </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => deleteSubGoal(selectedGoal.id, sg.id)}
-                                className="text-zinc-600 hover:text-rose-400 p-1 transition"
-                                title="Delete mini-goal"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {sg.targetDate && (
+                                  <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-white/5">
+                                    📅 {sg.targetDate}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSubGoalId(sg.id);
+                                    setEditSubGoalName(sg.name);
+                                    setEditSubGoalDate(sg.targetDate || '');
+                                  }}
+                                  className="text-zinc-600 hover:text-cyan-400 p-1 transition"
+                                  title="Edit mini-goal"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteSubGoal(selectedGoal.id, sg.id)}
+                                  className="text-zinc-600 hover:text-rose-400 p-1 transition"
+                                  title="Delete mini-goal"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>

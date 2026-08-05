@@ -3,13 +3,13 @@ import { usePOS } from '../POSContext';
 import { Project, Goal, Milestone, Quest } from '../types';
 import { 
   Briefcase, ArrowRight, Target, Plus, Trash2, Calendar, 
-  Clock, CheckCircle, Award, ListTodo, CircleAlert
+  Clock, CheckCircle, Award, ListTodo, CircleAlert, Edit3
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
   const { 
     state, addProject, updateProject, deleteProject, clearAllProjects,
-    addSubProject, toggleSubProject, deleteSubProject,
+    addSubProject, updateSubProject, toggleSubProject, deleteSubProject,
     getProjectProgress, getMilestoneProgress, completeQuest, reopenQuest, deleteQuest
   } = usePOS();
 
@@ -34,6 +34,11 @@ export const ProjectsView: React.FC = () => {
   // SubProject / Mini-Project States
   const [newSubProjName, setNewSubProjName] = useState('');
   const [newSubProjDate, setNewSubProjDate] = useState('');
+
+  // Editing SubProject States
+  const [editingSubProjId, setEditingSubProjId] = useState<string | null>(null);
+  const [editSubProjName, setEditSubProjName] = useState('');
+  const [editSubProjDate, setEditSubProjDate] = useState('');
 
   const handleAddSubProjSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -491,49 +496,106 @@ export const ProjectsView: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  selectedProj.subProjects.map(sp => (
-                    <div 
-                      key={sp.id} 
-                      className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
-                        sp.completed 
-                          ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
-                          : 'bg-zinc-900/60 border-white/5 text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => toggleSubProject(selectedProj.id, sp.id)}
-                          className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
-                            sp.completed 
-                              ? 'bg-emerald-500 border-emerald-400 text-black' 
-                              : 'border-white/20 hover:border-cyan-400 text-transparent'
-                          }`}
-                        >
-                          ✓
-                        </button>
-                        <span className={`text-xs font-sans font-medium ${sp.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
-                          {sp.name}
-                        </span>
-                      </div>
+                  selectedProj.subProjects.map(sp => {
+                    const isEditing = editingSubProjId === sp.id;
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        {sp.targetDate && (
-                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-white/5">
-                            📅 {sp.targetDate}
+                    if (isEditing) {
+                      return (
+                        <div key={sp.id} className="p-3 bg-zinc-900 border border-cyan-500/40 rounded-lg flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="text"
+                            value={editSubProjName}
+                            onChange={(e) => setEditSubProjName(e.target.value)}
+                            className="flex-1 bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500"
+                            placeholder="Mini Project Name..."
+                          />
+                          <input
+                            type="date"
+                            value={editSubProjDate}
+                            onChange={(e) => setEditSubProjDate(e.target.value)}
+                            className="bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+                          />
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (editSubProjName.trim()) {
+                                  updateSubProject(selectedProj.id, sp.id, { name: editSubProjName.trim(), targetDate: editSubProjDate || undefined });
+                                }
+                                setEditingSubProjId(null);
+                              }}
+                              className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 text-xs px-2.5 py-1 rounded font-mono font-bold"
+                            >
+                              SAVE
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingSubProjId(null)}
+                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono"
+                            >
+                              CANCEL
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div 
+                        key={sp.id} 
+                        className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
+                          sp.completed 
+                            ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
+                            : 'bg-zinc-900/60 border-white/5 text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => toggleSubProject(selectedProj.id, sp.id)}
+                            className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                              sp.completed 
+                                ? 'bg-emerald-500 border-emerald-400 text-black' 
+                                : 'border-white/20 hover:border-cyan-400 text-transparent'
+                            }`}
+                          >
+                            ✓
+                          </button>
+                          <span className={`text-xs font-sans font-medium ${sp.completed ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+                            {sp.name}
                           </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => deleteSubProject(selectedProj.id, sp.id)}
-                          className="text-zinc-600 hover:text-rose-400 p-1 transition"
-                          title="Delete mini-project"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {sp.targetDate && (
+                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-white/5">
+                              📅 {sp.targetDate}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSubProjId(sp.id);
+                              setEditSubProjName(sp.name);
+                              setEditSubProjDate(sp.targetDate || '');
+                            }}
+                            className="text-zinc-600 hover:text-cyan-400 p-1 transition"
+                            title="Edit mini-project"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteSubProject(selectedProj.id, sp.id)}
+                            className="text-zinc-600 hover:text-rose-400 p-1 transition"
+                            title="Delete mini-project"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

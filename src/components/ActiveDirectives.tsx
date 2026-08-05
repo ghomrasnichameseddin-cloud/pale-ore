@@ -117,8 +117,12 @@ export const ActiveDirectives: React.FC = () => {
     setSystemDate,
     updateProfileFocus,
     selectedFolderId,
-    selectedListId
+    selectedListId,
+    updateSubQuest
   } = usePOS();
+
+  const [editingSubquestId, setEditingSubquestId] = useState<string | null>(null);
+  const [editSubquestName, setEditSubquestName] = useState('');
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
@@ -1875,34 +1879,95 @@ export const ActiveDirectives: React.FC = () => {
             </div>
             {quest.subquests && quest.subquests.length > 0 ? (
               <div className="space-y-1.5">
-                {quest.subquests.map(sq => (
-                  <div key={sq.id} className="flex items-center justify-between gap-2 group/hudsq">
-                    <button
-                      type="button"
-                      onClick={() => toggleSubQuest(quest.id, sq.id)}
-                      className="flex items-center gap-1.5 text-left text-zinc-300 hover:text-white transition-colors"
-                    >
-                      <span className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
-                        sq.completed 
-                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' 
-                          : 'border-white/10'
-                      }`}>
-                        {sq.completed && <Check className="h-2 w-2 stroke-[3]" />}
-                      </span>
-                      <span className={`font-sans text-[10.5px] ${sq.completed ? 'line-through text-zinc-500' : 'text-zinc-300'}`}>
-                        {sq.name}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteSubQuest(quest.id, sq.id)}
-                      className="opacity-0 group-hover/hudsq:opacity-100 text-zinc-600 hover:text-rose-400 p-0.5 transition-all"
-                      title="Delete Subquest"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                {quest.subquests.map(sq => {
+                  const isEditing = editingSubquestId === sq.id;
+
+                  if (isEditing) {
+                    return (
+                      <div key={sq.id} className="flex items-center gap-1.5 my-1">
+                        <input
+                          type="text"
+                          value={editSubquestName}
+                          onChange={(e) => setEditSubquestName(e.target.value)}
+                          className="bg-zinc-900 border border-cyan-500/50 rounded px-2 py-0.5 text-xs text-white focus:outline-none flex-1 font-sans"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (editSubquestName.trim()) {
+                                updateSubQuest(quest.id, sq.id, editSubquestName.trim());
+                              }
+                              setEditingSubquestId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSubquestId(null);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editSubquestName.trim()) {
+                              updateSubQuest(quest.id, sq.id, editSubquestName.trim());
+                            }
+                            setEditingSubquestId(null);
+                          }}
+                          className="bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono px-2 py-0.5 rounded"
+                        >
+                          SAVE
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingSubquestId(null)}
+                          className="bg-zinc-800 text-zinc-400 text-[10px] font-mono px-1.5 py-0.5 rounded"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={sq.id} className="flex items-center justify-between gap-2 group/hudsq">
+                      <button
+                        type="button"
+                        onClick={() => toggleSubQuest(quest.id, sq.id)}
+                        className="flex items-center gap-1.5 text-left text-zinc-300 hover:text-white transition-colors flex-1 min-w-0"
+                      >
+                        <span className={`w-3 h-3 rounded border flex items-center justify-center shrink-0 transition-all ${
+                          sq.completed 
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' 
+                            : 'border-white/10'
+                        }`}>
+                          {sq.completed && <Check className="h-2 w-2 stroke-[3]" />}
+                        </span>
+                        <span className={`font-sans text-[10.5px] truncate ${sq.completed ? 'line-through text-zinc-500' : 'text-zinc-300'}`}>
+                          {sq.name}
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover/hudsq:opacity-100 transition-all">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSubquestId(sq.id);
+                            setEditSubquestName(sq.name);
+                          }}
+                          className="text-zinc-500 hover:text-cyan-400 p-0.5 transition"
+                          title="Edit Subquest"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteSubQuest(quest.id, sq.id)}
+                          className="text-zinc-600 hover:text-rose-400 p-0.5 transition"
+                          title="Delete Subquest"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-[10px] font-mono text-zinc-500 italic">No subquests. Add one below to breakdown execution.</p>

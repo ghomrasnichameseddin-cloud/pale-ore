@@ -42,6 +42,7 @@ interface POSContextType {
   deleteGoal: (id: string) => void;
   clearAllGoals: () => void;
   addSubGoal: (goalId: string, name: string, targetDate?: string) => void;
+  updateSubGoal: (goalId: string, subGoalId: string, updates: Partial<SubGoal>) => void;
   toggleSubGoal: (goalId: string, subGoalId: string) => void;
   deleteSubGoal: (goalId: string, subGoalId: string) => void;
   
@@ -51,6 +52,7 @@ interface POSContextType {
   deleteProject: (id: string) => void;
   clearAllProjects: () => void;
   addSubProject: (projectId: string, name: string, description?: string, targetDate?: string) => void;
+  updateSubProject: (projectId: string, subProjectId: string, updates: Partial<SubProject>) => void;
   toggleSubProject: (projectId: string, subProjectId: string) => void;
   deleteSubProject: (projectId: string, subProjectId: string) => void;
   
@@ -81,6 +83,7 @@ interface POSContextType {
   
   // Subquests CRUD
   addSubQuest: (questId: string, name: string) => void;
+  updateSubQuest: (questId: string, subquestId: string, name: string) => void;
   toggleSubQuest: (questId: string, subquestId: string) => void;
   deleteSubQuest: (questId: string, subquestId: string) => void;
   
@@ -739,6 +742,85 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [activeFocusSession?.completedCycles]);
 
+  // LEVEL-UP NOTIFICATION MONITORING FOR ALL ASPECTS
+  const prevPlayerLevelRef = useRef<number | null>(null);
+  const prevSkillLevelsRef = useRef<Record<string, number>>({});
+  const prevAttributeLevelsRef = useRef<Record<string, number>>({});
+  const prevSealsStatusRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    // 1. Player Level Up Check
+    const currentTotalXp = state.profile.xp || 0;
+    const currentLevel = calculatePlayerLevel(currentTotalXp);
+    
+    if (prevPlayerLevelRef.current !== null && currentLevel > prevPlayerLevelRef.current) {
+      const diff = currentLevel - prevPlayerLevelRef.current;
+      addSystemMessage({
+        sender: 'PROGRESS_ENGINE',
+        category: 'achievement',
+        title: `🎉 PLAYER LEVEL UP: LEVEL ${currentLevel}!`,
+        content: `Ascension complete! You advanced ${diff > 1 ? `${diff} levels` : 'a level'} to Level ${currentLevel}. Focus output and max capacity increased!`,
+        priority: 'high'
+      });
+    }
+    prevPlayerLevelRef.current = currentLevel;
+
+    // 2. Skill Level Ups Check
+    const newSkillLevels: Record<string, number> = {};
+    (state.skills || []).forEach(s => {
+      const sXp = getSkillXpFromHistory(s.id, state.xpHistory || [], state.skills || []);
+      const sLevel = calculatePlayerLevel(sXp);
+      const prevLevel = prevSkillLevelsRef.current[s.id];
+      if (prevLevel !== undefined && sLevel > prevLevel) {
+        addSystemMessage({
+          sender: 'PROGRESS_ENGINE',
+          category: 'achievement',
+          title: `⚡ SKILL LEVEL UP: ${s.name} (Level ${sLevel})`,
+          content: `Competency Tier Advanced! "${s.name}" reached Level ${sLevel}. Output multipliers increased!`,
+          priority: 'high'
+        });
+      }
+      newSkillLevels[s.id] = sLevel;
+    });
+    prevSkillLevelsRef.current = newSkillLevels;
+
+    // 3. Attribute Level Ups Check
+    const currentAttributes = getAttributes();
+    const newAttrLevels: Record<string, number> = {};
+    currentAttributes.forEach(attr => {
+      const prevAttrLevel = prevAttributeLevelsRef.current[attr.id];
+      if (prevAttrLevel !== undefined && attr.level > prevAttrLevel) {
+        addSystemMessage({
+          sender: 'PROGRESS_ENGINE',
+          category: 'achievement',
+          title: `🛡️ ATTRIBUTE ADVANCED: ${attr.name.toUpperCase()} (Level ${attr.level})`,
+          content: `Capacity Amplified! Your ${attr.name} stat reached Level ${attr.level} (${attr.description}).`,
+          priority: 'medium'
+        });
+      }
+      newAttrLevels[attr.id] = attr.level;
+    });
+    prevAttributeLevelsRef.current = newAttrLevels;
+
+    // 4. Power Seal Shatter Check
+    const newSealStatuses: Record<string, string> = {};
+    (state.seals || []).forEach(seal => {
+      const prevStatus = prevSealsStatusRef.current[seal.id];
+      if (prevStatus !== undefined && prevStatus !== 'Broken' && seal.status === 'Broken') {
+        addSystemMessage({
+          sender: 'OPERATOR',
+          category: 'achievement',
+          title: `🔮 POWER SEAL SHATTERED: ${seal.name}`,
+          content: `Arcane seal broken! "${seal.name}" (${seal.rarity}) is unsealed. Activated Buff: ${seal.buffName} (${seal.buffDescription})!`,
+          priority: 'high'
+        });
+      }
+      newSealStatuses[seal.id] = seal.status;
+    });
+    prevSealsStatusRef.current = newSealStatuses;
+
+  }, [state.profile.xp, state.xpHistory, state.seals, state.skills]);
+
   const startFocusSession = (questId: string | null = null, workTime = 25, restTime = 5, estimatedCycles = 1) => {
     let questName = "General Deep Focus Session";
     if (questId) {
@@ -1346,6 +1428,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const updateSubGoal = (goalId: string, subGoalId: string, updates: Partial<SubGoal>) => {
+    setState(prev => ({
+      ...prev,
+      goals: prev.goals.map(g => {
+        if (g.id !== goalId) return g;
+        return {
+          ...g,
+          subGoals: (g.subGoals || []).map(sg => sg.id === subGoalId ? { ...sg, ...updates } : sg)
+        };
+      })
+    }));
+  };
+
   const deleteSubGoal = (goalId: string, subGoalId: string) => {
     setState(prev => ({
       ...prev,
@@ -1498,6 +1593,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...p,
           subProjects: (p.subProjects || []).map(sp => sp.id === subProjectId ? { ...sp, completed: !sp.completed } : sp)
+        };
+      })
+    }));
+  };
+
+  const updateSubProject = (projectId: string, subProjectId: string, updates: Partial<SubProject>) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => {
+        if (p.id !== projectId) return p;
+        return {
+          ...p,
+          subProjects: (p.subProjects || []).map(sp => sp.id === subProjectId ? { ...sp, ...updates } : sp)
         };
       })
     }));
@@ -2071,6 +2179,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quests: updatedQuests
       };
     });
+  };
+
+  const updateSubQuest = (questId: string, subquestId: string, name: string) => {
+    if (!name.trim()) return;
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => {
+        if (q.id === questId) {
+          const subquests = q.subquests || [];
+          return {
+            ...q,
+            subquests: subquests.map(sq => sq.id === subquestId ? { ...sq, name: name.trim() } : sq)
+          };
+        }
+        return q;
+      })
+    }));
   };
 
   const deleteSubQuest = (questId: string, subquestId: string) => {
@@ -3106,6 +3231,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteGoal,
       clearAllGoals,
       addSubGoal,
+      updateSubGoal,
       toggleSubGoal,
       deleteSubGoal,
       addProject,
@@ -3113,6 +3239,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteProject,
       clearAllProjects,
       addSubProject,
+      updateSubProject,
       toggleSubProject,
       deleteSubProject,
       addMilestone,
@@ -3135,6 +3262,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateList,
       deleteList,
       addSubQuest,
+      updateSubQuest,
       toggleSubQuest,
       deleteSubQuest,
       addSkill,

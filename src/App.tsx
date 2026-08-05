@@ -14,6 +14,7 @@ import { FrameworksView } from './components/FrameworksView';
 import { SealingPowerView } from './components/SealingPowerView';
 import { RewardShopView } from './components/RewardShopView';
 import { SystemMessageBox } from './components/SystemMessageBox';
+import { NotificationToastSystem } from './components/NotificationToastSystem';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
 import { SpiderwebGraph } from './components/SpiderwebGraph';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
@@ -616,6 +617,9 @@ function AppContent() {
         onClose={() => setIsGuideModalOpen(false)}
         onNavigateTab={(tab) => setActiveTab(tab as TabId)}
       />
+
+      {/* FLOATING NOTIFICATION TOAST SYSTEM */}
+      <NotificationToastSystem onOpenInbox={() => setIsInboxModalOpen(true)} />
 
     </div>
   );
