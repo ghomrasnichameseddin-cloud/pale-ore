@@ -14,7 +14,8 @@ type FrameworkTab = 'eisenhower' | 'swot' | 'smart' | 'pareto' | 'ooda';
 export const FrameworksView: React.FC = () => {
   const { 
     state, addQuest, updateQuest, deleteQuest, completeQuest, 
-    startFocusSession, activeFocusSession, toggleSubQuest, addSubQuest, addSystemMessage 
+    startFocusSession, activeFocusSession, toggleSubQuest, addSubQuest, addSystemMessage,
+    isQuestScheduledForDate
   } = usePOS();
   const [activeTab, setActiveTab] = useState<FrameworkTab>('eisenhower');
 
@@ -148,6 +149,14 @@ export const FrameworksView: React.FC = () => {
   const tomorrowStr = useMemo(() => getTomorrowStr(systemDate), [systemDate]);
   const sevenDaysEndStr = useMemo(() => getNDaysStr(systemDate, 7), [systemDate]);
 
+  const next7Days = useMemo(() => {
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      dates.push(getNDaysStr(systemDate, i));
+    }
+    return dates;
+  }, [systemDate]);
+
   const activeQuests = useMemo(() => {
     return state.quests.filter(q => q.status === 'Active');
   }, [state.quests]);
@@ -162,30 +171,23 @@ export const FrameworksView: React.FC = () => {
     }
 
     if (horizon === 'TODAY') {
-      if (dl === systemDate) return true;
-      if (!dl) {
-        if (q.recurrence === 'Daily' || q.type === 'Habit') return true;
-        const createdDate = q.createdAt ? q.createdAt.split('T')[0] : '';
-        return createdDate === systemDate || !createdDate;
-      }
-      return false;
+      if (!isQuestScheduledForDate(q, systemDate)) return false;
+      return !dl || dl <= systemDate;
     }
 
     if (horizon === 'TOMORROW') {
-      return dl === tomorrowStr;
+      const isScheduled = isQuestScheduledForDate(q, tomorrowStr);
+      return isScheduled || dl === tomorrowStr;
     }
 
     if (horizon === 'NEXT_7_DAYS') {
-      if (!dl) {
-        if (q.recurrence === 'Daily' || q.type === 'Habit') return true;
-        const createdDate = q.createdAt ? q.createdAt.split('T')[0] : '';
-        return createdDate === systemDate || !createdDate;
-      }
-      return dl >= systemDate && dl <= sevenDaysEndStr;
+      const isScheduledSomeDay = next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
+      const hasDeadlineThisWeek = !!dl && dl >= systemDate && dl <= sevenDaysEndStr;
+      return isScheduledSomeDay || hasDeadlineThisWeek;
     }
 
     return true;
-  }, [systemDate, tomorrowStr, sevenDaysEndStr]);
+  }, [systemDate, tomorrowStr, sevenDaysEndStr, next7Days, isQuestScheduledForDate]);
 
   const filteredActiveQuests = useMemo(() => {
     return activeQuests.filter(q => isQuestInTimelineHorizon(q, selectedTimelineFilter));
