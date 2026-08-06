@@ -16,7 +16,8 @@ export const GoalsView: React.FC = () => {
     addMilestone, updateMilestone, deleteMilestone,
     addQuest, updateQuest, deleteQuest, completeQuest, reopenQuest,
     duplicateQuest, splitQuest, mergeQuests,
-    getGoalProgress, getProjectProgress, getMilestoneProgress, getSkillXpAndLevel
+    getGoalProgress, getProjectProgress, getMilestoneProgress, getSkillXpAndLevel,
+    systemDate
   } = usePOS();
 
   // Selected Goal ID

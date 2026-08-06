@@ -165,9 +165,10 @@ export const FrameworksView: React.FC = () => {
     if (horizon === 'ALL') return true;
 
     const dl = q.deadline;
+    const isRecurring = !!(q.recurrence && q.recurrence !== 'None') || q.type === 'Habit';
 
     if (horizon === 'NO_DATE') {
-      return !dl;
+      return !dl && !isRecurring;
     }
 
     if (horizon === 'OVERDUE') {
@@ -175,22 +176,25 @@ export const FrameworksView: React.FC = () => {
     }
 
     if (horizon === 'TODAY') {
-      if (!dl) return false;
-      if (!isQuestScheduledForDate(q, systemDate)) return false;
-      return dl <= systemDate;
+      if (isRecurring) {
+        const scheduledToday = isQuestScheduledForDate(q, systemDate);
+        return scheduledToday && (!dl || dl <= systemDate);
+      }
+      return !!dl && dl <= systemDate;
     }
 
     if (horizon === 'TOMORROW') {
-      if (!dl) return false;
-      const isScheduled = isQuestScheduledForDate(q, tomorrowStr);
-      return isScheduled || dl === tomorrowStr;
+      if (isRecurring) {
+        return isQuestScheduledForDate(q, tomorrowStr);
+      }
+      return dl === tomorrowStr;
     }
 
     if (horizon === 'NEXT_7_DAYS') {
-      if (!dl) return false;
-      const isScheduledSomeDay = next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
-      const hasDeadlineThisWeek = dl >= systemDate && dl <= sevenDaysEndStr;
-      return isScheduledSomeDay || hasDeadlineThisWeek;
+      if (isRecurring) {
+        return next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
+      }
+      return !!dl && dl >= systemDate && dl <= sevenDaysEndStr;
     }
 
     return true;
