@@ -3,33 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/pale-ore/manifest.json" />
-    <link rel="manifest" href="/pale-ore/manifest.webmanifest" />
-    <meta name="theme-color" content="#09090b" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Pale Ore" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/pale-ore/icon-512.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/pale-ore/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="144x144" href="/icon-144.png" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/icon-96.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/pale-ore/apple-touch-icon.png" />
-    <link rel="shortcut icon" type="image/png" href="/pale-ore/icon-192.png" />
     <title>Pale Ore - Operator System</title>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    </script>
-    <script type="module" crossorigin src="/pale-ore/assets/index-CHNnWswV.js"></script>
-    <link rel="stylesheet" crossorigin href="/pale-ore/assets/index-Ccyaweji.css">
+    <script type="module" crossorigin src="/assets/index-CHNnWswV.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Ccyaweji.css">
   </head>
   <body class="bg-zinc-950 text-zinc-300 min-h-screen">
-    <div id="root" class="min-h-screen bg-zinc-950"></div>
+    <div id="root" class="min-h-screen bg-zinc-950"></div>
   </body>
 </html>
 
