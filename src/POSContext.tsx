@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
-  ShopItem, RedeemedReward, ShopItemCategory, BatterySettings
+  ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString } from './initialState';
 
