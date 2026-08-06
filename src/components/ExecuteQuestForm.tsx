@@ -84,7 +84,7 @@ export const ExecuteQuestForm: React.FC = () => {
       relatedSkills: newQuestSkills,
       type: newQuestType,
       recurrence: finalRecurrence,
-      deadline: newQuestDeadline || systemDate,
+      deadline: newQuestDeadline ? newQuestDeadline : null,
       energyLevel: 'Medium'
     });
 
@@ -279,12 +279,23 @@ export const ExecuteQuestForm: React.FC = () => {
 
                 {/* Target Date / Deadline */}
                 <div>
-                  <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-                    <Calendar className="h-2.5 w-2.5" /> Target Date
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                      <Calendar className="h-2.5 w-2.5" /> Target Date
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setNewQuestDeadline(newQuestDeadline ? '' : systemDate)}
+                      className={`text-[9px] font-mono hover:underline ${
+                        !newQuestDeadline ? 'text-cyan-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {!newQuestDeadline ? '♾️ No Date (Click to Set)' : 'Clear Date'}
+                    </button>
+                  </div>
                   <input 
                     type="date"
-                    value={newQuestDeadline || systemDate}
+                    value={newQuestDeadline}
                     onChange={(e) => setNewQuestDeadline(e.target.value)}
                     className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all"
                   />

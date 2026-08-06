@@ -109,11 +109,11 @@ export const FrameworksView: React.FC = () => {
   const [quickAddTexts, setQuickAddTexts] = useState<Record<'Q1' | 'Q2' | 'Q3' | 'Q4', string>>({
     Q1: '', Q2: '', Q3: '', Q4: ''
   });
-  const [quickAddTimelines, setQuickAddTimelines] = useState<Record<'Q1' | 'Q2' | 'Q3' | 'Q4', 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS'>>({
+  const [quickAddTimelines, setQuickAddTimelines] = useState<Record<'Q1' | 'Q2' | 'Q3' | 'Q4', 'NONE' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS'>>({
     Q1: 'TODAY', Q2: 'TODAY', Q3: 'TODAY', Q4: 'TODAY'
   });
 
-  const [selectedTimelineFilter, setSelectedTimelineFilter] = useState<'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS' | 'OVERDUE'>('ALL');
+  const [selectedTimelineFilter, setSelectedTimelineFilter] = useState<'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS' | 'NO_DATE' | 'OVERDUE'>('ALL');
   const [showMatrixGuide, setShowMatrixGuide] = useState(false);
 
   const systemDate = state.systemDate || new Date().toISOString().split('T')[0];
@@ -161,28 +161,35 @@ export const FrameworksView: React.FC = () => {
     return state.quests.filter(q => q.status === 'Active');
   }, [state.quests]);
 
-  const isQuestInTimelineHorizon = useCallback((q: Quest, horizon: 'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS' | 'OVERDUE') => {
+  const isQuestInTimelineHorizon = useCallback((q: Quest, horizon: 'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS' | 'NO_DATE' | 'OVERDUE') => {
     if (horizon === 'ALL') return true;
 
     const dl = q.deadline;
+
+    if (horizon === 'NO_DATE') {
+      return !dl;
+    }
 
     if (horizon === 'OVERDUE') {
       return !!dl && dl < systemDate;
     }
 
     if (horizon === 'TODAY') {
+      if (!dl) return false;
       if (!isQuestScheduledForDate(q, systemDate)) return false;
-      return !dl || dl <= systemDate;
+      return dl <= systemDate;
     }
 
     if (horizon === 'TOMORROW') {
+      if (!dl) return false;
       const isScheduled = isQuestScheduledForDate(q, tomorrowStr);
       return isScheduled || dl === tomorrowStr;
     }
 
     if (horizon === 'NEXT_7_DAYS') {
+      if (!dl) return false;
       const isScheduledSomeDay = next7Days.some(dateStr => isQuestScheduledForDate(q, dateStr));
-      const hasDeadlineThisWeek = !!dl && dl >= systemDate && dl <= sevenDaysEndStr;
+      const hasDeadlineThisWeek = dl >= systemDate && dl <= sevenDaysEndStr;
       return isScheduledSomeDay || hasDeadlineThisWeek;
     }
 
@@ -233,12 +240,14 @@ export const FrameworksView: React.FC = () => {
     let today = 0;
     let tomorrow = 0;
     let next7 = 0;
+    let noDate = 0;
     let overdue = 0;
 
     activeQuests.forEach(q => {
       if (isQuestInTimelineHorizon(q, 'TODAY')) today++;
       if (isQuestInTimelineHorizon(q, 'TOMORROW')) tomorrow++;
       if (isQuestInTimelineHorizon(q, 'NEXT_7_DAYS')) next7++;
+      if (isQuestInTimelineHorizon(q, 'NO_DATE')) noDate++;
       if (isQuestInTimelineHorizon(q, 'OVERDUE')) overdue++;
     });
 
@@ -247,6 +256,7 @@ export const FrameworksView: React.FC = () => {
       TODAY: today,
       TOMORROW: tomorrow,
       NEXT_7_DAYS: next7,
+      NO_DATE: noDate,
       OVERDUE: overdue
     };
   }, [activeQuests, isQuestInTimelineHorizon]);
@@ -276,9 +286,11 @@ export const FrameworksView: React.FC = () => {
     const xpMap = { Q1: 150, Q2: 200, Q3: 75, Q4: 25 };
 
     const timelineTarget = quickAddTimelines[quad];
-    let computedDeadline = systemDate;
-    if (timelineTarget === 'TOMORROW') computedDeadline = tomorrowStr;
+    let computedDeadline: string | null = systemDate;
+    if (timelineTarget === 'TODAY') computedDeadline = systemDate;
+    else if (timelineTarget === 'TOMORROW') computedDeadline = tomorrowStr;
     else if (timelineTarget === 'NEXT_7_DAYS') computedDeadline = getNDaysStr(systemDate, 3);
+    else if (timelineTarget === 'NONE') computedDeadline = null;
 
     const newId = addQuest({
       name: title,
@@ -692,12 +704,13 @@ export const FrameworksView: React.FC = () => {
                   <span className="text-cyan-400 font-bold uppercase flex items-center gap-1 mr-1 shrink-0">
                     <Calendar className="h-3 w-3 text-cyan-400" /> TIMELINE:
                   </span>
-                  {(['ALL', 'TODAY', 'TOMORROW', 'NEXT_7_DAYS', 'OVERDUE'] as const).map(horizon => {
+                  {(['ALL', 'TODAY', 'TOMORROW', 'NEXT_7_DAYS', 'NO_DATE', 'OVERDUE'] as const).map(horizon => {
                     const labelMap = {
                       ALL: `🌐 ALL (${timelineCounts.ALL})`,
                       TODAY: `📅 TODAY (${timelineCounts.TODAY})`,
                       TOMORROW: `☀️ TOMORROW (${timelineCounts.TOMORROW})`,
                       NEXT_7_DAYS: `📆 NEXT 7 DAYS (${timelineCounts.NEXT_7_DAYS})`,
+                      NO_DATE: `♾️ NO DATE (${timelineCounts.NO_DATE})`,
                       OVERDUE: `⚠️ OVERDUE (${timelineCounts.OVERDUE})`
                     };
                     const isSelected = selectedTimelineFilter === horizon;
@@ -762,6 +775,7 @@ export const FrameworksView: React.FC = () => {
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
                         <option value="NEXT_7_DAYS">📆 7 Days</option>
+                        <option value="NONE">♾️ No Date</option>
                       </select>
                       <button
                         type="submit"
@@ -839,6 +853,7 @@ export const FrameworksView: React.FC = () => {
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
                         <option value="NEXT_7_DAYS">📆 7 Days</option>
+                        <option value="NONE">♾️ No Date</option>
                       </select>
                       <button
                         type="submit"
@@ -916,6 +931,7 @@ export const FrameworksView: React.FC = () => {
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
                         <option value="NEXT_7_DAYS">📆 7 Days</option>
+                        <option value="NONE">♾️ No Date</option>
                       </select>
                       <button
                         type="submit"
@@ -993,6 +1009,7 @@ export const FrameworksView: React.FC = () => {
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
                         <option value="NEXT_7_DAYS">📆 7 Days</option>
+                        <option value="NONE">♾️ No Date</option>
                       </select>
                       <button
                         type="submit"
@@ -1730,7 +1747,7 @@ const QuestMiniCard: React.FC<QuestMiniCardProps> = ({
   };
 
   const handleSetDeadline = (newDate: string) => {
-    updateQuest(quest.id, { deadline: newDate });
+    updateQuest(quest.id, { deadline: newDate ? newDate : null });
     setShowDateMenu(false);
   };
 
@@ -1771,6 +1788,12 @@ const QuestMiniCard: React.FC<QuestMiniCardProps> = ({
                         RESCHEDULE DATE
                       </div>
                       <button 
+                        onClick={() => handleSetDeadline('')}
+                        className="px-2 py-1 rounded hover:bg-zinc-800 text-zinc-300 text-left flex items-center gap-1.5 font-bold border border-white/5"
+                      >
+                        ♾️ No Target Date
+                      </button>
+                      <button 
                         onClick={() => handleSetDeadline(systemDate)}
                         className="px-2 py-1 rounded hover:bg-cyan-950 text-cyan-300 text-left flex items-center gap-1.5 font-bold"
                       >
@@ -1792,7 +1815,7 @@ const QuestMiniCard: React.FC<QuestMiniCardProps> = ({
                         <span className="text-[8px] text-zinc-400">Custom:</span>
                         <input
                           type="date"
-                          value={quest.deadline || systemDate}
+                          value={quest.deadline || ''}
                           onChange={(e) => handleSetDeadline(e.target.value)}
                           className="bg-zinc-900 border border-white/10 rounded px-1 text-[9px] text-white focus:outline-none"
                         />
