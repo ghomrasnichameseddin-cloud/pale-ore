@@ -199,21 +199,29 @@ export const FrameworksView: React.FC = () => {
     const unclassified: Quest[] = [];
 
     filteredActiveQuests.forEach(q => {
-      // Respect manual priority if no explicit quadrant mapping exists
-      const savedQuad = eisenhowerMap[q.id];
-      if (savedQuad) {
-        if (savedQuad === 'Q1') q1.push(q);
-        else if (savedQuad === 'Q2') q2.push(q);
-        else if (savedQuad === 'Q3') q3.push(q);
-        else if (savedQuad === 'Q4') q4.push(q);
-      } else {
-        // Fallback mapping based on quest type & difficulty
-        if (q.type === 'Penalty') q1.push(q);
-        else if (q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss') q2.push(q);
-        else if (q.difficulty === 'Normal') q2.push(q);
-        else if (q.recurrence && q.recurrence !== 'None') q3.push(q);
-        else q4.push(q);
+      // 1. Check saved eisenhowerMap
+      let quad = eisenhowerMap[q.id];
+
+      // 2. Check quest tags for explicit quadrant
+      if (!quad && q.tags && q.tags.length > 0) {
+        const tagMatch = q.tags.find(t => ['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
+        if (tagMatch) {
+          quad = tagMatch.toUpperCase() as 'Q1' | 'Q2' | 'Q3' | 'Q4';
+        }
       }
+
+      // 3. Default fallback mapping based on quest type & difficulty
+      if (!quad) {
+        if (q.type === 'Penalty' || q.type === 'Boss' || q.difficulty === 'Boss') quad = 'Q1';
+        else if (q.type === 'Main' || q.difficulty === 'Hard' || q.difficulty === 'Normal') quad = 'Q2';
+        else if (q.recurrence && q.recurrence !== 'None') quad = 'Q3';
+        else quad = 'Q4';
+      }
+
+      if (quad === 'Q1') q1.push(q);
+      else if (quad === 'Q2') q2.push(q);
+      else if (quad === 'Q3') q3.push(q);
+      else if (quad === 'Q4') q4.push(q);
     });
 
     return { Q1: q1, Q2: q2, Q3: q3, Q4: q4, unclassified };
@@ -246,6 +254,15 @@ export const FrameworksView: React.FC = () => {
       ...prev,
       [questId]: quad
     }));
+
+    // Synchronize tag with global quest state in POSContext
+    const targetQuest = state.quests.find(q => q.id === questId);
+    if (targetQuest) {
+      const existingOtherTags = (targetQuest.tags || []).filter(t => !['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
+      updateQuest(questId, {
+        tags: [quad, ...existingOtherTags]
+      });
+    }
   };
 
   const handleQuickAddQuest = (quad: 'Q1' | 'Q2' | 'Q3' | 'Q4') => {
@@ -265,11 +282,11 @@ export const FrameworksView: React.FC = () => {
       name: title,
       description: `Seeded directly in Eisenhower Matrix (${quad})`,
       difficulty: difficultyMap[quad],
-      xpReward: xpMap[quad],
+      xp: xpMap[quad],
       type: typeMap[quad],
       estimatedTime: 25,
       deadline: computedDeadline,
-      skills: [],
+      relatedSkills: [],
       subquests: [],
       tags: [quad]
     });
