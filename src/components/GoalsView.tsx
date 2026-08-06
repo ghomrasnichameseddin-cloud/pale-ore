@@ -104,6 +104,7 @@ export const GoalsView: React.FC = () => {
   const [editQuestProj, setEditQuestProj] = useState('');
   const [editQuestMile, setEditQuestMile] = useState('');
   const [editQuestRecurrence, setEditQuestRecurrence] = useState<QuestRecurrence>('None');
+  const [editQuestDeadline, setEditQuestDeadline] = useState<string>('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
 
   const handleEditSkillToggle = (skillId: string) => {
@@ -121,6 +122,7 @@ export const GoalsView: React.FC = () => {
     setEditQuestProj(quest.projectId || '');
     setEditQuestMile(quest.milestoneId || '');
     setEditQuestRecurrence(quest.recurrence || 'None');
+    setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
   };
 
@@ -133,6 +135,7 @@ export const GoalsView: React.FC = () => {
       projectId: editQuestProj ? editQuestProj : null,
       milestoneId: editQuestMile ? editQuestMile : null,
       recurrence: editQuestRecurrence,
+      deadline: editQuestDeadline ? editQuestDeadline : null,
       relatedSkills: editQuestSkills
     });
     setEditingQuestId(null);
@@ -1509,6 +1512,27 @@ export const GoalsView: React.FC = () => {
                                       ))}
                                     </select>
                                   </div>
+                                </div>
+
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase">Target Date</label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditQuestDeadline(editQuestDeadline ? '' : systemDate)}
+                                      className={`text-[9px] font-mono hover:underline ${
+                                        !editQuestDeadline ? 'text-cyan-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
+                                      }`}
+                                    >
+                                      {!editQuestDeadline ? '♾️ No Date (Click to Set)' : 'Clear Date'}
+                                    </button>
+                                  </div>
+                                  <input 
+                                    type="date"
+                                    value={editQuestDeadline}
+                                    onChange={(e) => setEditQuestDeadline(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white font-mono"
+                                  />
                                 </div>
 
                                 {/* Associate Skills Section */}

@@ -1206,7 +1206,18 @@ export const ActiveDirectives: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Target Date</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[9px] font-mono text-zinc-500 uppercase">Target Date</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditQuestDeadline(editQuestDeadline ? '' : todayStr)}
+                    className={`text-[9px] font-mono hover:underline ${
+                      !editQuestDeadline ? 'text-cyan-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {!editQuestDeadline ? '♾️ No Date (Click to Set)' : 'Clear Date'}
+                  </button>
+                </div>
                 <input 
                   type="date"
                   value={editQuestDeadline}
