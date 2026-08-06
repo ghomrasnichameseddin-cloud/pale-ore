@@ -1,73 +1,74 @@
 {
-  "id": "/",
+  "id": "/pale-ore/",
   "name": "Pale Ore - Operator System",
   "short_name": "Pale Ore",
   "description": "Tactical Operations & Gamified Self-Mastery System",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/pale-ore/",
+  "scope": "/pale-ore/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#09090b",
   "theme_color": "#09090b",
   "icons": [
     {
-      "src": "/icon-48.png",
+      "src": "/pale-ore/icon-48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-72.png",
+      "src": "/pale-ore/icon-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-96.png",
+      "src": "/pale-ore/icon-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-128.png",
+      "src": "/pale-ore/icon-128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-144.png",
+      "src": "/pale-ore/icon-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/pale-ore/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/pale-ore/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/pale-ore/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/pale-ore/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/pale-ore/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
