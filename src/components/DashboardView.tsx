@@ -54,10 +54,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
   
-  const activeQuests = state.quests.filter(q => 
+  const baseQuests = state.quests.filter(q => {
+    if (state.profile.recoveryMode) {
+      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+    }
+    return true;
+  });
+
+  const activeQuests = baseQuests.filter(q => 
     q.status === 'Active' && 
     !isQuestFinishedForToday(q) && 
-    isQuestScheduledForDate(q, systemDate)
+    isQuestScheduledForDate(q, systemDate) &&
+    (!q.deadline || q.deadline <= systemDate)
   );
   
   const frogOfTheDay = activeQuests.find(q => q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Boss' || q.difficulty === 'Hard') || 

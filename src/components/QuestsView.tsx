@@ -8,12 +8,20 @@ import { QuestDirectory } from './QuestDirectory';
 export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
 
-  const activeQuests = state.quests.filter(q => 
+  const baseQuests = state.quests.filter(q => {
+    if (state.profile.recoveryMode) {
+      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+    }
+    return true;
+  });
+
+  const activeQuests = baseQuests.filter(q => 
     q.status === 'Active' && 
     !isQuestFinishedForToday(q) && 
-    isQuestScheduledForDate(q, systemDate)
+    isQuestScheduledForDate(q, systemDate) &&
+    (!q.deadline || q.deadline <= systemDate)
   );
-  const completedQuests = state.quests.filter(q => 
+  const completedQuests = baseQuests.filter(q => 
     isQuestFinishedForToday(q) && 
     q.status !== 'Failed' && 
     isQuestScheduledForDate(q, systemDate)

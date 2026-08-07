@@ -55,14 +55,21 @@ export const RewardShopView: React.FC = () => {
   const inventory = state.inventory || [];
 
   const todayStr = systemDate;
-  const todayQuests = (state.quests || []).filter(q => {
+  const baseQuests = (state.quests || []).filter(q => {
+    if (state.profile.recoveryMode) {
+      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+    }
+    return true;
+  });
+
+  const todayQuests = baseQuests.filter(q => {
     const isFinished = isQuestFinishedForToday(q);
     if (isFinished) {
       return q.status !== 'Failed';
     }
     if (q.status !== 'Active') return false;
     const isScheduled = isQuestScheduledForDate(q, todayStr);
-    if (isScheduled) return true;
+    if (!isScheduled) return false;
     return !q.deadline || q.deadline <= todayStr;
   });
 
