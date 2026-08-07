@@ -41,10 +41,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [quickGoalId, setQuickGoalId] = useState<string>('');
   const [quickProjectId, setQuickProjectId] = useState<string>('');
 
-  // Directives Filtering & Search State
+  // Directives Filtering, Search & GroupBy State
   const [directiveSearch, setDirectiveSearch] = useState('');
   const [directiveTypeFilter, setDirectiveTypeFilter] = useState<string>('ALL');
   const [directiveSort, setDirectiveSort] = useState<'XP' | 'TIME' | 'NAME'>('XP');
+  const [directiveGroupBy, setDirectiveGroupBy] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>('none');
   const [selectedAttributeName, setSelectedAttributeName] = useState<string | null>(null);
 
   const levelInfo = getPlayerLevelInfo();
@@ -629,39 +630,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
               {/* DIRECTIVES SEARCH & FILTER CONTROL BAR */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative flex-1 sm:w-48">
+                {/* Search Bar */}
+                <div className="relative flex-1 min-w-[160px]">
                   <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-2.5 top-2.5" />
                   <input
                     type="text"
                     placeholder="Search directives..."
                     value={directiveSearch}
                     onChange={(e) => setDirectiveSearch(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-8 pr-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 font-mono"
+                    className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-8 pr-2 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60 font-mono"
                   />
                   {directiveSearch && (
                     <button onClick={() => setDirectiveSearch('')} className="absolute right-2 top-2 text-zinc-500 hover:text-white text-xs">✕</button>
                   )}
                 </div>
 
+                {/* Category Filter */}
                 <select
                   value={directiveTypeFilter}
                   onChange={(e) => setDirectiveTypeFilter(e.target.value)}
-                  className="bg-zinc-950 border border-white/10 rounded-lg px-2 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500"
+                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
                 >
-                  <option value="ALL">ALL TYPES</option>
-                  <option value="MAIN">MAIN & BOSS</option>
-                  <option value="HABIT">HABITS</option>
-                  <option value="SIDE">SIDE QUESTS</option>
+                  <option value="ALL">Category: All</option>
+                  <option value="MAIN">Main & Boss</option>
+                  <option value="HABIT">Habits</option>
+                  <option value="SIDE">Side Quests</option>
                 </select>
 
+                {/* Group By Dropdown */}
+                <select
+                  value={directiveGroupBy}
+                  onChange={(e) => setDirectiveGroupBy(e.target.value as any)}
+                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-purple-300 border-purple-500/30 focus:outline-none focus:border-purple-500/60 cursor-pointer font-bold"
+                >
+                  <option value="none">Group: Flat List</option>
+                  <option value="list">Group: By List</option>
+                  <option value="folder">Group: By Folder</option>
+                  <option value="category">Group: By Category</option>
+                  <option value="difficulty">Group: By Difficulty</option>
+                </select>
+
+                {/* Sort Dropdown */}
                 <select
                   value={directiveSort}
                   onChange={(e) => setDirectiveSort(e.target.value as any)}
-                  className="bg-zinc-950 border border-white/10 rounded-lg px-2 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500"
+                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
                 >
-                  <option value="XP">SORT: HIGHEST XP</option>
-                  <option value="TIME">SORT: SHORTEST TIME</option>
-                  <option value="NAME">SORT: ALPHABETICAL</option>
+                  <option value="XP">Sort: Highest XP</option>
+                  <option value="TIME">Sort: Shortest Time</option>
+                  <option value="NAME">Sort: Alphabetical</option>
                 </select>
               </div>
             </div>
@@ -681,67 +698,209 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   + DEPLOY QUICK QUEST
                 </button>
               </div>
-            ) : (
-              <div className="space-y-2.5">
-                {filteredDirectives.map((quest) => {
-                  const completedSubquests = (quest.subquests || []).filter(sq => sq.completed).length;
-                  const totalSubquests = (quest.subquests || []).length;
+            ) : (() => {
+              const renderDashboardQuestCard = (quest: any) => {
+                const completedSubquests = (quest.subquests || []).filter((sq: any) => sq.completed).length;
+                const totalSubquests = (quest.subquests || []).length;
 
-                  return (
-                    <div 
-                      key={quest.id}
-                      className="p-3.5 bg-zinc-950/80 border border-white/10 rounded-xl flex items-center justify-between gap-3 hover:border-cyan-500/40 transition group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <button 
-                          onClick={() => completeQuest(quest.id)}
-                          className="text-zinc-500 hover:text-emerald-400 transition-colors shrink-0 p-1"
-                          title="Mark Complete"
-                        >
-                          <Square className="h-5 w-5" />
-                        </button>
+                return (
+                  <div 
+                    key={quest.id}
+                    className="p-3.5 bg-zinc-950/80 border border-white/10 rounded-xl flex items-center justify-between gap-3 hover:border-cyan-500/40 transition group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button 
+                        onClick={() => completeQuest(quest.id)}
+                        className="text-zinc-500 hover:text-emerald-400 transition-colors shrink-0 p-1"
+                        title="Mark Complete"
+                      >
+                        <Square className="h-5 w-5" />
+                      </button>
 
-                        <div className="min-w-0 space-y-1">
-                          <span className="text-xs font-sans font-semibold text-white block truncate group-hover:text-cyan-300 transition">
-                            {quest.name}
+                      <div className="min-w-0 space-y-1">
+                        <span className="text-xs font-sans font-semibold text-white block truncate group-hover:text-cyan-300 transition">
+                          {quest.name}
+                        </span>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[9px] font-mono bg-zinc-900 text-zinc-400 border border-white/10 px-1.5 py-0.5 rounded uppercase font-bold">
+                            {quest.type}
                           </span>
-
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[9px] font-mono bg-zinc-900 text-zinc-400 border border-white/10 px-1.5 py-0.5 rounded uppercase font-bold">
-                              {quest.type}
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold ${
+                            quest.difficulty === 'Easy' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20' :
+                            quest.difficulty === 'Normal' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' :
+                            quest.difficulty === 'Hard' ? 'bg-amber-950/40 text-amber-400 border border-amber-500/20' :
+                            'bg-rose-950/40 text-rose-400 border border-rose-500/20 animate-pulse'
+                          }`}>
+                            {quest.difficulty}
+                          </span>
+                          {quest.estimatedTime && (
+                            <span className="text-[9px] font-mono text-zinc-400 flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5 text-zinc-500" /> {quest.estimatedTime}m
                             </span>
-                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold ${
-                              quest.difficulty === 'Easy' ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20' :
-                              quest.difficulty === 'Normal' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' :
-                              quest.difficulty === 'Hard' ? 'bg-amber-950/40 text-amber-400 border border-amber-500/20' :
-                              'bg-rose-950/40 text-rose-400 border border-rose-500/20 animate-pulse'
-                            }`}>
-                              {quest.difficulty}
+                          )}
+                          {totalSubquests > 0 && (
+                            <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-500/20">
+                              {completedSubquests}/{totalSubquests} SUBTASKS
                             </span>
-                            {quest.estimatedTime && (
-                              <span className="text-[9px] font-mono text-zinc-400 flex items-center gap-0.5">
-                                <Clock className="h-2.5 w-2.5 text-zinc-500" /> {quest.estimatedTime}m
-                              </span>
-                            )}
-                            {totalSubquests > 0 && (
-                              <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 px-1.5 py-0.5 rounded border border-purple-500/20">
-                                {completedSubquests}/{totalSubquests} SUBTASKS
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1 rounded-lg shadow-sm">
-                          +{quest.xp} XP
+                    </div>
+                    
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1 rounded-lg shadow-sm">
+                        +{quest.xp} XP
+                      </span>
+                    </div>
+                  </div>
+                );
+              };
+
+              if (directiveGroupBy === 'none') {
+                return (
+                  <div className="space-y-2.5">
+                    {filteredDirectives.map(renderDashboardQuestCard)}
+                  </div>
+                );
+              }
+
+              // Group sections calculation
+              let groupSections: Array<{
+                key: string;
+                title: string;
+                icon: string;
+                headerClass: string;
+                badgeClass: string;
+                quests: any[];
+              }> = [];
+
+              if (directiveGroupBy === 'list') {
+                const lists = state.lists || [];
+                lists.forEach(l => {
+                  const lQuests = filteredDirectives.filter(q => q.listId === l.id);
+                  if (lQuests.length > 0) {
+                    groupSections.push({
+                      key: `list-${l.id}`,
+                      title: `LIST: ${l.name}`,
+                      icon: '📋',
+                      headerClass: 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300',
+                      badgeClass: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40',
+                      quests: lQuests,
+                    });
+                  }
+                });
+                const unassignedQuests = filteredDirectives.filter(q => !q.listId || !lists.some(l => l.id === q.listId));
+                if (unassignedQuests.length > 0) {
+                  groupSections.push({
+                    key: 'list-unassigned',
+                    title: 'UNASSIGNED / STANDALONE DIRECTIVES',
+                    icon: '📌',
+                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    quests: unassignedQuests,
+                  });
+                }
+              } else if (directiveGroupBy === 'folder') {
+                const folders = state.folders || [];
+                const lists = state.lists || [];
+                folders.forEach(f => {
+                  const folderListIds = lists.filter(l => l.folderId === f.id).map(l => l.id);
+                  const fQuests = filteredDirectives.filter(q => q.listId && folderListIds.includes(q.listId));
+                  if (fQuests.length > 0) {
+                    groupSections.push({
+                      key: `folder-${f.id}`,
+                      title: `FOLDER: ${f.name}`,
+                      icon: '📁',
+                      headerClass: 'bg-purple-950/40 border-purple-500/30 text-purple-300',
+                      badgeClass: 'bg-purple-950/60 text-purple-300 border-purple-500/40',
+                      quests: fQuests,
+                    });
+                  }
+                });
+                const unassignedFolderQuests = filteredDirectives.filter(q => {
+                  if (!q.listId) return true;
+                  const questList = lists.find(l => l.id === q.listId);
+                  return !questList || !questList.folderId || !folders.some(f => f.id === questList.folderId);
+                });
+                if (unassignedFolderQuests.length > 0) {
+                  groupSections.push({
+                    key: 'folder-unassigned',
+                    title: 'UNASSIGNED / ROOT DIRECTIVES',
+                    icon: '📌',
+                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    quests: unassignedFolderQuests,
+                  });
+                }
+              } else if (directiveGroupBy === 'category') {
+                const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Penalty', 'Optional', 'General'];
+                const groups: Record<string, any[]> = {};
+                filteredDirectives.forEach(q => {
+                  const catKey = q.type || 'Main';
+                  const norm = 
+                    catKey.toLowerCase() === 'main' ? 'Main' :
+                    catKey.toLowerCase() === 'side' ? 'Side' :
+                    catKey.toLowerCase() === 'boss' ? 'Boss' :
+                    catKey.toLowerCase() === 'habit' ? 'Habit' :
+                    catKey.toLowerCase() === 'recovery' ? 'Recovery' :
+                    catKey.toLowerCase() === 'penalty' ? 'Penalty' :
+                    catKey.toLowerCase() === 'optional' ? 'Optional' : 'General';
+                  if (!groups[norm]) groups[norm] = [];
+                  groups[norm].push(q);
+                });
+
+                categoryOrder.forEach(catKey => {
+                  const catQuests = groups[catKey];
+                  if (catQuests && catQuests.length > 0) {
+                    groupSections.push({
+                      key: `cat-${catKey}`,
+                      title: `${catKey.toUpperCase()} DIRECTIVES`,
+                      icon: catKey === 'Main' ? '🏆' : catKey === 'Boss' ? '🔥' : catKey === 'Habit' ? '⚡' : catKey === 'Recovery' ? '🛡️' : '🎯',
+                      headerClass: 'bg-amber-950/40 border-amber-500/30 text-amber-300',
+                      badgeClass: 'bg-amber-950/60 text-amber-300 border-amber-500/40',
+                      quests: catQuests,
+                    });
+                  }
+                });
+              } else if (directiveGroupBy === 'difficulty') {
+                const difficulties: QuestDifficulty[] = ['Easy', 'Normal', 'Hard', 'Boss', 'Custom'];
+                difficulties.forEach(diff => {
+                  const dQuests = filteredDirectives.filter(q => q.difficulty === diff);
+                  if (dQuests.length > 0) {
+                    groupSections.push({
+                      key: `diff-${diff}`,
+                      title: `DIFFICULTY: ${diff.toUpperCase()}`,
+                      icon: diff === 'Boss' ? '🔥' : diff === 'Hard' ? '⚔️' : diff === 'Easy' ? '🌱' : '⚡',
+                      headerClass: diff === 'Boss' ? 'bg-rose-950/40 border-rose-500/30 text-rose-300' : 'bg-amber-950/40 border-amber-500/30 text-amber-300',
+                      badgeClass: diff === 'Boss' ? 'bg-rose-950/60 text-rose-300 border-rose-500/40' : 'bg-amber-950/60 text-amber-300 border-amber-500/40',
+                      quests: dQuests,
+                    });
+                  }
+                });
+              }
+
+              return (
+                <div className="space-y-4">
+                  {groupSections.map(sec => (
+                    <div key={sec.key} className="space-y-2">
+                      <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${sec.headerClass}`}>
+                        <div className="flex items-center gap-2">
+                          <span>{sec.icon}</span>
+                          <span className="uppercase tracking-wider">{sec.title}</span>
+                        </div>
+                        <span className={`text-[9px] px-2 py-0.5 rounded border font-mono ${sec.badgeClass}`}>
+                          {sec.quests.length} {sec.quests.length === 1 ? 'DIRECTIVE' : 'DIRECTIVES'}
                         </span>
                       </div>
+                      <div className="space-y-2">
+                        {sec.quests.map(renderDashboardQuestCard)}
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Strategy 3: End of Day Review Terminal */}

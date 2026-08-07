@@ -1032,7 +1032,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
         }
 
-        // Generate the recovery/penalty quest
+        // Generate the recovery/penalty quest (estimated time divided by 2 compared to original quest)
+        const origEstTime = typeof q.estimatedTime === 'number' && q.estimatedTime > 0 ? q.estimatedTime : 30;
+        const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
+
         const pQuest: Quest = {
           id: `q-penalty-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           name: `⚠️ RECOVERY: Resolve failed/unchecked "${q.name}"`,
@@ -1040,7 +1043,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           status: 'Active' as const,
           difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
           type: 'Penalty',
-          estimatedTime: 15,
+          estimatedTime: recoveryEstTime,
           recurrence: 'None',
           energyLevel: 'Medium',
           deadline: q.deadline || new Date().toISOString().split('T')[0],
@@ -1929,7 +1932,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
-      // Generate the recovery/penalty quest
+      // Generate the recovery/penalty quest (estimated time divided by 2 compared to original quest)
+      const origEstTime = typeof questToFail.estimatedTime === 'number' && questToFail.estimatedTime > 0 ? questToFail.estimatedTime : 30;
+      const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
+
       const pQuest: Quest = {
         id: `q-penalty-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         name: `⚠️ RECOVERY: Resolve failed/unchecked "${questToFail.name}"`,
@@ -1937,7 +1943,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'Active' as const,
         difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
         type: 'Penalty',
-        estimatedTime: 15,
+        estimatedTime: recoveryEstTime,
         recurrence: 'None',
         energyLevel: 'Medium',
         deadline: questToFail.deadline || new Date().toISOString().split('T')[0],

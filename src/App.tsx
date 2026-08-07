@@ -24,7 +24,7 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle
+  BookOpen, HelpCircle, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -40,10 +40,26 @@ function AppContent() {
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
-    activeFocusSession, toggleBatterySaverMode 
+    activeFocusSession, toggleBatterySaverMode, isQuestFinishedForToday, isQuestScheduledForDate
   } = usePOS();
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
+
+  const isShopLocked = React.useMemo(() => {
+    const todayStr = systemDate;
+    const todayQuests = (state.quests || []).filter(q => {
+      const isFinished = isQuestFinishedForToday(q);
+      if (isFinished) {
+        return q.status !== 'Failed';
+      }
+      if (q.status !== 'Active') return false;
+      const isScheduled = isQuestScheduledForDate(q, todayStr);
+      if (isScheduled) return true;
+      return !q.deadline || q.deadline <= todayStr;
+    });
+    return todayQuests.some(q => !isQuestFinishedForToday(q));
+  }, [state.quests, systemDate, isQuestFinishedForToday, isQuestScheduledForDate]);
+
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
@@ -193,8 +209,13 @@ function AppContent() {
                             : 'bg-zinc-950/50 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-500'}`} />
-                        <span className="text-xs font-sans font-medium">{item.label}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-zinc-500'}`} />
+                          <span className="text-xs font-sans font-medium truncate">{item.label}</span>
+                        </div>
+                        {item.id === 'shop' && isShopLocked && (
+                          <Lock className="h-3 w-3 text-rose-400 shrink-0 ml-auto" />
+                        )}
                       </button>
                     );
                   })}
@@ -383,10 +404,13 @@ function AppContent() {
                         <span className="font-sans font-medium">{item.label}</span>
                       </div>
                       
-                      {/* Active glowing cursor */}
-                      {isActive && (
+                      {item.id === 'shop' && isShopLocked ? (
+                        <span className="px-1.5 py-0.2 text-[8px] font-mono bg-rose-950 text-rose-300 border border-rose-500/30 rounded font-bold flex items-center gap-0.5">
+                          <Lock className="h-2.5 w-2.5" /> LOCKED
+                        </span>
+                      ) : isActive ? (
                         <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 glow-cyan shrink-0" />
-                      )}
+                      ) : null}
                     </button>
                   );
                 })}

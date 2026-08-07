@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, Coins, Plus, Trash2, CheckCircle, ShieldAlert, Sparkles, 
   Coffee, Gamepad2, Utensils, Tv, BookOpen, Zap, Shield, Gift, Clock, Tag,
-  Pencil, RotateCcw, Edit3
+  Pencil, RotateCcw, Edit3, Lock, Swords
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { ShopItem, ShopItemCategory, RedeemedReward } from '../types';
@@ -19,7 +19,11 @@ export const RewardShopView: React.FC = () => {
     deleteShopItem,
     deleteCustomShopItem,
     resetDefaultShopItems,
-    addCoins 
+    addCoins,
+    systemDate,
+    isQuestFinishedForToday,
+    isQuestScheduledForDate,
+    completeQuest
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'system-perks' | 'custom' | 'inventory'>('all');
@@ -50,6 +54,21 @@ export const RewardShopView: React.FC = () => {
   const shopItems = state.shopItems && state.shopItems.length > 0 ? state.shopItems : DEFAULT_SHOP_ITEMS;
   const inventory = state.inventory || [];
 
+  const todayStr = systemDate;
+  const todayQuests = (state.quests || []).filter(q => {
+    const isFinished = isQuestFinishedForToday(q);
+    if (isFinished) {
+      return q.status !== 'Failed';
+    }
+    if (q.status !== 'Active') return false;
+    const isScheduled = isQuestScheduledForDate(q, todayStr);
+    if (isScheduled) return true;
+    return !q.deadline || q.deadline <= todayStr;
+  });
+
+  const remainingTodayQuests = todayQuests.filter(q => !isQuestFinishedForToday(q));
+  const isShopLocked = remainingTodayQuests.length > 0;
+
   const activeVouchers = inventory.filter(i => i.status === 'Available');
   const usedVouchers = inventory.filter(i => i.status === 'Used');
 
@@ -59,6 +78,10 @@ export const RewardShopView: React.FC = () => {
   };
 
   const handleBuy = (itemId: string) => {
+    if (isShopLocked) {
+      showToast('Reward Shop is locked! Resolve all today\'s directives first.', 'error');
+      return;
+    }
     const res = purchaseShopItem(itemId);
     if (res.success) {
       showToast(res.message, 'success');
@@ -222,6 +245,87 @@ export const RewardShopView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* LOCK RESTRICTION OVERLAY / PANEL */}
+      {isShopLocked && (
+        <div className="glass-panel border-2 border-rose-500/40 bg-rose-950/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-[0_0_50px_rgba(244,63,94,0.15)] text-center space-y-6">
+          <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 w-40 h-40 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 transform -translate-x-8 translate-y-8 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="inline-flex items-center justify-center p-4 bg-rose-950/80 border border-rose-500/50 rounded-2xl shadow-[0_0_20px_rgba(244,63,94,0.3)] animate-pulse">
+            <Lock className="h-10 w-10 text-rose-400" />
+          </div>
+
+          <div className="space-y-2 max-w-xl mx-auto">
+            <span className="text-[10px] font-mono uppercase bg-rose-950 text-rose-300 border border-rose-500/40 px-3 py-1 rounded-full font-bold tracking-wider">
+              SYSTEM LOCKOUT • UNRESOLVED DIRECTIVES
+            </span>
+            <h3 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide">
+              REWARD SHOP IS RESTRICTED
+            </h3>
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              System operational protocol requires completing <span className="text-amber-300 font-bold">ALL of today's quests</span> before redeeming rewards or purchasing store vouchers.
+            </p>
+          </div>
+
+          {/* Progress Bar & Counter */}
+          <div className="max-w-md mx-auto bg-zinc-900/90 border border-white/10 p-4 rounded-xl space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono font-bold">
+              <span className="text-zinc-400">TODAY'S OPERATIONAL PROGRESS:</span>
+              <span className="text-amber-400">
+                {todayQuests.length - remainingTodayQuests.length} / {todayQuests.length} COMPLETED
+              </span>
+            </div>
+            <div className="w-full bg-zinc-950 h-3 rounded-full overflow-hidden border border-white/5 p-0.5">
+              <div 
+                className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.round(((todayQuests.length - remainingTodayQuests.length) / Math.max(1, todayQuests.length)) * 100)}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-mono text-rose-400">
+              ⚠️ {remainingTodayQuests.length} directive{remainingTodayQuests.length === 1 ? '' : 's'} remaining for today.
+            </p>
+          </div>
+
+          {/* Remaining Quests List */}
+          <div className="max-w-lg mx-auto space-y-2 text-left">
+            <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Swords className="h-3.5 w-3.5 text-amber-400" />
+              REMAINING DIRECTIVES TO UNLOCK SHOP ({remainingTodayQuests.length}):
+            </div>
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {remainingTodayQuests.map(q => (
+                <div 
+                  key={q.id}
+                  className="bg-zinc-900/80 border border-white/10 hover:border-amber-500/40 p-2.5 rounded-lg flex items-center justify-between gap-3 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-sm">
+                      {q.type === 'Main' ? '🏆' : q.type === 'Boss' ? '🔥' : q.type === 'Habit' ? '⚡' : q.type === 'Recovery' ? '🛡️' : '🎯'}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-zinc-200 truncate">{q.name}</div>
+                      <div className="text-[9.5px] font-mono text-zinc-500 flex items-center gap-2">
+                        <span>EST: {q.estimatedTime}m</span>
+                        {q.deadline && <span>• DEADLINE: {q.deadline}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => completeQuest(q.id)}
+                    className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white rounded text-[10px] font-mono font-bold transition flex items-center gap-1 shrink-0"
+                    title="Complete directive"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                    <span>COMPLETE</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FILTER TABS & ACTIONS BAR */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-white/10 pb-4">

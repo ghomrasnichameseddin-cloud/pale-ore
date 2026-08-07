@@ -128,7 +128,8 @@ export const ActiveDirectives: React.FC = () => {
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss'>('All');
   const [categoryFilter, setCategoryFilter] = useState<'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional'>('All');
-  const [isGroupedByCategory, setIsGroupedByCategory] = useState(false);
+  const [groupBy, setGroupBy] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>('none');
+  const isGroupedByCategory = groupBy === 'category';
   const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty'>('today');
 
   // Quick / Bulk Add States
@@ -1645,97 +1646,55 @@ export const ActiveDirectives: React.FC = () => {
         )}
       </div>
 
-      {/* Strategy 2: Adaptive Load & Category Sector Filter Bar */}
-      <div className="p-3.5 bg-zinc-950/60 border border-white/5 rounded-lg space-y-3">
-        {/* Category Filter Row */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 pb-2.5 border-b border-white/5">
-          <div className="flex items-center gap-2 shrink-0">
-            <Layers className="h-4 w-4 text-cyan-400" />
-            <span className="text-[10px] font-mono text-zinc-300 uppercase tracking-wider font-bold">
-              CATEGORY_SECTOR_FILTER:
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
-            {[
-              { id: 'All', label: 'ALL CATEGORIES', icon: '🌌' },
-              { id: 'Main', label: 'MAIN', icon: '🏆' },
-              { id: 'Side', label: 'SIDE', icon: '🎯' },
-              { id: 'Boss', label: 'BOSS', icon: '🔥' },
-              { id: 'Habit', label: 'HABIT', icon: '⚡' },
-              { id: 'Recovery', label: 'RECOVERY', icon: '🛡️' },
-              { id: 'Penalty', label: 'PENALTY', icon: '💀' },
-              { id: 'Optional', label: 'OPTIONAL', icon: '🌟' }
-            ].map(catItem => {
-              const count = categoryCounts[catItem.id] || 0;
-              const isSelected = categoryFilter === catItem.id;
-              const catMeta = catItem.id !== 'All' ? getCategoryDetails(catItem.id) : null;
-
-              return (
-                <button
-                  key={catItem.id}
-                  type="button"
-                  onClick={() => setCategoryFilter(catItem.id as any)}
-                  className={`px-2.5 py-1 text-[9.5px] font-mono rounded-md border transition-all flex items-center gap-1 whitespace-nowrap ${
-                    isSelected
-                      ? catMeta 
-                        ? `${catMeta.bgHeader} font-bold shadow-[0_0_10px_rgba(255,255,255,0.05)]`
-                        : 'bg-cyan-950 text-cyan-300 border-cyan-500/50 font-bold shadow-[0_0_8px_rgba(6,182,212,0.15)]'
-                      : 'bg-zinc-900/80 border-white/5 text-zinc-400 hover:border-white/10 hover:text-zinc-200'
-                  }`}
-                >
-                  <span>{catItem.icon}</span>
-                  <span>{catItem.label}</span>
-                  <span className={`text-[8.5px] px-1 py-0.2 rounded font-mono ${
-                    isSelected ? 'bg-black/30 text-white font-bold' : 'bg-zinc-950 text-zinc-500'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            {/* View Mode Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsGroupedByCategory(!isGroupedByCategory)}
-              className={`ml-auto px-2.5 py-1 text-[9.5px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
-                isGroupedByCategory
-                  ? 'bg-purple-950/80 text-purple-300 border-purple-500/40 font-bold shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-                  : 'bg-zinc-900 border-white/10 text-zinc-400 hover:text-white'
-              }`}
-              title="Toggle Group By Category"
-            >
-              <Sliders className="h-3 w-3" />
-              <span>{isGroupedByCategory ? '📂 GROUPED BY CATEGORY' : '≡ LIST VIEW'}</span>
-            </button>
-          </div>
+      {/* Directives Filter Bar */}
+      <div className="p-3 bg-zinc-950/60 border border-white/5 rounded-lg flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-cyan-400" />
+          <span className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">DIRECTIVE FILTERS</span>
         </div>
 
-        {/* Difficulty Filter Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 shrink-0">
-            <Sliders className="h-3.5 w-3.5 text-zinc-500" />
-            <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
-              DIFFICULTY_LEVEL_FILTER:
-            </span>
-          </div>
-          <div className="flex gap-1.5 w-full sm:w-auto overflow-x-auto">
-            {(['All', 'Easy', 'Normal', 'Hard', 'Boss'] as const).map(level => (
-              <button
-                key={level}
-                type="button"
-                onClick={() => setDifficultyFilter(level)}
-                className={`px-2.5 py-1 text-[9.5px] font-mono rounded border transition-all duration-200 uppercase whitespace-nowrap ${
-                  difficultyFilter === level
-                    ? 'bg-cyan-950 text-cyan-400 border-cyan-500/50 shadow-[0_0_8px_rgba(6,182,212,0.1)] font-bold'
-                    : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
-                }`}
-              >
-                {level === 'All' ? '🌌 ALL_DIFFICULTIES' : level === 'Easy' ? '🟢 EASY' : level === 'Normal' ? '🟡 NORMAL' : level === 'Hard' ? '🟠 HARD' : '🔴 BOSS'}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Category Dropdown */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as any)}
+            className="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+          >
+            <option value="All">Category: All ({categoryCounts['All'] || 0})</option>
+            <option value="Main">🏆 Main ({categoryCounts['Main'] || 0})</option>
+            <option value="Side">🎯 Side ({categoryCounts['Side'] || 0})</option>
+            <option value="Boss">🔥 Boss ({categoryCounts['Boss'] || 0})</option>
+            <option value="Habit">⚡ Habit ({categoryCounts['Habit'] || 0})</option>
+            <option value="Recovery">🛡️ Recovery ({categoryCounts['Recovery'] || 0})</option>
+            <option value="Penalty">💀 Penalty ({categoryCounts['Penalty'] || 0})</option>
+            <option value="Optional">🌟 Optional ({categoryCounts['Optional'] || 0})</option>
+          </select>
+
+          {/* Difficulty Dropdown */}
+          <select
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value as any)}
+            className="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+          >
+            <option value="All">Difficulty: All</option>
+            <option value="Easy">🟢 Easy</option>
+            <option value="Normal">🟡 Normal</option>
+            <option value="Hard">🟠 Hard</option>
+            <option value="Boss">🔴 Boss</option>
+          </select>
+
+          {/* Group By Dropdown */}
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as any)}
+            className="bg-zinc-900 border border-purple-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-500/60 cursor-pointer font-bold"
+          >
+            <option value="none">Group: Flat List</option>
+            <option value="list">Group: By List</option>
+            <option value="folder">Group: By Folder</option>
+            <option value="category">Group: By Category</option>
+            <option value="difficulty">Group: By Difficulty</option>
+          </select>
         </div>
       </div>
 
@@ -2423,7 +2382,7 @@ export const ActiveDirectives: React.FC = () => {
                 );
               }
 
-              if (!isGroupedByCategory) {
+              if (groupBy === 'none') {
                 return (
                   <AnimatePresence mode="popLayout">
                     {activeQuests.map(q => renderQuestCard(q, isDeferredTab))}
@@ -2431,50 +2390,146 @@ export const ActiveDirectives: React.FC = () => {
                 );
               }
 
-              // Group quests by Category
-              const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Penalty', 'Optional', 'General'];
-              const groups: Record<string, Quest[]> = {};
-              
-              activeQuests.forEach(q => {
-                const catKey = (q.type || 'Main');
-                const norm = 
-                  catKey.toLowerCase() === 'main' ? 'Main' :
-                  catKey.toLowerCase() === 'side' ? 'Side' :
-                  catKey.toLowerCase() === 'boss' ? 'Boss' :
-                  catKey.toLowerCase() === 'habit' ? 'Habit' :
-                  catKey.toLowerCase() === 'recovery' ? 'Recovery' :
-                  catKey.toLowerCase() === 'penalty' ? 'Penalty' :
-                  catKey.toLowerCase() === 'optional' ? 'Optional' : 'General';
-                if (!groups[norm]) groups[norm] = [];
-                groups[norm].push(q);
-              });
+              // Grouping Logic
+              let groupSections: Array<{
+                key: string;
+                title: string;
+                icon: string;
+                headerClass: string;
+                badgeClass: string;
+                quests: Quest[];
+              }> = [];
+
+              if (groupBy === 'list') {
+                const lists = state.lists || [];
+                lists.forEach(l => {
+                  const lQuests = activeQuests.filter(q => q.listId === l.id);
+                  if (lQuests.length > 0) {
+                    groupSections.push({
+                      key: `list-${l.id}`,
+                      title: `LIST: ${l.name}`,
+                      icon: '📋',
+                      headerClass: 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300',
+                      badgeClass: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40',
+                      quests: lQuests,
+                    });
+                  }
+                });
+                const unassignedQuests = activeQuests.filter(q => !q.listId || !lists.some(l => l.id === q.listId));
+                if (unassignedQuests.length > 0) {
+                  groupSections.push({
+                    key: 'list-unassigned',
+                    title: 'UNASSIGNED / STANDALONE DIRECTIVES',
+                    icon: '📌',
+                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    quests: unassignedQuests,
+                  });
+                }
+              } else if (groupBy === 'folder') {
+                const folders = state.folders || [];
+                const lists = state.lists || [];
+
+                folders.forEach(f => {
+                  const folderListIds = lists.filter(l => l.folderId === f.id).map(l => l.id);
+                  const fQuests = activeQuests.filter(q => q.listId && folderListIds.includes(q.listId));
+                  if (fQuests.length > 0) {
+                    groupSections.push({
+                      key: `folder-${f.id}`,
+                      title: `FOLDER: ${f.name}`,
+                      icon: '📁',
+                      headerClass: 'bg-purple-950/40 border-purple-500/30 text-purple-300',
+                      badgeClass: 'bg-purple-950/60 text-purple-300 border-purple-500/40',
+                      quests: fQuests,
+                    });
+                  }
+                });
+
+                const unassignedFolderQuests = activeQuests.filter(q => {
+                  if (!q.listId) return true;
+                  const questList = lists.find(l => l.id === q.listId);
+                  return !questList || !questList.folderId || !folders.some(f => f.id === questList.folderId);
+                });
+
+                if (unassignedFolderQuests.length > 0) {
+                  groupSections.push({
+                    key: 'folder-unassigned',
+                    title: 'UNASSIGNED / ROOT DIRECTIVES',
+                    icon: '📌',
+                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    quests: unassignedFolderQuests,
+                  });
+                }
+              } else if (groupBy === 'category') {
+                const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Penalty', 'Optional', 'General'];
+                const groups: Record<string, Quest[]> = {};
+                
+                activeQuests.forEach(q => {
+                  const catKey = (q.type || 'Main');
+                  const norm = 
+                    catKey.toLowerCase() === 'main' ? 'Main' :
+                    catKey.toLowerCase() === 'side' ? 'Side' :
+                    catKey.toLowerCase() === 'boss' ? 'Boss' :
+                    catKey.toLowerCase() === 'habit' ? 'Habit' :
+                    catKey.toLowerCase() === 'recovery' ? 'Recovery' :
+                    catKey.toLowerCase() === 'penalty' ? 'Penalty' :
+                    catKey.toLowerCase() === 'optional' ? 'Optional' : 'General';
+                  if (!groups[norm]) groups[norm] = [];
+                  groups[norm].push(q);
+                });
+
+                categoryOrder.forEach(catKey => {
+                  const catQuests = groups[catKey];
+                  if (catQuests && catQuests.length > 0) {
+                    const catDetails = getCategoryDetails(catKey);
+                    groupSections.push({
+                      key: `cat-${catKey}`,
+                      title: catDetails.label,
+                      icon: catDetails.icon,
+                      headerClass: catDetails.bgHeader,
+                      badgeClass: catDetails.badgeClass,
+                      quests: catQuests,
+                    });
+                  }
+                });
+              } else if (groupBy === 'difficulty') {
+                const difficulties: QuestDifficulty[] = ['Easy', 'Normal', 'Hard', 'Boss', 'Custom'];
+                difficulties.forEach(diff => {
+                  const dQuests = activeQuests.filter(q => q.difficulty === diff);
+                  if (dQuests.length > 0) {
+                    groupSections.push({
+                      key: `diff-${diff}`,
+                      title: `DIFFICULTY: ${diff.toUpperCase()}`,
+                      icon: diff === 'Boss' ? '🔥' : diff === 'Hard' ? '⚔️' : diff === 'Easy' ? '🌱' : '⚡',
+                      headerClass: diff === 'Boss' ? 'bg-rose-950/40 border-rose-500/30 text-rose-300' : 'bg-amber-950/40 border-amber-500/30 text-amber-300',
+                      badgeClass: diff === 'Boss' ? 'bg-rose-950/60 text-rose-300 border-rose-500/40' : 'bg-amber-950/60 text-amber-300 border-amber-500/40',
+                      quests: dQuests,
+                    });
+                  }
+                });
+              }
 
               return (
                 <div className="space-y-4">
-                  {categoryOrder.map(catKey => {
-                    const catQuests = groups[catKey];
-                    if (!catQuests || catQuests.length === 0) return null;
-                    const catDetails = getCategoryDetails(catKey);
-
-                    return (
-                      <div key={catKey} className="space-y-2">
-                        <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${catDetails.bgHeader}`}>
-                          <div className="flex items-center gap-2">
-                            <span>{catDetails.icon}</span>
-                            <span className="uppercase tracking-wider">{catDetails.label}</span>
-                          </div>
-                          <span className={`text-[9px] px-2 py-0.5 rounded border font-mono ${catDetails.badgeClass}`}>
-                            {catQuests.length} {catQuests.length === 1 ? 'DIRECTIVE' : 'DIRECTIVES'}
-                          </span>
+                  {groupSections.map(sec => (
+                    <div key={sec.key} className="space-y-2">
+                      <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${sec.headerClass}`}>
+                        <div className="flex items-center gap-2">
+                          <span>{sec.icon}</span>
+                          <span className="uppercase tracking-wider">{sec.title}</span>
                         </div>
-                        <div className="space-y-1.5">
-                          <AnimatePresence mode="popLayout">
-                            {catQuests.map(q => renderQuestCard(q, isDeferredTab))}
-                          </AnimatePresence>
-                        </div>
+                        <span className={`text-[9px] px-2 py-0.5 rounded border font-mono ${sec.badgeClass}`}>
+                          {sec.quests.length} {sec.quests.length === 1 ? 'DIRECTIVE' : 'DIRECTIVES'}
+                        </span>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-1.5">
+                        <AnimatePresence mode="popLayout">
+                          {sec.quests.map(q => renderQuestCard(q, isDeferredTab))}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })()}
