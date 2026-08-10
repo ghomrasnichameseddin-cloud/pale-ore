@@ -107,7 +107,7 @@ function AppContent() {
       title: 'MASTERY & POWER',
       items: [
         { id: 'skills', label: 'Skills', icon: Award, desc: 'Competency tracks' },
-        { id: 'seals', label: 'Power Seals', icon: Sparkles, desc: 'Unseal latent power & passive multipliers' },
+        { id: 'seals', label: 'Ores & Chains', icon: Pickaxe, desc: 'Shatter chains on luminescent ores for passive multipliers' },
         { id: 'shop', label: 'Reward Shop', icon: ShoppingBag, desc: 'Spend coins on treats & system perks' }
       ]
     },

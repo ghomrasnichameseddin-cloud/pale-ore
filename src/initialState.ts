@@ -97,8 +97,8 @@ export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
 export const DEFAULT_SEALS: PowerSeal[] = [
   {
     id: 'seal-slothful-chains',
-    name: 'Seal of Slothful Chains',
-    description: 'An ancient cognitive inhibitor that induces inertia and task hesitation. Shattering this seal awakens baseline operator momentum.',
+    name: 'Slothful Iron Ore & Chains',
+    description: 'An unrefined chunk of magnetic iron ore bound tightly by heavy rusted chains. Shattering the chains awakens baseline operator momentum.',
     rarity: 'Common',
     status: 'Locked',
     requiredLevel: 1,
@@ -114,8 +114,8 @@ export const DEFAULT_SEALS: PowerSeal[] = [
   },
   {
     id: 'seal-limiting-mind',
-    name: 'Seal of Limiting Will',
-    description: 'A mental barrier restricting focus depth and cognitive endurance during prolonged operations.',
+    name: 'Cobalt Focus Ore & Chains',
+    description: 'A heavy luminescent cobalt ore core wrapped in reinforced steel chains that restrict focus depth. Unchaining it unlocks deep cognitive endurance.',
     rarity: 'Rare',
     status: 'Locked',
     requiredLevel: 3,
@@ -124,14 +124,14 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     buffDescription: '+15% XP on Main Directives and +2 Focus attribute level boost.',
     xpBonusMultiplier: 1.15,
     attributeBoosts: [{ attributeId: 'a-4', boostAmount: 2 }],
-    runeSymbol: '🔮',
+    runeSymbol: '🪨',
     colorTheme: 'purple',
     createdAt: new Date().toISOString()
   },
   {
     id: 'seal-astral-surge',
-    name: 'Seal of Astral Surge',
-    description: 'A dense energy lock constricting high-frequency execution and tactical overclocking capabilities.',
+    name: 'Mithril Surge Ore & Chains',
+    description: 'A luminous piece of raw mithril ore encased in silver-etched chains. Shattering the chains triggers high-frequency neural overclocking.',
     rarity: 'Epic',
     status: 'Locked',
     requiredLevel: 5,
@@ -140,14 +140,14 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     buffDescription: '+20% XP multiplier on all directives, +3 Agility, and -25% penalty impact.',
     xpBonusMultiplier: 1.20,
     attributeBoosts: [{ attributeId: 'a-3', boostAmount: 3 }],
-    runeSymbol: '⚡',
+    runeSymbol: '💎',
     colorTheme: 'emerald',
     createdAt: new Date().toISOString()
   },
   {
     id: 'seal-apex-sovereign',
-    name: 'Seal of Apex Sovereign',
-    description: 'The royal seal of command. Unlocking this seal asserts complete dominance over multi-track operational loads.',
+    name: 'Auric Sovereign Ore & Chains',
+    description: 'A radiant golden adamantine ore vein bound under heavy forged gold chains. Unshackling its chains asserts supreme command over operations.',
     rarity: 'Legendary',
     status: 'Locked',
     requiredLevel: 8,
@@ -159,14 +159,14 @@ export const DEFAULT_SEALS: PowerSeal[] = [
       { attributeId: 'a-1', boostAmount: 4 },
       { attributeId: 'a-7', boostAmount: 4 }
     ],
-    runeSymbol: '👑',
+    runeSymbol: '🪙',
     colorTheme: 'amber',
     createdAt: new Date().toISOString()
   },
   {
     id: 'seal-void-overlord',
-    name: 'Seal of Void Overlord',
-    description: 'A primordial forbidden seal containing unbridled cosmic execution power.',
+    name: 'Obsidian Void Ore & Chains',
+    description: 'A primordial obsidian ore chunk pulsing with void energy, locked in spiked netherite chains. Unchaining it unleashes ultimate cosmic power.',
     rarity: 'Divine',
     status: 'Locked',
     requiredLevel: 12,
@@ -183,7 +183,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
       { attributeId: 'a-6', boostAmount: 5 },
       { attributeId: 'a-7', boostAmount: 5 }
     ],
-    runeSymbol: '🐉',
+    runeSymbol: '🌋',
     colorTheme: 'rose',
     createdAt: new Date().toISOString()
   }
