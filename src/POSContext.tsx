@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
-  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal,
+  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal, QuestFolder, QuestList,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject
 } from './types';
@@ -62,7 +62,7 @@ interface POSContextType {
   deleteMilestone: (id: string) => void;
   
   // Quests CRUD & Advanced Actions
-  addQuest: (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>) => string;
+  addQuest: (quest: Partial<Quest> & { name: string; description: string }) => string;
   updateQuest: (id: string, updates: Partial<Quest>) => void;
   deleteQuest: (id: string) => void;
   completeQuest: (id: string) => void;
@@ -77,9 +77,11 @@ interface POSContextType {
   addFolder: (name: string, description?: string, color?: string) => string;
   updateFolder: (id: string, updates: { name?: string; description?: string; color?: string }) => void;
   deleteFolder: (id: string) => void;
+  reorderFolders: (folders: QuestFolder[]) => void;
   addList: (folderId: string | null, name: string, description?: string) => string;
   updateList: (id: string, updates: { folderId?: string | null; name?: string; description?: string }) => void;
   deleteList: (id: string) => void;
+  reorderLists: (lists: QuestList[]) => void;
   
   // Subquests CRUD
   addSubQuest: (questId: string, name: string) => void;
@@ -102,6 +104,9 @@ interface POSContextType {
   // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
   updateAttributeBase: (id: string, level: number) => void;
   
+  // XP Actions
+  addXp: (amount: number, reason?: string, skillIds?: string[]) => void;
+
   // Power Seals CRUD & System Actions
   addSeal: (seal: Omit<PowerSeal, 'id' | 'status' | 'brokenAt' | 'createdAt'>) => string;
   updateSeal: (id: string, updates: Partial<PowerSeal>) => void;
@@ -1526,6 +1531,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const reorderFolders = (folders: QuestFolder[]) => {
+    setState(prev => ({
+      ...prev,
+      folders
+    }));
+  };
+
+  const reorderLists = (lists: QuestList[]) => {
+    setState(prev => ({
+      ...prev,
+      lists
+    }));
+  };
+
   // CRUD FOR PROJECTS
   const addProject = (project: Omit<Project, 'id' | 'createdAt'>): string => {
     const id = `p-${Date.now()}`;
@@ -1658,9 +1677,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // CRUD FOR QUESTS & PROGRESSION ACTIONS
-  const addQuest = (quest: Omit<Quest, 'id' | 'status' | 'completedAt' | 'createdAt'>): string => {
-    const id = `q-${Date.now()}`;
+  const addQuest = (quest: Partial<Quest> & { name: string; description: string }): string => {
+    const id = `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newQuest: Quest = {
+      goalId: null,
+      projectId: null,
+      milestoneId: null,
+      relatedSkills: [],
+      difficulty: 'Normal',
+      estimatedTime: 30,
+      xp: 100,
+      type: 'Main',
+      recurrence: 'None',
+      deadline: null,
       ...quest,
       id,
       status: 'Active',
@@ -3153,6 +3182,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const addXp = (amount: number, reason?: string, skillIds: string[] = []) => {
+    const entry: XPHistoryEntry = {
+      id: `xp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      questId: null,
+      questName: reason || 'System XP Gain',
+      xp: amount,
+      timestamp: new Date().toISOString(),
+      skillIds
+    };
+    setState(prev => ({
+      ...prev,
+      xpHistory: [entry, ...(prev.xpHistory || [])]
+    }));
+  };
+
   // Battery Saver & Eco Defense Functions
   const updateBatterySettings = (updates: Partial<BatterySettings>) => {
     setState(prev => {
@@ -3163,7 +3207,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         oledMode: false,
         maxFpsCap: 60
       };
-      const updated = { ...current, ...updates, batterySaverMode: true, animationThrottle: 'Off' };
+      const updated: BatterySettings = { 
+        ...current, 
+        ...updates, 
+        batterySaverMode: true, 
+        animationThrottle: (updates.animationThrottle ?? 'Off') as 'Full' | 'Reduced' | 'Off' 
+      };
       
       // Apply global DOM performance classes
       if (typeof document !== 'undefined') {
@@ -3264,9 +3313,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addFolder,
       updateFolder,
       deleteFolder,
+      reorderFolders,
       addList,
       updateList,
       deleteList,
+      reorderLists,
       addSubQuest,
       updateSubQuest,
       toggleSubQuest,
@@ -3282,6 +3333,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearAllSkills,
       equipSkillTitle,
       updateAttributeBase,
+      addXp,
       addSeal,
       updateSeal,
       deleteSeal,

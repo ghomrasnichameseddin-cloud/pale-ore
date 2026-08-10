@@ -1432,7 +1432,12 @@ export const ActiveDirectives: React.FC = () => {
         exit={{ opacity: 0, x: isDeferred ? 10 : -10 }}
         transition={{ duration: 0.15 }}
         onClick={() => setSelectedQuestId(quest.id)}
-        className={`p-2.5 bg-zinc-950/50 hover:bg-zinc-900/70 border rounded-lg flex items-center justify-between gap-3 cursor-pointer transition-all relative ${cat.borderLeftClass} ${
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'QUEST', questId: quest.id }));
+          e.dataTransfer.effectAllowed = 'move';
+        }}
+        className={`p-2.5 bg-zinc-950/50 hover:bg-zinc-900/70 border rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
           isSelected 
             ? 'border-cyan-500 bg-cyan-950/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]' 
             : finished 

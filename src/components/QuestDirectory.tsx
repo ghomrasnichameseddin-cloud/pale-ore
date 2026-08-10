@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Folder, FolderOpen, List, Plus, Trash2, Edit3, X, Check,
-  ChevronDown, ChevronRight, FolderPlus, PlusCircle
+  ChevronDown, ChevronRight, FolderPlus, PlusCircle, GripVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QuestFolder, QuestList } from '../types';
 
 export const QuestDirectory: React.FC = () => {
   const {
@@ -12,9 +13,12 @@ export const QuestDirectory: React.FC = () => {
     addFolder,
     updateFolder,
     deleteFolder,
+    reorderFolders,
     addList,
     updateList,
     deleteList,
+    reorderLists,
+    updateQuest,
     selectedFolderId,
     setSelectedFolderId,
     selectedListId,
@@ -22,10 +26,7 @@ export const QuestDirectory: React.FC = () => {
   } = usePOS();
 
   // Expanded folders state (keeps track of folder IDs that are expanded in the tree)
-  const [expandedFolderIds, setExpandedFolderIds] = useState<Record<string, boolean>>(() => {
-    // Expand first few folders by default if they exist
-    return {};
-  });
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Record<string, boolean>>({});
 
   // Creation / Editing states
   const [showAddFolder, setShowAddFolder] = useState(false);
@@ -48,6 +49,10 @@ export const QuestDirectory: React.FC = () => {
   const [editListName, setEditListName] = useState('');
   const [editListDesc, setEditListDesc] = useState('');
   const [editListFolderId, setEditListFolderId] = useState<string>('');
+
+  // Drag & Drop State
+  const [draggedItem, setDraggedItem] = useState<{ id: string; type: 'LIST' | 'FOLDER' | 'QUEST'; folderId?: string | null } | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ id: string; type: 'LIST' | 'FOLDER' | 'STANDALONE_SECTION' } | null>(null);
 
   const toggleFolderExpand = (folderId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -127,7 +132,7 @@ export const QuestDirectory: React.FC = () => {
       setSelectedListId(null);
     } else {
       setSelectedFolderId(folderId);
-      setSelectedListId(null); // Reset list selection if a folder itself is selected
+      setSelectedListId(null);
     }
   };
 
@@ -136,7 +141,6 @@ export const QuestDirectory: React.FC = () => {
     if (listId === null) {
       setSelectedFolderId(null);
     } else {
-      // Keep track of parent folder if selected list belongs to one
       setSelectedFolderId(folderId);
     }
   };
@@ -148,12 +152,163 @@ export const QuestDirectory: React.FC = () => {
     return { active: activeCount, total: listQuests.length };
   };
 
-  // Helper: Count quests in folder (sum of all lists in folder)
+  // Helper: Count quests in folder
   const getQuestCountInFolder = (folderId: string) => {
     const listIdsInFolder = (state.lists || []).filter(l => l.folderId === folderId).map(l => l.id);
     const folderQuests = state.quests.filter(q => q.listId && listIdsInFolder.includes(q.listId));
     const activeCount = folderQuests.filter(q => q.status === 'Active').length;
     return { active: activeCount, total: folderQuests.length };
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStartItem = (e: React.DragEvent, id: string, type: 'LIST' | 'FOLDER', folderId?: string | null) => {
+    e.stopPropagation();
+    const payload = { id, type, folderId };
+    setDraggedItem(payload);
+    e.dataTransfer.setData('text/plain', JSON.stringify(payload));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEndItem = () => {
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
+
+  const handleDragOverList = (e: React.DragEvent, targetList: QuestList) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverTarget?.id !== targetList.id) {
+      setDragOverTarget({ id: targetList.id, type: 'LIST' });
+    }
+  };
+
+  const handleDropOnList = (e: React.DragEvent, targetList: QuestList) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTarget(null);
+
+    let payload = draggedItem;
+    if (!payload) {
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (raw) payload = JSON.parse(raw);
+      } catch (err) {}
+    }
+
+    if (!payload) return;
+
+    if (payload.type === 'QUEST' && (payload as any).questId) {
+      updateQuest((payload as any).questId, { listId: targetList.id });
+      setDraggedItem(null);
+      return;
+    }
+
+    if (payload.type === 'LIST' && payload.id !== targetList.id) {
+      const currentLists = [...(state.lists || [])];
+      const sourceIndex = currentLists.findIndex(l => l.id === payload.id);
+      const targetIndex = currentLists.findIndex(l => l.id === targetList.id);
+
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        const [movedList] = currentLists.splice(sourceIndex, 1);
+        movedList.folderId = targetList.folderId; // Assign same folder as target list
+
+        const newTargetIndex = currentLists.findIndex(l => l.id === targetList.id);
+        currentLists.splice(newTargetIndex, 0, movedList);
+
+        reorderLists(currentLists);
+      }
+    }
+    setDraggedItem(null);
+  };
+
+  const handleDragOverFolder = (e: React.DragEvent, targetFolder: QuestFolder) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverTarget?.id !== targetFolder.id) {
+      setDragOverTarget({ id: targetFolder.id, type: 'FOLDER' });
+    }
+  };
+
+  const handleDropOnFolder = (e: React.DragEvent, targetFolder: QuestFolder) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTarget(null);
+
+    let payload = draggedItem;
+    if (!payload) {
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (raw) payload = JSON.parse(raw);
+      } catch (err) {}
+    }
+
+    if (!payload) return;
+
+    if (payload.type === 'QUEST' && (payload as any).questId) {
+      const folderLists = (state.lists || []).filter(l => l.folderId === targetFolder.id);
+      if (folderLists.length > 0) {
+        updateQuest((payload as any).questId, { listId: folderLists[0].id });
+      } else {
+        const newListId = addList(targetFolder.id, 'General Tasks');
+        updateQuest((payload as any).questId, { listId: newListId });
+      }
+      setDraggedItem(null);
+      return;
+    }
+
+    if (payload.type === 'FOLDER' && payload.id !== targetFolder.id) {
+      const currentFolders = [...(state.folders || [])];
+      const sourceIndex = currentFolders.findIndex(f => f.id === payload.id);
+      const targetIndex = currentFolders.findIndex(f => f.id === targetFolder.id);
+
+      if (sourceIndex !== -1 && targetIndex !== -1) {
+        const [movedFolder] = currentFolders.splice(sourceIndex, 1);
+        currentFolders.splice(targetIndex, 0, movedFolder);
+        reorderFolders(currentFolders);
+      }
+    } else if (payload.type === 'LIST') {
+      const currentLists = (state.lists || []).map(l => 
+        l.id === payload.id ? { ...l, folderId: targetFolder.id } : l
+      );
+      reorderLists(currentLists);
+      setExpandedFolderIds(prev => ({ ...prev, [targetFolder.id]: true }));
+    }
+    setDraggedItem(null);
+  };
+
+  const handleDragOverStandaloneSection = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverTarget?.id !== 'standalone_section') {
+      setDragOverTarget({ id: 'standalone_section', type: 'STANDALONE_SECTION' });
+    }
+  };
+
+  const handleDropOnStandaloneSection = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverTarget(null);
+
+    let payload = draggedItem;
+    if (!payload) {
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (raw) payload = JSON.parse(raw);
+      } catch (err) {}
+    }
+
+    if (!payload) return;
+
+    if (payload.type === 'LIST') {
+      const currentLists = (state.lists || []).map(l => 
+        l.id === payload.id ? { ...l, folderId: null } : l
+      );
+      reorderLists(currentLists);
+    }
+    setDraggedItem(null);
   };
 
   // Presets of beautiful dark neon theme colors
@@ -172,7 +327,7 @@ export const QuestDirectory: React.FC = () => {
 
   return (
     <div className="glass-panel rounded-lg p-5 flex flex-col h-full" id="quest-directory-panel">
-      <div className="flex justify-between items-center pb-2 border-b border-white/5 mb-4">
+      <div className="flex justify-between items-center pb-2 border-b border-white/5 mb-3">
         <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
           <FolderOpen className="h-4 w-4 text-cyan-400" /> QUEST_ORGANIZER_TREE
         </h4>
@@ -209,6 +364,11 @@ export const QuestDirectory: React.FC = () => {
         </div>
       </div>
 
+      <div className="text-[10px] font-mono text-cyan-500/80 mb-3 bg-cyan-950/20 border border-cyan-500/10 rounded px-2.5 py-1 flex items-center justify-between">
+        <span>💡 Drag & drop lists/folders to reorder or organize</span>
+        <span className="text-[9px] text-zinc-500">⋮⋮ Drag handle</span>
+      </div>
+
       {/* CREATE FOLDER INLINE FORM */}
       <AnimatePresence>
         {showAddFolder && (
@@ -236,7 +396,6 @@ export const QuestDirectory: React.FC = () => {
               className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-[11px] text-zinc-300"
             />
             
-            {/* Color selector */}
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-zinc-500 uppercase block">Terminal Accent Color</span>
               <div className="flex gap-2.5 py-1">
@@ -303,7 +462,6 @@ export const QuestDirectory: React.FC = () => {
               className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-[11px] text-zinc-300"
             />
             
-            {/* Assign list to folder */}
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-zinc-500 uppercase block">Parent Folder</span>
               <select
@@ -484,18 +642,35 @@ export const QuestDirectory: React.FC = () => {
             const folderQuests = getQuestCountInFolder(folder.id);
             const folderLists = lists.filter(l => l.folderId === folder.id);
 
+            const isFolderDragging = draggedItem?.id === folder.id;
+            const isFolderOver = dragOverTarget?.id === folder.id && dragOverTarget?.type === 'FOLDER';
+
             return (
-              <div key={folder.id} className="space-y-1">
+              <div 
+                key={folder.id} 
+                className="space-y-1"
+                draggable
+                onDragStart={(e) => handleDragStartItem(e, folder.id, 'FOLDER')}
+                onDragEnd={handleDragEndItem}
+                onDragOver={(e) => handleDragOverFolder(e, folder)}
+                onDrop={(e) => handleDropOnFolder(e, folder)}
+              >
                 {/* Folder Row */}
                 <div
                   onClick={() => handleSelectFolder(folder.id)}
-                  className={`group flex items-center justify-between text-xs py-1.5 px-2.5 border rounded cursor-pointer transition-all ${
-                    isFolderSelected
-                      ? 'bg-cyan-950/25 text-white border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.15)] font-bold'
-                      : 'bg-zinc-900/40 border-white/5 text-zinc-300 hover:bg-zinc-900/70 hover:border-white/10'
+                  className={`group flex items-center justify-between text-xs py-1.5 px-2 border rounded cursor-pointer transition-all ${
+                    isFolderDragging
+                      ? 'opacity-40 border-dashed border-cyan-500'
+                      : isFolderOver
+                        ? 'bg-cyan-950/50 text-white border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.25)] font-bold'
+                        : isFolderSelected
+                          ? 'bg-cyan-950/25 text-white border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.15)] font-bold'
+                          : 'bg-zinc-900/40 border-white/5 text-zinc-300 hover:bg-zinc-900/70 hover:border-white/10'
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <GripVertical className="h-3.5 w-3.5 text-zinc-600 hover:text-cyan-400 cursor-grab active:cursor-grabbing shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                    
                     <button
                       onClick={(e) => toggleFolderExpand(folder.id, e)}
                       className="text-zinc-500 hover:text-zinc-300 p-0.5"
@@ -517,12 +692,10 @@ export const QuestDirectory: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                    {/* Active/total quests badge */}
                     <span className="text-[10px] font-mono text-zinc-500 px-1">
                       {folderQuests.active > 0 ? `${folderQuests.active}/` : ''}{folderQuests.total}
                     </span>
 
-                    {/* Actions on hover */}
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                       <button
                         onClick={(e) => startEditFolder(folder, e)}
@@ -550,7 +723,7 @@ export const QuestDirectory: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Lists inside Folder (Rendered only if folder is expanded) */}
+                {/* Lists inside Folder */}
                 <AnimatePresence initial={false}>
                   {isFolderExpanded && (
                     <motion.div
@@ -560,28 +733,45 @@ export const QuestDirectory: React.FC = () => {
                       className="pl-5 space-y-1 overflow-hidden"
                     >
                       {folderLists.length === 0 ? (
-                        <div className="text-[10px] font-mono text-zinc-600 py-1 pl-6">
-                          [Empty Folder]
+                        <div 
+                          className={`text-[10px] font-mono text-zinc-600 py-1.5 pl-4 border border-dashed rounded ${
+                            isFolderOver ? 'border-cyan-400/60 bg-cyan-950/20 text-cyan-300 font-bold' : 'border-white/5'
+                          }`}
+                        >
+                          [Drop list or quest here]
                         </div>
                       ) : (
                         folderLists.map(list => {
                           const isListSelected = selectedListId === list.id;
                           const listQuests = getQuestCountInList(list.id);
 
+                          const isListDragging = draggedItem?.id === list.id;
+                          const isListOver = dragOverTarget?.id === list.id && dragOverTarget?.type === 'LIST';
+
                           return (
                             <div
                               key={list.id}
+                              draggable
+                              onDragStart={(e) => handleDragStartItem(e, list.id, 'LIST', list.folderId)}
+                              onDragEnd={handleDragEndItem}
+                              onDragOver={(e) => handleDragOverList(e, list)}
+                              onDrop={(e) => handleDropOnList(e, list)}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleSelectList(list.id, folder.id);
                               }}
-                              className={`group flex items-center justify-between text-[11px] py-1 px-2.5 border rounded cursor-pointer transition-all ${
-                                isListSelected
-                                  ? 'bg-cyan-950/30 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
-                                  : 'bg-zinc-950/40 border-white/5 text-zinc-400 hover:bg-zinc-900/40 hover:border-white/10 hover:text-zinc-300'
+                              className={`group flex items-center justify-between text-[11px] py-1 px-2 border rounded cursor-pointer transition-all ${
+                                isListDragging
+                                  ? 'opacity-40 border-dashed border-cyan-500'
+                                  : isListOver
+                                    ? 'bg-cyan-950/50 text-white border-cyan-400 ring-1 ring-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)] font-bold'
+                                    : isListSelected
+                                      ? 'bg-cyan-950/30 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
+                                      : 'bg-zinc-950/40 border-white/5 text-zinc-400 hover:bg-zinc-900/40 hover:border-white/10 hover:text-zinc-300'
                               }`}
                             >
                               <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <GripVertical className="h-3 w-3 text-zinc-600 hover:text-cyan-400 cursor-grab active:cursor-grabbing shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
                                 <List className="h-3 w-3 text-zinc-500 shrink-0" />
                                 <span className="truncate font-sans">{list.name}</span>
                               </div>
@@ -629,27 +819,58 @@ export const QuestDirectory: React.FC = () => {
         </div>
 
         {/* STANDALONE LISTS */}
-        {standaloneLists.length > 0 && (
-          <div className="space-y-1.5 pt-1 border-t border-white/5">
-            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block pl-1">
+        <div 
+          className="space-y-1.5 pt-2 border-t border-white/5"
+          onDragOver={handleDragOverStandaloneSection}
+          onDrop={handleDropOnStandaloneSection}
+        >
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">
               STANDALONE_LISTS
             </span>
-            <div className="space-y-1">
-              {standaloneLists.map(list => {
+            {dragOverTarget?.id === 'standalone_section' && (
+              <span className="text-[9px] font-mono text-cyan-400 animate-pulse font-bold">
+                [Drop to make list standalone]
+              </span>
+            )}
+          </div>
+
+          <div className={`space-y-1 min-h-[24px] rounded p-1 transition-all ${
+            dragOverTarget?.id === 'standalone_section' ? 'border border-dashed border-cyan-400/60 bg-cyan-950/20' : ''
+          }`}>
+            {standaloneLists.length === 0 ? (
+              <div className="text-[10px] font-mono text-zinc-600 py-1 pl-2">
+                [No standalone lists]
+              </div>
+            ) : (
+              standaloneLists.map(list => {
                 const isListSelected = selectedListId === list.id;
                 const listQuests = getQuestCountInList(list.id);
+
+                const isListDragging = draggedItem?.id === list.id;
+                const isListOver = dragOverTarget?.id === list.id && dragOverTarget?.type === 'LIST';
 
                 return (
                   <div
                     key={list.id}
+                    draggable
+                    onDragStart={(e) => handleDragStartItem(e, list.id, 'LIST', null)}
+                    onDragEnd={handleDragEndItem}
+                    onDragOver={(e) => handleDragOverList(e, list)}
+                    onDrop={(e) => handleDropOnList(e, list)}
                     onClick={() => handleSelectList(list.id, null)}
-                    className={`group flex items-center justify-between text-[11px] py-1.5 px-2.5 border rounded cursor-pointer transition-all ${
-                      isListSelected
-                        ? 'bg-cyan-950/35 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
-                        : 'bg-zinc-900/40 border-white/5 text-zinc-400 hover:bg-zinc-900/70 hover:border-white/10 hover:text-zinc-300'
+                    className={`group flex items-center justify-between text-[11px] py-1.5 px-2 border rounded cursor-pointer transition-all ${
+                      isListDragging
+                        ? 'opacity-40 border-dashed border-cyan-500'
+                        : isListOver
+                          ? 'bg-cyan-950/50 text-white border-cyan-400 ring-1 ring-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)] font-bold'
+                          : isListSelected
+                            ? 'bg-cyan-950/35 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
+                            : 'bg-zinc-900/40 border-white/5 text-zinc-400 hover:bg-zinc-900/70 hover:border-white/10 hover:text-zinc-300'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <GripVertical className="h-3.5 w-3.5 text-zinc-600 hover:text-cyan-400 cursor-grab active:cursor-grabbing shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
                       <List className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                       <span className="truncate font-sans">{list.name}</span>
                     </div>
@@ -686,10 +907,10 @@ export const QuestDirectory: React.FC = () => {
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* FOOTER METADATA */}
