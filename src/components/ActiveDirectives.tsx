@@ -106,6 +106,38 @@ export const getCategoryDetails = (type: string) => {
   };
 };
 
+const QUEST_VIEW_SETTINGS_KEY = 'pale_ore_quest_view_settings';
+
+export interface QuestViewSettings {
+  categoryFilter: 'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional';
+  difficultyFilter: 'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss';
+  groupBy: 'none' | 'list' | 'folder' | 'category' | 'difficulty';
+  sortBy: 'default' | 'name' | 'difficulty' | 'xp' | 'deadline' | 'type' | 'streak';
+  sortOrder: 'asc' | 'desc';
+  terminalTab: 'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty';
+}
+
+const loadSavedQuestViewSettings = (): QuestViewSettings => {
+  const defaults: QuestViewSettings = {
+    categoryFilter: 'All',
+    difficultyFilter: 'All',
+    groupBy: 'none',
+    sortBy: 'default',
+    sortOrder: 'asc',
+    terminalTab: 'today'
+  };
+  try {
+    const raw = localStorage.getItem(QUEST_VIEW_SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...defaults, ...parsed };
+    }
+  } catch (e) {
+    console.error('Error reading quest view settings from localStorage:', e);
+  }
+  return defaults;
+};
+
 export const ActiveDirectives: React.FC = () => {
   const { 
     state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
@@ -126,11 +158,47 @@ export const ActiveDirectives: React.FC = () => {
 
   const [showTomorrowQuests, setShowTomorrowQuests] = useState(false);
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
-  const [difficultyFilter, setDifficultyFilter] = useState<'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss'>('All');
-  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional'>('All');
-  const [groupBy, setGroupBy] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>('none');
+
+  // Persistent Quest View Settings (Filter, Group By, Sort By, Tab)
+  const [viewSettings, setViewSettings] = useState<QuestViewSettings>(loadSavedQuestViewSettings);
+
+  const categoryFilter = viewSettings.categoryFilter || 'All';
+  const difficultyFilter = viewSettings.difficultyFilter || 'All';
+  const groupBy = viewSettings.groupBy || 'none';
+  const sortBy = viewSettings.sortBy || 'default';
+  const sortOrder = viewSettings.sortOrder || 'asc';
+  const terminalTab = viewSettings.terminalTab || 'today';
+
   const isGroupedByCategory = groupBy === 'category';
-  const [terminalTab, setTerminalTab] = useState<'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty'>('today');
+
+  const updateViewSettings = (updates: Partial<QuestViewSettings>) => {
+    setViewSettings(prev => {
+      const next = { ...prev, ...updates };
+      try {
+        localStorage.setItem(QUEST_VIEW_SETTINGS_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.error('Failed to save quest view settings to localStorage:', e);
+      }
+      return next;
+    });
+  };
+
+  const setCategoryFilter = (val: QuestViewSettings['categoryFilter']) => updateViewSettings({ categoryFilter: val });
+  const setDifficultyFilter = (val: QuestViewSettings['difficultyFilter']) => updateViewSettings({ difficultyFilter: val });
+  const setGroupBy = (val: QuestViewSettings['groupBy']) => updateViewSettings({ groupBy: val });
+  const setSortBy = (val: QuestViewSettings['sortBy']) => updateViewSettings({ sortBy: val });
+  const setSortOrder = (val: QuestViewSettings['sortOrder']) => updateViewSettings({ sortOrder: val });
+  const setTerminalTab = (val: QuestViewSettings['terminalTab']) => updateViewSettings({ terminalTab: val });
+
+  const resetFilters = () => {
+    updateViewSettings({
+      categoryFilter: 'All',
+      difficultyFilter: 'All',
+      groupBy: 'none',
+      sortBy: 'default',
+      sortOrder: 'asc'
+    });
+  };
 
   // Quick / Bulk Add States
   const [quickInputText, setQuickInputText] = useState('');
@@ -863,7 +931,41 @@ export const ActiveDirectives: React.FC = () => {
     });
   };
 
-  const hasActiveFilters = categoryFilter !== 'All' || difficultyFilter !== 'All';
+  const hasActiveFilters = categoryFilter !== 'All' || difficultyFilter !== 'All' || groupBy !== 'none' || sortBy !== 'default';
+
+  const sortQuests = (quests: Quest[]): Quest[] => {
+    if (!sortBy || sortBy === 'default') {
+      if (sortOrder === 'desc') {
+        return [...quests].reverse();
+      }
+      return quests;
+    }
+
+    const diffWeight: Record<string, number> = { 'Easy': 1, 'Normal': 2, 'Hard': 3, 'Boss': 4, 'Custom': 2 };
+
+    return [...quests].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') {
+        cmp = (a.name || '').localeCompare(b.name || '');
+      } else if (sortBy === 'difficulty') {
+        const wA = diffWeight[a.difficulty] || 2;
+        const wB = diffWeight[b.difficulty] || 2;
+        cmp = wA - wB;
+      } else if (sortBy === 'xp') {
+        cmp = (a.xp || 0) - (b.xp || 0);
+      } else if (sortBy === 'deadline') {
+        const dA = a.deadline || '9999-12-31';
+        const dB = b.deadline || '9999-12-31';
+        cmp = dA.localeCompare(dB);
+      } else if (sortBy === 'type') {
+        cmp = (a.type || '').localeCompare(b.type || '');
+      } else if (sortBy === 'streak') {
+        cmp = (a.streakCount || 0) - (b.streakCount || 0);
+      }
+
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+  };
 
   // 1. Today's quests: Active & (No deadline OR deadline <= todayStr) OR Completed today
   const todayQuests = baseQuests.filter(q => {
@@ -1650,7 +1752,7 @@ export const ActiveDirectives: React.FC = () => {
       <div className="p-3 bg-zinc-950/60 border border-white/5 rounded-lg flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-cyan-400" />
-          <span className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">DIRECTIVE FILTERS</span>
+          <span className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">DIRECTIVE FILTERS & SORTING</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -1695,6 +1797,31 @@ export const ActiveDirectives: React.FC = () => {
             <option value="category">Group: By Category</option>
             <option value="difficulty">Group: By Difficulty</option>
           </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="bg-zinc-900 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer font-bold"
+          >
+            <option value="default">Sort: Default Order</option>
+            <option value="name">Sort: Name (A-Z)</option>
+            <option value="difficulty">Sort: Difficulty</option>
+            <option value="xp">Sort: XP Reward</option>
+            <option value="deadline">Sort: Target Date</option>
+            <option value="type">Sort: Category</option>
+            <option value="streak">Sort: Streak</option>
+          </select>
+
+          {/* Sort Order Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="bg-zinc-900 border border-cyan-500/30 hover:border-cyan-500/60 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 font-bold"
+            title={sortOrder === 'asc' ? "Sort Ascending (Click for Descending)" : "Sort Descending (Click for Ascending)"}
+          >
+            <span>{sortOrder === 'asc' ? '⬆️ ASC' : '⬇️ DESC'}</span>
+          </button>
         </div>
       </div>
 
@@ -2297,7 +2424,7 @@ export const ActiveDirectives: React.FC = () => {
                         {hasActiveFilters && (
                           <button
                             type="button"
-                            onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                            onClick={resetFilters}
                             className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-cyan-300 rounded text-[11px] font-mono font-bold transition flex items-center gap-1.5"
                           >
                             <Sliders className="h-3.5 w-3.5 text-cyan-400" />
@@ -2325,7 +2452,7 @@ export const ActiveDirectives: React.FC = () => {
                       {hasActiveFilters && (
                         <button
                           type="button"
-                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          onClick={resetFilters}
                           className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-purple-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
                         >
                           <Sliders className="h-3.5 w-3.5 text-purple-400" />
@@ -2344,7 +2471,7 @@ export const ActiveDirectives: React.FC = () => {
                       {hasActiveFilters && (
                         <button
                           type="button"
-                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          onClick={resetFilters}
                           className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-emerald-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
                         >
                           <Sliders className="h-3.5 w-3.5 text-emerald-400" />
@@ -2363,7 +2490,7 @@ export const ActiveDirectives: React.FC = () => {
                       {hasActiveFilters && (
                         <button
                           type="button"
-                          onClick={() => { setCategoryFilter('All'); setDifficultyFilter('All'); }}
+                          onClick={resetFilters}
                           className="mt-3 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-amber-300 rounded text-[11px] font-mono font-bold transition inline-flex items-center gap-1.5"
                         >
                           <Sliders className="h-3.5 w-3.5 text-amber-400" />
@@ -2385,7 +2512,7 @@ export const ActiveDirectives: React.FC = () => {
               if (groupBy === 'none') {
                 return (
                   <AnimatePresence mode="popLayout">
-                    {activeQuests.map(q => renderQuestCard(q, isDeferredTab))}
+                    {sortQuests(activeQuests).map(q => renderQuestCard(q, isDeferredTab))}
                   </AnimatePresence>
                 );
               }
@@ -2525,7 +2652,7 @@ export const ActiveDirectives: React.FC = () => {
                       </div>
                       <div className="space-y-1.5">
                         <AnimatePresence mode="popLayout">
-                          {sec.quests.map(q => renderQuestCard(q, isDeferredTab))}
+                          {sortQuests(sec.quests).map(q => renderQuestCard(q, isDeferredTab))}
                         </AnimatePresence>
                       </div>
                     </div>

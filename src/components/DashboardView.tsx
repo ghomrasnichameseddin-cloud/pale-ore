@@ -42,11 +42,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [quickProjectId, setQuickProjectId] = useState<string>('');
 
   // Directives Filtering, Search & GroupBy State
+  const QUEST_VIEW_SETTINGS_KEY = 'pale_ore_quest_view_settings';
+
+  const loadSavedDashboardQuestSettings = () => {
+    try {
+      const raw = localStorage.getItem(QUEST_VIEW_SETTINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          typeFilter: parsed.categoryFilter ? parsed.categoryFilter.toUpperCase() : 'ALL',
+          sort: (parsed.sortBy === 'name' ? 'NAME' : parsed.sortBy === 'time' ? 'TIME' : parsed.sortBy === 'difficulty' ? 'DIFFICULTY' : 'XP') as 'XP' | 'TIME' | 'NAME' | 'DIFFICULTY',
+          groupBy: (parsed.groupBy || 'none') as 'none' | 'list' | 'folder' | 'category' | 'difficulty'
+        };
+      }
+    } catch (e) {
+      console.error('Error loading dashboard quest settings:', e);
+    }
+    return { typeFilter: 'ALL', sort: 'XP' as const, groupBy: 'none' as const };
+  };
+
+  const initialSettings = loadSavedDashboardQuestSettings();
   const [directiveSearch, setDirectiveSearch] = useState('');
-  const [directiveTypeFilter, setDirectiveTypeFilter] = useState<string>('ALL');
-  const [directiveSort, setDirectiveSort] = useState<'XP' | 'TIME' | 'NAME'>('XP');
-  const [directiveGroupBy, setDirectiveGroupBy] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>('none');
+  const [directiveTypeFilter, setDirectiveTypeFilterState] = useState<string>(initialSettings.typeFilter);
+  const [directiveSort, setDirectiveSortState] = useState<'XP' | 'TIME' | 'NAME' | 'DIFFICULTY'>(initialSettings.sort);
+  const [directiveGroupBy, setDirectiveGroupByState] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>(initialSettings.groupBy);
   const [selectedAttributeName, setSelectedAttributeName] = useState<string | null>(null);
+
+  const saveSettingsToStorage = (typeVal: string, sortVal: string, groupVal: string) => {
+    try {
+      const raw = localStorage.getItem(QUEST_VIEW_SETTINGS_KEY);
+      const prev = raw ? JSON.parse(raw) : {};
+      const catVal = typeVal === 'ALL' ? 'All' : typeVal === 'MAIN' ? 'Main' : typeVal === 'HABIT' ? 'Habit' : typeVal === 'SIDE' ? 'Side' : typeVal === 'BOSS' ? 'Boss' : typeVal === 'RECOVERY' ? 'Recovery' : typeVal === 'PENALTY' ? 'Penalty' : typeVal === 'OPTIONAL' ? 'Optional' : 'All';
+      const sortByVal = sortVal === 'XP' ? 'xp' : sortVal === 'NAME' ? 'name' : sortVal === 'TIME' ? 'deadline' : sortVal === 'DIFFICULTY' ? 'difficulty' : 'default';
+      
+      const next = {
+        ...prev,
+        categoryFilter: catVal,
+        groupBy: groupVal,
+        sortBy: sortByVal
+      };
+      localStorage.setItem(QUEST_VIEW_SETTINGS_KEY, JSON.stringify(next));
+    } catch (e) {
+      console.error('Error saving dashboard quest settings:', e);
+    }
+  };
+
+  const setDirectiveTypeFilter = (val: string) => {
+    setDirectiveTypeFilterState(val);
+    saveSettingsToStorage(val, directiveSort, directiveGroupBy);
+  };
+
+  const setDirectiveSort = (val: 'XP' | 'TIME' | 'NAME' | 'DIFFICULTY') => {
+    setDirectiveSortState(val);
+    saveSettingsToStorage(directiveTypeFilter, val, directiveGroupBy);
+  };
+
+  const setDirectiveGroupBy = (val: 'none' | 'list' | 'folder' | 'category' | 'difficulty') => {
+    setDirectiveGroupByState(val);
+    saveSettingsToStorage(directiveTypeFilter, directiveSort, val);
+  };
 
   const levelInfo = getPlayerLevelInfo();
   const analytics = getAnalytics();
@@ -125,6 +179,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     if (directiveTypeFilter === 'MAIN' && !(q.type === 'Main' || q.type === 'Boss')) return false;
     if (directiveTypeFilter === 'HABIT' && !(q.type === 'Habit' || q.recurrence === 'Daily')) return false;
     if (directiveTypeFilter === 'SIDE' && !(q.type === 'Side' || q.type === 'Optional')) return false;
+    if (directiveTypeFilter === 'BOSS' && !(q.type === 'Boss' || q.difficulty === 'Boss')) return false;
+    if (directiveTypeFilter === 'RECOVERY' && q.type !== 'Recovery') return false;
+    if (directiveTypeFilter === 'PENALTY' && q.type !== 'Penalty') return false;
+    if (directiveTypeFilter === 'OPTIONAL' && q.type !== 'Optional') return false;
 
     if (selectedAttributeName) {
       const attrLower = selectedAttributeName.toLowerCase();
@@ -171,6 +229,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     if (directiveSort === 'XP') return b.xp - a.xp;
     if (directiveSort === 'TIME') return a.estimatedTime - b.estimatedTime;
     if (directiveSort === 'NAME') return a.name.localeCompare(b.name);
+    if (directiveSort === 'DIFFICULTY') {
+      const diffWeight: Record<string, number> = { 'Easy': 1, 'Normal': 2, 'Hard': 3, 'Boss': 4, 'Custom': 2 };
+      return (diffWeight[b.difficulty] || 2) - (diffWeight[a.difficulty] || 2);
+    }
     return 0;
   });
 
@@ -657,12 +719,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <select
                   value={directiveTypeFilter}
                   onChange={(e) => setDirectiveTypeFilter(e.target.value)}
-                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer font-bold"
                 >
                   <option value="ALL">Category: All</option>
-                  <option value="MAIN">Main & Boss</option>
-                  <option value="HABIT">Habits</option>
+                  <option value="MAIN">Main Quests</option>
                   <option value="SIDE">Side Quests</option>
+                  <option value="BOSS">Boss Fights</option>
+                  <option value="HABIT">Habits</option>
+                  <option value="RECOVERY">Recovery</option>
+                  <option value="PENALTY">Penalty</option>
+                  <option value="OPTIONAL">Optional</option>
                 </select>
 
                 {/* Group By Dropdown */}
@@ -682,9 +748,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <select
                   value={directiveSort}
                   onChange={(e) => setDirectiveSort(e.target.value as any)}
-                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+                  className="bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer font-bold"
                 >
                   <option value="XP">Sort: Highest XP</option>
+                  <option value="DIFFICULTY">Sort: Difficulty</option>
                   <option value="TIME">Sort: Shortest Time</option>
                   <option value="NAME">Sort: Alphabetical</option>
                 </select>
@@ -1089,7 +1156,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
-                        <span>{goal.category || 'Strategic'}</span>
+                        <span>{(goal as any).category || goal.horizon || 'Strategic'}</span>
                         <span>{goalQuestsCount} Directives • {goalProjectsCount} Projects</span>
                       </div>
                       <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden">
