@@ -106,37 +106,37 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   Common: {
     stroke: '#06b6d4',
     glow: '',
-    oreGrad1: '#0f172a',
+    oreGrad1: '#1e293b',
     oreGrad2: '#0e7490',
     oreGrad3: '#0891b2',
     coreGradient: 'from-cyan-400 via-blue-500 to-indigo-700',
     sparkBg: 'bg-cyan-300',
-    chainColor: '#64748b',
+    chainColor: '#475569',
     chainStroke: '#94a3b8',
     veinColor: '#22d3ee'
   },
   Rare: {
     stroke: '#a855f7',
     glow: '',
-    oreGrad1: '#1e1b4b',
+    oreGrad1: '#311042',
     oreGrad2: '#6b21a8',
     oreGrad3: '#9333ea',
     coreGradient: 'from-purple-300 via-purple-500 to-indigo-900',
     sparkBg: 'bg-purple-300',
-    chainColor: '#475569',
-    chainStroke: '#cbd5e1',
+    chainColor: '#3b2063',
+    chainStroke: '#c084fc',
     veinColor: '#c084fc'
   },
   Epic: {
     stroke: '#10b981',
     glow: '',
-    oreGrad1: '#064e3b',
+    oreGrad1: '#022c22',
     oreGrad2: '#047857',
     oreGrad3: '#10b981',
     coreGradient: 'from-emerald-300 via-teal-500 to-emerald-900',
     sparkBg: 'bg-emerald-300',
-    chainColor: '#334155',
-    chainStroke: '#94a3b8',
+    chainColor: '#1e3a2b',
+    chainStroke: '#34d399',
     veinColor: '#34d399'
   },
   Legendary: {
@@ -148,7 +148,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
     coreGradient: 'from-amber-200 via-amber-500 to-orange-800',
     sparkBg: 'bg-amber-300',
     chainColor: '#78350f',
-    chainStroke: '#fde047',
+    chainStroke: '#fbbf24',
     veinColor: '#fbbf24'
   },
   Divine: {
@@ -159,8 +159,8 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
     oreGrad3: '#f43f5e',
     coreGradient: 'from-rose-200 via-pink-500 to-rose-900',
     sparkBg: 'bg-rose-300',
-    chainColor: '#1e293b',
-    chainStroke: '#f43f5e',
+    chainColor: '#4c0519',
+    chainStroke: '#fb7185',
     veinColor: '#fb7185'
   },
   Forbidden: {
@@ -171,10 +171,74 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
     oreGrad3: '#7c3aed',
     coreGradient: 'from-violet-300 via-purple-600 to-black',
     sparkBg: 'bg-violet-300',
-    chainColor: '#0f172a',
+    chainColor: '#2e1065',
     chainStroke: '#a78bfa',
     veinColor: '#c084fc'
   }
+};
+
+// 3D Chain Path Link Generator Component
+const Render3DChainPath: React.FC<{
+  x1: number; y1: number; x2: number; y2: number;
+  curveY?: number; count?: number;
+  chainColor?: string; chainStroke?: string;
+}> = ({ x1, y1, x2, y2, curveY = 0, count = 10, chainColor = '#475569', chainStroke = '#cbd5e1' }) => {
+  const links = [];
+  for (let i = 0; i < count; i++) {
+    const t = i / Math.max(1, count - 1);
+    let x = (1 - t) * x1 + t * x2;
+    let y = (1 - t) * y1 + t * y2;
+    if (curveY !== 0) {
+      const midY = (y1 + y2) / 2 + curveY;
+      y = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * midY + t * t * y2;
+    }
+
+    let dx = (x2 - x1);
+    let dy = (y2 - y1);
+    if (curveY !== 0) {
+      const midY = (y1 + y2) / 2 + curveY;
+      dy = 2 * (1 - t) * (midY - y1) + 2 * t * (y2 - midY);
+    }
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const isFaceOn = i % 2 === 0;
+
+    links.push({ i, x, y, angle, isFaceOn });
+  }
+
+  return (
+    <g className="chain-3d-group">
+      {/* 1. Cast Shadow onto background & stone */}
+      {links.map(({ i, x, y, angle }) => (
+        <g key={`sh-${i}`} transform={`translate(${x + 2.5}, ${y + 4}) rotate(${angle})`}>
+          <rect x="-10" y="-6" width="20" height="12" rx="5" fill="#000000" opacity="0.85" filter="blur(1px)" />
+        </g>
+      ))}
+
+      {/* 2. 3D Interlocking Metallic Chain Links */}
+      {links.map(({ i, x, y, angle, isFaceOn }) => (
+        <g key={`lk-${i}`} transform={`translate(${x}, ${y}) rotate(${angle})`}>
+          {isFaceOn ? (
+            /* Wide Face-On Link Loop */
+            <g>
+              <rect x="-10" y="-6" width="20" height="12" rx="5" fill={chainColor} stroke="#09090b" strokeWidth="1.8" />
+              <rect x="-5" y="-2.5" width="10" height="5" rx="2.5" fill="#09090b" />
+              {/* Top Specular Edge Highlight */}
+              <path d="M -8 -4.5 L 8 -4.5" stroke={chainStroke} strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
+              {/* Bottom Shadow Edge */}
+              <path d="M -8 4.5 L 8 4.5" stroke="#000000" strokeWidth="1.2" strokeLinecap="round" opacity="0.9" />
+            </g>
+          ) : (
+            /* Narrow Side-On Interlocking Twisted Link */
+            <g>
+              <rect x="-5" y="-8.5" width="10" height="17" rx="4.5" fill="#18181b" stroke={chainColor} strokeWidth="2.2" />
+              <line x1="0" y1="-6.5" x2="0" y2="6.5" stroke={chainStroke} strokeWidth="1.5" strokeLinecap="round" opacity="0.95" />
+              <line x1="-3" y1="-6.5" x2="-3" y2="6.5" stroke="#000000" strokeWidth="1" opacity="0.8" />
+            </g>
+          )}
+        </g>
+      ))}
+    </g>
+  );
 };
 
 const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
@@ -182,212 +246,191 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
   const strokeColor = isBroken ? theme.stroke : '#52525b';
 
   return (
-    <div className="relative w-full h-60 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center my-3 group/ore select-none shadow-2xl">
+    <div className="relative w-full h-64 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center my-3 group/ore select-none shadow-[inset_0_4px_20px_rgba(0,0,0,0.95),_0_10px_30px_rgba(0,0,0,0.8)]">
       
-      {/* BACKGROUND FORGE & MINE AMBIENCE */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/80 via-black to-zinc-950 pointer-events-none" />
+      {/* MINE CHAMBER & STONE MASONRY WALLS */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,_var(--tw-gradient-stops))] from-zinc-900/90 via-zinc-950 to-black pointer-events-none" />
+      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#71717a_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
       
-      {/* METALLIC GRID RIVETS BACKGROUND PATTERN */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#a1a1aa_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+      {/* FORGE PEDESTAL ALIVE GROUND AMBIENCE */}
+      <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-black via-zinc-950/80 to-transparent pointer-events-none" />
 
-      {/* MAIN ORE & CHAINS SVG DISPLAY STAGE */}
-      <div className={`relative w-52 h-52 flex items-center justify-center transition-all duration-700 ${isBroken ? theme.glow : ''}`}>
+      {/* MAIN ORE & CHAINS DISPLAY CANVAS */}
+      <div className={`relative w-60 h-60 flex items-center justify-center transition-all duration-700 ${isBroken ? theme.glow : ''}`}>
         
-        {/* BACKGROUND METALLIC FORGE RING */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
-          {/* Iron Outer Rim */}
-          <circle cx="100" cy="100" r="92" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="6 3" opacity="0.5" />
-          <circle cx="100" cy="100" r="86" stroke={strokeColor} strokeWidth="2" opacity="0.7" />
-          
-          {/* Rivets at cardinal points */}
+        {/* BACKGROUND METALLIC FORGE SHIELD RING */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="92" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="6 3" opacity="0.35" />
+          <circle cx="100" cy="100" r="86" stroke={strokeColor} strokeWidth="2" opacity="0.5" />
           {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
             <circle
               key={deg}
               cx={100 + 86 * Math.cos((deg * Math.PI) / 180)}
               cy={100 + 86 * Math.sin((deg * Math.PI) / 180)}
-              r="2.5"
+              r="3"
               fill={strokeColor}
+              stroke="#000"
+              strokeWidth="1"
               opacity="0.8"
             />
           ))}
-
-          {/* Inner Mineral Vein Concentric Ring */}
-          <circle cx="100" cy="100" r="72" stroke={strokeColor} strokeWidth="1" strokeDasharray="12 4" opacity="0.4" />
+          <circle cx="100" cy="100" r="74" stroke={strokeColor} strokeWidth="1" strokeDasharray="12 4" opacity="0.25" />
         </svg>
 
-        {/* JAGGED LUMINESCENT ORE STRUCTURE SVG */}
-        <div className="relative w-36 h-36 flex items-center justify-center z-10">
-          <svg viewBox="0 0 120 120" className="w-full h-full filter drop-shadow-md">
+        {/* 3D CARVED MINERAL MONOLITH ORE DISPLAY */}
+        <div className="relative w-44 h-44 flex items-center justify-center z-10">
+          <svg viewBox="0 0 200 200" className="w-full h-full filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.9)]">
             <defs>
-              <linearGradient id={`ore-grad-left-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor={theme.oreGrad1} />
+              <linearGradient id={`ore-top-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3f3f46" />
+                <stop offset="50%" stopColor={theme.oreGrad1} />
                 <stop offset="100%" stopColor={theme.oreGrad2} />
               </linearGradient>
-              <linearGradient id={`ore-grad-right-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+
+              <linearGradient id={`ore-left-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={theme.oreGrad1} />
+                <stop offset="100%" stopColor="#09090b" />
+              </linearGradient>
+
+              <linearGradient id={`ore-right-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={theme.oreGrad2} />
                 <stop offset="100%" stopColor={theme.oreGrad3} />
               </linearGradient>
+
               <linearGradient id={`ore-core-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="50%" stopColor={theme.veinColor} />
+                <stop offset="40%" stopColor={theme.veinColor} />
                 <stop offset="100%" stopColor={theme.oreGrad2} />
+              </linearGradient>
+
+              <linearGradient id={`pedestal-grad-${seal.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#27272a" />
+                <stop offset="50%" stopColor="#18181b" />
+                <stop offset="100%" stopColor="#09090b" />
               </linearGradient>
             </defs>
 
-            {/* Ore Backing Shadow */}
-            <path
-              d="M 60,10 L 98,35 L 85,95 L 35,102 L 15,50 Z"
-              fill={isBroken ? theme.oreGrad2 : '#18181b'}
-              opacity="0.5"
-            />
+            {/* 1. STONE FORGE PEDESTAL */}
+            <ellipse cx="100" cy="165" rx="65" ry="16" fill="#000000" opacity="0.85" filter="blur(3px)" />
+            <path d="M 40,160 L 160,160 L 145,175 L 55,175 Z" fill={`url(#pedestal-grad-${seal.id})`} stroke="#3f3f46" strokeWidth="1" />
+            <line x1="40" y1="160" x2="160" y2="160" stroke="#71717a" strokeWidth="1" />
 
-            {/* RAW JAGGED FACETS */}
-            {/* Top Facet */}
-            <path
-              d="M 60,12 L 95,36 L 60,60 L 22,38 Z"
-              fill={`url(#ore-grad-left-${seal.id})`}
-              stroke={strokeColor}
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
+            {/* 2. ORE MONOLITH 3D CAST SHADOW */}
+            <path d="M 100,25 L 155,60 L 140,145 L 60,155 L 30,85 Z" fill="#000000" opacity="0.7" transform="translate(5, 7)" />
 
-            {/* Left Main Facet */}
-            <path
-              d="M 22,38 L 60,60 L 38,102 L 16,52 Z"
-              fill={`url(#ore-grad-right-${seal.id})`}
-              stroke={strokeColor}
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
+            {/* 3. MAIN CHISELED FACETS */}
+            {/* Top Roof Bevel Facet */}
+            <path d="M 100,25 L 155,60 L 100,95 L 40,65 Z" fill={`url(#ore-top-${seal.id})`} stroke="#18181b" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M 100,25 L 40,65" stroke="#ffffff" strokeWidth="1.5" opacity="0.45" />
 
-            {/* Right Main Facet */}
-            <path
-              d="M 60,60 L 95,36 L 86,96 L 38,102 Z"
-              fill={`url(#ore-grad-left-${seal.id})`}
-              stroke={strokeColor}
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-            />
+            {/* Left Vertical Chiseled Wall */}
+            <path d="M 40,65 L 100,95 L 60,155 L 30,85 Z" fill={`url(#ore-left-${seal.id})`} stroke="#09090b" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M 40,65 L 30,85 L 60,155" stroke="#71717a" strokeWidth="1" opacity="0.5" />
 
-            {/* Center Core Glowing Mineral Vein (Glinting Spike) */}
-            <path
-              d="M 60,22 L 72,48 L 60,88 L 46,50 Z"
-              fill={isBroken ? `url(#ore-core-${seal.id})` : '#3f3f46'}
-              stroke={isBroken ? '#ffffff' : '#71717a'}
-              strokeWidth="1"
-              opacity={isBroken ? 0.95 : 0.6}
-            />
+            {/* Right Front Facet */}
+            <path d="M 100,95 L 155,60 L 140,145 L 60,155 Z" fill={`url(#ore-right-${seal.id})`} stroke="#09090b" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M 155,60 L 140,145 L 60,155" stroke="#000000" strokeWidth="2" opacity="0.8" />
 
-            {/* FISSURE LINES & VEINS */}
-            <path d="M 60,12 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
-            <path d="M 22,38 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
-            <path d="M 95,36 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
-            <path d="M 38,102 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
+            {/* 4. INNER CRYSTALLINE CORE / FISSURE VEIN */}
+            <path d="M 100,40 L 120,80 L 100,135 L 80,85 Z" fill={isBroken ? `url(#ore-core-${seal.id})` : '#27272a'} stroke={isBroken ? '#ffffff' : '#52525b'} strokeWidth="1.2" opacity={isBroken ? 0.95 : 0.75} />
+
+            {/* 5. DEEP STONE FISSURES / CRACK LINES WITH OCCLUSION */}
+            <path d="M 100,25 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2.5" : "1.5"} />
+            <path d="M 40,65 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2" : "1.2"} />
+            <path d="M 155,60 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2" : "1.2"} />
+            <path d="M 60,155 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2.5" : "1.5"} />
           </svg>
 
-          {/* ORE CENTER EMBLEM / SYMBOL */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className={`text-2xl filter drop-shadow-lg transition-transform duration-500 ${
-              isBroken ? 'scale-125 text-white font-bold' : 'opacity-70 text-zinc-400'
-            }`}>
-              {seal.runeSymbol || '🪨'}
-            </span>
+          {/* ORE CENTER CARVED INSCRIPTION / ARABIC GLYPH */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
+            <div className="relative flex items-center justify-center">
+              {/* Carved Inner Shadow */}
+              <span className="absolute text-3xl font-serif text-black font-black translate-x-[1.5px] translate-y-[2px] opacity-90">
+                {seal.runeSymbol || '🪨'}
+              </span>
+              {/* Carved Specular Light Bevel */}
+              <span className="absolute text-3xl font-serif text-amber-100/40 font-black -translate-x-[1px] -translate-y-[1px]">
+                {seal.runeSymbol || '🪨'}
+              </span>
+              {/* Main Carved Rune Symbol */}
+              <span className={`relative text-3xl font-serif font-black transition-transform duration-500 ${
+                isBroken
+                  ? 'scale-125 text-amber-200 [text-shadow:_0_0_12px_rgba(251,191,36,0.85),_0_2px_4px_rgba(0,0,0,0.95)]'
+                  : 'text-zinc-300/85 [text-shadow:_0_2px_4px_rgba(0,0,0,0.95)]'
+              }`}>
+                {seal.runeSymbol || '🪨'}
+              </span>
+            </div>
           </div>
 
         </div>
 
-        {/* BINDING CHAINS & HEAVY PADLOCK (LOCKED STATE) */}
+        {/* 3D HEAVY INTERLOCKING BINDING CHAINS & PADLOCK (LOCKED STATE) */}
         {!isBroken && (
           <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
             
-            {/* SVG REALISTIC BINDING METALLIC CHAINS */}
+            {/* SVG REALISTIC 3D INTERLOCKING FORGED CHAINS */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200" fill="none">
               
-              {/* Chain 1: Diagonal Top-Left to Bottom-Right */}
-              <path
-                d="M 15 15 L 185 185"
-                stroke={theme.chainColor}
-                strokeWidth="9"
-                strokeDasharray="12 6"
-                className="drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]"
-              />
-              <path
-                d="M 15 15 L 185 185"
-                stroke={theme.chainStroke}
-                strokeWidth="3"
-                strokeDasharray="12 6"
+              {/* Chain 1: Top-Left to Bottom-Right Diagonal */}
+              <Render3DChainPath
+                x1={15} y1={15} x2={185} y2={185}
+                count={11}
+                chainColor={theme.chainColor}
+                chainStroke={theme.chainStroke}
               />
 
-              {/* Chain 2: Diagonal Top-Right to Bottom-Left */}
-              <path
-                d="M 185 15 L 15 185"
-                stroke={theme.chainColor}
-                strokeWidth="9"
-                strokeDasharray="12 6"
-                className="drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]"
-              />
-              <path
-                d="M 185 15 L 15 185"
-                stroke={theme.chainStroke}
-                strokeWidth="3"
-                strokeDasharray="12 6"
+              {/* Chain 2: Top-Right to Bottom-Left Diagonal */}
+              <Render3DChainPath
+                x1={185} y1={15} x2={15} y2={185}
+                count={11}
+                chainColor={theme.chainColor}
+                chainStroke={theme.chainStroke}
               />
 
-              {/* Horizontal Waist Chain Wrap */}
-              <path
-                d="M 10 100 Q 100 120 190 100"
-                stroke={theme.chainColor}
-                strokeWidth="8"
-                strokeDasharray="10 5"
-                className="drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]"
-              />
-              <path
-                d="M 10 100 Q 100 120 190 100"
-                stroke={theme.chainStroke}
-                strokeWidth="2.5"
-                strokeDasharray="10 5"
+              {/* Chain 3: Heavy Sagging Waist Chain Wrapping Middle */}
+              <Render3DChainPath
+                x1={10} y1={105} x2={190} y2={105}
+                curveY={22}
+                count={12}
+                chainColor={theme.chainColor}
+                chainStroke={theme.chainStroke}
               />
             </svg>
 
             {/* HEAVY CENTRAL FORGED IRON SHACKLE & PADLOCK BADGE */}
-            <div className="relative z-30 px-3 py-1.5 bg-zinc-950/95 border-2 border-amber-500/80 rounded-xl shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-center gap-1.5 backdrop-blur-md">
-              <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold text-amber-300 tracking-wider uppercase flex items-center gap-1">
-                <span>⛓️</span> CHAIN-BOUND
+            <div className="relative z-30 px-3.5 py-1.5 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black border-2 border-amber-500/80 rounded-xl shadow-[0_8px_25px_rgba(0,0,0,0.95),_0_0_20px_rgba(245,158,11,0.35),_inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 backdrop-blur-md">
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 border border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
+              <Lock className="h-4 w-4 text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+              <span className="text-[10px] font-mono font-bold text-amber-200 tracking-widest uppercase flex items-center gap-1 [text-shadow:_0_1px_2px_rgba(0,0,0,0.9)]">
+                CHAIN-BOUND
               </span>
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 border border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
             </div>
 
           </div>
         )}
 
-        {/* SHATTERED CHAIN LINK FRAGMENTS FLOATING OUTWARD (UNSEALED STATE) */}
+        {/* SHATTERED HEAVY CHAIN FRAGMENTS (UNCHAINED / BROKEN STATE) */}
         {isBroken && (
           <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-            
-            {/* Top Left Broken Chain Link */}
-            <div className="absolute top-3 left-4 text-zinc-400/80 rotate-45 flex items-center gap-1 animate-bounce">
-              <div className="w-4 h-2 border-2 border-cyan-400/80 rounded-full" />
-              <span className="text-amber-400 text-xs">⚡</span>
+            {/* Top Left Broken Chain End */}
+            <div className="absolute top-4 left-5 rotate-45 flex items-center gap-1 opacity-90 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]">
+              <div className="w-5 h-3 border-2 border-amber-400 bg-zinc-900 rounded-lg shadow-inner" />
+              <div className="w-3 h-5 border-2 border-zinc-500 bg-zinc-950 rounded-lg" />
             </div>
 
-            {/* Top Right Broken Chain Link */}
-            <div className="absolute top-3 right-4 text-zinc-400/80 -rotate-45 flex items-center gap-1 animate-pulse">
-              <span className="text-amber-400 text-xs">⚡</span>
-              <div className="w-4 h-2 border-2 border-cyan-400/80 rounded-full" />
+            {/* Top Right Broken Chain End */}
+            <div className="absolute top-4 right-5 -rotate-45 flex items-center gap-1 opacity-90 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]">
+              <div className="w-3 h-5 border-2 border-zinc-500 bg-zinc-950 rounded-lg" />
+              <div className="w-5 h-3 border-2 border-amber-400 bg-zinc-900 rounded-lg shadow-inner" />
             </div>
 
-            {/* Bottom Left Chain Fragment */}
-            <div className="absolute bottom-3 left-6 text-zinc-500/70 rotate-12 flex items-center gap-1">
-              <div className="w-5 h-2.5 border-2 border-zinc-500 rounded-full" />
-              <span className="text-purple-400 text-[10px]">💥</span>
+            {/* Bottom Fallen Fragment on Pedestal */}
+            <div className="absolute bottom-4 left-10 rotate-12 flex items-center gap-1 opacity-75">
+              <div className="w-4 h-2.5 border border-zinc-400 bg-black rounded" />
+              <div className="w-2.5 h-4 border border-zinc-600 bg-zinc-900 rounded" />
             </div>
-
-            {/* Bottom Right Chain Fragment */}
-            <div className="absolute bottom-3 right-6 text-zinc-500/70 -rotate-12 flex items-center gap-1">
-              <span className="text-purple-400 text-[10px]">💥</span>
-              <div className="w-5 h-2.5 border-2 border-zinc-500 rounded-full" />
-            </div>
-
           </div>
         )}
 
