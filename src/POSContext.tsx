@@ -693,8 +693,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         skillIds: []
       };
 
-      // Automatically complete the associated quest since the work block duration completed!
-      if (activeFocusSession.mode === 'rest' && activeFocusSession.questId) {
+      // Automatically complete the associated quest ONLY when ALL estimated cycles for the session are finished!
+      if (activeFocusSession.mode === 'rest' && activeFocusSession.questId && activeFocusSession.completedCycles >= activeFocusSession.estimatedCycles) {
         completeQuest(activeFocusSession.questId);
       }
 
@@ -826,15 +826,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   }, [state.profile.xp, state.xpHistory, state.seals, state.skills]);
 
-  const startFocusSession = (questId: string | null = null, workTime = 25, restTime = 5, estimatedCycles = 1) => {
+  const startFocusSession = (questId: string | null = null, workTime = 25, restTime = 5, estimatedCycles?: number) => {
     let questName = "General Deep Focus Session";
+    let cycles = estimatedCycles;
     if (questId) {
       const quest = state.quests.find(q => q.id === questId);
       if (quest) {
         questName = quest.name;
-        const estTime = quest.estimatedTime || 30;
-        estimatedCycles = Math.max(1, Math.ceil(estTime / workTime));
+        if (!cycles || cycles <= 0) {
+          const estTime = quest.estimatedTime || 30;
+          cycles = Math.max(1, Math.round(estTime / workTime));
+        }
       }
+    }
+    if (!cycles || cycles <= 0) {
+      cycles = 1;
     }
     
     setActiveFocusSession({
@@ -846,7 +852,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'running',
       timeLeft: workTime * 60,
       completedCycles: 0,
-      estimatedCycles,
+      estimatedCycles: cycles,
       timeSpent: 0,
       lastUpdated: Date.now()
     });
