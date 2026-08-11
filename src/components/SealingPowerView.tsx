@@ -8,6 +8,15 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const SUGGESTED_RUNES = [
+  // Arabic Alphabet Calligraphy Runes
+  'أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي',
+  // Ancient Arabic Calligraphic Forms & Ligatures
+  '﷽', '۞', '۝', '؏',
+  // Minerals, Gems & Elemental Carvings
+  '🪨', '💎', '🪙', '🔥', '🌋', '⛓️', '⚡', '✨', '🔮', '🛡️', '⚔️', '⚖️', '🔱', '🧿', '⚛️', '🌌'
+];
+
 const RARITY_COLORS: Record<SealRarity, {
   border: string;
   bg: string;
@@ -96,7 +105,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
 }> = {
   Common: {
     stroke: '#06b6d4',
-    glow: 'drop-shadow-[0_0_14px_rgba(6,182,212,0.85)]',
+    glow: '',
     oreGrad1: '#0f172a',
     oreGrad2: '#0e7490',
     oreGrad3: '#0891b2',
@@ -108,7 +117,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   },
   Rare: {
     stroke: '#a855f7',
-    glow: 'drop-shadow-[0_0_16px_rgba(168,85,247,0.9)]',
+    glow: '',
     oreGrad1: '#1e1b4b',
     oreGrad2: '#6b21a8',
     oreGrad3: '#9333ea',
@@ -120,7 +129,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   },
   Epic: {
     stroke: '#10b981',
-    glow: 'drop-shadow-[0_0_16px_rgba(16,185,129,0.9)]',
+    glow: '',
     oreGrad1: '#064e3b',
     oreGrad2: '#047857',
     oreGrad3: '#10b981',
@@ -132,7 +141,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   },
   Legendary: {
     stroke: '#f59e0b',
-    glow: 'drop-shadow-[0_0_18px_rgba(245,158,11,0.95)]',
+    glow: '',
     oreGrad1: '#451a03',
     oreGrad2: '#b45309',
     oreGrad3: '#f59e0b',
@@ -144,7 +153,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   },
   Divine: {
     stroke: '#f43f5e',
-    glow: 'drop-shadow-[0_0_20px_rgba(244,63,94,1)]',
+    glow: '',
     oreGrad1: '#4c0519',
     oreGrad2: '#be123c',
     oreGrad3: '#f43f5e',
@@ -156,7 +165,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   },
   Forbidden: {
     stroke: '#8b5cf6',
-    glow: 'drop-shadow-[0_0_22px_rgba(139,92,246,1)]',
+    glow: '',
     oreGrad1: '#17072b',
     oreGrad2: '#4c1d95',
     oreGrad3: '#7c3aed',
@@ -180,20 +189,6 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
       
       {/* METALLIC GRID RIVETS BACKGROUND PATTERN */}
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#a1a1aa_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-
-      {/* UNCHAINED GLOWING SPARK & EMBER PARTICLES */}
-      {isBroken && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <div className={`absolute bottom-4 left-1/4 w-2 h-2 rounded-full ${theme.sparkBg} animate-ping opacity-90`} />
-          <div className="absolute bottom-10 right-1/3 w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse opacity-80" />
-          <div className="absolute top-6 left-1/3 w-2 h-2 rounded-full bg-cyan-300 animate-ping opacity-75" />
-          <div className={`absolute top-4 right-1/4 w-1.5 h-1.5 rounded-full ${theme.sparkBg} animate-bounce opacity-80`} />
-          <div className="absolute top-1/2 left-6 w-1 h-1 rounded-full bg-white animate-ping opacity-60" />
-          <div className="absolute bottom-1/3 right-8 w-1 h-1 rounded-full bg-purple-300 animate-ping opacity-70" />
-          <div className="absolute top-12 left-10 text-xs animate-ping text-amber-400 opacity-70">⚡</div>
-          <div className="absolute bottom-8 right-12 text-xs animate-pulse text-cyan-300 opacity-70">✨</div>
-        </div>
-      )}
 
       {/* MAIN ORE & CHAINS SVG DISPLAY STAGE */}
       <div className={`relative w-52 h-52 flex items-center justify-center transition-all duration-700 ${isBroken ? theme.glow : ''}`}>
@@ -288,21 +283,12 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
             <path d="M 22,38 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
             <path d="M 95,36 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
             <path d="M 38,102 L 60,60" stroke={isBroken ? theme.veinColor : '#52525b'} strokeWidth={isBroken ? "2" : "1"} />
-
-            {/* Mineral Sparks */}
-            {isBroken && (
-              <>
-                <circle cx="42" cy="28" r="2" fill="#fff" className="animate-ping" />
-                <circle cx="82" cy="52" r="2.5" fill={theme.veinColor} className="animate-pulse" />
-                <circle cx="60" cy="88" r="2" fill="#fff" className="animate-ping" />
-              </>
-            )}
           </svg>
 
           {/* ORE CENTER EMBLEM / SYMBOL */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className={`text-2xl filter drop-shadow-lg transition-transform duration-500 ${
-              isBroken ? 'scale-125 animate-pulse text-white' : 'opacity-70 text-zinc-400'
+              isBroken ? 'scale-125 text-white font-bold' : 'opacity-70 text-zinc-400'
             }`}>
               {seal.runeSymbol || '🪨'}
             </span>
@@ -1136,28 +1122,65 @@ export const SealingPowerView: React.FC = () => {
 
               <form onSubmit={handleSaveSeal} className="space-y-3 text-xs font-mono">
                 
-                {/* Name & Rune */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="col-span-1">
-                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Ore Symbol</label>
-                    <input
-                      type="text"
-                      value={formData.runeSymbol}
-                      onChange={(e) => setFormData({ ...formData, runeSymbol: e.target.value })}
-                      placeholder="🪨"
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-center text-lg text-white focus:outline-none focus:border-cyan-500"
-                    />
+                {/* Ore Name */}
+                <div>
+                  <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Ore Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Titanium Core & Heavy Chains"
+                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                {/* CARVED ORE TABLET: CUSTOM INPUT & ARABIC RUNES PALETTE */}
+                <div className="p-3 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-zinc-800/80 rounded-2xl space-y-2 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95),_inset_0_1px_1px_rgba(255,255,255,0.06)] relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-1.5">
+                    <span className="text-[9px] font-mono uppercase text-amber-300 font-bold flex items-center gap-1.5 tracking-wider [text-shadow:_0_1px_2px_rgba(0,0,0,0.9)]">
+                      <span>⛏️</span> CARVED ORE RUNES & ARABIC CALLIGRAPHY PALETTE
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-500">Click rune to insert or edit custom symbol</span>
                   </div>
-                  <div className="col-span-3">
-                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Ore Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. Titanium Core & Heavy Chains"
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
-                    />
+
+                  <div className="grid grid-cols-4 gap-2 items-center">
+                    {/* Carved Custom Input Slot */}
+                    <div className="col-span-1">
+                      <label className="text-[9px] font-mono text-amber-400/90 uppercase block mb-1 font-bold">Carved Symbol</label>
+                      <input
+                        type="text"
+                        value={formData.runeSymbol}
+                        onChange={(e) => setFormData({ ...formData, runeSymbol: e.target.value })}
+                        placeholder="🪨"
+                        className="w-full bg-black/90 border-2 border-zinc-800 rounded-xl py-2 px-1 text-center text-xl text-amber-200 font-serif font-bold tracking-widest shadow-[inset_0_3px_8px_rgba(0,0,0,0.95),_0_1px_0_rgba(255,255,255,0.05)] focus:outline-none focus:border-amber-500/80 [text-shadow:_1px_1px_3px_rgba(0,0,0,0.95),_-1px_-1px_1px_rgba(255,255,255,0.1)] transition"
+                      />
+                    </div>
+
+                    {/* Carved Runes Palette */}
+                    <div className="col-span-3">
+                      <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Arabic Calligraphy Runes</label>
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-black/60 border border-zinc-800/90 rounded-xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]">
+                        {SUGGESTED_RUNES.map((rune, idx) => {
+                          const isSelected = formData.runeSymbol === rune;
+                          return (
+                            <button
+                              key={`${rune}-${idx}`}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, runeSymbol: rune })}
+                              className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition border font-serif font-bold select-none ${
+                                isSelected
+                                  ? 'bg-amber-950/80 border-amber-500/90 text-amber-300 font-black shadow-[inset_0_2px_6px_rgba(0,0,0,0.9),0_0_10px_rgba(245,158,11,0.35)] scale-105 [text-shadow:_1px_1px_3px_rgba(0,0,0,0.9),_0_0_8px_rgba(245,158,11,0.7)]'
+                                  : 'bg-zinc-950/90 border-zinc-800/80 text-amber-200/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9),_0_1px_0_rgba(255,255,255,0.05)] hover:bg-zinc-900 hover:text-amber-100 hover:border-amber-500/40 [text-shadow:_1px_1px_2px_rgba(0,0,0,0.9),_-1px_-1px_0.5px_rgba(255,255,255,0.1)]'
+                              }`}
+                              title={`Select carved rune ${rune}`}
+                            >
+                              {rune}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
