@@ -108,8 +108,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
   
+  const isRecoveryActive = state.profile.recoveryMode || state.quests.some(q => q.status === 'Active' && (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY'));
+
   const baseQuests = state.quests.filter(q => {
-    if (state.profile.recoveryMode) {
+    if (isRecoveryActive) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
     }
     return true;
@@ -252,7 +254,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </span>
           </div>
           <p className="text-xs text-zinc-400 font-mono mt-1">
-            SYS_DATE: {systemDate} • STATUS: {state.profile.recoveryMode ? 'RECOVERY PROTOCOL' : 'FULL OPERATIONAL VELOCITY'}
+            SYS_DATE: {systemDate} • STATUS:{' '}
+            {isRecoveryActive ? (
+              <span className="text-amber-400 font-bold animate-pulse drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]">
+                🛡️ RECOVERY PROTOCOL ACTIVE
+              </span>
+            ) : (
+              <span className="text-zinc-500 font-medium">
+                FULL OPERATIONAL VELOCITY
+              </span>
+            )}
           </p>
         </div>
 
@@ -300,11 +311,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           <button
             disabled={true}
             onClick={(e) => e.preventDefault()}
-            className="px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border bg-zinc-900/50 text-zinc-500 border-white/5 opacity-50 cursor-not-allowed pointer-events-none"
-            title="Recovery Protocol button is disabled by system policy"
+            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border transition-all ${
+              isRecoveryActive
+                ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 shadow-[0_0_18px_rgba(245,158,11,0.6)] animate-pulse cursor-not-allowed pointer-events-none'
+                : 'bg-zinc-950/40 text-zinc-600 border-white/5 opacity-40 cursor-not-allowed pointer-events-none'
+            }`}
+            title="Recovery Protocol status is automated by system requirements (no manual switching off)"
           >
-            <Lock className="h-3.5 w-3.5 text-zinc-500" />
-            <span>{state.profile.recoveryMode ? 'RECOVERY ON (LOCKED)' : 'RECOVERY (LOCKED)'}</span>
+            <Lock className={`h-3.5 w-3.5 ${isRecoveryActive ? 'text-amber-400' : 'text-zinc-600'}`} />
+            <span>{isRecoveryActive ? 'RECOVERY PROTOCOL ACTIVE (LOCKED)' : 'RECOVERY INACTIVE'}</span>
           </button>
         </div>
       </div>
@@ -318,19 +333,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           {/* PROFILE TERMINAL CARD */}
           <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-cyan-500/20 bg-gradient-to-br from-zinc-950 via-zinc-950 to-cyan-950/20" id="profile-card">
             {/* Background glow accent */}
-            <div className="absolute right-0 top-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className={`absolute right-0 top-0 w-48 h-48 rounded-full blur-3xl pointer-events-none transition-all ${
+              isRecoveryActive ? 'bg-amber-500/20 animate-pulse' : 'bg-cyan-500/10'
+            }`} />
             
             <div className="flex justify-between items-start flex-wrap gap-4 relative z-10">
               <div>
                 <span className="text-[10px] font-mono text-cyan-400 tracking-widest uppercase font-bold flex items-center gap-1">
                   <span>⚡</span> OPERATOR PROFILE SIGNATURE
                 </span>
-                <h3 className="font-display text-3xl font-extrabold text-white mt-1 uppercase tracking-tight">
-                  {state.profile.recoveryMode ? 'RECOVERING_OPERATOR' : 'SOLE_PROGRESSOR'}
+                <h3 className={`font-display text-3xl font-extrabold uppercase tracking-tight transition-all mt-1 ${
+                  isRecoveryActive
+                    ? 'text-amber-400 drop-shadow-[0_0_20px_rgba(245,158,11,0.95)] animate-pulse'
+                    : 'text-white'
+                }`}>
+                  {isRecoveryActive ? '🛡️ RECOVERING_OPERATOR' : 'SOLE_PROGRESSOR'}
                 </h3>
 
                 {/* Job & Title Badges */}
                 <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {/* RECOVERY TITLE BADGE - GLOWS WHEN ACTIVE, DIMS WHEN INACTIVE */}
+                  {isRecoveryActive ? (
+                    <span className="text-[10px] font-mono font-bold bg-amber-950/90 border border-amber-500/60 text-amber-300 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse">
+                      <Shield className="h-3.5 w-3.5 text-amber-400" />
+                      [RECOVERY] RECOVERING OPERATOR
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold bg-zinc-950/40 border border-white/5 text-zinc-600 px-3 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
+                      <Shield className="h-3.5 w-3.5 text-zinc-600" />
+                      [RECOVERY] RECOVERING OPERATOR (INACTIVE)
+                    </span>
+                  )}
+
                   <span className="text-[10px] font-mono font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <Star className="h-3.5 w-3.5 text-cyan-400" />
                     [{activeTitle.badge}] {activeTitle.name}
