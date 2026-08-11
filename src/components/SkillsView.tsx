@@ -5,7 +5,7 @@ import {
   Award, Sparkles, Plus, Trash2, Edit2, CheckCircle2, 
   Circle, BarChart, ExternalLink, Target, Briefcase, ListTodo,
   Tag, Lock, Check, Crown, Search, Archive, ArchiveRestore,
-  GitMerge, Layers, Filter, AlertTriangle
+  GitMerge, Layers, Filter, AlertTriangle, Unlink, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -38,6 +38,12 @@ export const SkillsView: React.FC = () => {
   // Editing skill name states
   const [isEditingSkill, setIsEditingSkill] = useState(false);
   const [editSkillName, setEditSkillName] = useState('');
+
+  // Secondary skills management states
+  const [newSecSkillName, setNewSecSkillName] = useState('');
+  const [attachSecSkillId, setAttachSecSkillId] = useState('');
+  const [editingSecSkillId, setEditingSecSkillId] = useState<string | null>(null);
+  const [editingSecSkillName, setEditingSecSkillName] = useState('');
 
   const selectedSkill = state.skills.find(s => s.id === selectedSkillId);
   const selectedSkillStats = selectedSkill ? getSkillXpAndLevel(selectedSkill.id) : null;
@@ -730,7 +736,7 @@ export const SkillsView: React.FC = () => {
             {/* PARENT PRIMARY SKILL LINKAGE (For Secondary Skills) */}
             {(selectedSkill.tier || 'Primary') === 'Secondary' && (
               <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-3 mt-4">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-fuchsia-400">Linked Primary Skill (80/20 Rule)</span>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-fuchsia-400">Linked Primary Skill (XP Distribution)</span>
                 <div className="flex gap-2">
                   <select
                     value={selectedSkill.parentId || ''}
@@ -751,33 +757,219 @@ export const SkillsView: React.FC = () => {
                   </select>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
-                  Linking this secondary skill to a primary skill activates <strong>80/20 Pareto distribution</strong>. Quests associated with either skill will share progress: 80% to the Primary skill, 20% to the Secondary skill!
+                  Linking this secondary skill to a primary skill allows it to receive an equal share of the primary skill's allocated XP when quests are completed!
                 </p>
               </div>
             )}
 
             {/* LINKED SECONDARY SKILLS (For Primary Skills) */}
             {(selectedSkill.tier || 'Primary') === 'Primary' && (
-              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-3 mt-4">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-cyan-400">Linked Secondary Skills (80/20 Rule)</span>
+              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-4 mt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5" />
+                    LINKED SECONDARY SKILLS (PROPORTIONAL XP ROUTING)
+                  </span>
+                  <span className="text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded font-semibold">
+                    {state.skills.filter(s => s.parentId === selectedSkill.id).length} Specializations
+                  </span>
+                </div>
+
+                {/* List of currently linked secondary skills with Edit / Rename, Unlink, and Delete (Purge) */}
                 {state.skills.filter(s => s.parentId === selectedSkill.id).length === 0 ? (
-                  <p className="text-xs font-mono text-zinc-600">No linked secondary specializations.</p>
+                  <div className="p-3 bg-zinc-900/40 border border-dashed border-white/10 rounded-lg text-center">
+                    <p className="text-xs font-mono text-zinc-500">No secondary specializations linked to this primary skill yet.</p>
+                  </div>
                 ) : (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="space-y-2">
                     {state.skills
                       .filter(s => s.parentId === selectedSkill.id)
-                      .map(s => (
-                        <span
-                          key={s.id}
-                          className="text-[10px] font-mono text-fuchsia-400 bg-fuchsia-950/35 border border-fuchsia-500/20 px-2.5 py-1 rounded"
-                        >
-                          {s.name}
-                        </span>
-                      ))}
+                      .map(secSkill => {
+                        const isEditingThis = editingSecSkillId === secSkill.id;
+                        const secStats = getSkillXpAndLevel(secSkill.id);
+
+                        return (
+                          <div
+                            key={secSkill.id}
+                            className="flex items-center justify-between gap-2 p-2.5 bg-zinc-900/80 border border-fuchsia-500/20 rounded-lg transition-all hover:border-fuchsia-500/40"
+                          >
+                            {isEditingThis ? (
+                              <div className="flex items-center gap-1.5 flex-1">
+                                <input
+                                  type="text"
+                                  value={editingSecSkillName}
+                                  onChange={(e) => setEditingSecSkillName(e.target.value)}
+                                  className="bg-zinc-950 border border-fuchsia-500/50 rounded px-2 py-1 text-xs text-white font-sans flex-1 focus:outline-none"
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (editingSecSkillName.trim()) {
+                                      updateSkillName(secSkill.id, editingSecSkillName.trim());
+                                    }
+                                    setEditingSecSkillId(null);
+                                  }}
+                                  className="p-1 bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-900"
+                                  title="Save Name"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingSecSkillId(null)}
+                                  className="p-1 bg-zinc-800 border border-white/10 text-zinc-400 rounded hover:text-white"
+                                  title="Cancel"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[10px] font-mono font-bold text-fuchsia-400 bg-fuchsia-950/50 border border-fuchsia-500/30 px-1.5 py-0.5 rounded">
+                                    LVL {secStats.level}
+                                  </span>
+                                  <span className="text-xs font-sans font-semibold text-zinc-200 truncate">
+                                    {secSkill.name}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* Rename / Edit */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingSecSkillId(secSkill.id);
+                                      setEditingSecSkillName(secSkill.name);
+                                    }}
+                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-fuchsia-500/30 text-zinc-400 hover:text-fuchsia-300 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
+                                    title="Rename Secondary Skill"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                    <span className="hidden sm:inline">RENAME</span>
+                                  </button>
+
+                                  {/* Unlink */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      updateSkillParent(secSkill.id, null);
+                                    }}
+                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
+                                    title="Unlink from Primary Skill"
+                                  >
+                                    <Unlink className="h-3 w-3" />
+                                    <span className="hidden sm:inline">UNLINK</span>
+                                  </button>
+
+                                  {/* Delete / Purge */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`Delete secondary skill "${secSkill.name}" permanently?`)) {
+                                        deleteSkill(secSkill.id);
+                                      }
+                                    }}
+                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
+                                    title="Delete Secondary Skill"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    <span className="hidden sm:inline">PURGE</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
-                <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
-                  These secondary skills automatically split 20% of the XP whenever this primary skill is trained or active!
+
+                {/* ADD SECONDARY SKILLS CONTROLS */}
+                <div className="pt-3 border-t border-white/5 space-y-3">
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block font-bold">
+                    ADD SECONDARY SPECIALIZATION
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Option A: Create New Secondary Skill */}
+                    <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-lg space-y-2">
+                      <span className="text-[9px] font-mono text-fuchsia-400 uppercase block font-semibold">
+                        ➕ Create New Secondary Skill
+                      </span>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={newSecSkillName}
+                          onChange={(e) => setNewSecSkillName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newSecSkillName.trim()) {
+                              e.preventDefault();
+                              addSkill(newSecSkillName.trim(), 'Secondary', selectedSkill.id);
+                              setNewSecSkillName('');
+                            }
+                          }}
+                          placeholder="e.g. Applied Statistics"
+                          className="bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-fuchsia-500 flex-1 font-sans"
+                        />
+                        <button
+                          type="button"
+                          disabled={!newSecSkillName.trim()}
+                          onClick={() => {
+                            if (newSecSkillName.trim()) {
+                              addSkill(newSecSkillName.trim(), 'Secondary', selectedSkill.id);
+                              setNewSecSkillName('');
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-fuchsia-950/60 border border-fuchsia-500/40 text-fuchsia-300 rounded hover:bg-fuchsia-900 text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                        >
+                          CREATE
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option B: Link Existing Skill */}
+                    <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-lg space-y-2">
+                      <span className="text-[9px] font-mono text-cyan-400 uppercase block font-semibold">
+                        🔗 Attach Existing Skill
+                      </span>
+                      <div className="flex gap-1.5">
+                        <select
+                          value={attachSecSkillId}
+                          onChange={(e) => setAttachSecSkillId(e.target.value)}
+                          className="bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white flex-1 focus:outline-none focus:border-cyan-500 font-mono truncate"
+                        >
+                          <option value="">-- Choose Existing Skill --</option>
+                          {state.skills
+                            .filter(s => s.id !== selectedSkill.id && s.parentId !== selectedSkill.id)
+                            .map(s => (
+                              <option key={s.id} value={s.id}>
+                                {s.name} ({s.tier || 'Primary'})
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={!attachSecSkillId}
+                          onClick={() => {
+                            if (attachSecSkillId) {
+                              updateSkillParent(attachSecSkillId, selectedSkill.id);
+                              updateSkillTier(attachSecSkillId, 'Secondary');
+                              setAttachSecSkillId('');
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 rounded hover:bg-cyan-900 text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                        >
+                          ATTACH
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-zinc-400 leading-relaxed font-mono pt-1 border-t border-white/5">
+                  💡 <strong>Proportional XP Routing:</strong> Quest XP is split equally among linked Primary Skills. Each Primary Skill's allocated XP is then split equally among its linked Secondary Specializations!
                 </p>
               </div>
             )}

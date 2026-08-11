@@ -1547,7 +1547,20 @@ export const GoalsView: React.FC = () => {
                                       {/* Primary Skills */}
                                       {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
                                         <div className="space-y-1">
-                                          <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-wider block">Primary Skills</span>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-wider block font-bold">Primary Skills (Multi-Select)</span>
+                                            {editQuestSkills.filter(id => {
+                                              const sk = state.skills.find(s => s.id === id);
+                                              return sk && (sk.tier || 'Primary') === 'Primary';
+                                            }).length > 0 && (
+                                              <span className="text-[8px] font-mono text-cyan-400 font-bold bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                                                {editQuestSkills.filter(id => {
+                                                  const sk = state.skills.find(s => s.id === id);
+                                                  return sk && (sk.tier || 'Primary') === 'Primary';
+                                                }).length} Selected
+                                              </span>
+                                            )}
+                                          </div>
                                           <div className="flex flex-wrap gap-1.5">
                                             {state.skills
                                               .filter(s => (s.tier || 'Primary') === 'Primary')
@@ -1558,13 +1571,14 @@ export const GoalsView: React.FC = () => {
                                                     key={skill.id}
                                                     type="button"
                                                     onClick={() => handleEditSkillToggle(skill.id)}
-                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all ${
+                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
                                                       isSelected 
                                                         ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30 font-bold shadow-[0_0_8px_rgba(6,182,212,0.05)]' 
                                                         : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
                                                     }`}
                                                   >
-                                                    {skill.name}
+                                                    <span>{isSelected ? '✓' : '+'}</span>
+                                                    <span>{skill.name}</span>
                                                   </button>
                                                 );
                                               })}

@@ -203,41 +203,34 @@ const getSkillXpFromHistory = (skillId: string, history: XPHistoryEntry[], allSk
       }
     });
     
-    // Resolve secondary skill IDs involved directly or indirectly (linked to active primary)
-    const secondarySkillIds = new Set<string>();
-    directSkills.forEach(s => {
-      if (s.tier === 'Secondary') {
-        secondarySkillIds.add(s.id);
-      }
-    });
-    allSkills.forEach(s => {
-      if (s.tier === 'Secondary' && s.parentId && primarySkillIds.has(s.parentId)) {
-        secondarySkillIds.add(s.id);
-      }
-    });
-    
-    const primaryCount = primarySkillIds.size;
-    const secondaryCount = secondarySkillIds.size;
-    
+    const primaryList = Array.from(primarySkillIds);
+    const primaryCount = primaryList.length;
     const isTargetPrimary = (targetSkill.tier || 'Primary') === 'Primary';
-    
-    if (primaryCount > 0 && secondaryCount > 0) {
+
+    if (primaryCount > 0) {
+      // Quest XP is split equally among linked primary skills
+      const primaryXpAllocated = h.xp / primaryCount;
+
       if (isTargetPrimary) {
         if (primarySkillIds.has(skillId)) {
-          totalXp += (h.xp * 0.8) / primaryCount;
+          totalXp += primaryXpAllocated;
         }
       } else {
-        if (secondarySkillIds.has(skillId)) {
-          totalXp += (h.xp * 0.2) / secondaryCount;
+        // Target is a secondary skill. Check if its parent primary skill is active
+        if (targetSkill.parentId && primarySkillIds.has(targetSkill.parentId)) {
+          // Find all secondary skills linked under this parent primary skill
+          const parentSecondaries = allSkills.filter(s => s.tier === 'Secondary' && s.parentId === targetSkill.parentId);
+          if (parentSecondaries.length > 0) {
+            // Secondary skills under this primary skill split its allocated XP equally among themselves
+            totalXp += primaryXpAllocated / parentSecondaries.length;
+          }
         }
       }
-    } else if (primaryCount > 0) {
-      if (isTargetPrimary && primarySkillIds.has(skillId)) {
-        totalXp += h.xp / primaryCount;
-      }
-    } else if (secondaryCount > 0) {
-      if (!isTargetPrimary && secondarySkillIds.has(skillId)) {
-        totalXp += h.xp / secondaryCount;
+    } else {
+      // Fallback for standalone/orphaned secondary skills with no primary skill
+      const secondarySkills = directSkills.filter(s => s.tier === 'Secondary');
+      if (!isTargetPrimary && secondarySkills.some(s => s.id === skillId) && secondarySkills.length > 0) {
+        totalXp += h.xp / secondarySkills.length;
       }
     }
   }
