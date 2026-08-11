@@ -620,19 +620,6 @@ export const SealingPowerView: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={toggleBatterySaverMode}
-              className={`px-4 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider transition flex items-center gap-2 border ${
-                isBatterySaver
-                  ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                  : 'bg-zinc-900/90 text-zinc-400 border-white/10 hover:text-emerald-300'
-              }`}
-              title="Toggle PC Battery Saver to pause heavy animations and reduce GPU load"
-            >
-              <Zap className={`h-4 w-4 ${isBatterySaver ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
-              <span>{isBatterySaver ? '⚡ ECO DEFENSE ON' : 'ECO SAVER'}</span>
-            </button>
-
-            <button
               onClick={handleOpenCreateModal}
               className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 hover:from-cyan-500 hover:to-teal-500 text-white rounded-xl text-xs font-mono font-bold tracking-wider transition shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 border border-cyan-400/50"
             >

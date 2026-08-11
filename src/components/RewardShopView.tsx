@@ -19,6 +19,8 @@ export const RewardShopView: React.FC = () => {
     deleteShopItem,
     deleteCustomShopItem,
     resetDefaultShopItems,
+    clearVoucherHistory,
+    clearAllVouchers,
     addCoins,
     systemDate,
     isQuestFinishedForToday,
@@ -409,10 +411,26 @@ export const RewardShopView: React.FC = () => {
       {activeTab === 'inventory' ? (
         <div className="space-y-6">
           <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-6 space-y-4">
-            <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Tag className="h-4 w-4 text-amber-400" />
-              ACTIVE REWARD VOUCHERS ({activeVouchers.length})
-            </h3>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Tag className="h-4 w-4 text-amber-400" />
+                ACTIVE REWARD VOUCHERS ({activeVouchers.length})
+              </h3>
+              {inventory.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('Clear all vouchers (both active and history)?')) {
+                      clearAllVouchers();
+                    }
+                  }}
+                  className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition"
+                  title="Clear all vouchers from inventory"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  CLEAR ALL VOUCHERS
+                </button>
+              )}
+            </div>
 
             {activeVouchers.length === 0 ? (
               <div className="text-center py-12 text-zinc-500 font-mono text-xs border border-dashed border-white/10 rounded-xl">
@@ -460,9 +478,23 @@ export const RewardShopView: React.FC = () => {
           {/* REDEMPTION HISTORY */}
           {usedVouchers.length > 0 && (
             <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 space-y-3">
-              <h4 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                CLAIMED / REDEEMED HISTORY ({usedVouchers.length})
-              </h4>
+              <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+                <h4 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                  CLAIMED / REDEEMED HISTORY ({usedVouchers.length})
+                </h4>
+                <button
+                  onClick={() => {
+                    if (window.confirm('Clear all redeemed voucher history records?')) {
+                      clearVoucherHistory();
+                    }
+                  }}
+                  className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition"
+                  title="Clear redeemed vouchers history"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  CLEAR HISTORY
+                </button>
+              </div>
               <div className="divide-y divide-white/5">
                 {usedVouchers.map(v => (
                   <div key={v.id} className="py-2.5 flex items-center justify-between text-xs">

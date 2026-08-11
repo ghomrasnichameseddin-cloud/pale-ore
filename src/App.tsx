@@ -510,10 +510,10 @@ function AppContent() {
             <button
               onClick={() => setIsGuideModalOpen(true)}
               className="text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition bg-cyan-950/80 text-cyan-300 border-cyan-500/40 hover:bg-cyan-900 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-              title="Open System Usage Guide & Manual (English / العربية)"
+              title="Open System Usage Guide & Manual"
             >
               <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-              <span>SYSTEM GUIDE | الدليل</span>
+              <span>SYSTEM GUIDE</span>
             </button>
 
             {/* REWARD SHOP COIN BUTTON */}

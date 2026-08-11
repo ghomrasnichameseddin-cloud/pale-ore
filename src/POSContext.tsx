@@ -175,6 +175,8 @@ interface POSContextType {
   deleteCustomShopItem: (itemId: string) => void;
   resetDefaultShopItems: () => void;
   addCoins: (amount: number, reason?: string) => void;
+  clearVoucherHistory: () => void;
+  clearAllVouchers: () => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -2784,6 +2786,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const clearVoucherHistory = () => {
+    setState(prev => ({
+      ...prev,
+      inventory: (prev.inventory || []).filter(r => r.status !== 'Used')
+    }));
+  };
+
+  const clearAllVouchers = () => {
+    setState(prev => ({
+      ...prev,
+      inventory: []
+    }));
+  };
+
   const addCustomShopItem = (newItem: Omit<ShopItem, 'id' | 'createdAt'>): string => {
     const id = `shop-custom-${Date.now()}`;
     const timestamp = getSystemTimestamp(state.systemDate);
@@ -3393,6 +3409,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteCustomShopItem,
       resetDefaultShopItems,
       addCoins,
+      clearVoucherHistory,
+      clearAllVouchers,
       updateBatterySettings,
       toggleBatterySaverMode
     }}>

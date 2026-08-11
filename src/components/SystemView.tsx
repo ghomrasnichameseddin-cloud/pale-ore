@@ -4,7 +4,8 @@ import { SystemMessageBox } from './SystemMessageBox';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
   Check, ShieldAlert, Award, BatteryCharging, Battery, Zap,
-  ShieldCheck, Cpu, Sun, Gauge, Monitor, Sparkles
+  ShieldCheck, Cpu, Sun, Gauge, Monitor, Sparkles, Thermometer,
+  Activity, HardDrive, Flame, Shield, Info, Percent
 } from 'lucide-react';
 
 export const SystemView: React.FC = () => {
@@ -122,15 +123,15 @@ export const SystemView: React.FC = () => {
       <SystemMessageBox />
 
       {/* PC BATTERY & HARDWARE THERMAL HEALTH PROTECTION SHIELD */}
-      <div className="p-6 bg-gradient-to-r from-emerald-950/80 via-zinc-950 to-teal-950/90 border border-emerald-500/40 rounded-2xl relative overflow-hidden shadow-[0_0_35px_rgba(16,185,129,0.15)] space-y-6">
+      <div className="p-6 bg-gradient-to-r from-emerald-950/90 via-zinc-950 to-teal-950/90 border border-emerald-500/50 rounded-2xl relative overflow-hidden shadow-[0_0_40px_rgba(16,185,129,0.2)] space-y-6">
         
         {/* BACKGROUND GLOW ACCENT */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-emerald-950/90 border border-emerald-500/50 rounded-xl text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 bg-emerald-950/90 border border-emerald-500/60 rounded-xl text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.35)]">
                 <ShieldCheck className="h-6 w-6 text-emerald-400" />
               </span>
               <div>
@@ -138,36 +139,322 @@ export const SystemView: React.FC = () => {
                   <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold flex items-center gap-1">
                     <span>⚡</span> PC BATTERY & THERMAL DEFENSE SHIELD <span>⚡</span>
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono border font-bold uppercase ${
-                    batterySettings.batterySaverMode 
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]' 
-                      : 'bg-zinc-900 text-zinc-400 border-white/10'
-                  }`}>
-                    {batterySettings.batterySaverMode ? 'ACTIVE HARDWARE DEFENSE' : 'STANDARD PROFILE'}
+                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono border font-bold uppercase bg-emerald-950 text-emerald-300 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                    HARDWARE SHIELD ACTIVE
                   </span>
                 </div>
                 <h3 className="font-display text-xl font-bold text-white tracking-wider">
-                  HARDWARE LONGEVITY & BATTERY HEALTH CONTROLLER
+                  PC THERMAL HEALTH & POWER LONGEVITY MATRIX
                 </h3>
               </div>
             </div>
           </div>
 
-          {/* Permanent Eco Mode Indicator */}
-          <div className="px-5 py-2.5 text-xs font-mono font-bold rounded-xl border flex items-center gap-2 shadow-lg bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
-            <span>PERMANENT ECO DEFENSE ENGAGED</span>
+          {/* Interactive Hardware Profile Status */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleBatterySaverMode}
+              className="px-4 py-2 text-xs font-mono font-bold rounded-xl border flex items-center gap-2 shadow-lg transition bg-emerald-950/90 text-emerald-300 border-emerald-500/60 hover:bg-emerald-900 shadow-[0_0_18px_rgba(16,185,129,0.3)]"
+            >
+              <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
+              <span>ECO SHIELD ENGAGED</span>
+            </button>
+          </div>
+        </div>
+
+        {/* THREE HARDWARE HEALTH SCORES (0-100) */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <Activity className="h-4 w-4 text-emerald-400" />
+              SYSTEM HEALTH SCORES (0–100 SCALE)
+            </span>
+            <span className="text-[10px] font-mono text-zinc-400">
+              Score Rating: <span className="text-emerald-400 font-bold">90–100 Excellent</span> | <span className="text-cyan-300 font-bold">75–89 Healthy</span> | <span className="text-amber-300 font-bold">60–74 Moderate</span> | <span className="text-orange-400 font-bold">40–59 Degraded</span> | <span className="text-rose-400 font-bold">0–39 Critical</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* Thermal Health Score */}
+            <div className="p-4 bg-zinc-950/90 border border-emerald-500/30 rounded-xl space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Thermometer className="h-4 w-4 text-emerald-400" />
+                  Thermal Health
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-900 text-zinc-400 border border-white/10 uppercase">
+                  N/A
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-[10px] font-mono text-zinc-500">Target Range: 90–100</span>
+              </div>
+              <p className="text-[10px] font-sans text-zinc-400">
+                Evaluates CPU, GPU, Hotspot, SSD, & VRM die temperatures against safety limits.
+              </p>
+            </div>
+
+            {/* Power Health Score */}
+            <div className="p-4 bg-zinc-950/90 border border-emerald-500/30 rounded-xl space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="h-4 w-4 text-cyan-400" />
+                  Power Health
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-900 text-zinc-400 border border-white/10 uppercase">
+                  N/A
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-[10px] font-mono text-zinc-500">Target Range: 90–100</span>
+              </div>
+              <p className="text-[10px] font-sans text-zinc-400">
+                Measures PSU load percentage, power stability, and transient voltage spike events.
+              </p>
+            </div>
+
+            {/* Longevity Index */}
+            <div className="p-4 bg-zinc-950/90 border border-emerald-500/30 rounded-xl space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Shield className="h-4 w-4 text-amber-400" />
+                  Longevity Index
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-900 text-zinc-400 border border-white/10 uppercase">
+                  N/A
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-[10px] font-mono text-zinc-500">Target Range: 90–100</span>
+              </div>
+              <p className="text-[10px] font-sans text-emerald-400/90 font-medium">
+                *Represents hardware stress and operational health, not estimated years of lifespan.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        {/* SENSOR THRESHOLDS MATRIX (SHOWING N/A WHEN DATA IS UNAVAILABLE) */}
+        <div className="space-y-3 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <Cpu className="h-4 w-4 text-emerald-400" />
+              HARDWARE THERMAL & POWER THRESHOLDS
+            </span>
+            <span className="text-[10px] font-mono text-zinc-500">
+              Note: Web Browser sandbox restricts direct die temperature sensor access (`N/A`)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            
+            {/* CPU Temp */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <Cpu className="h-4 w-4 text-cyan-400" />
+                  CPU Temperature
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;70°C Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>70–80°C Good</div>
+                  <div>80–90°C Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;90°C Critical</div>
+                </div>
+              </div>
+            </div>
+
+            {/* GPU Temp */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <Gauge className="h-4 w-4 text-purple-400" />
+                  GPU Temperature
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;70°C Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>70–80°C Good</div>
+                  <div>80–85°C Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;85°C Critical</div>
+                </div>
+              </div>
+            </div>
+
+            {/* GPU Hotspot */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <Flame className="h-4 w-4 text-amber-400" />
+                  GPU Hotspot
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;80°C Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>80–90°C Good</div>
+                  <div>90–100°C Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;100°C Critical</div>
+                </div>
+              </div>
+            </div>
+
+            {/* SSD Temp */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <HardDrive className="h-4 w-4 text-teal-400" />
+                  SSD Temperature
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;50°C Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>50–60°C Good</div>
+                  <div>60–70°C Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;70°C Critical</div>
+                </div>
+              </div>
+            </div>
+
+            {/* VRM Temp */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <Activity className="h-4 w-4 text-rose-400" />
+                  VRM Temperature
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;60°C Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>60–75°C Good</div>
+                  <div>75–90°C Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;90°C Critical</div>
+                </div>
+              </div>
+            </div>
+
+            {/* PSU Load */}
+            <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                  <Percent className="h-4 w-4 text-amber-400" />
+                  PSU Load
+                </span>
+                <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-white/10">
+                  N/A
+                </span>
+              </div>
+              <div className="space-y-1 text-[10px] font-mono text-zinc-400">
+                <div className="flex justify-between text-zinc-300 border-b border-white/5 pb-1">
+                  <span>Thresholds:</span>
+                  <span className="text-emerald-400">&lt;60% Excellent</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] text-zinc-400 pt-0.5">
+                  <div>60–75% Good</div>
+                  <div>75–90% Warning</div>
+                  <div className="col-span-2 text-rose-400 font-bold">&gt;90% Critical</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* TRACKED SYSTEM HEALTH METRICS */}
+        <div className="space-y-3 pt-2 border-t border-white/10">
+          <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider block">
+            TRACKED THERMAL & POWER METRICS
+          </span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            
+            {/* Thermal Exposure */}
+            <div className="p-3.5 bg-zinc-950/90 border border-white/10 rounded-xl space-y-1">
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">Thermal Exposure</span>
+              <span className="text-lg font-mono font-bold text-zinc-400 block">N/A</span>
+              <span className="text-[10px] font-sans text-zinc-500 block">
+                Cumulative high-temperature duration
+              </span>
+            </div>
+
+            {/* Thermal Throttling */}
+            <div className="p-3.5 bg-zinc-950/90 border border-white/10 rounded-xl space-y-1">
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">Thermal Throttling</span>
+              <span className="text-lg font-mono font-bold text-zinc-400 block">N/A</span>
+              <span className="text-[10px] font-sans text-zinc-500 block">
+                Hardware frequency reduction events
+              </span>
+            </div>
+
+            {/* Power Stability */}
+            <div className="p-3.5 bg-zinc-950/90 border border-white/10 rounded-xl space-y-1">
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">Power Stability</span>
+              <span className="text-lg font-mono font-bold text-zinc-400 block">N/A</span>
+              <span className="text-[10px] font-sans text-zinc-500 block">
+                Voltage variance & rail ripple metric
+              </span>
+            </div>
+
+            {/* Power Spikes / Events */}
+            <div className="p-3.5 bg-zinc-950/90 border border-white/10 rounded-xl space-y-1">
+              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">Power Spikes / Events</span>
+              <span className="text-lg font-mono font-bold text-zinc-400 block">N/A</span>
+              <span className="text-[10px] font-sans text-zinc-500 block">
+                Transient over-current surge count
+              </span>
+            </div>
+
           </div>
         </div>
 
         {/* REAL-TIME BATTERY & THERMAL DIAGNOSTICS STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-white/10">
           
           {/* Real or Estimated Battery Level */}
-          <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-1">
+          <div className="bg-zinc-950/90 border border-emerald-500/30 p-4 rounded-xl space-y-2">
             <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">LIVE PC BATTERY LEVEL</span>
             <div className="flex items-center justify-between">
-              <span className="text-xl font-mono font-bold text-white">
+              <span className="text-2xl font-mono font-black text-white">
                 {Math.round((realBattery.isSupported ? realBattery.level : 0.88) * 100)}%
               </span>
               <div className="flex items-center gap-1 text-xs font-mono text-emerald-400 font-bold">
@@ -185,7 +472,7 @@ export const SystemView: React.FC = () => {
               </div>
             </div>
             {/* Battery Level Visual Bar */}
-            <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-white/5 mt-1">
+            <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/10 mt-1">
               <div 
                 className={`h-full transition-all duration-500 ${
                   (realBattery.level || 0.88) > 0.4 ? 'bg-emerald-400' : (realBattery.level || 0.88) > 0.2 ? 'bg-amber-400' : 'bg-rose-500'
@@ -196,103 +483,43 @@ export const SystemView: React.FC = () => {
           </div>
 
           {/* GPU & Thermal Heat Load */}
-          <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-1">
+          <div className="bg-zinc-950/90 border border-emerald-500/30 p-4 rounded-xl space-y-1">
             <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">GPU SHADER & THERMAL LOAD</span>
-            <span className={`text-lg font-mono font-bold block ${
-              batterySettings.batterySaverMode ? 'text-emerald-400' : 'text-amber-300'
-            }`}>
-              {batterySettings.batterySaverMode ? 'LOW (~0.1W GPU Load)' : 'MODERATE (~1.8W Shaders)'}
+            <span className="text-lg font-mono font-bold text-emerald-400 block">
+              ULTRA LOW (~0.1W GPU Load)
             </span>
-            <span className="text-[10px] font-mono text-zinc-500 block">
-              {batterySettings.batterySaverMode ? 'Animations & glow filters paused' : 'Infinite spins & glows enabled'}
+            <span className="text-[10px] font-mono text-zinc-400 block">
+              Background GPU loops & heavy shaders throttled
             </span>
           </div>
 
           {/* OLED Display Power Drain */}
-          <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-1">
-            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">OLED DISPLAY POWER DRAIN</span>
+          <div className="bg-zinc-950/90 border border-emerald-500/30 p-4 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">OLED CANVAS POWER DRAIN</span>
             <span className={`text-lg font-mono font-bold block ${
               batterySettings.oledMode ? 'text-cyan-300' : 'text-zinc-300'
             }`}>
-              {batterySettings.oledMode ? 'PITCH BLACK (30% Energy Saved)' : 'DARK GRAY (#09090b)'}
+              {batterySettings.oledMode ? 'PURE BLACK (30% Energy Saved)' : 'DARK GRAY (#09090b)'}
             </span>
-            <span className="text-[10px] font-mono text-zinc-500 block">
-              {batterySettings.oledMode ? 'Pixels shut off for zero power' : 'Standard dark mode pixels'}
+            <span className="text-[10px] font-mono text-zinc-400 block">
+              {batterySettings.oledMode ? 'Pixel power shut off for zero drain' : 'Standard dark mode canvas'}
             </span>
           </div>
 
           {/* Estimated Battery Life Extension */}
-          <div className="bg-zinc-950/90 border border-white/10 p-3.5 rounded-xl space-y-1">
-            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">ESTIMATED RUNTIME BOOST</span>
+          <div className="bg-zinc-950/90 border border-emerald-500/30 p-4 rounded-xl space-y-1">
+            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">ESTIMATED RUNTIME EXTENSION</span>
             <span className="text-lg font-mono font-bold text-emerald-300 block">
-              {batterySettings.batterySaverMode ? '+35% LONGER RUNTIME' : 'STANDARD RUNTIME'}
+              +35% LONGER RUNTIME
             </span>
-            <span className="text-[10px] font-mono text-emerald-500/80 block">
-              Protects battery cell degradation cycles
+            <span className="text-[10px] font-mono text-emerald-400/90 block">
+              Mitigates lithium battery heat degradation
             </span>
           </div>
 
         </div>
 
-        {/* ECO & HARDWARE PROTECTION SETTINGS CONTROLS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-white/10">
-          
-          {/* OLED Mode Toggle */}
-          <div className="p-3.5 bg-zinc-950/80 border border-white/10 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                <Sun className="h-4 w-4 text-cyan-400" />
-                OLED Pure Black (#000)
-              </span>
-              <button
-                onClick={() => updateBatterySettings({ oledMode: !batterySettings.oledMode })}
-                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${
-                  batterySettings.oledMode ? 'bg-cyan-500' : 'bg-zinc-800'
-                }`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                  batterySettings.oledMode ? 'translate-x-5' : 'translate-x-0'
-                }`} />
-              </button>
-            </div>
-            <p className="text-[10px] font-sans text-zinc-400 leading-tight">
-              Turns canvas into pure #000000. On OLED/AMOLED screens, black pixels consume zero electrical power.
-            </p>
-          </div>
 
-          {/* Auto Low Battery Defense */}
-          <div className="p-3.5 bg-zinc-950/80 border border-white/10 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                <BatteryCharging className="h-4 w-4 text-emerald-400" />
-                Auto-Eco & Battery Defense
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
-                ALWAYS ACTIVE
-              </span>
-            </div>
-            <p className="text-[10px] font-sans text-zinc-400 leading-tight">
-              Permanently engaged to optimize system battery longevity and GPU load.
-            </p>
-          </div>
-
-          {/* Animation & Frame Rate Throttle */}
-          <div className="p-3.5 bg-zinc-950/80 border border-white/10 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                <Gauge className="h-4 w-4 text-purple-400" />
-                Animation & FPS Throttle
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">
-                OFF (STATIC ECO)
-              </span>
-            </div>
-            <p className="text-[10px] font-sans text-zinc-400 leading-tight">
-              Animations permanently throttled to eliminate GPU hardware wake-ups and save power.
-            </p>
-          </div>
-
-        </div>
 
         {/* HARDWARE BATTERY DAMAGE MITIGATION EXPLANATION */}
         <div className="p-4 bg-zinc-950/90 border border-emerald-500/30 rounded-xl text-xs font-sans text-zinc-300 leading-relaxed space-y-2">
