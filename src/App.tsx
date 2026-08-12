@@ -47,7 +47,11 @@ function AppContent() {
 
   const isShopLocked = React.useMemo(() => {
     const todayStr = systemDate;
+    const requiredTypes = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
     const todayQuests = (state.quests || []).filter(q => {
+      const qType = (q.type || 'Main').toUpperCase();
+      if (!requiredTypes.includes(qType)) return false;
+
       const isFinished = isQuestFinishedForToday(q);
       if (isFinished) {
         return q.status !== 'Failed';

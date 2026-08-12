@@ -57,6 +57,7 @@ export const RewardShopView: React.FC = () => {
   const inventory = state.inventory || [];
 
   const todayStr = systemDate;
+  const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
   const baseQuests = (state.quests || []).filter(q => {
     if (state.profile.recoveryMode) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
@@ -65,6 +66,9 @@ export const RewardShopView: React.FC = () => {
   });
 
   const todayQuests = baseQuests.filter(q => {
+    const qType = (q.type || 'Main').toUpperCase();
+    if (!REQUIRED_SHOP_LOCK_TYPES.includes(qType)) return false;
+
     const isFinished = isQuestFinishedForToday(q);
     if (isFinished) {
       return q.status !== 'Failed';
@@ -88,7 +92,7 @@ export const RewardShopView: React.FC = () => {
 
   const handleBuy = (itemId: string) => {
     if (isShopLocked) {
-      showToast('Reward Shop is locked! Resolve all today\'s directives first.', 'error');
+      showToast("Reward Shop is locked! Resolve today's required directives (Main, Boss, Penalty & Habit) first.", 'error');
       return;
     }
     const res = purchaseShopItem(itemId);
@@ -273,7 +277,7 @@ export const RewardShopView: React.FC = () => {
               REWARD SHOP IS RESTRICTED
             </h3>
             <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-              System operational protocol requires completing <span className="text-amber-300 font-bold">ALL of today's quests</span> before redeeming rewards or purchasing store vouchers.
+              System operational protocol requires completing <span className="text-amber-300 font-bold">today's required directives (Main, Boss, Penalty & Habit)</span> before redeeming rewards or purchasing store vouchers.
             </p>
           </div>
 
