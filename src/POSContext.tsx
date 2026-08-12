@@ -15,6 +15,9 @@ export const getSystemTimestamp = (systemDateStr?: string): string => {
   return `${dateStr}T${hours}:${minutes}:${seconds}`;
 };
 import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec } from './jobsAndTitles';
+import { 
+  getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
+} from './utils/perkEvaluator';
 
 interface POSContextType {
   state: POSState;
@@ -678,12 +681,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cycleMinutes = activeFocusSession.totalWorkTime;
       const todayStr = new Date().toISOString().split('T')[0];
       
+      const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+      const focusXpMult = getFocusXpMultiplier(activeJob);
+      const focusXpEarned = Math.round(15 * focusXpMult);
+
       const xpHistoryId = `h-focus-${Date.now()}`;
       const focusXpEntry: XPHistoryEntry = {
         id: xpHistoryId,
         questId: null,
         questName: `🧘 Focus Session: Completed ${cycleMinutes} min work block on "${activeFocusSession.questName}"`,
-        xp: 15,
+        xp: focusXpEarned,
         timestamp: new Date().toISOString(),
         skillIds: []
       };
@@ -698,7 +705,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sender: 'FOCUS_BOT',
         category: 'achievement',
         title: 'Focus Cycle Complete',
-        content: `Completed ${cycleMinutes}m work block for "${activeFocusSession.questName}". +15 XP awarded!`,
+        content: `Completed ${cycleMinutes}m work block for "${activeFocusSession.questName}". +${focusXpEarned} XP awarded!`,
         priority: 'high'
       });
 
@@ -1000,6 +1007,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       // Apply penalties for each unchecked quest and automatically create penalty recovery quests
+      const activeJobForMidnight = getActiveJob(prev.profile.jobId, prev.customJobs || [], prev.deletedJobIds || []);
+      const penaltyReduction = getFailPenaltyMultiplier(activeJobForMidnight);
+
       uncheckedQuests.forEach(q => {
         let penaltyXp = 50;
         if (q.difficulty === 'Easy') penaltyXp = 25;
@@ -1008,7 +1018,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         else if (q.difficulty === 'Boss') penaltyXp = 250;
 
         const isCritical = q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
-        const finalPenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
+        const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
+        const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
 
         const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
         const penaltyEntry: XPHistoryEntry = {
@@ -1750,8 +1761,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const completedTimestamp = getSystemTimestamp(state.systemDate);
     
-    // Calculate Job Perk XP Bonus
-    const activeJob = getActiveJob(state.profile.jobId);
+    // Calculate Job Perk XP & Coin Multiplier
+    const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+    const questPerkXpMultiplier = getQuestXpMultiplier(activeJob, questToComplete);
+
     // Calculate Habit Streak XP Bonus (+5% per streak day up to +50%)
     const currentStreak = questToComplete.streakCount || 0;
     const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit';
@@ -1760,16 +1773,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
     }
 
-    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier);
-    if (activeJob.id === 'job-cyber-architect' && questToComplete.type === 'Main') {
-      earnedXp = Math.round(earnedXp * 1.10);
-    } else if (activeJob.id === 'job-code-alchemist' && questToComplete.relatedSkills && questToComplete.relatedSkills.length > 0) {
-      earnedXp = Math.round(earnedXp * 1.15);
-    } else if (activeJob.id === 'job-strategy-commander' && (questToComplete.difficulty === 'Hard' || questToComplete.difficulty === 'Boss')) {
-      earnedXp = Math.round(earnedXp * 1.15);
-    } else if (activeJob.id === 'job-quantum-polymath') {
-      earnedXp = Math.round(earnedXp * 1.10);
-    }
+    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier);
 
     // Calculate Power Seal XP Bonus Multiplier
     const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
@@ -1789,13 +1793,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       skillIds: questToComplete.relatedSkills
     };
 
-    // Calculate momentum boost (+10% on completion, cap 100)
-    const newMomentum = Math.min(100, state.profile.momentum + 10);
+    // Calculate momentum boost (+10% on completion + Perk Multiplier, cap 100)
+    const momentumPerkMult = getMomentumMultiplier(activeJob);
+    const newMomentum = Math.min(100, state.profile.momentum + Math.round(10 * momentumPerkMult));
 
-    // Calculate Coins Earned (+10% of earned XP + streak bonus)
+    // Calculate Coins Earned (+10% of earned XP + streak bonus + Job Coin Perk)
     const baseCoinsEarned = Math.max(5, Math.round(earnedXp / 10));
     const streakCoinBonus = isRecurringOrHabit ? currentStreak * 2 : 0;
-    const totalCoinsEarned = baseCoinsEarned + streakCoinBonus;
+    const perkCoinMult = getCoinMultiplier(activeJob);
+    const totalCoinsEarned = Math.round((baseCoinsEarned + streakCoinBonus) * perkCoinMult);
 
     setState(prev => {
       // Complete quest or update recurrence completion time & habit streak
@@ -1935,7 +1941,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else if (questToFail.difficulty === 'Boss') penaltyXp = 250;
 
     const isImportant = questToFail.type === 'Main' || questToFail.type === 'Boss' || questToFail.difficulty === 'Hard' || questToFail.difficulty === 'Boss';
-    const finalPenaltyXp = isImportant ? penaltyXp * 1.5 : penaltyXp;
+    const basePenaltyXp = isImportant ? penaltyXp * 1.5 : penaltyXp;
+
+    const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+    const penaltyReduction = getFailPenaltyMultiplier(activeJob);
+    const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
 
     const xpHistoryId = `h-fail-${Date.now()}`;
     const penaltyEntry: XPHistoryEntry = {

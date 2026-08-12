@@ -761,11 +761,51 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                     </div>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-cyan-500/20 rounded-xl space-y-1">
-                    <span className="font-mono font-bold text-cyan-300 uppercase block">3. Class Titles & Jobs</span>
-                    <p className="text-zinc-300 font-sans">
-                      Equip custom class titles and jobs to display unique badges and stat affinities across the operating system.
+                  {/* CLASS TITLES, JOBS & DYNAMIC PERK EVALUATOR ENGINE */}
+                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
+                        <Briefcase className="h-4 w-4 text-cyan-400" />
+                        <span>3. CLASS TITLES, CUSTOM JOBS & DYNAMIC PERK EVALUATOR</span>
+                      </div>
+                      <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded uppercase">
+                        PERK_ENGINE_PARSER
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Equip standard preset Job Classes or craft your own <strong>Custom Job Classes</strong> with custom perk text. The system features an intelligent <strong>Dynamic Perk Evaluator Engine</strong> that parses manually written perk descriptions into real operational multipliers:
                     </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono text-[11px]">
+                      <div className="p-2.5 bg-zinc-950 border border-cyan-500/20 rounded-lg space-y-1">
+                        <span className="text-cyan-300 font-bold text-[10px] block">⚡ DIRECTIVE XP MULTIPLIERS (+X% XP)</span>
+                        <p className="text-zinc-400 font-sans text-[10px]">
+                          Parses targets like <code className="text-cyan-400">Main</code>, <code className="text-cyan-400">Skill</code>, <code className="text-cyan-400">Hard/Boss</code>, or <code className="text-cyan-400">Strength</code>. Converts phrases like <em>"+15% XP on Hard Directives"</em> into live quest rewards.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 border border-purple-500/20 rounded-lg space-y-1">
+                        <span className="text-purple-300 font-bold text-[10px] block">🧘 FOCUS SESSION BOOSTS</span>
+                        <p className="text-zinc-400 font-sans text-[10px]">
+                          Detects focus keywords (e.g. <em>"+20% Focus Minutes XP Multiplier"</em>) to scale XP awarded during Pomodoro timer blocks.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-1">
+                        <span className="text-amber-300 font-bold text-[10px] block">🪙 COIN & REWARD SCALING</span>
+                        <p className="text-zinc-400 font-sans text-[10px]">
+                          Detects coin keywords (e.g. <em>"+15% bonus coins earned"</em>) to amplify Luminescent Coin rewards upon completing directives.
+                        </p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 border border-rose-500/20 rounded-lg space-y-1">
+                        <span className="text-rose-300 font-bold text-[10px] block">🛡️ PENALTY MITIGATION & MOMENTUM</span>
+                        <p className="text-zinc-400 font-sans text-[10px]">
+                          Detects penalty keywords (e.g. <em>"Reduces Fail Penalty Loss by 20%"</em>) and momentum keywords to reduce failed directive loss or boost momentum gains.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
