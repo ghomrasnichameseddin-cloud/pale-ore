@@ -40,29 +40,11 @@ function AppContent() {
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
-    activeFocusSession, toggleBatterySaverMode, isQuestFinishedForToday, isQuestScheduledForDate
+    activeFocusSession, toggleBatterySaverMode, isQuestFinishedForToday, isQuestScheduledForDate,
+    isShopLocked
   } = usePOS();
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
-
-  const isShopLocked = React.useMemo(() => {
-    const todayStr = systemDate;
-    const requiredTypes = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
-    const todayQuests = (state.quests || []).filter(q => {
-      const qType = (q.type || 'Main').toUpperCase();
-      if (!requiredTypes.includes(qType)) return false;
-
-      const isFinished = isQuestFinishedForToday(q);
-      if (isFinished) {
-        return q.status !== 'Failed';
-      }
-      if (q.status !== 'Active') return false;
-      const isScheduled = isQuestScheduledForDate(q, todayStr);
-      if (isScheduled) return true;
-      return !q.deadline || q.deadline <= todayStr;
-    });
-    return todayQuests.some(q => !isQuestFinishedForToday(q));
-  }, [state.quests, systemDate, isQuestFinishedForToday, isQuestScheduledForDate]);
 
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);

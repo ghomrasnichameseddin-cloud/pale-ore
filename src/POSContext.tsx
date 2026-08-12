@@ -180,6 +180,7 @@ interface POSContextType {
   addCoins: (amount: number, reason?: string) => void;
   clearVoucherHistory: () => void;
   clearAllVouchers: () => void;
+  isShopLocked: boolean;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -2677,6 +2678,38 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Reward Shop & Coins Operations
+  const isShopLocked = React.useMemo(() => {
+    const todayStr = state.systemDate || getLocalDateString();
+    const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
+
+    const baseQuests = (state.quests || []).filter(q => {
+      if (state.profile.recoveryMode) {
+        if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+      }
+      return true;
+    });
+
+    const todayQuests = baseQuests.filter(q => {
+      const qType = (q.type || 'Main').toUpperCase();
+      if (!REQUIRED_SHOP_LOCK_TYPES.includes(qType)) return false;
+
+      const isFinished = isQuestFinishedForToday(q);
+      if (isFinished) {
+        return q.status !== 'Failed';
+      }
+      if (q.status !== 'Active') return false;
+
+      const isScheduled = isQuestScheduledForDate(q, todayStr);
+      if (!isScheduled) return false;
+
+      if (q.deadline && q.deadline > todayStr) return false;
+
+      return true;
+    });
+
+    return todayQuests.some(q => !isQuestFinishedForToday(q));
+  }, [state.quests, state.systemDate, state.profile.recoveryMode, isQuestFinishedForToday, isQuestScheduledForDate]);
+
   const purchaseShopItem = (itemId: string): { success: boolean; message: string } => {
     const item = (state.shopItems || DEFAULT_SHOP_ITEMS).find(i => i.id === itemId);
     if (!item) {
@@ -3414,6 +3447,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addCoins,
       clearVoucherHistory,
       clearAllVouchers,
+      isShopLocked,
       updateBatterySettings,
       toggleBatterySaverMode
     }}>

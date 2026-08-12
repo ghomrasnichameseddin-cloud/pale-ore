@@ -25,7 +25,8 @@ export const RewardShopView: React.FC = () => {
     systemDate,
     isQuestFinishedForToday,
     isQuestScheduledForDate,
-    completeQuest
+    completeQuest,
+    isShopLocked
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'system-perks' | 'custom' | 'inventory'>('all');
@@ -80,7 +81,6 @@ export const RewardShopView: React.FC = () => {
   });
 
   const remainingTodayQuests = todayQuests.filter(q => !isQuestFinishedForToday(q));
-  const isShopLocked = remainingTodayQuests.length > 0;
 
   const activeVouchers = inventory.filter(i => i.status === 'Available');
   const usedVouchers = inventory.filter(i => i.status === 'Used');
