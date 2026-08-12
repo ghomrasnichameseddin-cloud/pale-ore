@@ -1,13 +1,25 @@
 import { POSState } from './types';
 
+export interface SkillRequirement {
+  skillId: string;
+  minLevel: number;
+}
+
 export interface JobSpec {
   id: string;
   name: string;
   category: string;
-  iconName: string; // Icon representation identifier
+  iconName: string; // Icon representation identifier (Knowledge, Iron Will, Passion, Strategy, Logic, Mystery, Strength, Architecture, etc.)
   description: string;
   perk: string;
   unlockedAtLevel: number;
+  
+  // Advanced Derived Conditions
+  relatedQuestId?: string | null;
+  requiredQuestStreak?: number;
+  skillRequirements?: SkillRequirement[];
+  relatedGoalId?: string | null;
+
   isCustom?: boolean;
 }
 
@@ -16,8 +28,17 @@ export interface TitleSpec {
   name: string;
   badge: string;
   category: string;
+  iconName?: string; // Topic icon representation identifier
   description: string;
   unlockCondition: string;
+  
+  // Advanced Derived Conditions
+  unlockedAtLevel?: number;
+  relatedQuestId?: string | null;
+  requiredQuestStreak?: number;
+  skillRequirements?: SkillRequirement[];
+  relatedGoalId?: string | null;
+
   checkUnlocked?: (state: POSState, completedQuestCount: number, currentLevel: number) => boolean;
   isCustom?: boolean;
 }
@@ -26,8 +47,8 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-cyber-architect',
     name: 'Cyber Architect',
-    category: 'Engineering & Systems',
-    iconName: 'Terminal',
+    category: 'Architecture',
+    iconName: 'Building',
     description: 'Specializes in high-level system architecture, folder structures, and operational planning.',
     perk: '+10% XP bonus on Main Quests & Core Directives',
     unlockedAtLevel: 1
@@ -35,7 +56,7 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-code-alchemist',
     name: 'Code Alchemist',
-    category: 'Software & Technology',
+    category: 'Logic',
     iconName: 'Code',
     description: 'Transmutes complex logical problems into structured, executable code and skill modules.',
     perk: '+15% XP bonus on Skill-linked Directives',
@@ -44,8 +65,8 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-cognitive-monk',
     name: 'Cognitive Monk',
-    category: 'Focus & Endurance',
-    iconName: 'Brain',
+    category: 'Iron Will',
+    iconName: 'ShieldCheck',
     description: 'Master of deep work immersion, sustained concentration, and mental endurance.',
     perk: '+20% Focus Minutes XP Multiplier during timer sessions',
     unlockedAtLevel: 1
@@ -53,8 +74,8 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-data-operative',
     name: 'Data Operative',
-    category: 'Analytics & Precision',
-    iconName: 'Cpu',
+    category: 'Knowledge',
+    iconName: 'BookOpen',
     description: 'Analyzes telemetry, metrics, and completion trends to maintain maximum operational speed.',
     perk: '+10% Boost to Daily Momentum calculation',
     unlockedAtLevel: 1
@@ -62,8 +83,8 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-bio-hacker',
     name: 'Bio-Hacker',
-    category: 'Vitality & Discipline',
-    iconName: 'Zap',
+    category: 'Passion',
+    iconName: 'Flame',
     description: 'Optimizes physical energy, habit consistency, and resilience against operational burnout.',
     perk: 'Reduces Fail Penalty XP Loss by 20%',
     unlockedAtLevel: 2
@@ -71,16 +92,34 @@ export const JOBS_LIST: JobSpec[] = [
   {
     id: 'job-strategy-commander',
     name: 'Strategy Commander',
-    category: 'Goals & Milestones',
-    iconName: 'Crosshair',
+    category: 'Strategy',
+    iconName: 'Target',
     description: 'Conquers long-term strategic roadmaps, high-stakes Boss directives, and milestone goals.',
     perk: '+15% XP bonus on Hard & Boss Difficulty Quests',
     unlockedAtLevel: 3
   },
   {
+    id: 'job-arcane-investigator',
+    name: 'Arcane Investigator',
+    category: 'Mystery',
+    iconName: 'Eye',
+    description: 'Uncovers hidden insights, unravels complex operational riddles, and explores uncharted domains.',
+    perk: '+15% bonus coins earned from quest executions',
+    unlockedAtLevel: 2
+  },
+  {
+    id: 'job-titan-enforcer',
+    name: 'Titan Enforcer',
+    category: 'Strength',
+    iconName: 'Dumbbell',
+    description: 'Dominates physical fitness goals and demanding high-intensity directives with raw power.',
+    perk: '+20% XP bonus on Strength & Physical Directives',
+    unlockedAtLevel: 2
+  },
+  {
     id: 'job-quantum-polymath',
     name: 'Quantum Polymath',
-    category: 'Mastery & Synthesis',
+    category: 'Mastery',
     iconName: 'Sparkles',
     description: 'Cross-functional operative capable of deploying skills across every system domain.',
     perk: '+10% XP across all operational directives',
@@ -93,16 +132,19 @@ export const TITLES_LIST: TitleSpec[] = [
     id: 'title-novice-operator',
     name: 'Novice Operative',
     badge: 'INITIATE',
-    category: 'System Level',
+    category: 'Knowledge',
+    iconName: 'GraduationCap',
     description: 'Successfully initialized into the Personal Operating System.',
     unlockCondition: 'Unlocked at System Level 1',
+    unlockedAtLevel: 1,
     checkUnlocked: (_state, _completedCount, level) => level >= 1
   },
   {
     id: 'title-focused-mind',
     name: 'Focused Mind',
     badge: 'FOCUSED',
-    category: 'Focus Mastery',
+    category: 'Logic',
+    iconName: 'Cpu',
     description: 'Demonstrated dedication to structured focus sessions.',
     unlockCondition: 'Log 30+ Total Focus Minutes',
     checkUnlocked: (state) => (state.profile.focusMinutesToday || 0) >= 30
@@ -111,34 +153,73 @@ export const TITLES_LIST: TitleSpec[] = [
     id: 'title-iron-will',
     name: 'Iron Will',
     badge: 'IRON WILL',
-    category: 'Focus Streak',
+    category: 'Iron Will',
+    iconName: 'Hammer',
     description: 'Sustained focus streak across multiple consecutive days.',
     unlockCondition: 'Achieve a 3+ Day Focus Streak',
+    requiredQuestStreak: 3,
     checkUnlocked: (state) => (state.profile.focusStreak || 0) >= 3
   },
   {
     id: 'title-master-executor',
     name: 'Master Executor',
     badge: 'EXECUTOR',
-    category: 'Quest Completion',
+    category: 'Strategy',
+    iconName: 'Crosshair',
     description: 'Relentlessly executed a high volume of directives.',
     unlockCondition: 'Complete 10+ Total Quests',
     checkUnlocked: (_state, completedCount) => completedCount >= 10
   },
   {
+    id: 'title-grand-architect',
+    name: 'Grand Architect',
+    badge: 'ARCHITECT',
+    category: 'Architecture',
+    iconName: 'LayoutGrid',
+    description: 'Master of structural planning, goal alignment, and system blueprints.',
+    unlockCondition: 'Reach System Level 3 & Develop 2+ Skills',
+    unlockedAtLevel: 3,
+    checkUnlocked: (state, _c, level) => level >= 3 && state.skills.length >= 2
+  },
+  {
+    id: 'title-passionate-flame',
+    name: 'Passionate Flame',
+    badge: 'PASSION',
+    category: 'Passion',
+    iconName: 'Flame',
+    description: 'Fueled by intrinsic drive and unyielding passion for growth.',
+    unlockCondition: 'Reach 70%+ Momentum & System Level 2',
+    unlockedAtLevel: 2,
+    checkUnlocked: (state) => state.profile.momentum >= 70
+  },
+  {
+    id: 'title-seeker-of-mysteries',
+    name: 'Seeker of Mysteries',
+    badge: 'MYSTERY',
+    category: 'Mystery',
+    iconName: 'Wand2',
+    description: 'Pioneered unknown territories and unlocked obscure knowledge.',
+    unlockCondition: 'Complete at least 1 Boss Quest & Level 3',
+    unlockedAtLevel: 3,
+    checkUnlocked: (state) => state.quests.some(q => q.difficulty === 'Boss' && q.status === 'Completed')
+  },
+  {
     id: 'title-veteran-specialist',
     name: 'Veteran Specialist',
     badge: 'VETERAN',
-    category: 'System Level',
+    category: 'Strength',
+    iconName: 'Swords',
     description: 'Proven operator with seasoned system experience.',
     unlockCondition: 'Reach System Level 5',
+    unlockedAtLevel: 5,
     checkUnlocked: (_state, _completedCount, level) => level >= 5
   },
   {
     id: 'title-boss-slayer',
     name: 'Boss Slayer',
     badge: 'BOSS SLAYER',
-    category: 'Boss Directives',
+    category: 'Strength',
+    iconName: 'Trophy',
     description: 'Conquered high-stake Boss level directives.',
     unlockCondition: 'Complete at least 1 Boss Quest',
     checkUnlocked: (state) => state.quests.some(q => q.difficulty === 'Boss' && q.status === 'Completed')
@@ -147,7 +228,8 @@ export const TITLES_LIST: TitleSpec[] = [
     id: 'title-polymath-prime',
     name: 'Polymath Prime',
     badge: 'POLYMATH',
-    category: 'Skill Tree',
+    category: 'Knowledge',
+    iconName: 'Brain',
     description: 'Cultivated multiple specialized skills across domains.',
     unlockCondition: 'Develop 3+ Specialized Skills',
     checkUnlocked: (state) => state.skills.length >= 3
@@ -156,16 +238,19 @@ export const TITLES_LIST: TitleSpec[] = [
     id: 'title-apex-systemer',
     name: 'Apex Systemer',
     badge: 'APEX',
-    category: 'System Level',
+    category: 'Strategy',
+    iconName: 'Compass',
     description: 'Attained elite system mastery level.',
     unlockCondition: 'Reach System Level 10',
+    unlockedAtLevel: 10,
     checkUnlocked: (_state, _completedCount, level) => level >= 10
   },
   {
     id: 'title-deep-work-monk',
     name: 'Deep Work Monk',
     badge: 'DEEP WORK',
-    category: 'Focus Mastery',
+    category: 'Iron Will',
+    iconName: 'ShieldCheck',
     description: 'Logged extended deep work focus sessions.',
     unlockCondition: 'Log 120+ Total Focus Minutes',
     checkUnlocked: (state) => (state.profile.focusMinutesToday || 0) >= 120
@@ -174,7 +259,8 @@ export const TITLES_LIST: TitleSpec[] = [
     id: 'title-unstoppable',
     name: 'The Unstoppable',
     badge: 'UNSTOPPABLE',
-    category: 'Momentum',
+    category: 'Passion',
+    iconName: 'Zap',
     description: 'Operated at peak momentum efficiency.',
     unlockCondition: 'Reach 85%+ Momentum',
     checkUnlocked: (state) => state.profile.momentum >= 85
@@ -239,16 +325,135 @@ export function getActiveTitle(titleId?: string, customTitles: TitleSpec[] = [],
   return allTitles.find(t => t.id === titleId) || allTitles[0] || TITLES_LIST[0];
 }
 
+export function evaluateUnlockConditions(
+  spec: {
+    unlockedAtLevel?: number;
+    relatedQuestId?: string | null;
+    requiredQuestStreak?: number;
+    skillRequirements?: SkillRequirement[];
+    relatedGoalId?: string | null;
+  },
+  state: POSState
+): { isUnlocked: boolean; unmetConditions: string[]; metConditions: string[] } {
+  const metConditions: string[] = [];
+  const unmetConditions: string[] = [];
+
+  // Calculate system level dynamically
+  const totalXp = (state.xpHistory || []).reduce((sum, h) => sum + h.xp, 0);
+  const currentLevel = Math.max(1, Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2));
+
+  // 1. System Level Requirement
+  const reqLevel = spec.unlockedAtLevel || 1;
+  if (currentLevel >= reqLevel) {
+    metConditions.push(`System Level ${reqLevel}+ (Current: Lvl ${currentLevel})`);
+  } else {
+    unmetConditions.push(`System Level ${reqLevel}+ required (Current: Lvl ${currentLevel})`);
+  }
+
+  // 2. Related Quest Requirement
+  if (spec.relatedQuestId) {
+    const quest = state.quests.find(q => q.id === spec.relatedQuestId);
+    const questName = quest ? quest.name : 'Linked Quest';
+    const isCompleted = quest && (quest.status === 'Completed' || quest.completedAt !== null);
+    if (isCompleted) {
+      metConditions.push(`Completed Quest: "${questName}"`);
+    } else {
+      unmetConditions.push(`Must complete Quest: "${questName}"`);
+    }
+  }
+
+  // 3. Required Quest Streak Requirement
+  if (spec.requiredQuestStreak && spec.requiredQuestStreak > 0) {
+    let currentStreak = 0;
+    let targetName = 'Quest Streak';
+    if (spec.relatedQuestId) {
+      const quest = state.quests.find(q => q.id === spec.relatedQuestId);
+      currentStreak = Math.max(quest?.streakCount || 0, quest?.bestStreak || 0);
+      targetName = quest ? `Streak on "${quest.name}"` : 'Quest Streak';
+    } else {
+      const maxQuestStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+      currentStreak = Math.max(maxQuestStreak, state.profile.focusStreak || 0);
+    }
+
+    if (currentStreak >= spec.requiredQuestStreak) {
+      metConditions.push(`${targetName}: ${spec.requiredQuestStreak}+ Days (Current: ${currentStreak} Days)`);
+    } else {
+      unmetConditions.push(`Requires ${spec.requiredQuestStreak}+ Day ${targetName} (Current: ${currentStreak} Days)`);
+    }
+  }
+
+  // 4. Skill Requirements
+  if (spec.skillRequirements && spec.skillRequirements.length > 0) {
+    spec.skillRequirements.forEach(sReq => {
+      const skill = state.skills.find(s => s.id === sReq.skillId);
+      const skillName = skill ? skill.name : 'Linked Skill';
+      const skillLevel = skill?.level || 1;
+      if (skillLevel >= sReq.minLevel) {
+        metConditions.push(`Skill "${skillName}" Lvl ${sReq.minLevel}+ (Current: Lvl ${skillLevel})`);
+      } else {
+        unmetConditions.push(`Skill "${skillName}" Lvl ${sReq.minLevel}+ required (Current: Lvl ${skillLevel})`);
+      }
+    });
+  }
+
+  // 5. Related Goal Requirement
+  if (spec.relatedGoalId) {
+    const goal = state.goals.find(g => g.id === spec.relatedGoalId);
+    const goalName = goal ? goal.name : 'Linked Goal';
+    const isGoalMet = goal && (goal.status === 'Active' || goal.status === 'Completed');
+    if (isGoalMet) {
+      metConditions.push(`Active/Completed Goal: "${goalName}"`);
+    } else {
+      unmetConditions.push(`Must activate or complete Goal: "${goalName}"`);
+    }
+  }
+
+  return {
+    isUnlocked: unmetConditions.length === 0,
+    unmetConditions,
+    metConditions
+  };
+}
+
+export function isJobUnlocked(job: JobSpec, state: POSState): boolean {
+  if (job.isCustom && !job.relatedQuestId && !job.requiredQuestStreak && (!job.skillRequirements || job.skillRequirements.length === 0) && !job.relatedGoalId && job.unlockedAtLevel <= 1) {
+    return true; // Custom player jobs without conditions are unlocked
+  }
+  const evalResult = evaluateUnlockConditions(job, state);
+  return evalResult.isUnlocked;
+}
+
+export function isTitleUnlocked(title: TitleSpec, state: POSState): boolean {
+  if (title.isCustom && !title.relatedQuestId && !title.requiredQuestStreak && (!title.skillRequirements || title.skillRequirements.length === 0) && !title.relatedGoalId && (!title.unlockedAtLevel || title.unlockedAtLevel <= 1)) {
+    return true; // Custom player titles without explicit conditions are unlocked
+  }
+
+  // Check structured unlock conditions if defined
+  const hasStructuredConditions = title.unlockedAtLevel || title.relatedQuestId || title.requiredQuestStreak || (title.skillRequirements && title.skillRequirements.length > 0) || title.relatedGoalId;
+  
+  let structuredUnlocked = true;
+  if (hasStructuredConditions) {
+    structuredUnlocked = evaluateUnlockConditions(title, state).isUnlocked;
+  }
+
+  // Check legacy checkUnlocked function if present
+  let legacyUnlocked = true;
+  if (title.checkUnlocked) {
+    const completedQuestCount = state.quests.filter(q => q.status === 'Completed').length;
+    const totalXp = (state.xpHistory || []).reduce((sum, h) => sum + h.xp, 0);
+    const currentLevel = Math.max(1, Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2));
+    legacyUnlocked = title.checkUnlocked(state, completedQuestCount, currentLevel);
+  }
+
+  return structuredUnlocked && legacyUnlocked;
+}
+
 export function getUnlockedTitles(state: POSState): TitleSpec[] {
-  const completedQuestCount = state.quests.filter(q => q.status === 'Completed').length;
-  // Calculate level dynamically from total XP
-  const totalXp = state.xpHistory.reduce((sum, h) => sum + h.xp, 0);
-  const currentLevel = Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1);
-
   const allTitles = getAllTitles(state.customTitles || [], state.deletedTitleIds || []);
+  return allTitles.filter(title => isTitleUnlocked(title, state));
+}
 
-  return allTitles.filter(title => {
-    if (title.isCustom) return true; // Custom player titles are unlocked by default once created!
-    return title.checkUnlocked ? title.checkUnlocked(state, completedQuestCount, currentLevel) : true;
-  });
+export function getUnlockedJobs(state: POSState): JobSpec[] {
+  const allJobs = getAllJobs(state.customJobs || [], state.deletedJobIds || []);
+  return allJobs.filter(job => isJobUnlocked(job, state));
 }
