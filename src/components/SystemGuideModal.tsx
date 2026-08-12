@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   BookOpen, Activity, Swords, Target, Briefcase, Award, Sparkles, 
   ShoppingBag, Settings, Compass, X, HelpCircle, Cpu,
-  Zap, Timer, Coins, ArrowRight, GitFork
+  Zap, Timer, Coins, ArrowRight, GitFork,
+  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -34,9 +35,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
     },
     {
       id: 'operations',
-      title: '3. Operations & Focus Engine',
+      title: '3. Quest Categories & Recovery Engine',
       icon: Swords,
-      badge: 'DAILY',
+      badge: 'CATEGORIES & RECOVERY',
       color: 'text-emerald-400',
     },
     {
@@ -342,31 +343,192 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 3. OPERATIONS & FOCUS ENGINE */}
+            {/* 3. QUEST CATEGORIES & RECOVERY ENGINE */}
             {activeSection === 'operations' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Swords className="h-5 w-5 text-emerald-400" />
-                    3. Operations, Directives Management & Focus Engine
+                    3. Directives Classification & System Recovery Mechanism
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Quest categories, difficulty rewards, advanced split/merge actions, and the Pomodoro Focus overlay.
+                    Complete architectural specification of all 7 quest categories, difficulty multipliers, failure dynamics, and the automated Recovery Protocol.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
-                    <span className="font-mono font-bold text-cyan-400 block">Quest Categories</span>
-                    <ul className="text-zinc-400 text-[11px] space-y-1 font-sans">
-                      <li>• <strong>Main:</strong> Core operational goals.</li>
-                      <li>• <strong>Side:</strong> Quick secondary tasks.</li>
-                      <li>• <strong>Boss:</strong> Challenging high-reward directives.</li>
-                      <li>• <strong>Habit:</strong> Daily routines with streak counter.</li>
-                      <li>• <strong>Recovery & Penalty:</strong> Recovery quests to offset missed items.</li>
-                    </ul>
+                {/* 1. ALL 7 QUEST CATEGORIES & FUNCTIONAL DIFFERENCES */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Target className="h-4 w-4 text-cyan-400" />
+                      Quest Categories Taxonomy & Functional Differences:
+                    </h4>
+                    <span className="text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded">
+                      7 CATEGORIES
+                    </span>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-sans">
+                    {/* MAIN */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-cyan-300 flex items-center gap-1.5">🏆 Main Quest (`Main`)</span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/30">MANDATORY</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Core operational goals and primary daily deliverables. Direct drivers of Focus & Discipline stats.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Shop Lock:</strong> Required to unlock today's Reward Shop.</div>
+                        <div>• <strong>Failure Consequence:</strong> Unchecked past midnight triggers Midnight Penalty & Recovery Protocol.</div>
+                      </div>
+                    </div>
+
+                    {/* BOSS */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-amber-300 flex items-center gap-1.5">🔥 Boss Fight (`Boss`)</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">HIGH REWARD</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        High-difficulty, intensive major challenges or milestones requiring maximum focus and output.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Shop Lock:</strong> Required to unlock today's Reward Shop.</div>
+                        <div>• <strong>Rewards & Penalties:</strong> Massive XP + Luminescent Coins on success; triggers Recovery Mode if missed.</div>
+                      </div>
+                    </div>
+
+                    {/* HABIT */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-emerald-300 flex items-center gap-1.5">⚡ Scheduled Habit (`Habit`)</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">RECURRING</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Recurring daily or scheduled routines with streak counters to build long-term personal consistency.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Shop Lock:</strong> Scheduled habits for today are required for Reward Shop unlock.</div>
+                        <div>• <strong>Failure Consequence:</strong> Missing scheduled days resets streak & triggers Midnight Penalty.</div>
+                      </div>
+                    </div>
+
+                    {/* PENALTY */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-rose-500/40 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-rose-300 flex items-center gap-1.5">⚠️ Penalty Directive (`Penalty`)</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">AUTO-GENERATED</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Created automatically when a Main, Boss, or Habit quest is left unchecked past midnight or marked failed.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Half-Time Rule:</strong> Estimated duration is cut to <strong>50% (half)</strong> of the original quest time.</div>
+                        <div>• <strong>Impact:</strong> Keeps Recovery Protocol active and locks the Reward Shop until cleared.</div>
+                      </div>
+                    </div>
+
+                    {/* RECOVERY */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-amber-500/40 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-amber-300 flex items-center gap-1.5">🛡️ Recovery Quest (`Recovery`)</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">RESTORATIVE</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Specialized restorative directives assigned during Recovery Mode to help operators rebuild momentum safely.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>View Isolation:</strong> Displayed alongside Penalty quests while standard quests are filtered out.</div>
+                        <div>• <strong>Deactivation:</strong> Must be completed to deactivate Recovery Mode.</div>
+                      </div>
+                    </div>
+
+                    {/* SIDE */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-white/10 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-zinc-200 flex items-center gap-1.5">🎯 Side Quest (`Side`)</span>
+                        <span className="text-[9px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">TACTICAL</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Secondary supportive tasks, quick errands, or sub-deliverables to boost discipline and minor attributes.
+                      </p>
+                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Shop Lock:</strong> Excluded from mandatory shop lock requirements.</div>
+                        <div>• <strong>Rollover:</strong> Safe to carry over without triggering Recovery Mode.</div>
+                      </div>
+                    </div>
+
+                    {/* OPTIONAL */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-white/10 rounded-xl space-y-1.5 md:col-span-2">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-purple-300 flex items-center gap-1.5">✨ Optional Quest (`Optional`)</span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded border border-purple-500/30">FLEXIBLE</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Low-pressure bonus ideas, exploratory learning, or stretch goals. Zero deadline pressure or penalty. Remains accessible even during Recovery Mode to allow low-stress execution.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. THE RECOVERY MECHANISM PIPELINE */}
+                <div className="p-4 bg-amber-950/30 border border-amber-500/40 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                    <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-2 text-xs">
+                      <ShieldAlert className="h-4 w-4 text-amber-400" />
+                      <span>THE AUTOMATED RECOVERY PROTOCOL MECHANISM</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-amber-950 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded uppercase">
+                      SYSTEM_FAILSAFE_PIPELINE
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    The Recovery Protocol is an automated fail-safe designed to prevent burnout, eliminate cognitive overwhelm, and force swift momentum restoration when tasks slip behind schedule:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 font-mono text-[11px]">
+                    <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
+                      <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
+                        1. MIDNIGHT AUDIT
+                      </div>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        When system date advances past midnight (`SYS_DATE`), active **Main**, **Boss**, or **Habit** quests left incomplete are marked as failed/overdue.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
+                      <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
+                        2. 50% HALF-TIME QUESTS
+                      </div>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        The system spawns a `⚠️ RECOVERY` penalty directive with its estimated duration halved (`origEstTime / 2`) for rapid catch-up.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
+                      <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
+                        3. DIRECTIVE ISOLATION
+                      </div>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        `recoveryMode` locks ON (`RECOVERING_OPERATOR`). Standard quests are hidden to remove overwhelm and focus strictly on Recovery items.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
+                      <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
+                        4. AUTO-DEACTIVATION
+                      </div>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        Completing all active Penalty and Recovery quests automatically turns off `recoveryMode` and restores full operational velocity.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DIFFICULTIES & ADVANCED CONTROLS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
                   <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
                     <span className="font-mono font-bold text-emerald-400 block">Difficulties & XP Multipliers</span>
                     <ul className="text-zinc-400 text-[11px] space-y-1 font-sans">
@@ -376,27 +538,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                       <li>• <strong>Boss:</strong> +250 XP + Luminescent Coins</li>
                     </ul>
                   </div>
-                </div>
 
-                {/* ADVANCED QUEST ACTIONS */}
-                <div className="p-4 bg-zinc-900/90 border border-white/10 rounded-xl space-y-3">
-                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                    <GitFork className="h-4 w-4 text-cyan-400" />
-                    Advanced Quest Directive Controls:
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-white/5">
-                      <span className="text-cyan-400 font-bold block">✂️ SPLIT</span>
-                      <p className="text-zinc-400 font-sans text-[11px] mt-1">Split an overwhelming task into 2 parts with ratio-based XP.</p>
-                    </div>
-                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-white/5">
-                      <span className="text-purple-400 font-bold block">🔗 MERGE</span>
-                      <p className="text-zinc-400 font-sans text-[11px] mt-1">Combine 2 small directives into 1 unified quest.</p>
-                    </div>
-                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-white/5">
-                      <span className="text-amber-400 font-bold block">📦 MOVE</span>
-                      <p className="text-zinc-400 font-sans text-[11px] mt-1">Reassign quest to a different Goal, Project, or Milestone.</p>
-                    </div>
+                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
+                    <span className="font-mono font-bold text-cyan-400 block">Directive Tools (Split / Merge / Move)</span>
+                    <ul className="text-zinc-400 text-[11px] space-y-1 font-sans">
+                      <li>• <strong>✂️ Split:</strong> Divide large tasks into 2 smaller items.</li>
+                      <li>• <strong>🔗 Merge:</strong> Combine small tasks into 1 unified quest.</li>
+                      <li>• <strong>📦 Move:</strong> Reassign quest to a new Goal or Project.</li>
+                    </ul>
                   </div>
                 </div>
 
@@ -642,6 +791,15 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                   </div>
                   <p className="text-zinc-300 font-sans leading-relaxed">
                     Coins generate automatically upon completing directives (especially Boss Fights) and finishing focus sessions. Add custom rewards to incentivize real-life execution!
+                  </p>
+                </div>
+
+                <div className="p-4 bg-zinc-900/90 border border-amber-500/20 rounded-xl space-y-2 text-xs">
+                  <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                    <Shield className="h-4 w-4 text-amber-400" /> Reward Shop Unlock Policy
+                  </div>
+                  <p className="text-zinc-300 font-sans leading-relaxed">
+                    The Reward Shop is restricted by default until today's mandatory directives are completed. The lock is tied directly to quests categorized under <strong className="text-amber-300">Main</strong>, <strong className="text-amber-300">Boss</strong>, <strong className="text-amber-300">Penalty</strong>, and <strong className="text-amber-300">Habit</strong>. Side and Optional tasks do not prevent shop unlocking.
                   </p>
                 </div>
               </div>
