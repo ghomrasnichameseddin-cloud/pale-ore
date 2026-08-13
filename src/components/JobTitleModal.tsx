@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   getAllJobs, getAllTitles, getActiveJob, getActiveTitle, evaluateUnlockConditions,
-  JobSpec, TitleSpec, SkillRequirement, isJobUnlocked, isTitleUnlocked
+  JobSpec, TitleSpec, SkillRequirement, isJobUnlocked, isTitleUnlocked,
+  getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES, getJobScaledPerk
 } from '../jobsAndTitles';
 import { 
   Terminal, Code, Brain, Cpu, Zap, Crosshair, Sparkles, Award, Check, Lock, Shield, X, Star, Plus, Trash2, Pencil, Save,
@@ -100,6 +101,7 @@ const TOPIC_ICON_OPTIONS = [
 export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose }) => {
   const { 
     state, updateJob, updateTitle, getPlayerLevelInfo,
+    levelUpJob, levelUpTitle, getJobLevel: getJobLvl, getTitleLevel: getTitleLvl,
     addCustomJob, updateJobSpec, deleteJobSpec, 
     addCustomTitle, updateTitleSpec, deleteTitleSpec 
   } = usePOS();
@@ -158,6 +160,166 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
   const [editTitleRequiredStreak, setEditTitleRequiredStreak] = useState<number>(0);
   const [editTitleSkillReqs, setEditTitleSkillReqs] = useState<SkillRequirement[]>([]);
   const [editTitleRelatedGoalId, setEditTitleRelatedGoalId] = useState<string>('');
+
+  // Level Up Configurator Modal State
+  const [levelUpModalJob, setLevelUpModalJob] = useState<JobSpec | null>(null);
+  const [levelUpModalTitle, setLevelUpModalTitle] = useState<TitleSpec | null>(null);
+  const [luTargetLevel, setLuTargetLevel] = useState<number>(2);
+
+  // Form fields for Level Up Configurator Modal
+  const [luName, setLuName] = useState('');
+  const [luBadge, setLuBadge] = useState('');
+  const [luCategory, setLuCategory] = useState('Architecture');
+  const [luIconName, setLuIconName] = useState('Building');
+  const [luDescription, setLuDescription] = useState('');
+  const [luPerkOrCondition, setLuPerkOrCondition] = useState('');
+  const [luUnlockedAtLevel, setLuUnlockedAtLevel] = useState(1);
+  const [luRequiredQuestStreak, setLuRequiredQuestStreak] = useState(0);
+  const [luRelatedQuestId, setLuRelatedQuestId] = useState('');
+  const [luRelatedGoalId, setLuRelatedGoalId] = useState('');
+  const [luSkillReqs, setLuSkillReqs] = useState<SkillRequirement[]>([]);
+
+  const openLevelUpForJob = (job: JobSpec) => {
+    const currentLvl = getJobLvl ? getJobLvl(job.id) : 1;
+    const nextLvl = currentLvl < 7 ? currentLvl + 1 : 7;
+    setLevelUpModalJob(job);
+    setLevelUpModalTitle(null);
+    setLuTargetLevel(nextLvl);
+
+    setLuName(job.name);
+    setLuBadge('');
+    setLuCategory(job.category || 'Architecture');
+    setLuIconName(job.iconName || 'Building');
+    setLuDescription(job.description || '');
+    setLuPerkOrCondition(job.perk || '');
+    setLuUnlockedAtLevel(job.unlockedAtLevel || 1);
+    setLuRequiredQuestStreak(job.requiredQuestStreak || 0);
+    setLuRelatedQuestId(job.relatedQuestId || '');
+    setLuRelatedGoalId(job.relatedGoalId || '');
+    setLuSkillReqs(job.skillRequirements || []);
+  };
+
+  const openLevelUpForTitle = (title: TitleSpec) => {
+    const currentLvl = getTitleLvl ? getTitleLvl(title.id) : 1;
+    const nextLvl = currentLvl < 7 ? currentLvl + 1 : 7;
+    setLevelUpModalTitle(title);
+    setLevelUpModalJob(null);
+    setLuTargetLevel(nextLvl);
+
+    setLuName(title.name);
+    setLuBadge(title.badge || '');
+    setLuCategory(title.category || 'Knowledge');
+    setLuIconName(title.iconName || 'BookOpen');
+    setLuDescription(title.description || '');
+    setLuPerkOrCondition(title.unlockCondition || '');
+    setLuUnlockedAtLevel(title.unlockedAtLevel || 1);
+    setLuRequiredQuestStreak(title.requiredQuestStreak || 0);
+    setLuRelatedQuestId(title.relatedQuestId || '');
+    setLuRelatedGoalId(title.relatedGoalId || '');
+    setLuSkillReqs(title.skillRequirements || []);
+  };
+
+  const closeLevelUpModal = () => {
+    setLevelUpModalJob(null);
+    setLevelUpModalTitle(null);
+  };
+
+  const toggleLuSkillReq = (skillId: string, defaultMinLevel: number = 2) => {
+    setLuSkillReqs(prev => {
+      const existing = prev.find(s => s.skillId === skillId);
+      if (existing) {
+        return prev.filter(s => s.skillId !== skillId);
+      } else {
+        return [...prev, { skillId, minLevel: defaultMinLevel }];
+      }
+    });
+  };
+
+  const setLuSkillMinLevel = (skillId: string, minLevel: number) => {
+    setLuSkillReqs(prev => prev.map(s => s.skillId === skillId ? { ...s, minLevel } : s));
+  };
+
+  const handleSaveLuParamsOnly = () => {
+    if (levelUpModalJob) {
+      const updatedJob: JobSpec = {
+        ...levelUpModalJob,
+        name: luName,
+        category: luCategory,
+        iconName: luIconName,
+        description: luDescription,
+        perk: luPerkOrCondition,
+        unlockedAtLevel: luUnlockedAtLevel,
+        requiredQuestStreak: luRequiredQuestStreak,
+        relatedQuestId: luRelatedQuestId || null,
+        relatedGoalId: luRelatedGoalId || null,
+        skillRequirements: luSkillReqs,
+        isCustom: true
+      };
+      updateJobSpec(updatedJob);
+      alert(`Updated specifications and level conditions for Job Class "${luName}"!`);
+    } else if (levelUpModalTitle) {
+      const updatedTitle: TitleSpec = {
+        ...levelUpModalTitle,
+        name: luName,
+        badge: luBadge,
+        category: luCategory,
+        iconName: luIconName,
+        description: luDescription,
+        unlockCondition: luPerkOrCondition,
+        unlockedAtLevel: luUnlockedAtLevel,
+        requiredQuestStreak: luRequiredQuestStreak,
+        relatedQuestId: luRelatedQuestId || null,
+        relatedGoalId: luRelatedGoalId || null,
+        skillRequirements: luSkillReqs,
+        isCustom: true
+      };
+      updateTitleSpec(updatedTitle);
+      alert(`Updated specifications and level conditions for Title "${luName}"!`);
+    }
+  };
+
+  const handleConfirmAndLevelUp = () => {
+    if (levelUpModalJob) {
+      const updatedJob: JobSpec = {
+        ...levelUpModalJob,
+        name: luName,
+        category: luCategory,
+        iconName: luIconName,
+        description: luDescription,
+        perk: luPerkOrCondition,
+        unlockedAtLevel: luUnlockedAtLevel,
+        requiredQuestStreak: luRequiredQuestStreak,
+        relatedQuestId: luRelatedQuestId || null,
+        relatedGoalId: luRelatedGoalId || null,
+        skillRequirements: luSkillReqs,
+        isCustom: true
+      };
+      updateJobSpec(updatedJob);
+      const res = levelUpJob(levelUpModalJob.id, luTargetLevel, true);
+      alert(`🎉 LEVEL UP CONFIRMED!\n\n${res.message}`);
+      closeLevelUpModal();
+    } else if (levelUpModalTitle) {
+      const updatedTitle: TitleSpec = {
+        ...levelUpModalTitle,
+        name: luName,
+        badge: luBadge,
+        category: luCategory,
+        iconName: luIconName,
+        description: luDescription,
+        unlockCondition: luPerkOrCondition,
+        unlockedAtLevel: luUnlockedAtLevel,
+        requiredQuestStreak: luRequiredQuestStreak,
+        relatedQuestId: luRelatedQuestId || null,
+        relatedGoalId: luRelatedGoalId || null,
+        skillRequirements: luSkillReqs,
+        isCustom: true
+      };
+      updateTitleSpec(updatedTitle);
+      const res = levelUpTitle(levelUpModalTitle.id, luTargetLevel, true);
+      alert(`🎉 PRESTIGE LEVEL UP CONFIRMED!\n\n${res.message}`);
+      closeLevelUpModal();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -940,10 +1102,16 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                   );
                 }
 
+                const jobLevel = getJobLvl ? getJobLvl(job.id) : 1;
+                const nextLevel = jobLevel < 7 ? jobLevel + 1 : 7;
+                const nextLevelEval = evaluateLevelConditions(job, nextLevel, state);
+                const canLevelUp = jobLevel < 7 && nextLevelEval.isMet;
+                const scaledPerk = getJobScaledPerk(job, jobLevel);
+
                 return (
                   <div 
                     key={job.id}
-                    className={`p-4 rounded-lg border transition-all duration-200 flex flex-col md:flex-row md:items-start justify-between gap-4 ${
+                    className={`p-4 rounded-lg border transition-all duration-200 flex flex-col gap-3 ${
                       isCurrent 
                         ? 'border-cyan-500/50 bg-cyan-950/20 shadow-lg shadow-cyan-500/5' 
                         : isUnlocked 
@@ -951,92 +1119,138 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                           : 'border-white/5 bg-zinc-900/10 opacity-75'
                     }`}
                   >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className={`p-2.5 rounded-lg border shrink-0 ${isCurrent ? 'bg-cyan-500/20 border-cyan-500/40' : 'bg-zinc-900 border-white/5'}`}>
-                        {renderTopicIcon(job.iconName)}
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-display font-extrabold text-sm text-white uppercase">{job.name}</h4>
-                          <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
-                            {job.category}
-                          </span>
-                          {job.isCustom && (
-                            <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 border border-purple-500/30 px-1.5 py-0.5 rounded">
-                              CUSTOM
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className={`p-2.5 rounded-lg border shrink-0 ${isCurrent ? 'bg-cyan-500/20 border-cyan-500/40' : 'bg-zinc-900 border-white/5'}`}>
+                          {renderTopicIcon(job.iconName)}
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-display font-extrabold text-sm text-white uppercase">{job.name}</h4>
+                            <span className="text-[9px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                              LVL {jobLevel}/7 ({LEVEL_RANK_NAMES[jobLevel]})
                             </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-zinc-400 font-sans">{job.description}</p>
-                        <div className="text-[10px] font-mono text-cyan-400 font-bold bg-white/[0.02] border border-cyan-500/20 rounded px-2 py-1 inline-block">
-                          ⚡ PERK: {job.perk}
-                        </div>
-
-                        {/* DERIVED UNLOCK CONDITIONS DISPLAY BADGES */}
-                        <div className="pt-2 border-t border-white/5 space-y-1 text-[10px] font-mono">
-                          <span className="text-zinc-500 uppercase block font-bold">DERIVED UNLOCK CONDITIONS:</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {evalResult.metConditions.map((cond, idx) => (
-                              <span key={idx} className="bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
-                                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                {cond}
+                            <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                              {job.category}
+                            </span>
+                            {job.isCustom && (
+                              <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                                CUSTOM
                               </span>
-                            ))}
-                            {evalResult.unmetConditions.map((cond, idx) => (
-                              <span key={idx} className="bg-rose-950/60 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
-                                <XCircle className="h-3 w-3 text-rose-400" />
-                                {cond}
-                              </span>
-                            ))}
+                            )}
                           </div>
+
+                          {/* 7-LEVEL PROGRESSION PIPELINE INDICATOR */}
+                          <div className="space-y-1 pt-1">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                              <span>PROGRESSION LEVEL Pipeline:</span>
+                              <span className="text-amber-400 font-bold">{jobLevel === 7 ? '👑 MAX APEX LEVEL 7' : `Next: Lvl ${nextLevel} (${LEVEL_RANK_NAMES[nextLevel]})`}</span>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                              {[1, 2, 3, 4, 5, 6, 7].map(lvl => (
+                                <div 
+                                  key={lvl} 
+                                  className={`h-2 rounded transition-all ${
+                                    lvl <= jobLevel 
+                                      ? 'bg-gradient-to-r from-cyan-400 to-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' 
+                                      : 'bg-zinc-800/80 border border-white/5'
+                                  }`}
+                                  title={`Level ${lvl}: ${LEVEL_RANK_NAMES[lvl]}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-zinc-400 font-sans">{job.description}</p>
+                          <div className="text-[10px] font-mono text-cyan-400 font-bold bg-white/[0.02] border border-cyan-500/20 rounded px-2 py-1 inline-block">
+                            ⚡ PERK: {scaledPerk}
+                          </div>
+
+                          {/* LEVEL CONDITIONS BREAKDOWN */}
+                          <div className="pt-2 border-t border-white/5 space-y-1 text-[10px] font-mono">
+                            <span className="text-zinc-500 uppercase block font-bold">
+                              {jobLevel === 7 ? 'MAX LEVEL CONDITIONS SATISFIED:' : `LEVEL ${nextLevel} CONDITIONS UPDATE:`}
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(jobLevel === 7 ? evalResult.metConditions : nextLevelEval.metConditions).map((cond, idx) => (
+                                <span key={idx} className="bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                                  {cond}
+                                </span>
+                              ))}
+                              {jobLevel < 7 && nextLevelEval.unmetConditions.map((cond, idx) => (
+                                <span key={idx} className="bg-rose-950/60 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                                  <XCircle className="h-3 w-3 text-rose-400 shrink-0" />
+                                  {cond}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/5 flex flex-wrap md:flex-col items-center md:items-end gap-1.5">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditJob(job)}
+                            className="p-1.5 text-zinc-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all"
+                            title="Edit Job Class Specs"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete job class "${job.name}"?`)) {
+                                deleteJobSpec(job.id);
+                              }
+                            }}
+                            className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20 rounded transition-all"
+                            title="Delete Job Class"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
 
+                        {/* LEVEL UP / SPECS ACTION BUTTON */}
+                        <button
+                          onClick={() => openLevelUpForJob(job)}
+                          className={`w-full md:w-auto px-3 py-1.5 font-mono text-xs rounded font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer ${
+                            canLevelUp 
+                              ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)] animate-pulse'
+                              : 'bg-zinc-800 hover:bg-amber-950/60 border border-white/10 hover:border-amber-500/40 text-zinc-300 hover:text-amber-300'
+                          }`}
+                          title="Click to view or modify leveling conditions and default parameters"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                          {canLevelUp ? `LEVEL UP TO LVL ${nextLevel}!` : `LEVEL UP / SPECS`}
+                        </button>
+
+                        {isCurrent ? (
+                          <button 
+                            disabled 
+                            className="w-full md:w-auto px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-xs rounded font-bold flex items-center justify-center gap-1.5 cursor-default"
+                          >
+                            <Check className="h-3.5 w-3.5" /> ACTIVE CLASS
+                          </button>
+                        ) : isUnlocked ? (
+                          <button
+                            onClick={() => updateJob(job.id)}
+                            className="w-full md:w-auto px-3 py-1.5 bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/40 text-zinc-300 hover:text-cyan-300 font-mono text-xs rounded font-bold transition-all flex items-center justify-center gap-1"
+                          >
+                            EQUIP CLASS
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full md:w-auto px-3 py-1.5 bg-zinc-900 border border-white/5 text-zinc-600 font-mono text-xs rounded cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            <Lock className="h-3.5 w-3.5" /> LOCKED
+                          </button>
+                        )}
                       </div>
-                    </div>
-
-                    <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/5 flex items-center gap-1.5">
-                      <button
-                        onClick={() => startEditJob(job)}
-                        className="p-1.5 text-zinc-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all"
-                        title="Edit Job Class Specs"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete job class "${job.name}"?`)) {
-                            deleteJobSpec(job.id);
-                          }
-                        }}
-                        className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20 rounded transition-all"
-                        title="Delete Job Class"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-
-                      {isCurrent ? (
-                        <button 
-                          disabled 
-                          className="w-full md:w-auto px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-xs rounded font-bold flex items-center justify-center gap-1.5 cursor-default"
-                        >
-                          <Check className="h-3.5 w-3.5" /> ACTIVE CLASS
-                        </button>
-                      ) : isUnlocked ? (
-                        <button
-                          onClick={() => updateJob(job.id)}
-                          className="w-full md:w-auto px-3 py-1.5 bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/40 text-zinc-300 hover:text-cyan-300 font-mono text-xs rounded font-bold transition-all flex items-center justify-center gap-1"
-                        >
-                          EQUIP CLASS
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          className="w-full md:w-auto px-3 py-1.5 bg-zinc-900 border border-white/5 text-zinc-600 font-mono text-xs rounded cursor-not-allowed flex items-center justify-center gap-1"
-                        >
-                          <Lock className="h-3.5 w-3.5" /> LOCKED
-                        </button>
-                      )}
                     </div>
                   </div>
                 );
@@ -1231,10 +1445,15 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                   );
                 }
 
+                const titleLevel = getTitleLvl ? getTitleLvl(title.id) : 1;
+                const nextTitleLevel = titleLevel < 7 ? titleLevel + 1 : 7;
+                const nextTitleLevelEval = evaluateLevelConditions(title, nextTitleLevel, state);
+                const canTitleLevelUp = titleLevel < 7 && nextTitleLevelEval.isMet;
+
                 return (
                   <div
                     key={title.id}
-                    className={`p-4 rounded-lg border transition-all duration-200 flex flex-col md:flex-row md:items-start justify-between gap-4 ${
+                    className={`p-4 rounded-lg border transition-all duration-200 flex flex-col gap-3 ${
                       isEquipped 
                         ? 'border-cyan-500/50 bg-cyan-950/20 shadow-lg shadow-cyan-500/5' 
                         : isUnlocked 
@@ -1242,96 +1461,142 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                           : 'border-white/5 bg-zinc-900/10 opacity-70'
                     }`}
                   >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className={`p-2.5 rounded-lg border shrink-0 ${isEquipped ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' : isUnlocked ? 'bg-zinc-900 text-amber-400 border-white/5' : 'bg-zinc-900 text-zinc-600 border-white/5'}`}>
-                        {renderTopicIcon(title.iconName || 'GraduationCap')}
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
-                            isUnlocked 
-                              ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' 
-                              : 'bg-zinc-900 text-zinc-500 border-white/5'
-                          }`}>
-                            [{title.badge}]
-                          </span>
-                          <h4 className="font-display font-extrabold text-sm text-white uppercase">{title.name}</h4>
-                          <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
-                            {title.category}
-                          </span>
-                          {title.isCustom && (
-                            <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 border border-purple-500/30 px-1.5 py-0.5 rounded">
-                              CUSTOM
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className={`p-2.5 rounded-lg border shrink-0 ${isEquipped ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' : isUnlocked ? 'bg-zinc-900 text-amber-400 border-white/5' : 'bg-zinc-900 text-zinc-600 border-white/5'}`}>
+                          {renderTopicIcon(title.iconName || 'GraduationCap')}
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                              isUnlocked 
+                                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' 
+                                : 'bg-zinc-900 text-zinc-500 border-white/5'
+                            }`}>
+                              [{title.badge}]
                             </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-zinc-400 font-sans">{title.description}</p>
-                        
-                        {/* DERIVED UNLOCK CONDITIONS DISPLAY BADGES */}
-                        <div className="pt-2 border-t border-white/5 space-y-1 text-[10px] font-mono">
-                          <span className="text-zinc-500 uppercase block font-bold">DERIVED UNLOCK CONDITIONS:</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {evalResult.metConditions.map((cond, idx) => (
-                              <span key={idx} className="bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
-                                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                {cond}
+                            <h4 className="font-display font-extrabold text-sm text-white uppercase">{title.name}</h4>
+                            <span className="text-[9px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                              <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                              LVL {titleLevel}/7 ({LEVEL_RANK_NAMES[titleLevel]})
+                            </span>
+                            <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                              {title.category}
+                            </span>
+                            {title.isCustom && (
+                              <span className="text-[9px] font-mono text-purple-300 bg-purple-950/40 border border-purple-500/30 px-1.5 py-0.5 rounded">
+                                CUSTOM
                               </span>
-                            ))}
-                            {evalResult.unmetConditions.map((cond, idx) => (
-                              <span key={idx} className="bg-rose-950/60 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
-                                <XCircle className="h-3 w-3 text-rose-400" />
-                                {cond}
-                              </span>
-                            ))}
+                            )}
                           </div>
+
+                          {/* 7-LEVEL PROGRESSION PIPELINE INDICATOR */}
+                          <div className="space-y-1 pt-1">
+                            <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                              <span>HONORIFIC PRESTIGE Pipeline:</span>
+                              <span className="text-amber-400 font-bold">{titleLevel === 7 ? '👑 MAX APEX LEVEL 7' : `Next: Lvl ${nextTitleLevel} (${LEVEL_RANK_NAMES[nextTitleLevel]})`}</span>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                              {[1, 2, 3, 4, 5, 6, 7].map(lvl => (
+                                <div 
+                                  key={lvl} 
+                                  className={`h-2 rounded transition-all ${
+                                    lvl <= titleLevel 
+                                      ? 'bg-gradient-to-r from-purple-400 to-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' 
+                                      : 'bg-zinc-800/80 border border-white/5'
+                                  }`}
+                                  title={`Level ${lvl}: ${LEVEL_RANK_NAMES[lvl]}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-zinc-400 font-sans">{title.description}</p>
+                          
+                          {/* LEVEL CONDITIONS BREAKDOWN */}
+                          <div className="pt-2 border-t border-white/5 space-y-1 text-[10px] font-mono">
+                            <span className="text-zinc-500 uppercase block font-bold">
+                              {titleLevel === 7 ? 'MAX LEVEL CONDITIONS SATISFIED:' : `LEVEL ${nextTitleLevel} CONDITIONS UPDATE:`}
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(titleLevel === 7 ? evalResult.metConditions : nextTitleLevelEval.metConditions).map((cond, idx) => (
+                                <span key={idx} className="bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                                  {cond}
+                                </span>
+                              ))}
+                              {titleLevel < 7 && nextTitleLevelEval.unmetConditions.map((cond, idx) => (
+                                <span key={idx} className="bg-rose-950/60 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                                  <XCircle className="h-3 w-3 text-rose-400 shrink-0" />
+                                  {cond}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/5 flex flex-wrap md:flex-col items-center md:items-end gap-1.5">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => startEditTitle(title)}
+                            className="p-1.5 text-zinc-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all"
+                            title="Edit Title Specs"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete title "${title.name}"?`)) {
+                                deleteTitleSpec(title.id);
+                              }
+                            }}
+                            className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20 rounded transition-all"
+                            title="Delete Title Specs"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
 
+                        {/* LEVEL UP / SPECS ACTION BUTTON */}
+                        <button
+                          onClick={() => openLevelUpForTitle(title)}
+                          className={`w-full md:w-auto px-3 py-1.5 font-mono text-xs rounded font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer ${
+                            canTitleLevelUp 
+                              ? 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)] animate-pulse'
+                              : 'bg-zinc-800 hover:bg-amber-950/60 border border-white/10 hover:border-amber-500/40 text-zinc-300 hover:text-amber-300'
+                          }`}
+                          title="Click to view or modify leveling conditions and default parameters"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                          {canTitleLevelUp ? `PRESTIGE UP TO LVL ${nextTitleLevel}!` : `LEVEL UP / SPECS`}
+                        </button>
+
+                        {isEquipped ? (
+                          <button 
+                            disabled 
+                            className="w-full md:w-auto px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-xs rounded font-bold flex items-center justify-center gap-1.5 cursor-default"
+                          >
+                            <Check className="h-3.5 w-3.5" /> EQUIPPED TITLE
+                          </button>
+                        ) : isUnlocked ? (
+                          <button
+                            onClick={() => updateTitle(title.id)}
+                            className="w-full md:w-auto px-3 py-1.5 bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/40 text-zinc-300 hover:text-cyan-300 font-mono text-xs rounded font-bold transition-all flex items-center justify-center gap-1"
+                          >
+                            EQUIP TITLE
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full md:w-auto px-3 py-1.5 bg-zinc-900 border border-white/5 text-zinc-600 font-mono text-xs rounded cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            <Lock className="h-3.5 w-3.5" /> LOCKED
+                          </button>
+                        )}
                       </div>
-                    </div>
-
-                    <div className="shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/5 flex items-center gap-1.5">
-                      <button
-                        onClick={() => startEditTitle(title)}
-                        className="p-1.5 text-zinc-400 hover:text-cyan-300 hover:bg-cyan-950/30 rounded transition-all"
-                        title="Edit Title Specs"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete title "${title.name}"?`)) {
-                            deleteTitleSpec(title.id);
-                          }
-                        }}
-                        className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/20 rounded transition-all"
-                        title="Delete Title"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-
-                      {isEquipped ? (
-                        <button 
-                          disabled 
-                          className="w-full md:w-auto px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-mono text-xs rounded font-bold flex items-center justify-center gap-1.5 cursor-default"
-                        >
-                          <Check className="h-3.5 w-3.5" /> EQUIPPED
-                        </button>
-                      ) : isUnlocked ? (
-                        <button
-                          onClick={() => updateTitle(title.id)}
-                          className="w-full md:w-auto px-3 py-1.5 bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/40 text-zinc-300 hover:text-cyan-300 font-mono text-xs rounded font-bold transition-all flex items-center justify-center gap-1"
-                        >
-                          EQUIP TITLE
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          className="w-full md:w-auto px-3 py-1.5 bg-zinc-900 border border-white/5 text-zinc-600 font-mono text-xs rounded cursor-not-allowed flex items-center justify-center gap-1"
-                        >
-                          <Lock className="h-3.5 w-3.5" /> LOCKED
-                        </button>
-                      )}
                     </div>
                   </div>
                 );
@@ -1352,6 +1617,339 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
         </div>
 
       </div>
+
+      {/* LEVEL UP & CONDITION CONFIGURATOR MODAL OVERLAY */}
+      {(levelUpModalJob || levelUpModalTitle) && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-zinc-950 border border-amber-500/40 rounded-2xl max-w-2xl w-full p-5 space-y-5 shadow-2xl shadow-amber-500/10 my-auto text-xs font-mono">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-white/10 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
+                  <h3 className="text-sm font-display font-extrabold text-amber-300 uppercase tracking-wider">
+                    {levelUpModalJob ? 'JOB CLASS LEVEL UP & CONDITION CONFIGURATOR' : 'HONORIFIC TITLE LEVEL UP & CONDITION CONFIGURATOR'}
+                  </h3>
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-1 font-sans">
+                  Review or modify the leveling up requirements, skill thresholds, and default parameters for <span className="text-white font-bold">{luName}</span>.
+                </p>
+              </div>
+              <button 
+                onClick={closeLevelUpModal}
+                className="p-1 text-zinc-400 hover:text-white rounded bg-white/5 hover:bg-white/10 transition"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* TARGET LEVEL SELECTOR PIPELINE */}
+            <div className="p-3 bg-zinc-900/80 border border-amber-500/20 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-bold uppercase">SELECT TARGET PROGRESSION LEVEL:</span>
+                <span className="text-amber-400 font-bold">
+                  LVL {luTargetLevel} ({LEVEL_RANK_NAMES[luTargetLevel]})
+                </span>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {[1, 2, 3, 4, 5, 6, 7].map(lvl => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setLuTargetLevel(lvl)}
+                    className={`py-1.5 px-1 rounded text-center transition-all flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
+                      luTargetLevel === lvl
+                        ? 'bg-gradient-to-b from-amber-500 to-yellow-500 text-black font-extrabold border-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                        : 'bg-zinc-900 border-white/10 text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-[10px] font-bold">L{lvl}</span>
+                    <span className="text-[8px] truncate max-w-full hidden sm:inline">{LEVEL_RANK_NAMES[lvl]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SECTION 1: DEFAULT CLASS / TITLE PARAMETERS */}
+            <div className="space-y-3 p-3.5 bg-zinc-900/40 border border-white/10 rounded-xl">
+              <span className="text-amber-400 font-bold uppercase tracking-wider block flex items-center gap-1.5 border-b border-white/5 pb-1.5">
+                <Pencil className="h-3.5 w-3.5" /> 1. DEFAULT SPECIFICATION PARAMETERS
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">NAME</label>
+                  <input 
+                    type="text"
+                    value={luName}
+                    onChange={e => setLuName(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">CATEGORY / TOPIC</label>
+                  <select
+                    value={luCategory}
+                    onChange={e => setLuCategory(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="Knowledge">📖 Knowledge</option>
+                    <option value="Iron Will">🛡️ Iron Will</option>
+                    <option value="Passion">🔥 Passion</option>
+                    <option value="Strategy">🎯 Strategy</option>
+                    <option value="Logic">💻 Logic</option>
+                    <option value="Mystery">👁️ Mystery</option>
+                    <option value="Strength">⚔️ Strength</option>
+                    <option value="Architecture">🏛️ Architecture</option>
+                  </select>
+                </div>
+              </div>
+
+              {levelUpModalTitle && (
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">TITLE DISPLAY BADGE</label>
+                  <input 
+                    type="text"
+                    value={luBadge}
+                    onChange={e => setLuBadge(e.target.value)}
+                    placeholder="e.g. ARCHITECT"
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500 font-bold uppercase tracking-wider"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="text-zinc-400 block mb-1 uppercase font-bold">ICON SELECTION</label>
+                <div className="flex flex-wrap gap-1.5 bg-black/60 p-2 rounded border border-white/10 max-h-28 overflow-y-auto">
+                  {TOPIC_ICON_OPTIONS.flatMap(g => g.icons).map(icon => (
+                    <button
+                      key={icon.name}
+                      type="button"
+                      onClick={() => setLuIconName(icon.name)}
+                      className={`p-1.5 rounded flex items-center gap-1 border text-[10px] transition-all cursor-pointer ${
+                        luIconName === icon.name 
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-300 font-bold' 
+                          : 'bg-zinc-900 border-white/5 text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {renderTopicIcon(icon.name, 'h-3.5 w-3.5')}
+                      <span>{icon.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">DESCRIPTION</label>
+                  <input 
+                    type="text"
+                    value={luDescription}
+                    onChange={e => setLuDescription(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">
+                    {levelUpModalJob ? 'SPECIAL CLASS PERK' : 'UNLOCK CONDITION SUMMARY'}
+                  </label>
+                  <input 
+                    type="text"
+                    value={luPerkOrCondition}
+                    onChange={e => setLuPerkOrCondition(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: LEVELING UP CONDITIONS & DERIVED PARAMETERS */}
+            <div className="space-y-3 p-3.5 bg-zinc-900/40 border border-white/10 rounded-xl">
+              <span className="text-amber-400 font-bold uppercase tracking-wider block flex items-center gap-1.5 border-b border-white/5 pb-1.5">
+                <Lock className="h-3.5 w-3.5" /> 2. LEVELING UP CONDITIONS & REQUIREMENTS
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">BASE SYSTEM LEVEL REQ</label>
+                  <input 
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={luUnlockedAtLevel}
+                    onChange={e => setLuUnlockedAtLevel(Number(e.target.value))}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">REQUIRED QUEST STREAK (DAYS)</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    max="365"
+                    value={luRequiredQuestStreak}
+                    onChange={e => setLuRequiredQuestStreak(Number(e.target.value))}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">LINKED DERIVED QUEST</label>
+                  <select
+                    value={luRelatedQuestId}
+                    onChange={e => setLuRelatedQuestId(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">-- No Quest Condition --</option>
+                    {state.quests.map(q => (
+                      <option key={q.id} value={q.id}>
+                        {q.name} [{q.status}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-zinc-400 block mb-1 uppercase font-bold">LINKED GOAL</label>
+                  <select
+                    value={luRelatedGoalId}
+                    onChange={e => setLuRelatedGoalId(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded px-3 py-1.5 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="">-- No Goal Condition --</option>
+                    {state.goals.map(g => (
+                      <option key={g.id} value={g.id}>
+                        {g.name} [{g.status}]
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Skill requirements */}
+              <div>
+                <label className="text-zinc-400 block mb-1 uppercase font-bold">DERIVED SKILL LEVEL REQUIREMENTS</label>
+                <div className="flex flex-wrap gap-2 bg-black/50 p-2.5 rounded border border-white/10">
+                  {state.skills.map(s => {
+                    const existing = luSkillReqs.find(sr => sr.skillId === s.id);
+                    const isSelected = !!existing;
+
+                    return (
+                      <div key={s.id} className="flex items-center gap-1.5 bg-zinc-900 border border-white/10 px-2 py-1 rounded">
+                        <button
+                          type="button"
+                          onClick={() => toggleLuSkillReq(s.id)}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold cursor-pointer ${
+                            isSelected ? 'bg-amber-500 text-black' : 'bg-white/10 text-zinc-400'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' + s.name : '+ ' + s.name}
+                        </button>
+                        {isSelected && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] text-zinc-400">LVL:</span>
+                            <input 
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={existing.minLevel}
+                              onChange={e => setLuSkillMinLevel(s.id, Number(e.target.value))}
+                              className="w-10 bg-black border border-white/20 rounded px-1 text-center text-white"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: REAL-TIME DIAGNOSTIC CONDITION EVALUATION */}
+            {(() => {
+              const tempSpec: JobSpec = {
+                id: levelUpModalJob ? levelUpModalJob.id : levelUpModalTitle!.id,
+                name: luName,
+                category: luCategory,
+                iconName: luIconName,
+                description: luDescription,
+                perk: luPerkOrCondition,
+                unlockedAtLevel: luUnlockedAtLevel,
+                requiredQuestStreak: luRequiredQuestStreak,
+                relatedQuestId: luRelatedQuestId || null,
+                relatedGoalId: luRelatedGoalId || null,
+                skillRequirements: luSkillReqs
+              };
+              const diagEval = evaluateLevelConditions(tempSpec, luTargetLevel, state);
+
+              return (
+                <div className="p-3 bg-zinc-900/60 border border-amber-500/30 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                      <Activity className="h-3.5 w-3.5 text-amber-400" />
+                      REAL-TIME DIAGNOSTIC FOR LEVEL {luTargetLevel} ({LEVEL_RANK_NAMES[luTargetLevel]}):
+                    </span>
+                    <span className={`px-2 py-0.5 rounded font-extrabold uppercase text-[10px] ${
+                      diagEval.isMet 
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50' 
+                        : 'bg-amber-950 text-amber-300 border border-amber-500/50'
+                    }`}>
+                      {diagEval.isMet ? '✓ ALL CONDITIONS SATISFIED' : '⚠️ CONDITIONS PENDING'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {diagEval.metConditions.map((cond, idx) => (
+                      <span key={idx} className="bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                        {cond}
+                      </span>
+                    ))}
+                    {diagEval.unmetConditions.map((cond, idx) => (
+                      <span key={idx} className="bg-rose-950/80 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                        <XCircle className="h-3 w-3 text-rose-400 shrink-0" />
+                        {cond}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* FOOTER ACTIONS */}
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={closeLevelUpModal}
+                className="w-full sm:w-auto px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-300 font-bold rounded transition cursor-pointer"
+              >
+                CANCEL
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveLuParamsOnly}
+                className="w-full sm:w-auto px-4 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 font-bold rounded transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Save className="h-3.5 w-3.5 text-cyan-400" /> SAVE SPEC PARAMETERS ONLY
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmAndLevelUp}
+                className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold rounded shadow-[0_0_15px_rgba(245,158,11,0.4)] transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="h-4 w-4" /> CONFIRM & LEVEL UP TO LVL {luTargetLevel}!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -149,6 +149,10 @@ export interface UserProfile {
   jobId?: string;
   equippedTitleId?: string;
   focusShields?: number; // count of streak protection shields
+  jobLevels?: Record<string, number>; // mapping of jobId -> level (1-7)
+  titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
+  fatigueLevel?: number; // 0 to 100
+  lastFatigueUpdateDate?: string;
 }
 
 export interface XPHistoryEntry {

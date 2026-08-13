@@ -457,3 +457,141 @@ export function getUnlockedJobs(state: POSState): JobSpec[] {
   const allJobs = getAllJobs(state.customJobs || [], state.deletedJobIds || []);
   return allJobs.filter(job => isJobUnlocked(job, state));
 }
+
+export const LEVEL_RANK_NAMES: Record<number, string> = {
+  1: 'Novice',
+  2: 'Apprentice',
+  3: 'Specialist',
+  4: 'Senior Operator',
+  5: 'Master',
+  6: 'Grandmaster',
+  7: 'Apex Legend'
+};
+
+export function evaluateLevelConditions(
+  spec: JobSpec | TitleSpec,
+  targetLevel: number,
+  state: POSState
+): { isMet: boolean; unmetConditions: string[]; metConditions: string[] } {
+  if (targetLevel < 1 || targetLevel > 7) {
+    return { isMet: false, unmetConditions: ['Invalid Level Range'], metConditions: [] };
+  }
+
+  const metConditions: string[] = [];
+  const unmetConditions: string[] = [];
+
+  // Calculate current system metrics
+  const totalXp = (state.xpHistory || []).reduce((sum, h) => sum + h.xp, 0);
+  const currentLevel = Math.max(1, Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2));
+  const completedQuestCount = state.quests.filter(q => q.status === 'Completed').length;
+  const focusMinutes = state.profile.focusMinutesToday || 0;
+  const maxStreak = Math.max(
+    state.profile.focusStreak || 0,
+    ...state.quests.map(q => Math.max(q.streakCount || 0, q.bestStreak || 0))
+  );
+
+  // 1. System Level Requirement
+  const baseReqLevel = spec.unlockedAtLevel || 1;
+  const targetReqLevel = baseReqLevel + (targetLevel - 1) * 2;
+  if (currentLevel >= targetReqLevel) {
+    metConditions.push(`System Level ${targetReqLevel}+ (Current: Lvl ${currentLevel})`);
+  } else {
+    unmetConditions.push(`System Level ${targetReqLevel}+ required (Current: Lvl ${currentLevel})`);
+  }
+
+  // 2. Completed Quests Requirement
+  const reqQuests = (targetLevel - 1) * 10;
+  if (reqQuests > 0) {
+    if (completedQuestCount >= reqQuests) {
+      metConditions.push(`Completed Quests: ${reqQuests}+ (Current: ${completedQuestCount})`);
+    } else {
+      unmetConditions.push(`Requires ${reqQuests}+ Completed Quests (Current: ${completedQuestCount})`);
+    }
+  }
+
+  // 3. Focus / Streak Requirement for higher levels
+  const reqStreak = Math.max(spec.requiredQuestStreak || 0, Math.floor((targetLevel - 1) * 1.5));
+  if (reqStreak > 0) {
+    if (maxStreak >= reqStreak) {
+      metConditions.push(`Active Streak: ${reqStreak}+ Days (Current: ${maxStreak} Days)`);
+    } else {
+      unmetConditions.push(`Requires ${reqStreak}+ Day Streak (Current: ${maxStreak} Days)`);
+    }
+  }
+
+  // 4. Focus Minutes requirement for levels 3+
+  if (targetLevel >= 3) {
+    const reqFocus = (targetLevel - 2) * 30;
+    if (focusMinutes >= reqFocus) {
+      metConditions.push(`Focus Minutes logged: ${reqFocus}m+ (Current: ${focusMinutes}m)`);
+    } else {
+      unmetConditions.push(`Requires ${reqFocus}m+ Focus Minutes logged (Current: ${focusMinutes}m)`);
+    }
+  }
+
+  // 5. Check base unlock requirement for Level 1
+  if (targetLevel === 1) {
+    const baseEval = evaluateUnlockConditions(spec, state);
+    if (!baseEval.isUnlocked) {
+      unmetConditions.push(...baseEval.unmetConditions);
+    }
+  }
+
+  return {
+    isMet: unmetConditions.length === 0,
+    unmetConditions,
+    metConditions
+  };
+}
+
+export function getJobLevel(jobId: string, state: POSState): number {
+  const storedLevel = state.profile.jobLevels?.[jobId];
+  if (storedLevel && storedLevel >= 1 && storedLevel <= 7) {
+    return storedLevel;
+  }
+  const job = getAllJobs(state.customJobs || [], state.deletedJobIds || []).find(j => j.id === jobId);
+  if (!job) return 1;
+
+  if (!isJobUnlocked(job, state)) return 1;
+
+  // Calculate highest level achieved
+  let maxLevel = 1;
+  for (let lvl = 2; lvl <= 7; lvl++) {
+    const evalRes = evaluateLevelConditions(job, lvl, state);
+    if (evalRes.isMet) {
+      maxLevel = lvl;
+    } else {
+      break;
+    }
+  }
+  return maxLevel;
+}
+
+export function getTitleLevel(titleId: string, state: POSState): number {
+  const storedLevel = state.profile.titleLevels?.[titleId];
+  if (storedLevel && storedLevel >= 1 && storedLevel <= 7) {
+    return storedLevel;
+  }
+  const title = getAllTitles(state.customTitles || [], state.deletedTitleIds || []).find(t => t.id === titleId);
+  if (!title) return 1;
+
+  if (!isTitleUnlocked(title, state)) return 1;
+
+  let maxLevel = 1;
+  for (let lvl = 2; lvl <= 7; lvl++) {
+    const evalRes = evaluateLevelConditions(title, lvl, state);
+    if (evalRes.isMet) {
+      maxLevel = lvl;
+    } else {
+      break;
+    }
+  }
+  return maxLevel;
+}
+
+export function getJobScaledPerk(job: JobSpec, level: number): string {
+  const bonusMultiplier = Math.round((level - 1) * 5); // +5% per level above 1
+  if (level <= 1) return job.perk;
+  return `${job.perk} (+${bonusMultiplier}% Level ${level} Master Boost)`;
+}
+

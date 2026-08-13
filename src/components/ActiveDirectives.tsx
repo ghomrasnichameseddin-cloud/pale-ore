@@ -2183,7 +2183,7 @@ export const ActiveDirectives: React.FC = () => {
           )}
 
           {/* CORE STATE CONTROLLERS */}
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
             {/* Complete/Reopen */}
             <button
               type="button"
@@ -2201,7 +2201,7 @@ export const ActiveDirectives: React.FC = () => {
               <span>{finished ? 'REOPEN' : 'COMPLETE'}</span>
             </button>
 
-            {/* Postpone / Move */}
+            {/* Postpone to Tomorrow */}
             {!finished ? (
               <button
                 type="button"
@@ -2210,7 +2210,7 @@ export const ActiveDirectives: React.FC = () => {
                 title="Postpone to tomorrow"
               >
                 <Calendar className="h-3.5 w-3.5" />
-                <span>POSTPONE</span>
+                <span>POSTPONE (TOMORROW)</span>
               </button>
             ) : (
               <button
@@ -2219,7 +2219,29 @@ export const ActiveDirectives: React.FC = () => {
                 disabled
               >
                 <Calendar className="h-3.5 w-3.5" />
-                <span>POSTPONE</span>
+                <span>POSTPONE (TOMORROW)</span>
+              </button>
+            )}
+
+            {/* Postpone / Move to Today */}
+            {!finished ? (
+              <button
+                type="button"
+                onClick={() => handleMoveToToday(quest.id)}
+                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-emerald-500/20 hover:text-emerald-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+                title="Postpone / Move to Today"
+              >
+                <Clock className="h-3.5 w-3.5 text-emerald-400" />
+                <span>POSTPONE (TODAY)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="py-1 bg-zinc-900/30 border border-white/5 text-zinc-600 rounded-lg text-[9px] font-mono font-bold uppercase flex flex-col items-center justify-center gap-0.5 cursor-not-allowed"
+                disabled
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>POSTPONE (TODAY)</span>
               </button>
             )}
 

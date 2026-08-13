@@ -14,7 +14,7 @@ export const getSystemTimestamp = (systemDateStr?: string): string => {
   const seconds = String(now.getSeconds()).padStart(2, '0');
   return `${dateStr}T${hours}:${minutes}:${seconds}`;
 };
-import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec } from './jobsAndTitles';
+import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES } from './jobsAndTitles';
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
 } from './utils/perkEvaluator';
@@ -123,6 +123,11 @@ interface POSContextType {
   updateProfileFocus: (focusText: string, goalId: string | null) => void;
   updateJob: (jobId: string) => void;
   updateTitle: (titleId: string) => void;
+  levelUpJob: (jobId: string, targetLvl?: number, forceLevelUp?: boolean) => { success: boolean; message: string };
+  levelUpTitle: (titleId: string, targetLvl?: number, forceLevelUp?: boolean) => { success: boolean; message: string };
+  getJobLevel: (jobId: string) => number;
+  getTitleLevel: (titleId: string) => number;
+  rechargeFatigue: (amount?: number) => void;
   addCustomJob: (job: Omit<JobSpec, 'id' | 'isCustom'>) => string;
   updateJobSpec: (job: JobSpec) => void;
   deleteJobSpec: (jobId: string) => void;
@@ -1877,6 +1882,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? (remainingDeactivatingQuestsCount === 0 ? false : prev.profile.recoveryMode)
         : prev.profile.recoveryMode;
 
+      const addedFatigue = questToComplete.difficulty === 'Easy' ? 5 :
+                           questToComplete.difficulty === 'Normal' ? 10 :
+                           questToComplete.difficulty === 'Hard' ? 18 : 25;
+      const currentFatigue = prev.profile.fatigueLevel || 0;
+      const newFatigue = Math.min(100, currentFatigue + addedFatigue);
+
       return {
         ...prev,
         quests: updatedQuests,
@@ -1888,7 +1899,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           level,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           momentum: newMomentum,
-          recoveryMode: newRecoveryMode
+          recoveryMode: newRecoveryMode,
+          fatigueLevel: newFatigue,
+          lastFatigueUpdateDate: prev.systemDate
         }
       };
     });
@@ -2976,6 +2989,97 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const getJobLevelHelper = (jobId: string): number => {
+    return getJobLevel(jobId, stateRef.current);
+  };
+
+  const getTitleLevelHelper = (titleId: string): number => {
+    return getTitleLevel(titleId, stateRef.current);
+  };
+
+  const levelUpJob = (jobId: string, targetLvl?: number, forceLevelUp?: boolean): { success: boolean; message: string } => {
+    const currentLvl = getJobLevel(jobId, stateRef.current);
+    const nextLvl = targetLvl ? Math.min(7, Math.max(1, targetLvl)) : (currentLvl < 7 ? currentLvl + 1 : 7);
+    if (currentLvl >= 7 && nextLvl <= currentLvl && !forceLevelUp) {
+      return { success: false, message: 'Job Class is already at MAX Level 7 (Apex Legend)!' };
+    }
+    const allJobs = getAllJobs(stateRef.current.customJobs || [], stateRef.current.deletedJobIds || []);
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) return { success: false, message: 'Job Class not found' };
+
+    if (!forceLevelUp) {
+      const evalRes = evaluateLevelConditions(job, nextLvl, stateRef.current);
+      if (!evalRes.isMet) {
+        return { 
+          success: false, 
+          message: `Level ${nextLvl} requirements not met: ${evalRes.unmetConditions.join(', ')}` 
+        };
+      }
+    }
+
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        jobLevels: {
+          ...(prev.profile.jobLevels || {}),
+          [jobId]: nextLvl
+        }
+      }
+    }));
+
+    return { success: true, message: `Elevated ${job.name} to Level ${nextLvl} (${LEVEL_RANK_NAMES[nextLvl] || 'Master'})!` };
+  };
+
+  const levelUpTitle = (titleId: string, targetLvl?: number, forceLevelUp?: boolean): { success: boolean; message: string } => {
+    const currentLvl = getTitleLevel(titleId, stateRef.current);
+    const nextLvl = targetLvl ? Math.min(7, Math.max(1, targetLvl)) : (currentLvl < 7 ? currentLvl + 1 : 7);
+    if (currentLvl >= 7 && nextLvl <= currentLvl && !forceLevelUp) {
+      return { success: false, message: 'Honorific Title is already at MAX Level 7!' };
+    }
+    const allTitles = getAllTitles(stateRef.current.customTitles || [], stateRef.current.deletedTitleIds || []);
+    const title = allTitles.find(t => t.id === titleId);
+    if (!title) return { success: false, message: 'Title not found' };
+
+    if (!forceLevelUp) {
+      const evalRes = evaluateLevelConditions(title, nextLvl, stateRef.current);
+      if (!evalRes.isMet) {
+        return { 
+          success: false, 
+          message: `Level ${nextLvl} requirements not met: ${evalRes.unmetConditions.join(', ')}` 
+        };
+      }
+    }
+
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        titleLevels: {
+          ...(prev.profile.titleLevels || {}),
+          [titleId]: nextLvl
+        }
+      }
+    }));
+
+    return { success: true, message: `Elevated Honorific Title "${title.name}" to Level ${nextLvl} (${LEVEL_RANK_NAMES[nextLvl] || 'Master'})!` };
+  };
+
+  const rechargeFatigue = (amount: number = 25) => {
+    setState(prev => {
+      const current = prev.profile.fatigueLevel || 0;
+      const newFatigue = Math.max(0, current - amount);
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          fatigueLevel: newFatigue,
+          lastFatigueUpdateDate: prev.systemDate
+        }
+      };
+    });
+  };
+
   const addCustomJob = (job: Omit<JobSpec, 'id' | 'isCustom'>): string => {
     const id = `cjob-${Date.now()}`;
     const newJob: JobSpec = {
@@ -3425,6 +3529,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateProfileFocus,
       updateJob,
       updateTitle,
+      levelUpJob,
+      levelUpTitle,
+      getJobLevel: getJobLevelHelper,
+      getTitleLevel: getTitleLevelHelper,
+      rechargeFatigue,
       addCustomJob,
       updateJobSpec,
       deleteJobSpec,
