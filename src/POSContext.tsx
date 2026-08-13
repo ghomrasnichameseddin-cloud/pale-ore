@@ -133,6 +133,8 @@ interface POSContextType {
   levelUpTitle: (titleId: string, targetLvl?: number, forceLevelUp?: boolean) => { success: boolean; message: string };
   getJobLevel: (jobId: string) => number;
   getTitleLevel: (titleId: string) => number;
+  getJobLvl: (jobId: string) => number;
+  getTitleLvl: (titleId: string) => number;
   rechargeFatigue: (amount?: number) => void;
   addCustomJob: (job: Omit<JobSpec, 'id' | 'isCustom'>) => string;
   updateJobSpec: (job: JobSpec) => void;
@@ -3738,6 +3740,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       levelUpTitle,
       getJobLevel: getJobLevelHelper,
       getTitleLevel: getTitleLevelHelper,
+      getJobLvl: getJobLevelHelper,
+      getTitleLvl: getTitleLevelHelper,
       rechargeFatigue,
       addCustomJob,
       updateJobSpec,
