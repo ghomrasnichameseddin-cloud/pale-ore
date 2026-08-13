@@ -5,6 +5,28 @@ export interface SkillRequirement {
   minLevel: number;
 }
 
+export interface QuestRequirement {
+  questId: string;
+  minStreak?: number;
+  requireCompleted?: boolean;
+}
+
+export interface LevelConditionSpec {
+  level: number;
+  unlockedAtLevel?: number;
+  requiredQuestsCount?: number;
+  requiredQuestStreak?: number;
+  requiredFocusMinutes?: number;
+  questRequirements?: QuestRequirement[];
+  skillRequirements?: SkillRequirement[];
+  relatedGoalId?: string | null;
+  relatedGoalIds?: string[];
+  relatedProjectId?: string | null;
+  relatedProjectIds?: string[];
+  customConditionText?: string;
+  isCustomized?: boolean;
+}
+
 export interface JobSpec {
   id: string;
   name: string;
@@ -17,8 +39,15 @@ export interface JobSpec {
   // Advanced Derived Conditions
   relatedQuestId?: string | null;
   requiredQuestStreak?: number;
+  questRequirements?: QuestRequirement[];
   skillRequirements?: SkillRequirement[];
   relatedGoalId?: string | null;
+  relatedGoalIds?: string[];
+  relatedProjectId?: string | null;
+  relatedProjectIds?: string[];
+
+  // Custom Level Progression Conditions (Levels 2-7)
+  customLevelConditions?: Record<number, LevelConditionSpec>;
 
   isCustom?: boolean;
 }
@@ -36,8 +65,15 @@ export interface TitleSpec {
   unlockedAtLevel?: number;
   relatedQuestId?: string | null;
   requiredQuestStreak?: number;
+  questRequirements?: QuestRequirement[];
   skillRequirements?: SkillRequirement[];
   relatedGoalId?: string | null;
+  relatedGoalIds?: string[];
+  relatedProjectId?: string | null;
+  relatedProjectIds?: string[];
+
+  // Custom Level Progression Conditions (Levels 2-7)
+  customLevelConditions?: Record<number, LevelConditionSpec>;
 
   checkUnlocked?: (state: POSState, completedQuestCount: number, currentLevel: number) => boolean;
   isCustom?: boolean;
@@ -330,8 +366,12 @@ export function evaluateUnlockConditions(
     unlockedAtLevel?: number;
     relatedQuestId?: string | null;
     requiredQuestStreak?: number;
+    questRequirements?: QuestRequirement[];
     skillRequirements?: SkillRequirement[];
     relatedGoalId?: string | null;
+    relatedGoalIds?: string[];
+    relatedProjectId?: string | null;
+    relatedProjectIds?: string[];
   },
   state: POSState
 ): { isUnlocked: boolean; unmetConditions: string[]; metConditions: string[] } {
@@ -344,13 +384,17 @@ export function evaluateUnlockConditions(
 
   // 1. System Level Requirement
   const reqLevel = spec.unlockedAtLevel || 1;
-  if (currentLevel >= reqLevel) {
-    metConditions.push(`System Level ${reqLevel}+ (Current: Lvl ${currentLevel})`);
+  if (reqLevel > 1) {
+    if (currentLevel >= reqLevel) {
+      metConditions.push(`System Level ${reqLevel}+ (Current: Lvl ${currentLevel})`);
+    } else {
+      unmetConditions.push(`System Level ${reqLevel}+ required (Current: Lvl ${currentLevel})`);
+    }
   } else {
-    unmetConditions.push(`System Level ${reqLevel}+ required (Current: Lvl ${currentLevel})`);
+    metConditions.push(`System Level 1+ (Current: Lvl ${currentLevel})`);
   }
 
-  // 2. Related Quest Requirement
+  // 2. Related Single Quest Requirement (Backwards-compatibility)
   if (spec.relatedQuestId) {
     const quest = state.quests.find(q => q.id === spec.relatedQuestId);
     const questName = quest ? quest.name : 'Linked Quest';
@@ -362,7 +406,35 @@ export function evaluateUnlockConditions(
     }
   }
 
-  // 3. Required Quest Streak Requirement
+  // 3. Multi-Quest Requirements with Streak
+  if (spec.questRequirements && spec.questRequirements.length > 0) {
+    spec.questRequirements.forEach(qReq => {
+      // Don't duplicate if already checked via relatedQuestId
+      if (qReq.questId === spec.relatedQuestId && !qReq.minStreak) return;
+      const quest = state.quests.find(q => q.id === qReq.questId);
+      const questName = quest ? quest.name : 'Linked Quest';
+      const isCompleted = quest && (quest.status === 'Completed' || quest.completedAt !== null);
+      const questStreak = Math.max(quest?.streakCount || 0, quest?.bestStreak || 0);
+
+      if (qReq.requireCompleted !== false) {
+        if (isCompleted) {
+          metConditions.push(`Completed Quest: "${questName}"`);
+        } else {
+          unmetConditions.push(`Must complete Quest: "${questName}"`);
+        }
+      }
+
+      if (qReq.minStreak && qReq.minStreak > 0) {
+        if (questStreak >= qReq.minStreak) {
+          metConditions.push(`Quest "${questName}" Streak: ${qReq.minStreak}+ Days (Current: ${questStreak})`);
+        } else {
+          unmetConditions.push(`Quest "${questName}" requires ${qReq.minStreak}+ Day Streak (Current: ${questStreak})`);
+        }
+      }
+    });
+  }
+
+  // 4. Required Quest Streak Requirement
   if (spec.requiredQuestStreak && spec.requiredQuestStreak > 0) {
     let currentStreak = 0;
     let targetName = 'Quest Streak';
@@ -382,7 +454,7 @@ export function evaluateUnlockConditions(
     }
   }
 
-  // 4. Skill Requirements
+  // 5. Skill Requirements
   if (spec.skillRequirements && spec.skillRequirements.length > 0) {
     spec.skillRequirements.forEach(sReq => {
       const skill = state.skills.find(s => s.id === sReq.skillId);
@@ -396,16 +468,42 @@ export function evaluateUnlockConditions(
     });
   }
 
-  // 5. Related Goal Requirement
-  if (spec.relatedGoalId) {
-    const goal = state.goals.find(g => g.id === spec.relatedGoalId);
-    const goalName = goal ? goal.name : 'Linked Goal';
-    const isGoalMet = goal && (goal.status === 'Active' || goal.status === 'Completed');
-    if (isGoalMet) {
-      metConditions.push(`Active/Completed Goal: "${goalName}"`);
-    } else {
-      unmetConditions.push(`Must activate or complete Goal: "${goalName}"`);
-    }
+  // 6. Related Goal Requirement(s)
+  const allGoalIds = [
+    ...(spec.relatedGoalId ? [spec.relatedGoalId] : []),
+    ...(spec.relatedGoalIds || [])
+  ];
+  const uniqueGoalIds = Array.from(new Set(allGoalIds));
+  if (uniqueGoalIds.length > 0) {
+    uniqueGoalIds.forEach(gId => {
+      const goal = state.goals.find(g => g.id === gId);
+      const goalName = goal ? goal.name : 'Linked Goal';
+      const isGoalMet = goal && (goal.status === 'Active' || goal.status === 'Completed');
+      if (isGoalMet) {
+        metConditions.push(`Active/Completed Goal: "${goalName}"`);
+      } else {
+        unmetConditions.push(`Must activate or complete Goal: "${goalName}"`);
+      }
+    });
+  }
+
+  // 7. Related Project Requirement(s)
+  const allProjectIds = [
+    ...(spec.relatedProjectId ? [spec.relatedProjectId] : []),
+    ...(spec.relatedProjectIds || [])
+  ];
+  const uniqueProjectIds = Array.from(new Set(allProjectIds));
+  if (uniqueProjectIds.length > 0) {
+    uniqueProjectIds.forEach(pId => {
+      const project = state.projects.find(p => p.id === pId);
+      const projectName = project ? project.name : 'Linked Project';
+      const isProjectMet = project && (project.status === 'Active' || project.status === 'Completed');
+      if (isProjectMet) {
+        metConditions.push(`Active/Completed Project: "${projectName}"`);
+      } else {
+        unmetConditions.push(`Must activate or complete Project: "${projectName}"`);
+      }
+    });
   }
 
   return {
@@ -416,7 +514,18 @@ export function evaluateUnlockConditions(
 }
 
 export function isJobUnlocked(job: JobSpec, state: POSState): boolean {
-  if (job.isCustom && !job.relatedQuestId && !job.requiredQuestStreak && (!job.skillRequirements || job.skillRequirements.length === 0) && !job.relatedGoalId && job.unlockedAtLevel <= 1) {
+  if (
+    job.isCustom && 
+    !job.relatedQuestId && 
+    (!job.questRequirements || job.questRequirements.length === 0) &&
+    !job.requiredQuestStreak && 
+    (!job.skillRequirements || job.skillRequirements.length === 0) && 
+    !job.relatedGoalId && 
+    (!job.relatedGoalIds || job.relatedGoalIds.length === 0) &&
+    !job.relatedProjectId &&
+    (!job.relatedProjectIds || job.relatedProjectIds.length === 0) &&
+    job.unlockedAtLevel <= 1
+  ) {
     return true; // Custom player jobs without conditions are unlocked
   }
   const evalResult = evaluateUnlockConditions(job, state);
@@ -424,12 +533,32 @@ export function isJobUnlocked(job: JobSpec, state: POSState): boolean {
 }
 
 export function isTitleUnlocked(title: TitleSpec, state: POSState): boolean {
-  if (title.isCustom && !title.relatedQuestId && !title.requiredQuestStreak && (!title.skillRequirements || title.skillRequirements.length === 0) && !title.relatedGoalId && (!title.unlockedAtLevel || title.unlockedAtLevel <= 1)) {
+  if (
+    title.isCustom && 
+    !title.relatedQuestId && 
+    (!title.questRequirements || title.questRequirements.length === 0) &&
+    !title.requiredQuestStreak && 
+    (!title.skillRequirements || title.skillRequirements.length === 0) && 
+    !title.relatedGoalId && 
+    (!title.relatedGoalIds || title.relatedGoalIds.length === 0) &&
+    !title.relatedProjectId &&
+    (!title.relatedProjectIds || title.relatedProjectIds.length === 0) &&
+    (!title.unlockedAtLevel || title.unlockedAtLevel <= 1)
+  ) {
     return true; // Custom player titles without explicit conditions are unlocked
   }
 
   // Check structured unlock conditions if defined
-  const hasStructuredConditions = title.unlockedAtLevel || title.relatedQuestId || title.requiredQuestStreak || (title.skillRequirements && title.skillRequirements.length > 0) || title.relatedGoalId;
+  const hasStructuredConditions = 
+    title.unlockedAtLevel || 
+    title.relatedQuestId || 
+    (title.questRequirements && title.questRequirements.length > 0) ||
+    title.requiredQuestStreak || 
+    (title.skillRequirements && title.skillRequirements.length > 0) || 
+    title.relatedGoalId ||
+    (title.relatedGoalIds && title.relatedGoalIds.length > 0) ||
+    title.relatedProjectId ||
+    (title.relatedProjectIds && title.relatedProjectIds.length > 0);
   
   let structuredUnlocked = true;
   if (hasStructuredConditions) {
@@ -468,6 +597,54 @@ export const LEVEL_RANK_NAMES: Record<number, string> = {
   7: 'Apex Legend'
 };
 
+export function getDefaultLevelConditionSpec(spec: JobSpec | TitleSpec, targetLevel: number): LevelConditionSpec {
+  const baseReqLevel = spec.unlockedAtLevel || 1;
+  const targetReqLevel = baseReqLevel + (targetLevel - 1) * 2;
+  const reqQuests = (targetLevel - 1) * 10;
+  const reqStreak = Math.max(spec.requiredQuestStreak || 0, Math.floor((targetLevel - 1) * 1.5));
+  const reqFocus = targetLevel >= 3 ? (targetLevel - 2) * 30 : 0;
+
+  // Scale skill requirements if base spec had skill requirements
+  const skillReqs: SkillRequirement[] = (spec.skillRequirements || []).map(sr => ({
+    skillId: sr.skillId,
+    minLevel: sr.minLevel + (targetLevel - 1)
+  }));
+
+  // Link quest requirements from base if present
+  const questReqs: QuestRequirement[] = [];
+  if (spec.relatedQuestId) {
+    questReqs.push({
+      questId: spec.relatedQuestId,
+      minStreak: reqStreak,
+      requireCompleted: true
+    });
+  }
+  if (spec.questRequirements) {
+    spec.questRequirements.forEach(qr => {
+      if (!questReqs.some(x => x.questId === qr.questId)) {
+        questReqs.push({
+          ...qr,
+          minStreak: Math.max(qr.minStreak || 0, reqStreak)
+        });
+      }
+    });
+  }
+
+  return {
+    level: targetLevel,
+    unlockedAtLevel: targetReqLevel,
+    requiredQuestsCount: reqQuests,
+    requiredQuestStreak: reqStreak,
+    requiredFocusMinutes: reqFocus,
+    questRequirements: questReqs.length > 0 ? questReqs : undefined,
+    skillRequirements: skillReqs.length > 0 ? skillReqs : undefined,
+    relatedGoalId: spec.relatedGoalId || null,
+    relatedGoalIds: spec.relatedGoalIds || undefined,
+    relatedProjectId: spec.relatedProjectId || null,
+    relatedProjectIds: spec.relatedProjectIds || undefined
+  };
+}
+
 export function evaluateLevelConditions(
   spec: JobSpec | TitleSpec,
   targetLevel: number,
@@ -490,6 +667,159 @@ export function evaluateLevelConditions(
     ...state.quests.map(q => Math.max(q.streakCount || 0, q.bestStreak || 0))
   );
 
+  // Check base unlock requirement for Level 1
+  if (targetLevel === 1) {
+    const baseEval = evaluateUnlockConditions(spec, state);
+    if (!baseEval.isUnlocked) {
+      unmetConditions.push(...baseEval.unmetConditions);
+    } else {
+      metConditions.push(...baseEval.metConditions);
+    }
+    return {
+      isMet: unmetConditions.length === 0,
+      unmetConditions,
+      metConditions
+    };
+  }
+
+  // Check if custom level conditions were configured by user for this level
+  const custom = spec.customLevelConditions?.[targetLevel];
+  if (custom) {
+    let hasAnyRule = false;
+
+    // 1. System Level Requirement
+    if (custom.unlockedAtLevel !== undefined && custom.unlockedAtLevel > 0) {
+      hasAnyRule = true;
+      if (currentLevel >= custom.unlockedAtLevel) {
+        metConditions.push(`System Level ${custom.unlockedAtLevel}+ (Current: Lvl ${currentLevel})`);
+      } else {
+        unmetConditions.push(`System Level ${custom.unlockedAtLevel}+ required (Current: Lvl ${currentLevel})`);
+      }
+    }
+
+    // 2. Completed Quests Requirement
+    if (custom.requiredQuestsCount !== undefined && custom.requiredQuestsCount > 0) {
+      hasAnyRule = true;
+      if (completedQuestCount >= custom.requiredQuestsCount) {
+        metConditions.push(`Completed Quests: ${custom.requiredQuestsCount}+ (Current: ${completedQuestCount})`);
+      } else {
+        unmetConditions.push(`Requires ${custom.requiredQuestsCount}+ Completed Quests (Current: ${completedQuestCount})`);
+      }
+    }
+
+    // 3. Streak Requirement
+    if (custom.requiredQuestStreak !== undefined && custom.requiredQuestStreak > 0) {
+      hasAnyRule = true;
+      if (maxStreak >= custom.requiredQuestStreak) {
+        metConditions.push(`Active Streak: ${custom.requiredQuestStreak}+ Days (Current: ${maxStreak} Days)`);
+      } else {
+        unmetConditions.push(`Requires ${custom.requiredQuestStreak}+ Day Streak (Current: ${maxStreak} Days)`);
+      }
+    }
+
+    // 4. Focus Minutes Requirement
+    if (custom.requiredFocusMinutes !== undefined && custom.requiredFocusMinutes > 0) {
+      hasAnyRule = true;
+      if (focusMinutes >= custom.requiredFocusMinutes) {
+        metConditions.push(`Focus Minutes: ${custom.requiredFocusMinutes}m+ (Current: ${focusMinutes}m)`);
+      } else {
+        unmetConditions.push(`Requires ${custom.requiredFocusMinutes}m+ Focus Minutes (Current: ${focusMinutes}m)`);
+      }
+    }
+
+    // 5. Specific Quests
+    if (custom.questRequirements && custom.questRequirements.length > 0) {
+      custom.questRequirements.forEach(qReq => {
+        hasAnyRule = true;
+        const quest = state.quests.find(q => q.id === qReq.questId);
+        const qName = quest ? quest.name : 'Linked Quest';
+        const isCompleted = quest && (quest.status === 'Completed' || quest.completedAt !== null);
+        const streak = Math.max(quest?.streakCount || 0, quest?.bestStreak || 0);
+
+        if (qReq.requireCompleted !== false) {
+          if (isCompleted) {
+            metConditions.push(`Completed Quest: "${qName}"`);
+          } else {
+            unmetConditions.push(`Must complete Quest: "${qName}"`);
+          }
+        }
+
+        if (qReq.minStreak && qReq.minStreak > 0) {
+          if (streak >= qReq.minStreak) {
+            metConditions.push(`Quest "${qName}" Streak: ${qReq.minStreak}+ Days (Current: ${streak})`);
+          } else {
+            unmetConditions.push(`Quest "${qName}" requires ${qReq.minStreak}+ Day Streak (Current: ${streak})`);
+          }
+        }
+      });
+    }
+
+    // 6. Specific Skills
+    if (custom.skillRequirements && custom.skillRequirements.length > 0) {
+      custom.skillRequirements.forEach(sReq => {
+        hasAnyRule = true;
+        const skill = state.skills.find(s => s.id === sReq.skillId);
+        const sName = skill ? skill.name : 'Linked Skill';
+        const sLvl = skill?.level || 1;
+        if (sLvl >= sReq.minLevel) {
+          metConditions.push(`Skill "${sName}" Lvl ${sReq.minLevel}+ (Current: Lvl ${sLvl})`);
+        } else {
+          unmetConditions.push(`Skill "${sName}" Lvl ${sReq.minLevel}+ required (Current: Lvl ${sLvl})`);
+        }
+      });
+    }
+
+    // 7. Goals
+    const goalIds = [
+      ...(custom.relatedGoalId ? [custom.relatedGoalId] : []),
+      ...(custom.relatedGoalIds || [])
+    ];
+    if (goalIds.length > 0) {
+      goalIds.forEach(gId => {
+        hasAnyRule = true;
+        const goal = state.goals.find(g => g.id === gId);
+        const gName = goal ? goal.name : 'Linked Goal';
+        const isMet = goal && (goal.status === 'Active' || goal.status === 'Completed');
+        if (isMet) {
+          metConditions.push(`Active/Completed Goal: "${gName}"`);
+        } else {
+          unmetConditions.push(`Must activate or complete Goal: "${gName}"`);
+        }
+      });
+    }
+
+    // 8. Projects
+    const projectIds = [
+      ...(custom.relatedProjectId ? [custom.relatedProjectId] : []),
+      ...(custom.relatedProjectIds || [])
+    ];
+    if (projectIds.length > 0) {
+      projectIds.forEach(pId => {
+        hasAnyRule = true;
+        const project = state.projects.find(p => p.id === pId);
+        const pName = project ? project.name : 'Linked Project';
+        const isMet = project && (project.status === 'Active' || project.status === 'Completed');
+        if (isMet) {
+          metConditions.push(`Active/Completed Project: "${pName}"`);
+        } else {
+          unmetConditions.push(`Must activate or complete Project: "${pName}"`);
+        }
+      });
+    }
+
+    // If all conditions for this level were removed/deleted by the user, mark as unconditionally unlocked
+    if (!hasAnyRule && unmetConditions.length === 0) {
+      metConditions.push('No leveling conditions required for Level ' + targetLevel + ' (Condition cleared)');
+    }
+
+    return {
+      isMet: unmetConditions.length === 0,
+      unmetConditions,
+      metConditions
+    };
+  }
+
+  // DEFAULT PROGRESSION FORMULA (if no custom override exists for this level)
   // 1. System Level Requirement
   const baseReqLevel = spec.unlockedAtLevel || 1;
   const targetReqLevel = baseReqLevel + (targetLevel - 1) * 2;
@@ -526,14 +856,6 @@ export function evaluateLevelConditions(
       metConditions.push(`Focus Minutes logged: ${reqFocus}m+ (Current: ${focusMinutes}m)`);
     } else {
       unmetConditions.push(`Requires ${reqFocus}m+ Focus Minutes logged (Current: ${focusMinutes}m)`);
-    }
-  }
-
-  // 5. Check base unlock requirement for Level 1
-  if (targetLevel === 1) {
-    const baseEval = evaluateUnlockConditions(spec, state);
-    if (!baseEval.isUnlocked) {
-      unmetConditions.push(...baseEval.unmetConditions);
     }
   }
 
