@@ -415,8 +415,8 @@ export const ExecuteQuestForm: React.FC = () => {
                     className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer truncate"
                   >
                     <option value="">No Assigned List</option>
-                    {(state.folders || []).map(folder => {
-                      const folderLists = (state.lists || []).filter(l => l.folderId === folder.id);
+                    {(state.folders || []).filter(f => !f.archived).map(folder => {
+                      const folderLists = (state.lists || []).filter(l => l.folderId === folder.id && !l.archived);
                       if (folderLists.length === 0) return null;
                       return (
                         <optgroup key={folder.id} label={`📁 ${folder.name}`}>
@@ -426,9 +426,9 @@ export const ExecuteQuestForm: React.FC = () => {
                         </optgroup>
                       );
                     })}
-                    {(state.lists || []).filter(l => !l.folderId).length > 0 && (
+                    {(state.lists || []).filter(l => !l.folderId && !l.archived).length > 0 && (
                       <optgroup label="Standalone Lists">
-                        {(state.lists || []).filter(l => !l.folderId).map(l => (
+                        {(state.lists || []).filter(l => !l.folderId && !l.archived).map(l => (
                           <option key={l.id} value={l.id}>📋 {l.name}</option>
                         ))}
                       </optgroup>

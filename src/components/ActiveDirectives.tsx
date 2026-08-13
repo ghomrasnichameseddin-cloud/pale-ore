@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { usePOS } from '../POSContext';
+import { usePOS, isQuestArchived } from '../POSContext';
 import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
   Circle, CheckCircle2, Trash2, Edit3, Save, X, Skull, 
   Calendar, SkipForward, Play, Pause, Clock, Timer, 
-  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers
+  AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers,
+  Archive, ArchiveRestore
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -141,6 +142,7 @@ const loadSavedQuestViewSettings = (): QuestViewSettings => {
 export const ActiveDirectives: React.FC = () => {
   const { 
     state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
+    archiveQuest, unarchiveQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, pauseFocusSession, resumeFocusSession, stopFocusSession,
     isQuestFinishedForToday,
@@ -419,6 +421,44 @@ export const ActiveDirectives: React.FC = () => {
       return;
     }
 
+    if (firstWord === 'archive') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: archive <quest name or id>`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.id.toLowerCase() === restText.toLowerCase() || q.name.toLowerCase().includes(restText.toLowerCase())
+      );
+      if (matched) {
+        archiveQuest(matched.id);
+        setTerminalLog(`[SUCCESS] ARCHIVED: "${matched.name}" moved to vault. Exempt from midnight rule.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Quest matching "${restText}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
+    if (firstWord === 'unarchive' || firstWord === 'restore') {
+      if (!restText) {
+        setTerminalLog(`[ERROR] Usage: unarchive <quest name or id>`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.id.toLowerCase() === restText.toLowerCase() || q.name.toLowerCase().includes(restText.toLowerCase())
+      );
+      if (matched) {
+        unarchiveQuest(matched.id);
+        setTerminalLog(`[SUCCESS] RESTORED: "${matched.name}" restored from vault to active directives.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Quest matching "${restText}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
+      return;
+    }
+
     if (firstWord === 'focus') {
       if (!restText) {
         setTerminalLog(`[ERROR] Usage: focus <focus statement> [/linked_goal]`);
@@ -506,6 +546,8 @@ export const ActiveDirectives: React.FC = () => {
     if (words.length === 1 && !quickInputText.startsWith('@') && !quickInputText.startsWith('#') && !quickInputText.startsWith('/') && !quickInputText.startsWith('[') && !quickInputText.startsWith('*')) {
       const commands = [
         { value: 'add ', display: 'add <quest>', desc: 'Add a new directive', type: 'command' },
+        { value: 'archive ', display: 'archive <quest>', desc: 'Archive quest (exempt from midnight rule)', type: 'command' },
+        { value: 'unarchive ', display: 'unarchive <quest>', desc: 'Restore archived quest from vault', type: 'command' },
         { value: 'complete ', display: 'complete <quest>', desc: 'Complete an active quest', type: 'command' },
         { value: 'fail ', display: 'fail <quest>', desc: 'Fail an active quest', type: 'command' },
         { value: 'delete ', display: 'delete <quest>', desc: 'Delete a quest', type: 'command' },
@@ -750,8 +792,11 @@ export const ActiveDirectives: React.FC = () => {
     setEditingQuestId(null);
   };
 
-  // Filter by Recovery Mode, Folder, and List if active
+  // Filter by Recovery Mode, Folder, and List if active (Excluding Archived Quests)
   const baseQuests = state.quests.filter(q => {
+    // 0. Archive check - completely hidden from terminal console
+    if (isQuestArchived(q, state.lists, state.folders)) return false;
+
     // 1. Recovery Mode Filter
     if (state.profile.recoveryMode) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
@@ -1045,8 +1090,9 @@ export const ActiveDirectives: React.FC = () => {
     return q.status === 'Active' && q.deadline && q.deadline > todayStr;
   });
 
-  // 5. Penalty quests: Active and type === 'Penalty'
+  // 5. Penalty quests: Active and type === 'Penalty' (excluding archived)
   const penaltyQuests = state.quests.filter(q => {
+    if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (q.status !== 'Active') return false;
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
@@ -1573,9 +1619,50 @@ export const ActiveDirectives: React.FC = () => {
           </div>
         </div>
 
-        {/* Right side XP & select indicator */}
+        {/* Right side Actions, XP & select indicator */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] font-mono font-bold text-emerald-400/90">
+          {/* Quick Action Buttons (shown on hover/active) */}
+          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                archiveQuest(quest.id);
+                setTerminalLog(`[SUCCESS] ARCHIVED: "${quest.name}" moved to vault. Exempt from midnight rule.`);
+                setTimeout(() => setTerminalLog(null), 4000);
+              }}
+              className="p-1 hover:bg-amber-950/80 text-zinc-400 hover:text-amber-400 border border-transparent hover:border-amber-500/30 rounded transition-all"
+              title="Archive Directive (Exempt from midnight rule)"
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditingQuest(quest);
+              }}
+              className="p-1 hover:bg-cyan-950/80 text-zinc-400 hover:text-cyan-400 border border-transparent hover:border-cyan-500/30 rounded transition-all"
+              title="Edit Directive"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Delete "${quest.name}" permanently?`)) {
+                  deleteQuest(quest.id);
+                }
+              }}
+              className="p-1 hover:bg-rose-950/80 text-zinc-400 hover:text-rose-400 border border-transparent hover:border-rose-500/30 rounded transition-all"
+              title="Delete Directive"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <span className="text-[10px] font-mono font-bold text-emerald-400/90 ml-1">
             +{quest.xp} XP
           </span>
           <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
@@ -2183,7 +2270,7 @@ export const ActiveDirectives: React.FC = () => {
           )}
 
           {/* CORE STATE CONTROLLERS */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1.5">
             {/* Complete/Reopen */}
             <button
               type="button"
@@ -2250,9 +2337,9 @@ export const ActiveDirectives: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm(`Mark "${quest.name}" as "Won't Do"? It will activate an XP/momentum penalty.`)) {
-                    failQuest(quest.id);
-                  }
+                  failQuest(quest.id);
+                  setTerminalLog(`[STATUS] Quest marked as Won't Do / Failed.`);
+                  setTimeout(() => setTerminalLog(null), 4000);
                 }}
                 className="py-1 bg-zinc-900/60 border border-white/5 hover:border-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
               >
@@ -2283,21 +2370,41 @@ export const ActiveDirectives: React.FC = () => {
             {/* Duplicate Option */}
             <button
               type="button"
-              onClick={() => duplicateQuest(quest.id)}
+              onClick={() => {
+                duplicateQuest(quest.id);
+                setTerminalLog(`[SUCCESS] DUPLICATED: "${quest.name}" cloned.`);
+                setTimeout(() => setTerminalLog(null), 3000);
+              }}
               className="py-1 bg-zinc-900/60 border border-white/5 hover:border-purple-500/20 hover:text-purple-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
             >
               <Copy className="h-3.5 w-3.5" />
               <span>DUPLICATE</span>
             </button>
 
+            {/* Archive Option */}
+            <button
+              type="button"
+              onClick={() => {
+                archiveQuest(quest.id);
+                setSelectedQuestId(null);
+                setTerminalLog(`[SUCCESS] ARCHIVED: "${quest.name}" moved to vault. Exempt from midnight rules.`);
+                setTimeout(() => setTerminalLog(null), 5000);
+              }}
+              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-amber-500/20 hover:text-amber-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+              title="Archive Directive (Exempt from midnight rule)"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              <span>ARCHIVE</span>
+            </button>
+
             {/* Delete Option */}
             <button
               type="button"
               onClick={() => {
-                if (window.confirm(`Are you sure you want to permanently delete "${quest.name}"?`)) {
-                  deleteQuest(quest.id);
-                  setSelectedQuestId(null);
-                }
+                deleteQuest(quest.id);
+                setSelectedQuestId(null);
+                setTerminalLog(`[STATUS] DELETED: "${quest.name}" removed.`);
+                setTimeout(() => setTerminalLog(null), 3000);
               }}
               className="py-1 bg-zinc-900/60 border border-white/5 hover:border-red-500/20 hover:text-red-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
             >

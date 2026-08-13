@@ -1,5 +1,5 @@
 import React from 'react';
-import { usePOS } from '../POSContext';
+import { usePOS, isQuestArchived } from '../POSContext';
 import { Swords, Compass, ShieldAlert, CheckCircle2, Circle } from 'lucide-react';
 import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
@@ -9,6 +9,7 @@ export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
 
   const baseQuests = state.quests.filter(q => {
+    if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (state.profile.recoveryMode) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
     }
@@ -26,7 +27,7 @@ export const QuestsView: React.FC = () => {
     q.status !== 'Failed' && 
     isQuestScheduledForDate(q, systemDate)
   );
-  const totalQuests = state.quests.length;
+  const totalQuests = state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders)).length;
 
   return (
     <div className="space-y-6" id="quests-view-root">

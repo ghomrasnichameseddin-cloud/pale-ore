@@ -75,15 +75,21 @@ interface POSContextType {
   mergeQuests: (idA: string, idB: string, mergedName: string, mergedDescription: string) => string;
   splitQuest: (id: string, questAName: string, questBName: string, xpRatio: number) => void;
   processQuestReview: (id: string, action: 'rollover' | 'postpone' | 'forgive') => void;
+  archiveQuest: (id: string) => void;
+  unarchiveQuest: (id: string, targetListId?: string | null) => void;
   
   // Folders & Lists CRUD
   addFolder: (name: string, description?: string, color?: string) => string;
   updateFolder: (id: string, updates: { name?: string; description?: string; color?: string }) => void;
   deleteFolder: (id: string) => void;
+  archiveFolder: (id: string, archiveContainedListsAndQuests?: boolean) => void;
+  unarchiveFolder: (id: string, unarchiveListsAndQuests?: boolean) => void;
   reorderFolders: (folders: QuestFolder[]) => void;
   addList: (folderId: string | null, name: string, description?: string) => string;
   updateList: (id: string, updates: { folderId?: string | null; name?: string; description?: string }) => void;
   deleteList: (id: string) => void;
+  archiveList: (id: string, archiveContainedQuests?: boolean) => void;
+  unarchiveList: (id: string, targetFolderId?: string | null, unarchiveQuests?: boolean) => void;
   reorderLists: (lists: QuestList[]) => void;
   
   // Subquests CRUD
@@ -379,8 +385,33 @@ export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
   return true;
 };
 
-const resetRecurringQuestsForNewDate = (newDateStr: string, currentQuests: Quest[]): Quest[] => {
+export const isQuestArchived = (
+  q: Quest,
+  lists: QuestList[] = [],
+  folders: QuestFolder[] = []
+): boolean => {
+  if (q.archived) return true;
+  if (q.listId) {
+    const list = lists.find(l => l.id === q.listId);
+    if (list?.archived) return true;
+    if (list?.folderId) {
+      const folder = folders.find(f => f.id === list.folderId);
+      if (folder?.archived) return true;
+    }
+  }
+  return false;
+};
+
+const resetRecurringQuestsForNewDate = (
+  newDateStr: string,
+  currentQuests: Quest[],
+  lists: QuestList[] = [],
+  folders: QuestFolder[] = []
+): Quest[] => {
   return currentQuests.map(q => {
+    if (isQuestArchived(q, lists, folders)) {
+      return q;
+    }
     if (!q.recurrence || q.recurrence === 'None') {
       return q;
     }
@@ -989,6 +1020,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Find ALL quests active on oldDate that were left unchecked (incomplete)
       const uncheckedQuests = prev.quests.filter(q => {
         if (q.status !== 'Active') return false;
+        if (isQuestArchived(q, prev.lists, prev.folders)) return false;
         if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
 
         // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate
@@ -1107,7 +1139,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const oldDate = prev.systemDate;
       const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, newDateStr);
       
-      const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests);
+      const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests, prev.lists, prev.folders);
       const finalHistory = resolveRecoveredPenalties(updatedHistory);
       const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
       const level = calculatePlayerLevel(totalXp);
@@ -1166,7 +1198,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const oldDate = currentSimulated;
         const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, nextSimulated);
 
-        const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests);
+        const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests, prev.lists, prev.folders);
         const finalHistory = resolveRecoveredPenalties(updatedHistory);
         const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
         const level = calculatePlayerLevel(totalXp);
@@ -1554,6 +1586,105 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const archiveFolder = (id: string, archiveContainedListsAndQuests: boolean = true) => {
+    setState(prev => {
+      const folder = (prev.folders || []).find(f => f.id === id);
+      if (!folder) return prev;
+      const updatedFolders = (prev.folders || []).map(f => f.id === id ? { ...f, archived: true, archivedAt: new Date().toISOString() } : f);
+      let updatedLists = prev.lists || [];
+      let updatedQuests = prev.quests;
+
+      if (archiveContainedListsAndQuests) {
+        const folderListIds = updatedLists.filter(l => l.folderId === id).map(l => l.id);
+        updatedLists = updatedLists.map(l => l.folderId === id ? { ...l, archived: true, archivedAt: new Date().toISOString() } : l);
+        updatedQuests = prev.quests.map(q => (q.listId && folderListIds.includes(q.listId)) ? { ...q, archived: true, archivedAt: new Date().toISOString() } : q);
+      }
+
+      return {
+        ...prev,
+        folders: updatedFolders,
+        lists: updatedLists,
+        quests: updatedQuests
+      };
+    });
+  };
+
+  const unarchiveFolder = (id: string, unarchiveListsAndQuests: boolean = true) => {
+    setState(prev => {
+      const updatedFolders = (prev.folders || []).map(f => f.id === id ? { ...f, archived: false, archivedAt: null } : f);
+      let updatedLists = prev.lists || [];
+      let updatedQuests = prev.quests;
+
+      if (unarchiveListsAndQuests) {
+        const folderListIds = updatedLists.filter(l => l.folderId === id).map(l => l.id);
+        updatedLists = updatedLists.map(l => l.folderId === id ? { ...l, archived: false, archivedAt: null } : l);
+        updatedQuests = prev.quests.map(q => (q.listId && folderListIds.includes(q.listId)) ? { ...q, archived: false, archivedAt: null, status: q.status === 'Failed' ? 'Active' : q.status } : q);
+      }
+
+      return {
+        ...prev,
+        folders: updatedFolders,
+        lists: updatedLists,
+        quests: updatedQuests
+      };
+    });
+  };
+
+  const archiveList = (id: string, archiveContainedQuests: boolean = true) => {
+    setState(prev => {
+      const list = (prev.lists || []).find(l => l.id === id);
+      if (!list) return prev;
+      const updatedLists = (prev.lists || []).map(l => l.id === id ? { ...l, archived: true, archivedAt: new Date().toISOString() } : l);
+      let updatedQuests = prev.quests;
+      if (archiveContainedQuests) {
+        updatedQuests = prev.quests.map(q => q.listId === id ? { ...q, archived: true, archivedAt: new Date().toISOString() } : q);
+      }
+      return {
+        ...prev,
+        lists: updatedLists,
+        quests: updatedQuests
+      };
+    });
+  };
+
+  const unarchiveList = (id: string, targetFolderId?: string | null, unarchiveQuests: boolean = true) => {
+    setState(prev => {
+      let resolvedFolderId = targetFolderId;
+      const targetList = (prev.lists || []).find(l => l.id === id);
+      
+      // If folderId is not explicitly specified, check if current parent folder is archived
+      if (resolvedFolderId === undefined && targetList?.folderId) {
+        const parentFolder = (prev.folders || []).find(f => f.id === targetList.folderId);
+        if (parentFolder?.archived) {
+          resolvedFolderId = null; // Unarchive to standalone root list
+        } else {
+          resolvedFolderId = targetList.folderId;
+        }
+      }
+
+      const updatedLists = (prev.lists || []).map(l => {
+        if (l.id === id) {
+          return {
+            ...l,
+            archived: false,
+            archivedAt: null,
+            folderId: resolvedFolderId !== undefined ? resolvedFolderId : l.folderId
+          };
+        }
+        return l;
+      });
+      let updatedQuests = prev.quests;
+      if (unarchiveQuests) {
+        updatedQuests = prev.quests.map(q => q.listId === id ? { ...q, archived: false, archivedAt: null, status: q.status === 'Failed' ? 'Active' : q.status } : q);
+      }
+      return {
+        ...prev,
+        lists: updatedLists,
+        quests: updatedQuests
+      };
+    });
+  };
+
   const reorderFolders = (folders: QuestFolder[]) => {
     setState(prev => ({
       ...prev,
@@ -1761,6 +1892,74 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           recoveryMode: newRecoveryMode
         }
       };
+    });
+  };
+
+  const archiveQuest = (id: string) => {
+    setState(prev => {
+      const qToArchive = prev.quests.find(q => q.id === id);
+      if (!qToArchive) return prev;
+      return {
+        ...prev,
+        quests: prev.quests.map(q => q.id === id ? { ...q, archived: true, archivedAt: new Date().toISOString() } : q)
+      };
+    });
+    if (activeFocusSession?.questId === id) {
+      stopFocusSession();
+    }
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: 'Quest Archived',
+      content: `Quest was moved to the Archive vault. Exempt from midnight rules.`,
+      priority: 'low'
+    });
+  };
+
+  const unarchiveQuest = (id: string, targetListId?: string | null) => {
+    setState(prev => {
+      const q = prev.quests.find(item => item.id === id);
+      if (!q) return prev;
+
+      let resolvedListId = targetListId;
+      if (resolvedListId === undefined && q.listId) {
+        const parentList = (prev.lists || []).find(l => l.id === q.listId);
+        if (parentList?.archived) {
+          resolvedListId = null; // Unarchive to standalone root
+        } else if (parentList?.folderId) {
+          const parentFolder = (prev.folders || []).find(f => f.id === parentList.folderId);
+          if (parentFolder?.archived) {
+            resolvedListId = null; // Unarchive to standalone root
+          } else {
+            resolvedListId = q.listId;
+          }
+        } else {
+          resolvedListId = q.listId;
+        }
+      }
+
+      return {
+        ...prev,
+        quests: prev.quests.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              archived: false,
+              archivedAt: null,
+              status: item.status === 'Failed' ? ('Active' as const) : item.status,
+              listId: resolvedListId !== undefined ? resolvedListId : item.listId
+            };
+          }
+          return item;
+        })
+      };
+    });
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: 'Quest Restored',
+      content: `Quest was restored from Archive vault to active directives.`,
+      priority: 'low'
     });
   };
 
@@ -3495,13 +3694,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mergeQuests,
       splitQuest,
       processQuestReview,
+      archiveQuest,
+      unarchiveQuest,
       addFolder,
       updateFolder,
       deleteFolder,
+      archiveFolder,
+      unarchiveFolder,
       reorderFolders,
       addList,
       updateList,
       deleteList,
+      archiveList,
+      unarchiveList,
       reorderLists,
       addSubQuest,
       updateSubQuest,

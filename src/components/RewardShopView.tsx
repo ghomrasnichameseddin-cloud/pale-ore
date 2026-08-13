@@ -5,7 +5,7 @@ import {
   Coffee, Gamepad2, Utensils, Tv, BookOpen, Zap, Shield, Gift, Clock, Tag,
   Pencil, RotateCcw, Edit3, Lock, Swords
 } from 'lucide-react';
-import { usePOS } from '../POSContext';
+import { usePOS, isQuestArchived } from '../POSContext';
 import { ShopItem, ShopItemCategory, RedeemedReward } from '../types';
 import { DEFAULT_SHOP_ITEMS } from '../initialState';
 
@@ -60,6 +60,7 @@ export const RewardShopView: React.FC = () => {
   const todayStr = systemDate;
   const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
   const baseQuests = (state.quests || []).filter(q => {
+    if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (state.profile.recoveryMode) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
     }

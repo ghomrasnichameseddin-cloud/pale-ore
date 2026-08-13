@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePOS } from '../POSContext';
+import { usePOS, isQuestArchived } from '../POSContext';
 import { getActiveJob, getActiveTitle } from '../jobsAndTitles';
 import { JobTitleModal } from './JobTitleModal';
 import { 
@@ -108,9 +108,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
   const activeTitle = getActiveTitle(state.profile.equippedTitleId, state.customTitles || [], state.deletedTitleIds || []);
   
-  const isRecoveryActive = state.profile.recoveryMode || state.quests.some(q => q.status === 'Active' && (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY'));
+  const isRecoveryActive = state.profile.recoveryMode || state.quests.some(q => !isQuestArchived(q, state.lists, state.folders) && q.status === 'Active' && (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY'));
 
   const baseQuests = state.quests.filter(q => {
+    if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (isRecoveryActive) {
       if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
     }
@@ -885,7 +886,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               }> = [];
 
               if (directiveGroupBy === 'list') {
-                const lists = state.lists || [];
+                const lists = (state.lists || []).filter(l => !l.archived);
                 lists.forEach(l => {
                   const lQuests = filteredDirectives.filter(q => q.listId === l.id);
                   if (lQuests.length > 0) {
@@ -911,8 +912,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   });
                 }
               } else if (directiveGroupBy === 'folder') {
-                const folders = state.folders || [];
-                const lists = state.lists || [];
+                const folders = (state.folders || []).filter(f => !f.archived);
+                const lists = (state.lists || []).filter(l => !l.archived);
                 folders.forEach(f => {
                   const folderListIds = lists.filter(l => l.folderId === f.id).map(l => l.id);
                   const fQuests = filteredDirectives.filter(q => q.listId && folderListIds.includes(q.listId));
@@ -1215,13 +1216,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <span className="text-[9px] font-mono text-zinc-400">QUICK TAP</span>
             </div>
             
-            {state.quests.filter(q => (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).length === 0 ? (
+            {state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders) && (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).length === 0 ? (
               <p className="text-xs text-zinc-500 font-mono text-center py-2">
                 No active daily habits registered for today.
               </p>
             ) : (
               <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                {state.quests.filter(q => (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).map(habit => {
+                {state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders) && (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).map(habit => {
                   const isFinished = isQuestFinishedForToday(habit);
                   return (
                     <div 
