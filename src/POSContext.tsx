@@ -986,6 +986,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (q.status !== 'Active') return false;
         if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
 
+        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate
+        if (q.postponedFrom === oldDate) return false;
+        if (q.postponedTo && q.postponedTo > oldDate) return false;
+        if (q.deadline && q.deadline > oldDate) return false;
+
         // Check if recurring
         if (q.recurrence && q.recurrence !== 'None') {
           const isScheduled = isQuestScheduledForDate(q, oldDate);
@@ -1819,14 +1824,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               completedAt: completedTimestamp,
               lastCompletedDate: state.systemDate,
               streakCount: newStreak,
-              bestStreak: newBest
+              bestStreak: newBest,
+              deadline: null,
+              postponedFrom: null,
+              postponedTo: null
             };
           } else {
             return {
               ...q,
               status: 'Completed' as const,
               completedAt: completedTimestamp,
-              lastCompletedDate: state.systemDate
+              lastCompletedDate: state.systemDate,
+              postponedFrom: null,
+              postponedTo: null
             };
           }
         }
@@ -2338,16 +2348,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const processQuestReview = (id: string, action: 'rollover' | 'postpone' | 'forgive') => {
     setState(prev => {
-      const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const todayStr = prev.systemDate || getLocalDateString();
+      const tomorrowDate = new Date(todayStr);
+      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+      const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
-          if (action === 'rollover') {
-            return { ...q, deadline: tomorrowStr };
-          } else if (action === 'postpone') {
-            return { ...q, deadline: null };
+          if (action === 'rollover' || action === 'postpone') {
+            return { 
+              ...q, 
+              deadline: tomorrowStr,
+              postponedFrom: todayStr,
+              postponedTo: tomorrowStr
+            };
           } else if (action === 'forgive') {
             // Keep active, clear deadline and remove completedAt
-            return { ...q, deadline: null, completedAt: null };
+            return { 
+              ...q, 
+              deadline: null, 
+              completedAt: null, 
+              postponedFrom: todayStr,
+              postponedTo: null 
+            };
           }
         }
         return q;

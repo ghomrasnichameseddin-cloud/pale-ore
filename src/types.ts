@@ -103,6 +103,8 @@ export interface Quest {
   createdAt: string;
   subquests?: SubQuest[];
   energyLevel?: 'Low' | 'Medium' | 'High';
+  postponedFrom?: string | null;
+  postponedTo?: string | null;
 }
 
 export interface Skill {

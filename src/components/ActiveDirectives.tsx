@@ -1056,11 +1056,19 @@ export const ActiveDirectives: React.FC = () => {
 
   const handleMoveToTomorrow = (questId: string) => {
     const tomorrowStr = getTomorrowStr();
-    updateQuest(questId, { deadline: tomorrowStr });
+    updateQuest(questId, { 
+      deadline: tomorrowStr,
+      postponedFrom: systemDate,
+      postponedTo: tomorrowStr
+    });
   };
 
   const handleMoveToToday = (questId: string) => {
-    updateQuest(questId, { deadline: null });
+    updateQuest(questId, { 
+      deadline: null,
+      postponedFrom: null,
+      postponedTo: null
+    });
   };
 
   const renderQuestCard = (quest: Quest, isDeferred: boolean) => {
