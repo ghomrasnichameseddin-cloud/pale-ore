@@ -7,6 +7,7 @@ import {
   HelpCircle, Clock, Check, FileText, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 
 export type NodeType = 'core' | 'goal' | 'project' | 'quest' | 'skill' | 'attribute' | 'milestone' | 'plan' | 'seal';
 
@@ -45,7 +46,7 @@ interface SpiderwebGraphProps {
 }
 
 export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false, onSelectEntity }) => {
-  const { state } = usePOS();
+  const { state, getGoalProgress, getProjectProgress, getSkillXpAndLevel } = usePOS();
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -102,7 +103,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     // 1A. CORE PLAYER NODE (Center)
     const coreNode: GraphNode = {
       id: 'core-player',
-      name: state.profile.name || 'OPERATOR CORE',
+      name: (state.profile as any).name || 'OPERATOR CORE',
       type: 'core',
       level: state.profile.level,
       status: 'Active',
@@ -111,7 +112,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       radius: 22,
       ring: 0,
       angle: 0,
-      color: '#06b6d4' // Cyan
+      color: '#c5a059' // Antique Gold
     };
     nodeList.push(coreNode);
     nMap.set(coreNode.id, coreNode);
@@ -121,7 +122,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     attrs.forEach((attr, idx) => {
       const angle = (idx / Math.max(attrs.length, 1)) * 2 * Math.PI - Math.PI / 2;
       const r = ringRadii[1];
-      const isRecentlyModified = attr.xp > 0 && attr.level > 1;
+      const isRecentlyModified = ((attr as any).xp || 0) > 0 && attr.level > 1;
       if (isRecentlyModified) modSet.add(attr.id);
 
       const node: GraphNode = {
@@ -147,7 +148,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     goals.forEach((goal, idx) => {
       const angle = ((idx + 0.5) / Math.max(goals.length, 1)) * 2 * Math.PI - Math.PI / 2;
       const r = ringRadii[1] + 25;
-      const isRecentlyModified = goal.status === 'Completed' || goal.progress > 0;
+      const goalProg = getGoalProgress(goal.id);
+      const isRecentlyModified = goal.status === 'Completed' || goalProg > 0;
       if (isRecentlyModified) modSet.add(goal.id);
 
       const node: GraphNode = {
@@ -155,7 +157,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         name: goal.name,
         type: 'goal',
         status: goal.status,
-        progress: goal.progress,
+        progress: goalProg,
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 13,
@@ -173,7 +175,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     projects.forEach((proj, idx) => {
       const angle = (idx / Math.max(projects.length, 1)) * 2 * Math.PI - Math.PI / 3;
       const r = ringRadii[2];
-      const isRecentlyModified = proj.status === 'Completed' || proj.progress > 0;
+      const projProg = getProjectProgress(proj.id);
+      const isRecentlyModified = proj.status === 'Completed' || projProg > 0;
       if (isRecentlyModified) modSet.add(proj.id);
 
       const node: GraphNode = {
@@ -181,7 +184,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         name: proj.name,
         type: 'project',
         status: proj.status,
-        progress: proj.progress,
+        progress: projProg,
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 12,
@@ -204,21 +207,21 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       }
 
       const r = ringRadii[2] + 35;
-      const isRecentlyModified = ms.completed;
-      if (isRecentlyModified) modSet.add(ms.id);
+      const isCompleted = ms.status === 'Completed' || (ms as any).completed;
+      if (isCompleted) modSet.add(ms.id);
 
       const node: GraphNode = {
         id: ms.id,
         name: ms.name,
         type: 'milestone',
-        status: ms.completed ? 'Completed' : 'Pending',
+        status: isCompleted ? 'Completed' : 'Pending',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 9,
         ring: 2,
         angle,
         color: '#ec4899', // Pink
-        isModifiedRecently: isRecentlyModified
+        isModifiedRecently: isCompleted
       };
       nodeList.push(node);
       nMap.set(node.id, node);
@@ -274,12 +277,13 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       const isRecentlyModified = skill.level > 1 || skill.xp > 0;
       if (isRecentlyModified) modSet.add(skill.id);
 
+      const skillProg = getSkillXpAndLevel(skill.id).progress;
       const node: GraphNode = {
         id: skill.id,
         name: skill.name,
         type: 'skill',
         level: skill.level,
-        progress: skill.progress,
+        progress: skillProg,
         skillTier: 'Primary',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
@@ -305,12 +309,13 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       const isRecentlyModified = secSkill.level > 1 || secSkill.xp > 0;
       if (isRecentlyModified) modSet.add(secSkill.id);
 
+      const secSkillProg = getSkillXpAndLevel(secSkill.id).progress;
       const node: GraphNode = {
         id: secSkill.id,
         name: secSkill.name,
         type: 'skill',
         level: secSkill.level,
-        progress: secSkill.progress,
+        progress: secSkillProg,
         skillTier: 'Secondary',
         parentId: secSkill.parentId || null,
         x: cx + r * Math.cos(angle),
@@ -499,8 +504,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
   useEffect(() => {
     const currentStateSummary = JSON.stringify({
       quests: state.quests.map(q => ({ id: q.id, status: q.status })),
-      goals: state.goals.map(g => ({ id: g.id, status: g.status, p: g.progress })),
-      projects: state.projects.map(p => ({ id: p.id, status: p.status, pr: p.progress })),
+      goals: state.goals.map(g => ({ id: g.id, status: g.status, p: getGoalProgress(g.id) })),
+      projects: state.projects.map(p => ({ id: p.id, status: p.status, pr: getProjectProgress(p.id) })),
       skills: state.skills.map(s => ({ id: s.id, lvl: s.level, xp: s.xp })),
       xpHistoryLength: state.xpHistory?.length || 0
     });
@@ -656,16 +661,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
   const getNodeBadgeClass = (type: NodeType) => {
     switch (type) {
-      case 'core': return 'bg-cyan-950/80 border-cyan-500/40 text-cyan-300';
-      case 'goal': return 'bg-amber-950/80 border-amber-500/40 text-amber-300';
-      case 'project': return 'bg-purple-950/80 border-purple-500/40 text-purple-300';
-      case 'quest': return 'bg-rose-950/80 border-rose-500/40 text-rose-300';
-      case 'skill': return 'bg-blue-950/80 border-blue-500/40 text-blue-300';
-      case 'attribute': return 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300';
-      case 'milestone': return 'bg-pink-950/80 border-pink-500/40 text-pink-300';
-      case 'plan': return 'bg-teal-950/80 border-teal-500/40 text-teal-300';
-      case 'seal': return 'bg-purple-950/80 border-purple-500/50 text-purple-300';
-      default: return 'bg-zinc-900 border-zinc-700 text-zinc-300';
+      case 'core': return 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a]';
+      case 'goal': return 'bg-[#2a220a] border-[#e5c875]/60 text-[#fef08a]';
+      case 'project': return 'bg-[#181329] border-[#a855f7]/50 text-purple-300';
+      case 'quest': return 'bg-[#2a1318] border-rose-500/50 text-rose-300';
+      case 'skill': return 'bg-[#0f1f38] border-blue-500/50 text-blue-300';
+      case 'attribute': return 'bg-[#0c2419] border-emerald-500/50 text-emerald-300';
+      case 'milestone': return 'bg-[#2b1022] border-pink-500/50 text-pink-300';
+      case 'plan': return 'bg-[#0b2426] border-teal-500/50 text-teal-300';
+      case 'seal': return 'bg-[#271038] border-purple-500/60 text-purple-200';
+      default: return 'bg-[#0b0d13] border-[#c5a059]/30 text-zinc-300';
     }
   };
 
@@ -673,20 +678,21 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     <div className="space-y-4">
       
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-zinc-950/80 p-4 rounded-xl border border-white/10 glass-panel">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#0b0d13]/95 p-4 rounded-xl border border-[#c5a059]/30 glass-panel relative overflow-hidden shadow-lg">
+        <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-cyan-950/80 border border-cyan-500/40 rounded-xl text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-            <Network className="h-6 w-6" />
+          <div className="p-2.5 bg-[#141824] border border-[#c5a059]/50 rounded-xl text-[#e5c875] shadow-[0_0_15px_rgba(197,160,89,0.25)]">
+            <RubElHizbIcon className="h-6 w-6 text-[#c5a059]" />
           </div>
           <div>
             <h3 className="text-base font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              OPERATOR SPIDERWEB GRAPH
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
-                FULL CIRCUIT NET
+              ASTROLABE OF DESTINIES // NEXUS GRAPH
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-bold">
+                SOUL WEAVE ACTIVE
               </span>
             </h3>
-            <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
-              Comprehensive relational neural-net mapping Goals, Projects, Quests, Skills, Attributes, Milestones & Plans
+            <p className="text-[11px] font-mono text-[#c5a059]/80 mt-0.5">
+              Harmonic celestial web linking Destinies, Operations, Decrees, Disciplines, Attributes, Milestones & Mystic Seals
             </p>
           </div>
         </div>
@@ -696,51 +702,51 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
           
           {/* SEARCH INPUT */}
           <div className="relative">
-            <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-2.5 top-2.5" />
+            <Search className="h-3.5 w-3.5 text-[#c5a059]/60 absolute left-2.5 top-2.5" />
             <input 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search component..."
-              className="bg-zinc-900 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500 font-mono w-36 sm:w-48"
+              placeholder="Search realm node..."
+              className="bg-[#07080c] border border-[#c5a059]/30 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#c5a059] font-mono w-36 sm:w-48"
             />
           </div>
 
           {/* TOGGLE MODIFIED ONLY */}
           <button
             onClick={() => setShowModifiedOnly(!showModifiedOnly)}
-            className={`text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 uppercase ${
+            className={`text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 uppercase cursor-pointer ${
               showModifiedOnly 
-                ? 'bg-amber-950/80 border-amber-500 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]' 
-                : 'bg-zinc-900 border-white/10 text-zinc-400 hover:text-white'
+                ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.3)]' 
+                : 'bg-[#07080c] border-white/10 text-zinc-400 hover:text-white hover:border-[#c5a059]/30'
             }`}
           >
-            <Sparkles className="h-3 w-3 text-amber-400" />
-            {showModifiedOnly ? 'SHOWING MODIFIED' : 'HIGHLIGHT MODIFIED'}
+            <Sparkles className="h-3 w-3 text-[#e5c875]" />
+            {showModifiedOnly ? 'ATTUNED ONLY' : 'HIGHLIGHT ATTUNED'}
           </button>
 
           {/* ZOOM CONTROLS */}
-          <div className="flex items-center bg-zinc-900 border border-white/10 rounded-lg p-0.5">
+          <div className="flex items-center bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-0.5">
             <button 
               onClick={() => setZoomLevel(prev => Math.max(0.7, prev - 0.15))}
-              className="p-1 text-zinc-400 hover:text-white rounded hover:bg-white/5 transition-colors"
+              className="p-1 text-zinc-400 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="h-3.5 w-3.5" />
             </button>
-            <span className="text-[10px] font-mono text-zinc-400 px-1.5">
+            <span className="text-[10px] font-mono text-[#c5a059] px-1.5 font-bold">
               {Math.round(zoomLevel * 100)}%
             </span>
             <button 
               onClick={() => setZoomLevel(prev => Math.min(1.4, prev + 0.15))}
-              className="p-1 text-zinc-400 hover:text-white rounded hover:bg-white/5 transition-colors"
+              className="p-1 text-zinc-400 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="h-3.5 w-3.5" />
             </button>
             <button 
               onClick={() => setZoomLevel(1)}
-              className="p-1 text-zinc-500 hover:text-cyan-400 rounded hover:bg-white/5 transition-colors border-l border-white/5"
+              className="p-1 text-zinc-500 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors border-l border-white/5 cursor-pointer"
               title="Reset Zoom"
             >
               <RefreshCw className="h-3 w-3" />
@@ -750,31 +756,31 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       </div>
 
       {/* FILTER TABS */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-white/5 pb-3">
-        <span className="text-[10px] font-mono text-zinc-500 uppercase mr-1 flex items-center gap-1">
-          <Filter className="h-3 w-3" /> FILTER WEBS:
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-[#c5a059]/20 pb-3">
+        <span className="text-[10px] font-mono text-[#c5a059] uppercase mr-1 flex items-center gap-1 font-bold">
+          <Filter className="h-3 w-3 text-[#c5a059]" /> FILTER SPHERE:
         </span>
 
         {[
-          { id: 'all', label: 'ALL COMPONENTS' },
-          { id: 'goal', label: 'GOALS' },
-          { id: 'project', label: 'PROJECTS' },
-          { id: 'quest', label: 'QUESTS' },
-          { id: 'skill', label: 'ALL SKILLS' },
-          { id: 'primary_skill', label: 'PRIMARY SKILLS' },
-          { id: 'secondary_skill', label: 'SECONDARY SKILLS' },
+          { id: 'all', label: 'ALL REALM NODES' },
+          { id: 'goal', label: 'DESTINIES' },
+          { id: 'project', label: 'OPERATIONS' },
+          { id: 'quest', label: 'DECREES' },
+          { id: 'skill', label: 'DISCIPLINES' },
+          { id: 'primary_skill', label: 'PRIMARY DISCIPLINES' },
+          { id: 'secondary_skill', label: 'SECONDARY BRANCHES' },
           { id: 'attribute', label: 'ATTRIBUTES' },
           { id: 'seal', label: 'POWER SEALS' },
           { id: 'milestone', label: 'MILESTONES' },
-          { id: 'plan', label: 'PLANS' }
+          { id: 'plan', label: 'SCROLLS' }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveFilter(tab.id as any)}
-            className={`text-[10px] font-mono px-2.5 py-1 rounded-md transition-all uppercase ${
+            className={`text-[10px] font-mono px-2.5 py-1 rounded-md transition-all uppercase cursor-pointer ${
               activeFilter === tab.id 
-                ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-bold' 
-                : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 border border-white/5'
+                ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] font-bold shadow-sm' 
+                : 'bg-[#07080c] hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border border-[#c5a059]/15'
             }`}
           >
             {tab.label}
@@ -785,28 +791,29 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       {/* ACTIVE CIRCUIT BANNER (RESERVED HEIGHT CONTAINER TO PREVENT LAYOUT SHIFT) */}
       <div className="min-h-[58px] flex items-center">
         {activeFocusNode ? (
-          <div className="w-full bg-zinc-900/95 border border-cyan-500/40 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+          <div className="w-full bg-[#0b0d13] border border-[#c5a059]/50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(197,160,89,0.18)] relative overflow-hidden">
+            <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-950 border border-cyan-500/50 text-cyan-400 shrink-0">
-                <Zap className="h-4 w-4 animate-pulse" />
+              <div className="p-2 rounded-lg bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] shrink-0">
+                <RubElHizbIcon className="h-4 w-4 text-[#e5c875]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
-                    ⚡ ACTIVE CIRCUIT: {activeFocusNode.name}
+                  <span className="text-[11px] font-mono text-[#e5c875] font-bold uppercase tracking-wider">
+                    ✦ RESONATING CIRCUIT: {activeFocusNode.name}
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 uppercase">
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] uppercase font-bold">
                     {activeFocusNode.type}
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-zinc-300 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                  <span className="text-zinc-400">{circuitNodesList.length - 1} Connected Components in Circuit:</span>
-                  <span className="text-amber-400 font-bold">{circuitStats.goal} Goals</span> •
-                  <span className="text-purple-400 font-bold">{circuitStats.project} Projects</span> •
-                  <span className="text-rose-400 font-bold">{circuitStats.quest} Quests</span> •
-                  <span className="text-blue-400 font-bold">{circuitStats.skill} Skills</span> •
+                  <span className="text-zinc-400">{circuitNodesList.length - 1} Resonating Nodes:</span>
+                  <span className="text-[#e5c875] font-bold">{circuitStats.goal} Destinies</span> •
+                  <span className="text-purple-400 font-bold">{circuitStats.project} Operations</span> •
+                  <span className="text-rose-400 font-bold">{circuitStats.quest} Decrees</span> •
+                  <span className="text-blue-400 font-bold">{circuitStats.skill} Disciplines</span> •
                   <span className="text-emerald-400 font-bold">{circuitStats.attribute} Attributes</span>
-                  {circuitStats.plan > 0 && <span className="text-teal-400 font-bold">• {circuitStats.plan} Plans</span>}
+                  {circuitStats.plan > 0 && <span className="text-teal-400 font-bold">• {circuitStats.plan} Scrolls</span>}
                 </div>
               </div>
             </div>
@@ -814,14 +821,14 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsolateCircuit(!isolateCircuit)}
-                className={`text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
+                className={`text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
                   isolateCircuit 
-                    ? 'bg-cyan-950 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]' 
-                    : 'bg-zinc-800 border-white/10 text-zinc-300 hover:text-white'
+                    ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.3)]' 
+                    : 'bg-[#07080c] border-[#c5a059]/30 text-zinc-300 hover:text-white hover:border-[#c5a059]'
                 }`}
               >
-                <Compass className="h-3.5 w-3.5 text-cyan-400" />
-                {isolateCircuit ? 'ISOLATED CIRCUIT VIEW' : 'ISOLATE CIRCUIT'}
+                <Compass className="h-3.5 w-3.5 text-[#e5c875]" />
+                {isolateCircuit ? 'ISOLATED HARMONY VIEW' : 'ISOLATE HARMONY'}
               </button>
 
               <button
@@ -830,19 +837,19 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                   setHoveredNodeId(null);
                   setIsolateCircuit(false);
                 }}
-                className="text-xs font-mono text-zinc-400 hover:text-white px-2.5 py-1.5 rounded bg-zinc-800/80 border border-white/5 hover:border-white/20 transition-colors"
+                className="text-xs font-mono text-zinc-400 hover:text-white px-2.5 py-1.5 rounded bg-[#07080c] border border-[#c5a059]/20 hover:border-[#c5a059]/40 transition-colors cursor-pointer"
               >
                 CLEAR
               </button>
             </div>
           </div>
         ) : (
-          <div className="w-full bg-zinc-950/40 border border-white/5 rounded-xl p-3 flex items-center justify-between text-xs font-mono text-zinc-500">
+          <div className="w-full bg-[#0b0d13]/80 border border-[#c5a059]/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono text-zinc-400">
             <span className="flex items-center gap-2">
-              <Compass className="h-4 w-4 text-cyan-400/70 shrink-0" />
-              HOVER OR CLICK ANY COMPONENT TO HIGHLIGHT & INSPECT ITS FULL CIRCUIT NETWORK
+              <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0" />
+              HOVER OR ATTUNE TO ANY REALM NODE TO INSPECT ITS CELESTIAL CIRCUIT NETWORK
             </span>
-            <span className="text-[10px] text-zinc-600 uppercase font-mono hidden sm:inline">RELATIONAL SPIDERWEB ACTIVE</span>
+            <span className="text-[10px] text-[#c5a059] uppercase font-mono hidden sm:inline font-bold">ASTROLABE ACTIVE</span>
           </div>
         )}
       </div>
@@ -851,10 +858,14 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* SPIDERWEB SVG DISPLAY (3 COLS) */}
-        <div className="lg:col-span-3 bg-zinc-950/80 border border-white/10 rounded-xl p-2 relative overflow-hidden flex items-center justify-center min-h-[480px] md:min-h-[580px]">
+        <div className="lg:col-span-3 bg-[#0b0d13]/90 border border-[#c5a059]/30 rounded-xl p-2 relative overflow-hidden flex items-center justify-center min-h-[480px] md:min-h-[580px] shadow-xl">
+          <ArabesqueCorner position="top-left" className="top-1.5 left-1.5 h-4 w-4" color="#c5a059" />
+          <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-4 w-4" color="#c5a059" />
+          <ArabesqueCorner position="bottom-left" className="bottom-1.5 left-1.5 h-4 w-4" color="#c5a059" />
+          <ArabesqueCorner position="bottom-right" className="bottom-1.5 right-1.5 h-4 w-4" color="#c5a059" />
           
           {/* SPIDERWEB BACKGROUND GRID DECORATION */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-950/20 via-zinc-950/90 to-zinc-950 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#c5a059]/10 via-[#0b0d13]/80 to-[#07080c] pointer-events-none" />
 
           {/* DYNAMIC SVG SPIDERWEB GRAPH */}
           <div 
@@ -917,7 +928,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                       y1={cy}
                       x2={x2}
                       y2={y2}
-                      stroke="#06b6d4"
+                      stroke="#c5a059"
                       strokeWidth="1"
                       strokeDasharray="4 4"
                     />
@@ -937,9 +948,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                       key={`ring-poly-${ringIndex}`}
                       points={points}
                       fill="none"
-                      stroke="#38bdf8"
+                      stroke="#e5c875"
                       strokeWidth="1"
-                      strokeOpacity={0.25 - ringIndex * 0.04}
+                      strokeOpacity={0.28 - ringIndex * 0.04}
                     />
                   );
                 })}
@@ -972,12 +983,12 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         y2={targetNode.y}
                         stroke={
                           isDirectFocusLink
-                            ? '#38bdf8' // Vibrant Cyan for direct links
+                            ? '#e5c875' // Luminous gold for direct links
                             : isCircuitLink
-                            ? '#a855f7' // Purple/violet glow for active circuit
+                            ? '#c5a059' // Antique gold glow for active circuit
                             : isLinkModified 
                             ? '#f59e0b' 
-                            : '#334155'
+                            : '#3a2e12'
                         }
                         strokeWidth={
                           isDirectFocusLink ? 3 : isCircuitLink ? 2 : isLinkModified ? 1.5 : 1
@@ -1024,7 +1035,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           cy={node.y}
                           r={node.radius + (isSelected ? 9 : 6)} 
                           fill="none" 
-                          stroke={isSelected ? '#38bdf8' : '#a855f7'} 
+                          stroke={isSelected ? '#e5c875' : '#c5a059'} 
                           strokeWidth="1.5" 
                           strokeOpacity="0.8" 
                           className="pointer-events-none circuit-node-pulse"
@@ -1078,9 +1089,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         cy={node.y}
                         r={node.radius} 
                         fill={node.color}
-                        stroke={isSelected ? '#ffffff' : isHovered ? '#38bdf8' : '#0f172a'}
+                        stroke={isSelected ? '#ffffff' : isHovered ? '#e5c875' : '#07080c'}
                         strokeWidth={isSelected ? 3 : isHovered ? 2 : 1.5}
-                        filter={node.type === 'core' || isSelected ? 'url(#glow-cyan)' : undefined}
+                        filter={node.type === 'core' || isSelected ? 'url(#glow-amber)' : undefined}
                       />
 
                       {/* NODE LABEL & HOP LEVEL BADGE */}
@@ -1088,7 +1099,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         x={node.x}
                         y={node.y + node.radius + 13}
                         textAnchor="middle"
-                        fill={isSelected ? '#ffffff' : isHovered ? '#38bdf8' : '#cbd5e1'}
+                        fill={isSelected ? '#ffffff' : isHovered ? '#e5c875' : '#cbd5e1'}
                         fontSize="9"
                         fontWeight={isSelected || isHovered ? 'bold' : 'normal'}
                         className="pointer-events-none font-mono"
@@ -1104,7 +1115,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           textAnchor="middle"
                           fill={
                             isInCircuit && hopLevel === 0
-                              ? '#38bdf8'
+                              ? '#e5c875'
                               : node.type === 'skill' && node.skillTier === 'Primary'
                               ? '#60a5fa'
                               : node.type === 'skill' && node.skillTier === 'Secondary'
@@ -1119,7 +1130,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           {isInCircuit && hopLevel !== undefined
                             ? hopLevel === 0 ? '[FOCUS]' : `[HOP-${hopLevel}]`
                             : node.type === 'skill' 
-                            ? `[${node.skillTier === 'Primary' ? 'PRI' : 'SEC'}-SKILL]` 
+                            ? `[${node.skillTier === 'Primary' ? 'PRI' : 'SEC'}-DISCIPLINE]` 
                             : `[${node.type}]`}
                         </text>
                       )}
@@ -1131,15 +1142,15 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
           </div>
 
           {/* LEGEND overlay */}
-          <div className="absolute bottom-3 left-3 bg-zinc-950/90 border border-white/10 rounded-lg p-2 text-[9px] font-mono text-zinc-400 space-y-1 backdrop-blur-md">
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-cyan-400" /> CENTER: OPERATOR CORE</div>
+          <div className="absolute bottom-3 left-3 bg-[#0b0d13]/95 border border-[#c5a059]/30 rounded-lg p-2.5 text-[9px] font-mono text-zinc-300 space-y-1 backdrop-blur-md shadow-lg">
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#c5a059]" /> CENTER: SOUL CORE</div>
             <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-400" /> RING 1: ATTRIBUTES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-400" /> RING 1: GOALS</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" /> RING 2: PROJECTS & MILESTONES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-400" /> RING 3: QUESTS</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> RING 4: PRIMARY SKILLS</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-400" /> SATELLITE: SECONDARY SKILLS</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-teal-400" /> OUTER: PLANNING DOCUMENTS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#e5c875]" /> RING 1: DESTINIES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" /> RING 2: OPERATIONS & MILESTONES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-400" /> RING 3: DECREES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> RING 4: PRIMARY DISCIPLINES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-400" /> SATELLITE: SECONDARY BRANCHES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-teal-400" /> OUTER: CODEX SCROLLS</div>
           </div>
         </div>
 
@@ -1147,15 +1158,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         <div className="space-y-4">
           
           {/* INSPECTOR PANEL */}
-          <div className="glass-panel rounded-xl p-4 space-y-3.5 border border-white/10">
-            <div className="flex justify-between items-center border-b border-white/5 pb-2">
-              <span className="text-xs font-mono text-cyan-400 font-bold uppercase flex items-center gap-1.5">
-                <Info className="h-3.5 w-3.5" /> COMPONENT INSPECTOR
+          <div className="glass-panel rounded-xl p-4 space-y-3.5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
+            <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
+            <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2">
+              <span className="text-xs font-mono text-[#e5c875] font-bold uppercase flex items-center gap-1.5">
+                <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" /> REALM INSPECTOR
               </span>
               {selectedNode && (
                 <button 
                   onClick={() => setSelectedNodeId(null)}
-                  className="text-[10px] font-mono text-zinc-500 hover:text-white"
+                  className="text-[10px] font-mono text-zinc-400 hover:text-white cursor-pointer"
                 >
                   CLEAR
                 </button>
@@ -1172,7 +1184,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                     <h4 className="font-display text-sm font-bold text-white uppercase leading-tight">
                       {selectedNode.name}
                     </h4>
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase">
+                    <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">
                       TYPE: {selectedNode.type} {selectedNode.status ? `• ${selectedNode.status}` : ''}
                     </span>
                   </div>
@@ -1191,9 +1203,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                       ) : (
                         <Layers className="h-3.5 w-3.5 text-indigo-400" />
                       )}
-                      <span>{selectedNode.skillTier === 'Primary' ? 'PRIMARY SKILL TRACK' : 'SECONDARY SKILL TRACK'}</span>
+                      <span>{selectedNode.skillTier === 'Primary' ? 'PRIMARY DISCIPLINE' : 'SECONDARY BRANCH'}</span>
                     </div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 uppercase">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 uppercase font-bold">
                       {selectedNode.skillTier}
                     </span>
                   </div>
@@ -1205,13 +1217,13 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                     const parentNode = nodeMap.get(selectedNode.parentId);
                     if (!parentNode) return null;
                     return (
-                      <div className="bg-zinc-900/90 p-2 rounded-lg border border-indigo-500/30 space-y-1">
+                      <div className="bg-[#07080c] p-2 rounded-lg border border-indigo-500/30 space-y-1">
                         <span className="text-[9px] font-mono text-indigo-400 uppercase font-bold block">
-                          PARENT PRIMARY SKILL:
+                          PARENT DISCIPLINE:
                         </span>
                         <div 
                           onClick={() => setSelectedNodeId(parentNode.id)}
-                          className="flex items-center justify-between p-1.5 bg-zinc-950 hover:bg-zinc-800 rounded border border-white/5 cursor-pointer text-xs font-mono text-white transition-colors"
+                          className="flex items-center justify-between p-1.5 bg-[#0b0d13] hover:bg-[#141824] rounded border border-white/5 cursor-pointer text-xs font-mono text-white transition-colors"
                         >
                           <span className="truncate">{parentNode.name}</span>
                           <ArrowRight className="h-3 w-3 text-indigo-400" />
@@ -1222,37 +1234,37 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                 )}
 
                 {/* STATS OF SELECTED NODE */}
-                <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/5 space-y-1.5 text-xs font-mono">
+                <div className="bg-[#07080c] p-2.5 rounded-lg border border-[#c5a059]/20 space-y-1.5 text-xs font-mono">
                   {selectedNode.level !== undefined && (
                     <div className="flex justify-between">
-                      <span className="text-zinc-500">LEVEL:</span>
-                      <span className="text-cyan-400 font-bold">LVL {selectedNode.level}</span>
+                      <span className="text-zinc-400">RANK LEVEL:</span>
+                      <span className="text-[#e5c875] font-bold">TIER {selectedNode.level}</span>
                     </div>
                   )}
                   {selectedNode.progress !== undefined && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px]">
-                        <span className="text-zinc-500">PROGRESS:</span>
+                        <span className="text-zinc-400">PROGRESSION:</span>
                         <span className="text-emerald-400 font-bold">{selectedNode.progress}%</span>
                       </div>
-                      <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
-                        <div className="bg-emerald-500 h-full" style={{ width: `${selectedNode.progress}%` }} />
+                      <div className="w-full bg-[#0b0d13] rounded-full h-1 overflow-hidden border border-white/5">
+                        <div className="rpg-progress-gold h-full" style={{ width: `${selectedNode.progress}%` }} />
                       </div>
                     </div>
                   )}
                   <div className="flex justify-between text-[10px]">
-                    <span className="text-zinc-500">CIRCUIT NETWORK:</span>
-                    <span className="text-cyan-400 font-bold">{circuitNodesList.length - 1} connected</span>
+                    <span className="text-zinc-400">CIRCUIT HARMONY:</span>
+                    <span className="text-[#e5c875] font-bold">{circuitNodesList.length - 1} resonated</span>
                   </div>
                 </div>
 
                 {/* ACTIVE CIRCUIT PIPELINE BREAKDOWN */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1">
-                      <Zap className="h-3 w-3" /> ACTIVE CIRCUIT PIPELINE:
+                    <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1">
+                      <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" /> RESONANCE PIPELINE:
                     </span>
-                    <span className="text-[9px] font-mono text-zinc-500">{circuitNodesList.length - 1} ITEMS</span>
+                    <span className="text-[9px] font-mono text-zinc-400 font-bold">{circuitNodesList.length - 1} NODES</span>
                   </div>
 
                   <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
@@ -1265,17 +1277,17 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           <div 
                             key={node.id}
                             onClick={() => setSelectedNodeId(node.id)}
-                            className="p-1.5 bg-zinc-950 hover:bg-zinc-900 border border-white/5 hover:border-cyan-500/30 rounded text-xs flex items-center justify-between cursor-pointer transition-colors group"
+                            className="p-1.5 bg-[#07080c] hover:bg-[#141824] border border-[#c5a059]/15 hover:border-[#c5a059]/50 rounded text-xs flex items-center justify-between cursor-pointer transition-colors group"
                           >
                             <div className="flex items-center gap-1.5 truncate max-w-[140px]">
-                              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 shrink-0">
+                              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 shrink-0 font-bold">
                                 H{hop}
                               </span>
-                              <span className="text-zinc-300 font-sans truncate group-hover:text-cyan-300">
+                              <span className="text-zinc-300 font-sans truncate group-hover:text-[#e5c875]">
                                 {node.name}
                               </span>
                             </div>
-                            <span className="text-[9px] font-mono text-cyan-400 uppercase shrink-0">
+                            <span className="text-[9px] font-mono text-[#c5a059] uppercase shrink-0 font-bold">
                               [{node.type}]
                             </span>
                           </div>
@@ -1286,20 +1298,21 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
               </div>
             ) : (
-              <div className="py-8 text-center space-y-1 text-zinc-500 font-mono text-xs">
-                <Compass className="h-6 w-6 text-zinc-600 mx-auto" />
-                <p>Click any spiderweb node to isolate & inspect its full operational circuit pipeline.</p>
+              <div className="py-8 text-center space-y-1 text-zinc-400 font-mono text-xs">
+                <RubElHizbIcon className="h-6 w-6 text-[#c5a059]/60 mx-auto" />
+                <p>Attune to any astrolabe node to isolate & inspect its celestial destiny pipeline.</p>
               </div>
             )}
           </div>
 
           {/* REAL-TIME MODIFICATION AUDIT LOG */}
-          <div className="glass-panel rounded-xl p-4 space-y-3 border border-white/10">
-            <div className="flex items-center justify-between border-b border-white/5 pb-2">
-              <span className="text-xs font-mono text-amber-400 font-bold uppercase flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" /> MODIFICATION STREAM
+          <div className="glass-panel rounded-xl p-4 space-y-3 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
+            <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
+            <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+              <span className="text-xs font-mono text-[#e5c875] font-bold uppercase flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" /> ATTUNEMENT STREAM
               </span>
-              <span className="text-[9px] font-mono text-zinc-500">LIVE SYNC</span>
+              <span className="text-[9px] font-mono text-[#c5a059] font-bold">CELESTIAL SYNC</span>
             </div>
 
             <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
@@ -1311,13 +1324,13 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                     <div 
                       key={id}
                       onClick={() => setSelectedNodeId(id)}
-                      className="p-2 bg-amber-950/20 border border-amber-500/20 rounded text-[11px] flex items-center justify-between cursor-pointer hover:border-amber-500/40 transition-colors"
+                      className="p-2 bg-[#2a220a]/40 border border-[#c5a059]/30 rounded text-[11px] flex items-center justify-between cursor-pointer hover:border-[#c5a059] transition-colors"
                     >
                       <div className="flex items-center gap-1.5 truncate pr-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shrink-0" />
-                        <span className="font-sans font-medium text-amber-200 truncate">{node.name}</span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#e5c875] shrink-0" />
+                        <span className="font-sans font-medium text-[#fef08a] truncate">{node.name}</span>
                       </div>
-                      <span className="text-[9px] font-mono text-amber-400 shrink-0 uppercase">
+                      <span className="text-[9px] font-mono text-[#c5a059] shrink-0 uppercase font-bold">
                         [{node.type}]
                       </span>
                     </div>
@@ -1325,7 +1338,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                 })
               ) : (
                 <p className="text-[10px] font-mono text-zinc-500 italic py-3 text-center">
-                  No active modification triggers detected in current session frame.
+                  No active celestial modification triggers detected in current session.
                 </p>
               )}
             </div>

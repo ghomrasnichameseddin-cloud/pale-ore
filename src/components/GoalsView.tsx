@@ -7,6 +7,7 @@ import {
   ChevronRight, ArrowRight, GitFork, Link2, Copy, Move, ArrowUpRight, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 export const GoalsView: React.FC = () => {
   const { 
@@ -48,7 +49,7 @@ export const GoalsView: React.FC = () => {
   const [editGoalEstDate, setEditGoalEstDate] = useState('');
 
   // Sub-tabs in Goal Detail Pane
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'projects' | 'quests' | 'skills' | 'stats'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'projects' | 'quests' | 'skills'>('overview');
 
   // Create Project States
   const [newProjName, setNewProjName] = useState('');
@@ -144,21 +145,21 @@ export const GoalsView: React.FC = () => {
 
   const selectedGoal = state.goals.find(g => g.id === selectedGoalId);
 
-  // Status mapping
+  // Status mapping with RPG theme
   const statusColors = {
-    'Active': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    'Paused': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    'Planned': 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-    'Completed': 'text-zinc-300 bg-white/5 border-white/10',
-    'Archived': 'text-zinc-500 bg-zinc-950 border-zinc-800'
+    'Active': 'text-[#e5c875] bg-[#3a2e12] border-[#c5a059]/40',
+    'Paused': 'text-amber-300 bg-amber-950/60 border-amber-500/40',
+    'Planned': 'text-purple-300 bg-purple-950/60 border-purple-500/40',
+    'Completed': 'text-emerald-300 bg-emerald-950/60 border-emerald-500/40',
+    'Archived': 'text-zinc-500 bg-[#07080c] border-zinc-800'
   };
 
   const statusIcons = {
-    'Active': '🟢',
-    'Paused': '🟡',
-    'Planned': '🔵',
-    'Completed': '⚪',
-    'Archived': '⚫'
+    'Active': '✧',
+    'Paused': '⏸',
+    'Planned': '✦',
+    'Completed': '✓',
+    'Archived': '⊘'
   };
 
   // Handle Goal Creation
@@ -255,7 +256,7 @@ export const GoalsView: React.FC = () => {
 
     addQuest({
       name: newQuestName,
-      description: `Quest mapped to ${selectedGoal?.name}.`,
+      description: `Directive mapped to ${selectedGoal?.name}.`,
       difficulty: newQuestDiff,
       estimatedTime: newQuestTime,
       xp,
@@ -280,7 +281,6 @@ export const GoalsView: React.FC = () => {
     if (!selectedGoalId) return;
     deleteGoal(selectedGoalId);
     
-    // Auto re-select first available goal
     const remaining = state.goals.filter(g => g.id !== selectedGoalId);
     setSelectedGoalId(remaining[0]?.id || null);
   };
@@ -349,12 +349,15 @@ export const GoalsView: React.FC = () => {
       
       {/* LEFT PANEL: GOAL SELECTOR & CREATOR */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="flex justify-between items-center pb-2 border-b border-white/5">
-          <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">CORE_GOALS ({state.goals.length})</span>
+        <div className="flex justify-between items-center pb-2 border-b border-[#c5a059]/20">
+          <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+            <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+            DESTINIES ({state.goals.length})
+          </span>
           <div className="flex gap-2">
             <button 
               onClick={() => { setShowCreateGoal(!showCreateGoal); setShowEmptyGoalsConfirm(false); }}
-              className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+              className="text-xs font-mono bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] text-[#fef08a] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-bold"
             >
               <Plus className="h-3 w-3" />
               NEW
@@ -362,10 +365,10 @@ export const GoalsView: React.FC = () => {
             {state.goals.length > 0 && (
               <button 
                 onClick={() => { setShowEmptyGoalsConfirm(!showEmptyGoalsConfirm); setShowCreateGoal(false); }}
-                className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-rose-500/30 text-rose-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+                className="text-xs font-mono bg-rose-950/60 border border-rose-500/30 hover:border-rose-500 text-rose-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="h-3 w-3" />
-                EMPTY ALL
+                EMPTY
               </button>
             )}
           </div>
@@ -373,25 +376,25 @@ export const GoalsView: React.FC = () => {
 
         {/* Empty All Goals Confirmation */}
         {showEmptyGoalsConfirm && (
-          <div className="p-4 bg-zinc-950 border border-rose-500/20 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1">
+          <div className="p-4 bg-[#1a0808] border border-rose-500/30 rounded-xl space-y-3">
+            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1 font-bold">
               <Trash2 className="h-3 w-3" /> PURGE ALL GOALS
             </h4>
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
               Are you sure you want to empty all goals? This clears all existing goals, projects, and milestones, and unlinks them from quests. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
                 onClick={() => setShowEmptyGoalsConfirm(false)}
-                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
               >
                 CANCEL
               </button>
               <button 
-                type="button"
+                type="button" 
                 onClick={handleEmptyAllGoals}
-                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/30 text-rose-300 text-xs font-mono px-3 py-1 rounded transition-colors"
+                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/50 text-rose-300 text-xs font-mono font-bold px-3 py-1.5 rounded cursor-pointer"
               >
                 CONFIRM_PURGE
               </button>
@@ -401,39 +404,42 @@ export const GoalsView: React.FC = () => {
 
         {/* Goal Creator Form */}
         {showCreateGoal && (
-          <form onSubmit={handleCreateGoal} className="p-4 bg-zinc-950 border border-white/10 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider">CREATE_GOAL_PROMPT</h4>
+          <form onSubmit={handleCreateGoal} className="p-4 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl space-y-3 shadow-xl">
+            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              ESTABLISH_NEW_DESTINY
+            </h4>
             
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Goal Name</label>
+              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Goal Name</label>
               <input 
                 type="text" 
-                placeholder="Learn Full-Stack Development..."
+                placeholder="e.g. Master Islamic Geometric Art..."
                 value={newGoalName}
                 onChange={(e) => setNewGoalName(e.target.value)}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded p-2 text-xs text-white focus:outline-none focus:border-[#c5a059]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Description</label>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Description</label>
               <textarea 
-                placeholder="Detailed objectives..."
+                placeholder="Detailed vision logs..."
                 value={newGoalDesc}
                 onChange={(e) => setNewGoalDesc(e.target.value)}
                 rows={2}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-sans"
+                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-sans"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Priority</label>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Priority</label>
                 <select 
                   value={newGoalPriority}
                   onChange={(e) => setNewGoalPriority(e.target.value as GoalPriority)}
-                  className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none"
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -442,38 +448,38 @@ export const GoalsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Planning Horizon</label>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Horizon</label>
                 <select 
                   value={newGoalHorizon}
                   onChange={(e) => setNewGoalHorizon(e.target.value as any)}
-                  className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-purple-300 focus:outline-none font-mono"
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-purple-300 focus:outline-none font-mono"
                 >
                   <option value="30-Day Sprint">30-Day Sprint</option>
-                  <option value="Quarterly (Q1-Q4)">Quarterly (Q1-Q4)</option>
-                  <option value="Annual Vision">Annual Vision</option>
+                  <option value="Quarterly (Q1-Q4)">Quarterly</option>
+                  <option value="Annual Vision">Annual</option>
                   <option value="Life Vision">Life Vision</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Est. Completion</label>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Target Date</label>
                 <input 
                   type="date"
                   value={newGoalEstDate}
                   onChange={(e) => setNewGoalEstDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                 />
               </div>
             </div>
 
             {/* Link standard skills */}
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase">Link Core Skills</label>
+              <label className="block text-[10px] font-mono text-[#c5a059] uppercase font-bold">Link Disciplines</label>
               
               {/* Primary Core Skills */}
               {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
                 <div className="space-y-1">
-                  <span className="text-[8px] font-mono text-cyan-500 uppercase block">Primary Core Skills</span>
+                  <span className="text-[8px] font-mono text-[#c5a059] uppercase block font-semibold">Primary Disciplines</span>
                   <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
                     {state.skills
                       .filter(s => (s.tier || 'Primary') === 'Primary')
@@ -484,8 +490,10 @@ export const GoalsView: React.FC = () => {
                             type="button"
                             key={sk.id}
                             onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
-                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
-                              isSel ? 'bg-cyan-950/40 text-cyan-400 border-cyan-500/20 font-semibold' : 'bg-zinc-900 text-zinc-500 border-white/5'
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                              isSel 
+                                ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold' 
+                                : 'bg-[#07080c] text-zinc-400 border-white/5 hover:border-white/10'
                             }`}
                           >
                             {sk.name}
@@ -499,7 +507,7 @@ export const GoalsView: React.FC = () => {
               {/* Secondary Skills */}
               {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
                 <div className="space-y-1 pt-1">
-                  <span className="text-[8px] font-mono text-fuchsia-500 uppercase block">Secondary Skills</span>
+                  <span className="text-[8px] font-mono text-purple-400 uppercase block font-semibold">Specializations</span>
                   <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
                     {state.skills
                       .filter(s => s.tier === 'Secondary')
@@ -510,8 +518,10 @@ export const GoalsView: React.FC = () => {
                             type="button"
                             key={sk.id}
                             onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
-                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
-                              isSel ? 'bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-500/20 font-semibold' : 'bg-zinc-900 text-zinc-500 border-white/5'
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                              isSel 
+                                ? 'bg-purple-950 text-purple-300 border-purple-500/50 font-bold' 
+                                : 'bg-[#07080c] text-zinc-400 border-white/5 hover:border-white/10'
                             }`}
                           >
                             {sk.name}
@@ -533,9 +543,9 @@ export const GoalsView: React.FC = () => {
               </button>
               <button 
                 type="submit" 
-                className="bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono px-3 py-1 rounded"
+                className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[10px] font-mono font-black px-3.5 py-1 rounded cursor-pointer"
               >
-                COMPILE
+                CONFIRM
               </button>
             </div>
           </form>
@@ -554,15 +564,19 @@ export const GoalsView: React.FC = () => {
                   setSelectedGoalId(goal.id);
                   setIsEditingGoal(false);
                 }}
-                className={`w-full text-left p-3.5 rounded-lg border text-xs transition-all flex flex-col justify-between gap-3 ${
+                className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all flex flex-col justify-between gap-3 cursor-pointer relative overflow-hidden ${
                   isSelected 
-                    ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
-                    : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
+                    ? 'bg-[#141824]/90 border-[#c5a059] shadow-[0_0_18px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40' 
+                    : 'bg-[#0b0d13]/80 border-[#c5a059]/20 hover:border-[#c5a059]/40 hover:bg-[#131722]/60'
                 }`}
               >
+                {isSelected && (
+                  <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
+                )}
+
                 <div className="space-y-1 w-full">
                   <div className="flex justify-between items-center gap-1">
-                    <span className={`text-[9px] font-mono uppercase border px-1.5 py-0.5 rounded ${statusColors[goal.status]}`}>
+                    <span className={`text-[9px] font-mono uppercase border px-1.5 py-0.5 rounded font-bold ${statusColors[goal.status]}`}>
                       {statusIcons[goal.status]} {goal.status}
                     </span>
                     <div className="flex items-center gap-1">
@@ -571,24 +585,24 @@ export const GoalsView: React.FC = () => {
                           🌐 {goal.horizon}
                         </span>
                       )}
-                      <span className="text-[9px] font-mono text-zinc-500">PRIORITY_{goal.priority.toUpperCase()}</span>
+                      <span className="text-[9px] font-mono text-[#c5a059] font-bold">P_{goal.priority.toUpperCase()}</span>
                     </div>
                   </div>
 
-                  <h4 className={`font-sans font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                  <h4 className={`font-display font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                     {goal.name}
                   </h4>
                 </div>
 
                 {/* Progress bar info */}
                 <div className="w-full space-y-1">
-                  <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                    <span>PROGRESS</span>
+                  <div className="flex justify-between text-[9px] font-mono text-zinc-400">
+                    <span className="text-[#c5a059]">ALIGNMENT</span>
                     <span>{progress}%</span>
                   </div>
-                  <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
+                  <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden border border-white/5">
                     <div 
-                      className="bg-cyan-500 h-full rounded-full transition-all duration-300"
+                      className="rpg-progress-gold h-full rounded-full transition-all duration-300"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -602,14 +616,15 @@ export const GoalsView: React.FC = () => {
       {/* RIGHT PANEL: GOAL MASTER DETAILS PANE */}
       <div className="lg:col-span-3 space-y-6">
         {selectedGoal ? (
-          <div className="glass-panel rounded-lg p-6 space-y-6">
+          <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
             
             {/* GOAL HEADER / NAME / BRIEF */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-white/5 pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-[#c5a059]/20 pb-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-cyan-400 shrink-0" />
-                  <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">SEC_GOAL_ANALYSIS</span>
+                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                  <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">SANCTUM_DESTINY_ANALYSIS</span>
                 </div>
 
                 {isEditingGoal ? (
@@ -618,7 +633,7 @@ export const GoalsView: React.FC = () => {
                       type="text" 
                       value={editGoalName}
                       onChange={(e) => setEditGoalName(e.target.value)}
-                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-sm text-white font-sans font-bold"
+                      className="w-full bg-[#07080c] border border-[#c5a059] rounded px-3 py-1.5 text-sm text-white font-sans font-bold"
                       required
                     />
                     
@@ -626,14 +641,14 @@ export const GoalsView: React.FC = () => {
                       value={editGoalDesc}
                       onChange={(e) => setEditGoalDesc(e.target.value)}
                       rows={2}
-                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-zinc-300 font-sans"
+                      className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-sans"
                     />
 
                     <div className="grid grid-cols-2 gap-4">
                       <select 
                         value={editGoalPriority}
                         onChange={(e) => setEditGoalPriority(e.target.value as GoalPriority)}
-                        className="bg-zinc-950 border border-white/10 rounded p-1 text-xs text-white font-mono"
+                        className="bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white font-mono"
                       >
                         <option value="Low">Low Priority</option>
                         <option value="Medium">Medium Priority</option>
@@ -644,7 +659,7 @@ export const GoalsView: React.FC = () => {
                         type="text" 
                         value={editGoalEstDate}
                         onChange={(e) => setEditGoalEstDate(e.target.value)}
-                        className="bg-zinc-950 border border-white/10 rounded p-1 text-xs text-white font-mono"
+                        className="bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white font-mono"
                         placeholder="Estimated date"
                       />
                     </div>
@@ -659,7 +674,7 @@ export const GoalsView: React.FC = () => {
                       </button>
                       <button 
                         type="submit" 
-                        className="bg-cyan-950 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono px-3 py-1 rounded"
+                        className="bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer"
                       >
                         APPLY_EDITS
                       </button>
@@ -667,10 +682,10 @@ export const GoalsView: React.FC = () => {
                   </form>
                 ) : (
                   <>
-                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1">
+                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1 tracking-wide">
                       {selectedGoal.name}
                     </h3>
-                    <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
+                    <p className="text-xs text-zinc-300 font-sans max-w-2xl leading-relaxed">
                       {selectedGoal.description || 'No direct description specified. Provide detailed vision logs for deeper alignment.'}
                     </p>
                   </>
@@ -682,7 +697,7 @@ export const GoalsView: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
                     onClick={startEditing}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-white/20 text-zinc-400 hover:text-white rounded text-xs flex items-center gap-1.5 font-mono"
+                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#e5c875] rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
                     title="Edit goal details"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
@@ -690,7 +705,7 @@ export const GoalsView: React.FC = () => {
                   </button>
                   <button 
                     onClick={handleDeleteGoal}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-rose-500/20 text-zinc-400 hover:text-rose-400 rounded text-xs flex items-center gap-1.5 font-mono"
+                    className="p-1.5 bg-[#07080c] border border-rose-500/20 hover:border-rose-500 text-zinc-300 hover:text-rose-400 rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
                     title="Delete Goal"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -701,17 +716,17 @@ export const GoalsView: React.FC = () => {
             </div>
 
             {/* Quick Status Adjustments */}
-            <div className="flex flex-wrap gap-2 pt-1 border-b border-white/5 pb-4">
+            <div className="flex flex-wrap gap-2 pt-1 border-b border-[#c5a059]/20 pb-4">
               {['Active', 'Paused', 'Planned', 'Completed', 'Archived'].map(status => {
                 const isActive = selectedGoal.status === status;
                 return (
                   <button
                     key={status}
                     onClick={() => updateGoal(selectedGoal.id, { status: status as GoalStatus })}
-                    className={`text-[10px] font-mono px-2.5 py-1 rounded border transition-colors ${
+                    className={`text-[10px] font-mono px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
                       isActive 
-                        ? statusColors[status as GoalStatus] + ' font-bold' 
-                        : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
+                        ? statusColors[status as GoalStatus] + ' font-bold shadow-sm' 
+                        : 'bg-[#07080c] text-zinc-400 border-white/5 hover:border-white/10'
                     }`}
                   >
                     {statusIcons[status as GoalStatus]} {status.toUpperCase()}
@@ -721,12 +736,12 @@ export const GoalsView: React.FC = () => {
             </div>
 
             {/* GOAL TABS */}
-            <div className="flex border-b border-white/5 gap-4">
+            <div className="flex border-b border-[#c5a059]/20 gap-4">
               {[
                 { id: 'overview', label: 'OVERVIEW', icon: Target },
                 { id: 'projects', label: 'PROJECTS & MILESTONES', icon: BookOpen },
-                { id: 'quests', label: 'QUESTS & OPERATORS', icon: CheckCircle },
-                { id: 'skills', label: 'SKILLS GROWTH', icon: BarChart2 }
+                { id: 'quests', label: 'DIRECTIVES & OPERATORS', icon: CheckCircle },
+                { id: 'skills', label: 'DISCIPLINES GROWTH', icon: BarChart2 }
               ].map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeSubTab === tab.id;
@@ -734,13 +749,13 @@ export const GoalsView: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id as any)}
-                    className={`py-2 px-1 text-xs font-mono border-b-2 flex items-center gap-1.5 transition-colors ${
+                    className={`py-2 px-1 text-xs font-mono border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
                       isActive 
-                        ? 'border-cyan-500 text-white font-bold' 
-                        : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                        ? 'border-[#c5a059] text-[#e5c875] font-bold' 
+                        : 'border-transparent text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-3.5 w-3.5 text-[#c5a059]" />
                     {tab.label}
                   </button>
                 );
@@ -755,33 +770,33 @@ export const GoalsView: React.FC = () => {
                 <div className="space-y-6">
                   {/* METRIC BOXES */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">PROGRESS SCORE</span>
-                      <p className="text-3xl font-display font-bold text-white mt-2">
+                    <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 shadow-sm">
+                      <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ALIGNMENT SCORE</span>
+                      <p className="text-3xl font-display font-extrabold text-white mt-2">
                         {getGoalProgress(selectedGoal.id)}%
                       </p>
-                      <div className="w-full bg-zinc-900 rounded-full h-1 mt-3">
-                        <div className="bg-cyan-500 h-full rounded" style={{ width: `${getGoalProgress(selectedGoal.id)}%` }} />
+                      <div className="w-full bg-[#0b0d13] rounded-full h-1.5 mt-3 border border-white/5">
+                        <div className="rpg-progress-gold h-full rounded-full" style={{ width: `${getGoalProgress(selectedGoal.id)}%` }} />
                       </div>
                     </div>
 
-                    <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">EARNED GOAL XP</span>
-                      <p className="text-3xl font-display font-bold text-emerald-400 mt-2">
+                    <div className="bg-[#07080c] border border-emerald-500/30 rounded-xl p-4 shadow-sm">
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">EARNED ESSENCE</span>
+                      <p className="text-3xl font-display font-extrabold text-emerald-400 mt-2">
                         +{goalXpEarned} XP
                       </p>
-                      <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                        From {goalQuests.filter(q => q.status === 'Completed').length} completed directives
+                      <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
+                        From {goalQuests.filter(q => q.status === 'Completed').length} resolved directives
                       </p>
                     </div>
 
-                    <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">ESTIMATED COMPLETION</span>
-                      <p className="text-lg font-sans font-bold text-white mt-2 flex items-center gap-1.5">
-                        <Calendar className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 shadow-sm">
+                      <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ESTIMATED COMPLETION</span>
+                      <p className="text-base font-display font-bold text-white mt-2 flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4 text-[#c5a059] shrink-0" />
                         {selectedGoal.estimatedCompletion}
                       </p>
-                      <p className="text-[9px] font-mono text-zinc-500 mt-2 uppercase">
+                      <p className="text-[9px] font-mono text-zinc-400 mt-2 uppercase">
                         Priority rank: {selectedGoal.priority}
                       </p>
                     </div>
@@ -791,15 +806,15 @@ export const GoalsView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                     {/* Projects briefly */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider">PROJECTS TREE ({goalProjects.length})</h4>
+                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">PROJECTS HIERARCHY ({goalProjects.length})</h4>
                       <div className="space-y-2">
                         {goalProjects.length === 0 ? (
-                          <p className="text-xs font-mono text-zinc-600">No projects linked to this goal.</p>
+                          <p className="text-xs font-mono text-zinc-500">No projects linked to this goal.</p>
                         ) : (
                           goalProjects.map(proj => (
-                            <div key={proj.id} className="p-3 bg-zinc-950 border border-white/5 rounded flex justify-between items-center text-xs">
+                            <div key={proj.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                               <span className="text-white font-sans font-medium">{proj.name}</span>
-                              <span className="text-cyan-400 font-mono">{getProjectProgress(proj.id)}%</span>
+                              <span className="text-[#e5c875] font-mono font-bold">{getProjectProgress(proj.id)}%</span>
                             </div>
                           ))
                         )}
@@ -808,10 +823,10 @@ export const GoalsView: React.FC = () => {
 
                     {/* Skills briefly */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider">LINKED SKILLS</h4>
+                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">LINKED DISCIPLINES</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedGoal.relatedSkills.length === 0 ? (
-                          <p className="text-xs font-mono text-zinc-600">No skills explicitly linked to this goal.</p>
+                          <p className="text-xs font-mono text-zinc-500">No disciplines linked to this goal.</p>
                         ) : (
                           selectedGoal.relatedSkills.map(sid => {
                             const skill = state.skills.find(s => s.id === sid);
@@ -821,13 +836,13 @@ export const GoalsView: React.FC = () => {
                             return (
                               <div 
                                 key={sid} 
-                                className={`p-2 bg-zinc-950/80 border rounded flex items-center gap-2 text-xs transition-colors ${
-                                  isPrimary ? 'border-cyan-500/10 hover:border-cyan-500/20' : 'border-fuchsia-500/10 hover:border-fuchsia-500/20'
+                                className={`p-2 bg-[#07080c] border rounded-lg flex items-center gap-2 text-xs transition-colors ${
+                                  isPrimary ? 'border-[#c5a059]/30' : 'border-purple-500/30'
                                 }`}
                               >
                                 <span className="text-white font-sans">{skill.name}</span>
                                 <span className={`font-mono font-bold ${
-                                  isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
+                                  isPrimary ? 'text-[#e5c875]' : 'text-purple-300'
                                 }`}>LVL {skillInfo.level}</span>
                               </div>
                             );
@@ -838,47 +853,47 @@ export const GoalsView: React.FC = () => {
                   </div>
 
                   {/* MINI GOALS / SUB-GOALS BREAKDOWN */}
-                  <div className="pt-4 border-t border-white/5 space-y-4">
+                  <div className="pt-4 border-t border-[#c5a059]/20 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <GitFork className="h-4 w-4 text-cyan-400" />
-                        MINI-GOALS & SUB-GOALS BREAKDOWN ({(selectedGoal.subGoals || []).filter(sg => sg.completed).length}/{(selectedGoal.subGoals || []).length})
+                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                        <GitFork className="h-4 w-4 text-[#c5a059]" />
+                        SANCTUM MILESTONES ({(selectedGoal.subGoals || []).filter(sg => sg.completed).length}/{(selectedGoal.subGoals || []).length})
                       </h4>
-                      <span className="text-[10px] font-mono text-zinc-500">
-                        Break macro vision into actionable micro-milestones
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        Deconstruct macro vision into micro-steps
                       </span>
                     </div>
 
                     {/* Add Mini Goal Form */}
-                    <form onSubmit={handleAddSubGoalSubmit} className="flex flex-col sm:flex-row gap-2 bg-zinc-950/80 p-3 rounded-lg border border-cyan-500/20">
+                    <form onSubmit={handleAddSubGoalSubmit} className="flex flex-col sm:flex-row gap-2 bg-[#07080c] p-3 rounded-xl border border-[#c5a059]/30">
                       <input 
                         type="text" 
-                        placeholder="Enter mini-goal title (e.g. Master fundamental syntax, Build prototype)..."
+                        placeholder="Enter milestone title..."
                         value={newSubGoalInput}
                         onChange={(e) => setNewSubGoalInput(e.target.value)}
-                        className="flex-1 bg-zinc-900 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50"
+                        className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]"
                       />
                       <input 
                         type="date" 
                         value={newSubGoalDate}
                         onChange={(e) => setNewSubGoalDate(e.target.value)}
-                        className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none"
+                        className="bg-[#0b0d13] border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       />
                       <button 
                         type="submit"
-                        className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 transition"
+                        className="bg-[#3a2e12] hover:bg-[#524119] text-[#fef08a] border border-[#c5a059] px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
-                        ADD MINI GOAL
+                        ADD MILESTONE
                       </button>
                     </form>
 
                     {/* SubGoals Checklist */}
                     <div className="space-y-2">
                       {(!selectedGoal.subGoals || selectedGoal.subGoals.length === 0) ? (
-                        <div className="p-4 border border-dashed border-white/5 rounded-lg text-center">
+                        <div className="p-4 border border-dashed border-[#c5a059]/20 rounded-lg text-center bg-[#07080c]/50">
                           <p className="text-xs font-mono text-zinc-500">
-                            No mini-goals established yet. Deconstruct this goal into 3-5 smaller target milestones.
+                            No mini-milestones established yet.
                           </p>
                         </div>
                       ) : (
@@ -887,19 +902,19 @@ export const GoalsView: React.FC = () => {
 
                           if (isEditing) {
                             return (
-                              <div key={sg.id} className="p-3 bg-zinc-900 border border-cyan-500/40 rounded-lg flex flex-col sm:flex-row gap-2">
+                              <div key={sg.id} className="p-3 bg-[#07080c] border border-[#c5a059] rounded-lg flex flex-col sm:flex-row gap-2">
                                 <input
                                   type="text"
                                   value={editSubGoalName}
                                   onChange={(e) => setEditSubGoalName(e.target.value)}
-                                  className="flex-1 bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500"
-                                  placeholder="Mini Goal Name..."
+                                  className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                                  placeholder="Milestone Name..."
                                 />
                                 <input
                                   type="date"
                                   value={editSubGoalDate}
                                   onChange={(e) => setEditSubGoalDate(e.target.value)}
-                                  className="bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+                                  className="bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none font-mono"
                                 />
                                 <div className="flex items-center gap-1 shrink-0">
                                   <button
@@ -910,14 +925,14 @@ export const GoalsView: React.FC = () => {
                                       }
                                       setEditingSubGoalId(null);
                                     }}
-                                    className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 text-xs px-2.5 py-1 rounded font-mono font-bold"
+                                    className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-xs px-2.5 py-1 rounded font-mono font-bold cursor-pointer"
                                   >
                                     SAVE
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setEditingSubGoalId(null)}
-                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono"
+                                    className="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono cursor-pointer"
                                   >
                                     CANCEL
                                   </button>
@@ -931,18 +946,18 @@ export const GoalsView: React.FC = () => {
                               key={sg.id} 
                               className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
                                 sg.completed 
-                                  ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
-                                  : 'bg-zinc-950 border-white/5 text-white'
+                                  ? 'bg-[#07080c]/60 border-emerald-500/20 text-zinc-400' 
+                                  : 'bg-[#07080c] border-[#c5a059]/20 text-white'
                               }`}
                             >
                               <div className="flex items-center gap-3 flex-1 min-w-0">
                                 <button
                                   type="button"
                                   onClick={() => toggleSubGoal(selectedGoal.id, sg.id)}
-                                  className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                                  className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 cursor-pointer ${
                                     sg.completed 
-                                      ? 'bg-emerald-500 border-emerald-400 text-black' 
-                                      : 'border-white/20 hover:border-cyan-400 text-transparent'
+                                      ? 'bg-gradient-to-br from-[#8a6d2b] to-[#c5a059] border-[#c5a059] text-black font-black' 
+                                      : 'border-zinc-600 hover:border-[#c5a059] text-transparent'
                                   }`}
                                 >
                                   ✓
@@ -954,7 +969,7 @@ export const GoalsView: React.FC = () => {
 
                               <div className="flex items-center gap-2 shrink-0">
                                 {sg.targetDate && (
-                                  <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-white/5">
+                                  <span className="text-[10px] font-mono text-[#c5a059] bg-[#0b0d13] px-2 py-0.5 rounded border border-[#c5a059]/20">
                                     📅 {sg.targetDate}
                                   </span>
                                 )}
@@ -965,16 +980,16 @@ export const GoalsView: React.FC = () => {
                                     setEditSubGoalName(sg.name);
                                     setEditSubGoalDate(sg.targetDate || '');
                                   }}
-                                  className="text-zinc-600 hover:text-cyan-400 p-1 transition"
-                                  title="Edit mini-goal"
+                                  className="text-zinc-500 hover:text-[#e5c875] p-1 transition cursor-pointer"
+                                  title="Edit"
                                 >
                                   <Edit3 className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => deleteSubGoal(selectedGoal.id, sg.id)}
-                                  className="text-zinc-600 hover:text-rose-400 p-1 transition"
-                                  title="Delete mini-goal"
+                                  className="text-zinc-500 hover:text-rose-400 p-1 transition cursor-pointer"
+                                  title="Delete"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -987,20 +1002,20 @@ export const GoalsView: React.FC = () => {
                   </div>
 
                   {/* Connected Planning Documents Section */}
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="pt-4 border-t border-[#c5a059]/20 space-y-3">
+                    <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
                       📄 STRATEGIC PLANNING DIRECTIVES
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {(!state.planningDocuments || state.planningDocuments.filter(doc => doc.linkedGoals?.includes(selectedGoal.id)).length === 0) ? (
-                        <p className="text-xs font-mono text-zinc-600 col-span-2">No active strategic planning documents linked to this goal. Link them from the PLANNING tab.</p>
+                        <p className="text-xs font-mono text-zinc-500 col-span-2">No active strategic planning documents linked to this goal.</p>
                       ) : (
                         state.planningDocuments.filter(doc => doc.linkedGoals?.includes(selectedGoal.id)).map(doc => (
-                          <div key={doc.id} className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg flex justify-between items-center text-xs">
+                          <div key={doc.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                             <span className="text-zinc-300 font-mono text-[10px] truncate flex items-center gap-1.5">
                               📂 {doc.path}
                             </span>
-                            <span className="text-[9px] bg-cyan-950/40 text-cyan-400 border border-cyan-500/10 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                            <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
                               Connected
                             </span>
                           </div>
@@ -1015,25 +1030,22 @@ export const GoalsView: React.FC = () => {
               {/* TAB 2: PROJECTS & MILESTONES CONTROLLERS */}
               {activeSubTab === 'projects' && (
                 <div className="space-y-6">
-                  
-                  {/* TWO HALF GRID */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
                     {/* LEFT PANEL: PROJECTS LIST & CREATION */}
                     <div className="space-y-4 border-r border-white/5 pr-0 md:pr-6">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider">PROJECTS SYSTEM</h4>
+                        <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">PROJECTS HIERARCHY</h4>
                       </div>
 
                       {/* Add project Form */}
-                      <form onSubmit={handleCreateProject} className="p-3 bg-zinc-950 border border-white/5 rounded space-y-2.5">
-                        <span className="text-[9px] font-mono text-cyan-400 uppercase">ADD_PROJECT_ENTRY</span>
+                      <form onSubmit={handleCreateProject} className="p-3 bg-[#07080c] border border-[#c5a059]/25 rounded-xl space-y-2.5">
+                        <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold">ADD_PROJECT_ENTRY</span>
                         <input 
                           type="text"
-                          placeholder="Project title (e.g. Portfolio app)..."
+                          placeholder="Project title..."
                           value={newProjName}
                           onChange={(e) => setNewProjName(e.target.value)}
-                          className="w-full bg-zinc-900 border border-white/5 rounded p-1 text-xs text-white focus:outline-none"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
                           required
                         />
                         <textarea 
@@ -1041,7 +1053,7 @@ export const GoalsView: React.FC = () => {
                           value={newProjDesc}
                           onChange={(e) => setNewProjDesc(e.target.value)}
                           rows={2}
-                          className="w-full bg-zinc-900 border border-white/5 rounded p-1 text-xs text-white focus:outline-none font-sans"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059] font-sans"
                         />
                         <div className="flex justify-between items-center">
                           <input 
@@ -1049,9 +1061,9 @@ export const GoalsView: React.FC = () => {
                             placeholder="Est time (e.g. 20 hours)"
                             value={newProjEstTime}
                             onChange={(e) => setNewProjEstTime(e.target.value)}
-                            className="bg-zinc-900 border border-white/5 rounded p-1 text-[10px] text-white focus:outline-none"
+                            className="bg-[#0b0d13] border border-white/10 rounded p-1 text-[10px] text-white focus:outline-none font-mono"
                           />
-                          <button type="submit" className="bg-cyan-950 text-cyan-300 border border-cyan-500/20 px-3 py-1 rounded text-[10px] font-mono">
+                          <button type="submit" className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer">
                             LAUNCH
                           </button>
                         </div>
@@ -1060,15 +1072,15 @@ export const GoalsView: React.FC = () => {
                       {/* Projects interactive list */}
                       <div className="space-y-2">
                         {goalProjects.length === 0 ? (
-                          <p className="text-xs font-mono text-zinc-600 text-center py-4">No projects initialized for this goal.</p>
+                          <p className="text-xs font-mono text-zinc-500 text-center py-4">No projects initialized for this goal.</p>
                         ) : (
                           goalProjects.map(proj => (
-                            <div key={proj.id} className="p-3.5 bg-zinc-950/60 border border-white/5 rounded-lg text-xs space-y-3">
+                            <div key={proj.id} className="p-3.5 bg-[#07080c] border border-[#c5a059]/20 rounded-xl text-xs space-y-3">
                               <div className="flex justify-between items-center">
-                                <h5 className="font-sans font-bold text-white">{proj.name}</h5>
+                                <h5 className="font-display font-bold text-white">{proj.name}</h5>
                                 <button 
                                   onClick={() => deleteProject(proj.id)}
-                                  className="text-zinc-500 hover:text-rose-400"
+                                  className="text-zinc-500 hover:text-rose-400 cursor-pointer"
                                   title="Delete Project"
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -1076,20 +1088,19 @@ export const GoalsView: React.FC = () => {
                               </div>
 
                               {proj.description && (
-                                <p className="text-xs text-zinc-400 font-sans whitespace-pre-wrap leading-relaxed mt-1">
+                                <p className="text-xs text-zinc-300 font-sans whitespace-pre-wrap leading-relaxed mt-1">
                                   {proj.description}
                                 </p>
                               )}
 
                               <div className="flex justify-between text-[10px] font-mono text-zinc-400">
                                 <span>TIME: {proj.estimatedTime}</span>
-                                <span className="text-cyan-400">{getProjectProgress(proj.id)}% COMPLETED</span>
+                                <span className="text-[#e5c875] font-bold">{getProjectProgress(proj.id)}% COMPLETED</span>
                               </div>
 
-                              {/* Progress bar */}
-                              <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                              <div className="w-full bg-[#0b0d13] rounded-full h-1.5 overflow-hidden border border-white/5">
                                 <div 
-                                  className="bg-cyan-500 h-full rounded" 
+                                  className="rpg-progress-gold h-full rounded-full" 
                                   style={{ width: `${getProjectProgress(proj.id)}%` }}
                                 />
                               </div>
@@ -1101,24 +1112,24 @@ export const GoalsView: React.FC = () => {
 
                     {/* RIGHT PANEL: MILESTONES LIST & CREATION */}
                     <div className="space-y-4">
-                      <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider">MILESTONES TREE</h4>
+                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">MILESTONES TREE</h4>
 
                       {/* Add milestone form */}
-                      <form onSubmit={handleCreateMilestone} className="p-3 bg-zinc-950 border border-white/5 rounded space-y-2.5">
-                        <span className="text-[9px] font-mono text-cyan-400 uppercase">ADD_MILESTONE_MARKER</span>
+                      <form onSubmit={handleCreateMilestone} className="p-3 bg-[#07080c] border border-[#c5a059]/25 rounded-xl space-y-2.5">
+                        <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold">ADD_MILESTONE_MARKER</span>
                         <input 
                           type="text"
-                          placeholder="Milestone (e.g. Deploy Live Site)..."
+                          placeholder="Milestone title..."
                           value={newMileName}
                           onChange={(e) => setNewMileName(e.target.value)}
-                          className="w-full bg-zinc-900 border border-white/5 rounded p-1 text-xs text-white focus:outline-none"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
                           required
                         />
                         <div className="flex justify-between items-center">
                           <select 
                             value={newMileProjId}
                             onChange={(e) => setNewMileProjId(e.target.value)}
-                            className="bg-zinc-900 border border-white/5 rounded p-1 text-[10px] text-zinc-300 focus:outline-none"
+                            className="bg-[#0b0d13] border border-white/10 rounded p-1 text-[10px] text-zinc-300 focus:outline-none font-mono"
                             required
                           >
                             <option value="">Link Project</option>
@@ -1127,7 +1138,7 @@ export const GoalsView: React.FC = () => {
                             ))}
                           </select>
 
-                          <button type="submit" className="bg-cyan-950 text-cyan-300 border border-cyan-500/20 px-3 py-1 rounded text-[10px] font-mono">
+                          <button type="submit" className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer">
                             CREATE
                           </button>
                         </div>
@@ -1136,22 +1147,22 @@ export const GoalsView: React.FC = () => {
                       {/* Milestones list */}
                       <div className="space-y-2">
                         {goalMilestones.length === 0 ? (
-                          <p className="text-xs font-mono text-zinc-600 text-center py-4">No milestones marked yet.</p>
+                          <p className="text-xs font-mono text-zinc-500 text-center py-4">No milestones marked yet.</p>
                         ) : (
                           goalMilestones.map(mile => {
                             const progress = getMilestoneProgress(mile.id);
                             return (
-                              <div key={mile.id} className="p-3 bg-zinc-950/60 border border-white/5 rounded-lg text-xs space-y-2 flex flex-col">
+                              <div key={mile.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl text-xs space-y-2 flex flex-col">
                                 <div className="flex justify-between items-start gap-2">
                                   <div>
                                     <h5 className="font-sans font-bold text-zinc-200">{mile.name}</h5>
-                                    <span className="text-[9px] font-mono text-zinc-500">
+                                    <span className="text-[9px] font-mono text-[#c5a059]">
                                       PROJECT: {state.projects.find(p => p.id === mile.projectId)?.name || 'Unknown'}
                                     </span>
                                   </div>
                                   <button 
                                     onClick={() => deleteMilestone(mile.id)}
-                                    className="text-zinc-500 hover:text-rose-400"
+                                    className="text-zinc-500 hover:text-rose-400 cursor-pointer"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -1159,7 +1170,7 @@ export const GoalsView: React.FC = () => {
                                 
                                 <div className="flex justify-between text-[10px] font-mono text-zinc-400 mt-1">
                                   <span>STATUS: {progress === 100 ? 'ACHIEVED' : 'IN_PROGRESS'}</span>
-                                  <span className="text-cyan-400">{progress}%</span>
+                                  <span className="text-[#e5c875] font-bold">{progress}%</span>
                                 </div>
                               </div>
                             );
@@ -1167,9 +1178,7 @@ export const GoalsView: React.FC = () => {
                         )}
                       </div>
                     </div>
-
                   </div>
-
                 </div>
               )}
 
@@ -1178,29 +1187,32 @@ export const GoalsView: React.FC = () => {
                 <div className="space-y-6">
                   
                   {/* QUEST CREATOR INLINE FOR GOAL */}
-                  <form onSubmit={handleCreateQuest} className="p-4 bg-zinc-950 border border-white/5 rounded-lg grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-4 border-b border-white/5 pb-1 flex justify-between items-center">
-                      <span className="text-[10px] font-mono text-cyan-400 uppercase">ADD_DIRECTIVE_TO_GOAL</span>
+                  <form onSubmit={handleCreateQuest} className="p-4 bg-[#07080c] border border-[#c5a059]/30 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-4 border-b border-[#c5a059]/20 pb-1 flex justify-between items-center">
+                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1">
+                        <RubElHizbIcon className="h-2.5 w-2.5 text-[#c5a059]" />
+                        ASSIGN_DIRECTIVE_TO_DESTINY
+                      </span>
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Title</label>
+                      <label className="block text-[9px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Directive Title</label>
                       <input 
                         type="text"
-                        placeholder="Draft technical wireframes..."
+                        placeholder="Draft technical blueprint..."
                         value={newQuestName}
                         onChange={(e) => setNewQuestName(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Difficulty</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Difficulty</label>
                       <select 
                         value={newQuestDiff}
                         onChange={(e) => setNewQuestDiff(e.target.value as QuestDifficulty)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       >
                         <option value="Easy">Easy (50 XP)</option>
                         <option value="Normal">Normal (100 XP)</option>
@@ -1210,11 +1222,11 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Type</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Type</label>
                       <select 
                         value={newQuestType}
                         onChange={(e) => setNewQuestType(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       >
                         <option value="Main">Main Quest</option>
                         <option value="Side">Side Quest</option>
@@ -1225,11 +1237,11 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Link Project</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Link Project</label>
                       <select 
                         value={newQuestProj}
                         onChange={(e) => setNewQuestProj(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       >
                         <option value="">No Project</option>
                         {goalProjects.map(p => (
@@ -1239,11 +1251,11 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Link Milestone</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Link Milestone</label>
                       <select 
                         value={newQuestMile}
                         onChange={(e) => setNewQuestMile(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       >
                         <option value="">No Milestone</option>
                         {goalMilestones.map(m => (
@@ -1253,21 +1265,21 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Est. Duration (Min)</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Duration (Min)</label>
                       <input 
                         type="number"
                         value={newQuestTime}
                         onChange={(e) => setNewQuestTime(Number(e.target.value))}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Recurrence</label>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Recurrence</label>
                       <select 
                         value={newQuestRecurrence}
                         onChange={(e) => setNewQuestRecurrence(e.target.value as any)}
-                        className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                       >
                         <option value="None">Once Only</option>
                         <option value="Daily">🔁 Daily</option>
@@ -1278,16 +1290,15 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div className="md:col-span-4 mt-2">
-                      <button type="submit" className="w-full bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/20 py-1.5 rounded text-xs font-mono transition-colors">
-                        DISPATCH_QUEST
+                      <button type="submit" className="w-full bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] py-2 rounded-lg text-xs font-mono font-black transition-colors cursor-pointer">
+                        DISPATCH_DIRECTIVE
                       </button>
                     </div>
                   </form>
 
-                  {/* ADVANCED MODAL WINDOWS: MERGE, SPLIT, MOVE */}
                   {/* Split Action Sheet */}
                   {splitQuestId && (
-                    <div className="p-4 bg-zinc-950 border border-amber-500/30 rounded-lg space-y-3">
+                    <div className="p-4 bg-[#07080c] border border-amber-500/40 rounded-xl space-y-3">
                       <span className="text-[10px] font-mono text-amber-400 uppercase font-bold flex items-center gap-1.5">
                         <GitFork className="h-4 w-4 animate-pulse" />
                         SPLIT_DIRECTIVE_ENGINE
@@ -1297,20 +1308,20 @@ export const GoalsView: React.FC = () => {
                           type="text" 
                           placeholder="Part A Name"
                           value={splitNameA}
-                          onChange={(e) => setEditGoalName(e.target.value) /* reuse */}
+                          onChange={(e) => setEditGoalName(e.target.value)}
                           onInput={(e: any) => setSplitNameA(e.target.value)}
-                          className="bg-zinc-900 border border-white/5 p-1.5 rounded text-xs text-white"
+                          className="bg-[#0b0d13] border border-white/10 p-1.5 rounded text-xs text-white"
                         />
                         <input 
                           type="text" 
                           placeholder="Part B Name"
                           value={splitNameB}
                           onInput={(e: any) => setSplitNameB(e.target.value)}
-                          className="bg-zinc-900 border border-white/5 p-1.5 rounded text-xs text-white"
+                          className="bg-[#0b0d13] border border-white/10 p-1.5 rounded text-xs text-white"
                         />
                       </div>
                       <div className="flex justify-between items-center text-xs text-zinc-400">
-                        <span className="font-mono">XP Ratio Split: {Math.round(splitRatio * 100)}% / {Math.round((1 - splitRatio) * 100)}%</span>
+                        <span className="font-mono">XP Ratio: {Math.round(splitRatio * 100)}% / {Math.round((1 - splitRatio) * 100)}%</span>
                         <input 
                           type="range" 
                           min="0.1" 
@@ -1318,29 +1329,29 @@ export const GoalsView: React.FC = () => {
                           step="0.05"
                           value={splitRatio}
                           onChange={(e) => setSplitRatio(Number(e.target.value))}
-                          className="w-32 accent-cyan-500"
+                          className="w-32 accent-[#c5a059]"
                         />
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setSplitQuestId(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeSplit} className="bg-amber-950 text-amber-300 border border-amber-500/30 text-[10px] font-mono px-3 py-1 rounded">CONFIRM_SPLIT</button>
+                        <button onClick={executeSplit} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">CONFIRM_SPLIT</button>
                       </div>
                     </div>
                   )}
 
                   {/* Merge Action Sheet */}
                   {mergeQuestIdA && (
-                    <div className="p-4 bg-zinc-950 border border-cyan-500/30 rounded-lg space-y-3">
-                      <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1.5">
-                        <Link2 className="h-4 w-4" />
+                    <div className="p-4 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3">
+                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1.5">
+                        <Link2 className="h-4 w-4 text-[#c5a059]" />
                         MERGE_DIRECTIVES_ENGINE
                       </span>
                       <div className="space-y-2">
-                        <label className="block text-[10px] font-mono text-zinc-500 uppercase">Select Target Quest to Merge With</label>
+                        <label className="block text-[10px] font-mono text-zinc-400 uppercase">Select Target Quest to Merge With</label>
                         <select 
                           value={mergeQuestIdB}
                           onChange={(e) => setMergeQuestIdB(e.target.value)}
-                          className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-zinc-300"
                           required
                         >
                           <option value="">Choose quest...</option>
@@ -1351,34 +1362,34 @@ export const GoalsView: React.FC = () => {
 
                         <input 
                           type="text" 
-                          placeholder="New Merged Quest Title..."
+                          placeholder="New Merged Title..."
                           value={mergedName}
                           onChange={(e) => setMergedName(e.target.value)}
-                          className="w-full bg-zinc-900 border border-white/5 p-1.5 rounded text-xs text-white"
+                          className="w-full bg-[#0b0d13] border border-white/10 p-1.5 rounded text-xs text-white"
                           required
                         />
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setMergeQuestIdA(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeMerge} className="bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono px-3 py-1 rounded">EXECUTE_MERGE</button>
+                        <button onClick={executeMerge} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">EXECUTE_MERGE</button>
                       </div>
                     </div>
                   )}
 
                   {/* Move Action Sheet */}
                   {moveQuestId && (
-                    <div className="p-4 bg-zinc-950 border border-cyan-500/30 rounded-lg space-y-3">
-                      <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1.5">
-                        <Move className="h-4 w-4" />
-                        REASSIGN_GOAL_PROJECT_MAPPING
+                    <div className="p-4 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3">
+                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1.5">
+                        <Move className="h-4 w-4 text-[#c5a059]" />
+                        REASSIGN_MAPPING
                       </span>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Target Goal</label>
+                          <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Target Goal</label>
                           <select 
                             value={moveTargetGoalId}
                             onChange={(e) => setMoveTargetGoalId(e.target.value)}
-                            className="w-full bg-zinc-900 border border-white/5 p-1 text-xs text-zinc-300"
+                            className="w-full bg-[#0b0d13] border border-white/10 p-1 text-xs text-zinc-300 font-mono"
                           >
                             <option value="">No Goal</option>
                             {state.goals.map(g => (
@@ -1387,11 +1398,11 @@ export const GoalsView: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Target Project</label>
+                          <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Target Project</label>
                           <select 
                             value={moveTargetProjId}
                             onChange={(e) => setMoveTargetProjId(e.target.value)}
-                            className="w-full bg-zinc-900 border border-white/5 p-1 text-xs text-zinc-300"
+                            className="w-full bg-[#0b0d13] border border-white/10 p-1 text-xs text-zinc-300 font-mono"
                           >
                             <option value="">No Project</option>
                             {state.projects.map(p => (
@@ -1400,11 +1411,11 @@ export const GoalsView: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Target Milestone</label>
+                          <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Target Milestone</label>
                           <select 
                             value={moveTargetMileId}
                             onChange={(e) => setMoveTargetMileId(e.target.value)}
-                            className="w-full bg-zinc-900 border border-white/5 p-1 text-xs text-zinc-300"
+                            className="w-full bg-[#0b0d13] border border-white/10 p-1 text-xs text-zinc-300 font-mono"
                           >
                             <option value="">No Milestone</option>
                             {state.milestones.map(m => (
@@ -1415,7 +1426,7 @@ export const GoalsView: React.FC = () => {
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setMoveQuestId(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeMove} className="bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono px-3 py-1 rounded">REASSIGN_MAP</button>
+                        <button onClick={executeMove} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">REASSIGN</button>
                       </div>
                     </div>
                   )}
@@ -1423,7 +1434,7 @@ export const GoalsView: React.FC = () => {
                   {/* GOAL QUESTS LIST */}
                   <div className="space-y-2">
                     {goalQuests.length === 0 ? (
-                      <p className="text-xs font-mono text-zinc-600 text-center py-6">No quests linked to this goal yet.</p>
+                      <p className="text-xs font-mono text-zinc-500 text-center py-6">No directives linked to this goal yet.</p>
                     ) : (
                       goalQuests.map(quest => {
                         const isCompleted = quest.status === 'Completed';
@@ -1431,29 +1442,29 @@ export const GoalsView: React.FC = () => {
 
                         if (isEditing) {
                           return (
-                            <div key={quest.id} className="p-3.5 bg-zinc-950 border border-cyan-500/30 rounded-lg space-y-3 text-left">
+                            <div key={quest.id} className="p-3.5 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3 text-left">
                               <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                                <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider font-bold">CHANGE_DIRECTIVE_PARAMETERS</span>
-                                <button type="button" onClick={() => setEditingQuestId(null)} className="text-zinc-500 hover:text-white">
+                                <span className="text-[10px] font-mono text-[#e5c875] uppercase tracking-wider font-bold">CHANGE_DIRECTIVE_PARAMETERS</span>
+                                <button type="button" onClick={() => setEditingQuestId(null)} className="text-zinc-500 hover:text-white cursor-pointer">
                                   <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>
 
                               <div className="space-y-2.5">
                                 <div>
-                                  <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Title</label>
+                                  <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Quest Title</label>
                                   <input 
                                     type="text"
                                     value={editQuestName}
                                     onChange={(e) => setEditQuestName(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-xs text-white"
+                                    className="w-full bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs text-white"
                                     required
                                   />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Difficulty</label>
+                                    <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Difficulty</label>
                                     <select 
                                       value={editQuestDiff}
                                       onChange={(e) => {
@@ -1464,7 +1475,7 @@ export const GoalsView: React.FC = () => {
                                         else if (diff === 'Hard') setEditQuestXp(200);
                                         else if (diff === 'Boss') setEditQuestXp(500);
                                       }}
-                                      className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white"
+                                      className="w-full bg-[#0b0d13] border border-white/10 rounded p-1 text-xs text-white font-mono"
                                     >
                                       <option value="Easy">Easy (50 XP)</option>
                                       <option value="Normal">Normal (100 XP)</option>
@@ -1474,23 +1485,23 @@ export const GoalsView: React.FC = () => {
                                   </div>
 
                                   <div>
-                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">XP Reward</label>
+                                    <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">XP Reward</label>
                                     <input 
                                       type="number"
                                       value={editQuestXp}
                                       onChange={(e) => setEditQuestXp(Number(e.target.value))}
-                                      className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white text-center font-mono"
+                                      className="w-full bg-[#0b0d13] border border-white/10 rounded p-1 text-xs text-white text-center font-mono"
                                     />
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Recurrence</label>
+                                    <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Recurrence</label>
                                     <select 
                                       value={editQuestRecurrence}
                                       onChange={(e) => setEditQuestRecurrence(e.target.value as any)}
-                                      className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-zinc-300"
+                                      className="w-full bg-[#0b0d13] border border-white/10 rounded p-1 text-xs text-zinc-300 font-mono"
                                     >
                                       <option value="None">Once Only</option>
                                       <option value="Daily">🔁 Daily</option>
@@ -1501,11 +1512,11 @@ export const GoalsView: React.FC = () => {
                                   </div>
 
                                   <div>
-                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Project</label>
+                                    <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Project</label>
                                     <select 
                                       value={editQuestProj}
                                       onChange={(e) => setEditQuestProj(e.target.value)}
-                                      className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-zinc-300 truncate"
+                                      className="w-full bg-[#0b0d13] border border-white/10 rounded p-1 text-xs text-zinc-300 truncate font-mono"
                                     >
                                       <option value="">No Project</option>
                                       {state.projects.filter(p => p.goalId === selectedGoalId).map(p => (
@@ -1517,119 +1528,59 @@ export const GoalsView: React.FC = () => {
 
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
-                                    <label className="block text-[9px] font-mono text-zinc-500 uppercase">Target Date</label>
+                                    <label className="block text-[9px] font-mono text-zinc-400 uppercase">Target Date</label>
                                     <button
                                       type="button"
                                       onClick={() => setEditQuestDeadline(editQuestDeadline ? '' : systemDate)}
-                                      className={`text-[9px] font-mono hover:underline ${
-                                        !editQuestDeadline ? 'text-cyan-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
-                                      }`}
+                                      className="text-[9px] font-mono text-[#c5a059] hover:underline"
                                     >
-                                      {!editQuestDeadline ? '♾️ No Date (Click to Set)' : 'Clear Date'}
+                                      {!editQuestDeadline ? '♾️ Set Current' : 'Clear Date'}
                                     </button>
                                   </div>
                                   <input 
                                     type="date"
                                     value={editQuestDeadline}
                                     onChange={(e) => setEditQuestDeadline(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-white font-mono"
+                                    className="w-full bg-[#0b0d13] border border-white/10 rounded p-1 text-xs text-white font-mono"
                                   />
                                 </div>
 
-                                {/* Associate Skills Section */}
                                 <div className="space-y-2 pt-1 border-t border-white/5">
-                                  <label className="block text-[9px] font-mono text-zinc-500 uppercase">Associate Skills</label>
-                                  
-                                  {state.skills.length === 0 ? (
-                                    <p className="text-[10px] font-mono text-zinc-600">No skill tracks available. Create one in the Skills tab first.</p>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      {/* Primary Skills */}
-                                      {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
-                                        <div className="space-y-1">
-                                          <div className="flex items-center justify-between">
-                                            <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-wider block font-bold">Primary Skills (Multi-Select)</span>
-                                            {editQuestSkills.filter(id => {
-                                              const sk = state.skills.find(s => s.id === id);
-                                              return sk && (sk.tier || 'Primary') === 'Primary';
-                                            }).length > 0 && (
-                                              <span className="text-[8px] font-mono text-cyan-400 font-bold bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                                                {editQuestSkills.filter(id => {
-                                                  const sk = state.skills.find(s => s.id === id);
-                                                  return sk && (sk.tier || 'Primary') === 'Primary';
-                                                }).length} Selected
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {state.skills
-                                              .filter(s => (s.tier || 'Primary') === 'Primary')
-                                              .map(skill => {
-                                                const isSelected = editQuestSkills.includes(skill.id);
-                                                return (
-                                                  <button
-                                                    key={skill.id}
-                                                    type="button"
-                                                    onClick={() => handleEditSkillToggle(skill.id)}
-                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all flex items-center gap-1 ${
-                                                      isSelected 
-                                                        ? 'bg-cyan-950/50 text-cyan-400 border-cyan-500/30 font-bold shadow-[0_0_8px_rgba(6,182,212,0.05)]' 
-                                                        : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
-                                                    }`}
-                                                  >
-                                                    <span>{isSelected ? '✓' : '+'}</span>
-                                                    <span>{skill.name}</span>
-                                                  </button>
-                                                );
-                                              })}
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {/* Secondary Skills */}
-                                      {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
-                                        <div className="space-y-1 pt-1">
-                                          <span className="text-[8px] font-mono text-fuchsia-500 uppercase tracking-wider block">Secondary Skills</span>
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {state.skills
-                                              .filter(s => s.tier === 'Secondary')
-                                              .map(skill => {
-                                                const isSelected = editQuestSkills.includes(skill.id);
-                                                return (
-                                                  <button
-                                                    key={skill.id}
-                                                    type="button"
-                                                    onClick={() => handleEditSkillToggle(skill.id)}
-                                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all ${
-                                                      isSelected 
-                                                        ? 'bg-fuchsia-950/50 text-fuchsia-400 border-fuchsia-500/30 font-bold shadow-[0_0_8px_rgba(217,70,239,0.05)]' 
-                                                        : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10'
-                                                    }`}
-                                                  >
-                                                    {skill.name}
-                                                  </button>
-                                                );
-                                              })}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+                                  <label className="block text-[9px] font-mono text-[#c5a059] uppercase font-bold">Associate Disciplines</label>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {state.skills.map(skill => {
+                                      const isSelected = editQuestSkills.includes(skill.id);
+                                      return (
+                                        <button
+                                          key={skill.id}
+                                          type="button"
+                                          onClick={() => handleEditSkillToggle(skill.id)}
+                                          className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all cursor-pointer ${
+                                            isSelected 
+                                              ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold' 
+                                              : 'bg-[#0b0d13] text-zinc-400 border-white/5 hover:border-white/10'
+                                          }`}
+                                        >
+                                          {skill.name}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               </div>
 
                               <div className="flex justify-end gap-2 pt-1 border-t border-white/5">
                                 <button 
-                                  type="button"
+                                  type="button" 
                                   onClick={() => setEditingQuestId(null)}
                                   className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
                                 >
                                   CANCEL
                                 </button>
                                 <button 
-                                  type="button"
+                                  type="button" 
                                   onClick={() => handleSaveQuestEdit(quest.id)}
-                                  className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 text-xs font-mono px-3 py-1 rounded transition-colors flex items-center gap-1"
+                                  className="bg-[#3a2e12] hover:bg-[#524119] border border-[#c5a059] text-[#fef08a] text-xs font-mono px-3 py-1 rounded transition-colors flex items-center gap-1 font-bold cursor-pointer"
                                 >
                                   <CheckCircle className="h-3 w-3" />
                                   SAVE_CHANGES
@@ -1640,17 +1591,16 @@ export const GoalsView: React.FC = () => {
                         }
 
                         return (
-                          <div key={quest.id} className="p-3 bg-zinc-950/40 border border-white/5 rounded-lg flex items-center justify-between gap-3 hover:border-white/10 transition-colors">
+                          <div key={quest.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl flex items-center justify-between gap-3 hover:border-[#c5a059]/50 transition-colors">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              {/* Checkbox toggle */}
                               <button 
                                 onClick={() => isCompleted ? reopenQuest(quest.id) : completeQuest(quest.id)}
-                                className={`shrink-0 ${isCompleted ? 'text-emerald-400' : 'text-zinc-500'}`}
+                                className="shrink-0 cursor-pointer"
                               >
                                 {isCompleted ? (
-                                  <CheckCircle className="h-5 w-5" />
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#8a6d2b] to-[#c5a059] flex items-center justify-center text-black font-bold text-xs">✓</div>
                                 ) : (
-                                  <div className="h-5 w-5 rounded-full border border-zinc-600" />
+                                  <div className="h-5 w-5 rounded-full border border-zinc-600 hover:border-[#c5a059]" />
                                 )}
                               </button>
 
@@ -1661,11 +1611,11 @@ export const GoalsView: React.FC = () => {
                                 <div className="flex flex-wrap gap-1.5 items-center mt-1">
                                   <span className="text-[9px] font-mono text-zinc-500 uppercase">{quest.type}</span>
                                   <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                  <span className="text-[9px] font-mono text-zinc-500">LVL {quest.difficulty}</span>
+                                  <span className="text-[9px] font-mono text-[#c5a059]">LVL {quest.difficulty}</span>
                                   {quest.recurrence && quest.recurrence !== 'None' && (
                                     <>
                                       <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                      <span className="text-[9px] font-mono text-cyan-400 font-bold">
+                                      <span className="text-[9px] font-mono text-purple-300 font-bold">
                                         🔁 {quest.recurrence}
                                       </span>
                                     </>
@@ -1673,7 +1623,7 @@ export const GoalsView: React.FC = () => {
                                   {quest.projectId && (
                                     <>
                                       <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                      <span className="text-[9px] font-mono text-cyan-500/80 truncate max-w-[100px]">
+                                      <span className="text-[9px] font-mono text-[#e5c875] truncate max-w-[100px]">
                                         📁 {state.projects.find(p => p.id === quest.projectId)?.name}
                                       </span>
                                     </>
@@ -1686,28 +1636,27 @@ export const GoalsView: React.FC = () => {
                             <div className="flex items-center gap-3 shrink-0">
                               <span className="text-xs font-mono font-bold text-emerald-400">+{quest.xp} XP</span>
                               
-                              {/* Advanced Actions Bar */}
                               {!isCompleted && (
                                 <div className="flex gap-1">
-                                  <button onClick={() => startEditingQuest(quest)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-cyan-400" title="Edit quest parameters">
+                                  <button onClick={() => startEditingQuest(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Edit">
                                     <Edit3 className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerSplit(quest)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-amber-400" title="Split quest">
+                                  <button onClick={() => triggerSplit(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-amber-400 cursor-pointer" title="Split">
                                     <GitFork className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerMerge(quest)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-cyan-400" title="Merge quest">
+                                  <button onClick={() => triggerMerge(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Merge">
                                     <Link2 className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerMove(quest)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-cyan-400" title="Move/Reassign goal">
+                                  <button onClick={() => triggerMove(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Move">
                                     <Move className="h-3 w-3" />
                                   </button>
                                 </div>
                               )}
                               
-                              <button onClick={() => duplicateQuest(quest.id)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-white" title="Duplicate">
+                              <button onClick={() => duplicateQuest(quest.id)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-white cursor-pointer" title="Duplicate">
                                 <Copy className="h-3 w-3" />
                               </button>
-                              <button onClick={() => deleteQuest(quest.id)} className="p-1 hover:bg-white/5 rounded text-zinc-500 hover:text-rose-400" title="Delete">
+                              <button onClick={() => deleteQuest(quest.id)} className="p-1 hover:bg-rose-950 rounded text-zinc-500 hover:text-rose-400 cursor-pointer" title="Delete">
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
@@ -1722,10 +1671,10 @@ export const GoalsView: React.FC = () => {
               {/* TAB 4: SKILLS CONTRIBUTION */}
               {activeSubTab === 'skills' && (
                 <div className="space-y-4">
-                  <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider">SKILLS REINFORCED BY GOAL</h4>
+                  <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">DISCIPLINES REINFORCED BY GOAL</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedGoal.relatedSkills.length === 0 ? (
-                      <p className="text-xs font-mono text-zinc-600 col-span-2">No skills associated. Edit the goal to link skill parameters.</p>
+                      <p className="text-xs font-mono text-zinc-500 col-span-2">No disciplines associated. Edit the goal to link discipline parameters.</p>
                     ) : (
                       selectedGoal.relatedSkills.map(sid => {
                         const skill = state.skills.find(s => s.id === sid);
@@ -1735,34 +1684,30 @@ export const GoalsView: React.FC = () => {
                         return (
                           <div 
                             key={sid} 
-                            className={`p-4 bg-zinc-950/50 border rounded-lg text-xs space-y-3 transition-colors ${
-                              isPrimary ? 'border-cyan-500/10' : 'border-fuchsia-500/10'
-                            }`}
+                            className="p-4 bg-[#07080c] border border-[#c5a059]/25 rounded-xl text-xs space-y-3 shadow-sm"
                           >
                             <div className="flex justify-between items-start">
                               <div className="space-y-0.5">
-                                <h5 className="font-sans font-bold text-white leading-tight">{skill.name}</h5>
-                                <span className={`text-[8px] font-mono px-1 rounded uppercase font-semibold ${
-                                  isPrimary ? 'text-cyan-400 bg-cyan-950/40' : 'text-fuchsia-400 bg-fuchsia-950/40'
+                                <h5 className="font-display font-bold text-white leading-tight">{skill.name}</h5>
+                                <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded uppercase font-bold border ${
+                                  isPrimary ? 'text-[#fef08a] bg-[#3a2e12] border-[#c5a059]/40' : 'text-purple-300 bg-purple-950 border-purple-500/40'
                                 }`}>
                                   {skill.tier || 'Primary'}
                                 </span>
                               </div>
-                              <span className={`font-mono font-bold ${
-                                isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
-                              }`}>LVL {sInfo.level}</span>
+                              <span className="font-mono font-bold text-[#e5c875]">LVL {sInfo.level}</span>
                             </div>
                             
-                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                            <div className="w-full bg-[#0b0d13] rounded-full h-1.5 overflow-hidden border border-white/5">
                               <div 
-                                className={`h-full rounded ${isPrimary ? 'bg-cyan-500' : 'bg-fuchsia-500'}`} 
+                                className="rpg-progress-gold h-full rounded-full" 
                                 style={{ width: `${sInfo.progress}%` }} 
                               />
                             </div>
 
-                            <div className="flex justify-between text-[10px] font-mono text-zinc-500">
+                            <div className="flex justify-between text-[10px] font-mono text-zinc-400">
                               <span>MASTERY: {sInfo.mastery}%</span>
-                              <span>{sInfo.xpIntoLevel} / {sInfo.xpRequiredForNextLevel} XP to Next Level</span>
+                              <span>{sInfo.xpIntoLevel} / {sInfo.xpRequiredForNextLevel} XP</span>
                             </div>
                           </div>
                         );
@@ -1776,10 +1721,10 @@ export const GoalsView: React.FC = () => {
 
           </div>
         ) : (
-          <div className="glass-panel rounded-lg p-10 text-center space-y-2">
-            <Target className="h-8 w-8 text-zinc-600 mx-auto" />
+          <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[#c5a059]/20 bg-[#0b0d13]/80">
+            <Target className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
             <h3 className="font-display text-sm font-bold text-white uppercase">No Goal Selected</h3>
-            <p className="text-xs text-zinc-500 font-mono">Create a goal or select an existing parameter on the left panel to begin analysis.</p>
+            <p className="text-xs text-zinc-500 font-mono">Create a goal or select an existing parameter on the left panel.</p>
           </div>
         )}
       </div>

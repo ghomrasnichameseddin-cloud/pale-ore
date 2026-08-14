@@ -7,6 +7,7 @@ import {
   ChevronRight, ChevronDown, Search, Compass, CheckSquare, List
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 interface PlanningViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests') => void;
@@ -132,21 +133,21 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
   // Icons for main folders
   const getFolderEmoji = (folder: string): string => {
-    if (folder.includes('00 Vision')) return '🌍';
+    if (folder.includes('00 Vision')) return '📜';
     if (folder.includes('01 Strategies')) return '🎯';
-    if (folder.includes('02 Master Plans')) return '📋';
+    if (folder.includes('02 Master Plans')) return '🧭';
     if (folder.includes('03 Tactical Playbooks')) return '⚔️';
     if (folder.includes('04 Operations')) return '📅';
-    if (folder.includes('05 SOPs')) return '📚';
-    if (folder.includes('06 Frameworks')) return '🛠️';
-    if (folder.includes('07 Reviews')) return '📊';
+    if (folder.includes('05 SOPs')) return '📖';
+    if (folder.includes('06 Frameworks')) return '💠';
+    if (folder.includes('07 Reviews')) return '🔮';
     if (folder.includes('Archive')) return '🗃️';
-    return '📂';
+    return '📁';
   };
 
   // Custom visual markdown renderer that converts basic markdown to premium cybernetic HTML blocks
   const renderMarkdown = (markdown: string) => {
-    if (!markdown) return <p className="text-zinc-500 italic">This document is empty.</p>;
+    if (!markdown) return <p className="text-zinc-500 italic">This scroll is blank.</p>;
 
     const lines = markdown.split('\n');
     let inList = false;
@@ -200,11 +201,11 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
           // Add styled text
           if (first.type === 'bold') {
-            parts.push(<strong key={`bold-${styleKey++}`} className="font-bold text-cyan-400 font-sans">{first.content}</strong>);
+            parts.push(<strong key={`bold-${styleKey++}`} className="font-bold text-[#fef08a] font-sans">{first.content}</strong>);
           } else if (first.type === 'italic') {
-            parts.push(<em key={`italic-${styleKey++}`} className="italic text-zinc-300">{first.content}</em>);
+            parts.push(<em key={`italic-${styleKey++}`} className="italic text-[#c5a059]">{first.content}</em>);
           } else if (first.type === 'code') {
-            parts.push(<code key={`code-${styleKey++}`} className="bg-zinc-900 border border-white/5 rounded px-1 py-0.5 text-xs font-mono text-cyan-300">{first.content}</code>);
+            parts.push(<code key={`code-${styleKey++}`} className="bg-[#0b0d13] border border-[#c5a059]/30 rounded px-1.5 py-0.5 text-xs font-mono text-[#e5c875]">{first.content}</code>);
           }
 
           currentText = currentText.slice(first.index + first.length);
@@ -218,7 +219,8 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
         flushList(index);
         const text = trimmed.slice(2);
         elements.push(
-          <h1 key={`h1-${index}`} className="text-2xl font-display font-extrabold tracking-tight text-white border-b border-white/5 pb-2 mt-6 mb-4 flex items-center gap-2 uppercase">
+          <h1 key={`h1-${index}`} className="text-2xl font-display font-extrabold tracking-tight text-white border-b border-[#c5a059]/25 pb-2.5 mt-6 mb-4 flex items-center gap-2 uppercase">
+            <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
             {parseInlineStyles(text)}
           </h1>
         );
@@ -228,7 +230,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
         flushList(index);
         const text = trimmed.slice(3);
         elements.push(
-          <h2 key={`h2-${index}`} className="text-lg font-display font-bold tracking-tight text-white mt-5 mb-2.5 uppercase border-l-2 border-cyan-500/40 pl-2.5">
+          <h2 key={`h2-${index}`} className="text-lg font-display font-bold tracking-tight text-[#e5c875] mt-5 mb-2.5 uppercase border-l-2 border-[#c5a059] pl-2.5">
             {parseInlineStyles(text)}
           </h2>
         );
@@ -252,8 +254,8 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
           <div key={`check-${index}`} className="flex items-start gap-2 my-2 text-sm text-zinc-300">
             <span className="mt-0.5 shrink-0">
               {isChecked 
-                ? <CheckSquare className="h-4 w-4 text-cyan-400 fill-cyan-400/10" /> 
-                : <span className="h-4 w-4 rounded border border-zinc-700 block shrink-0" />
+                ? <CheckSquare className="h-4 w-4 text-[#c5a059] fill-[#c5a059]/20" /> 
+                : <span className="h-4 w-4 rounded border border-zinc-600 block shrink-0" />
               }
             </span>
             <span className={`${isChecked ? 'line-through text-zinc-500' : ''}`}>
@@ -267,7 +269,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
         inList = true;
         const text = trimmed.slice(2);
         listItems.push(
-          <li key={`li-${index}`} className="marker:text-cyan-500 leading-relaxed">
+          <li key={`li-${index}`} className="marker:text-[#c5a059] leading-relaxed">
             {parseInlineStyles(text)}
           </li>
         );
@@ -277,7 +279,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
         flushList(index);
         const text = trimmed.slice(2);
         elements.push(
-          <blockquote key={`quote-${index}`} className="border-l-4 border-cyan-500/30 bg-zinc-900/30 pl-4 py-2 pr-2 my-3 rounded-r text-zinc-400 text-sm font-sans italic leading-relaxed">
+          <blockquote key={`quote-${index}`} className="border-l-4 border-[#c5a059] bg-[#141824]/60 pl-4 py-2.5 pr-3 my-3 rounded-r-lg text-zinc-300 text-sm font-sans italic leading-relaxed">
             {parseInlineStyles(text)}
           </blockquote>
         );
@@ -290,7 +292,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       // Standard Paragraph
       else {
         if (inList) {
-          // If in a list, we might have nested or multi-line. But keep it simple
           flushList(index);
         }
         elements.push(
@@ -323,7 +324,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (!newFileName.trim()) return;
 
-    // Ensure it ends with .md
     let finalName = newFileName.trim();
     if (!finalName.endsWith('.md')) {
       finalName += '.md';
@@ -333,11 +333,10 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     if (!targetFolder) return;
 
     const fullPath = `${targetFolder}/${finalName}`;
-    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured contents here aligned with your ${targetFolder.replace(/^\d+\s+/, '')} strategies.`;
+    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured strategies and sacred blueprints aligned with your ${targetFolder.replace(/^\d+\s+/, '')}.`;
     
     const newId = addPlanningDocument(fullPath, finalName, defaultMarkdown);
     
-    // Reset inputs
     setNewFileName('');
     setCustomFolder('');
     setIsCreatingFile(false);
@@ -346,12 +345,10 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
   };
 
   const handleDeleteFile = (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete ${name}? This action is local-only but irreversible.`)) {
-      deletePlanningDocument(id);
-      if (selectedDocId === id) {
-        setSelectedDocId('pdoc-00-1');
-        setIsEditMode(false);
-      }
+    deletePlanningDocument(id);
+    if (selectedDocId === id) {
+      setSelectedDocId('pdoc-00-1');
+      setIsEditMode(false);
     }
   };
 
@@ -362,7 +359,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       return;
     }
 
-    // Update all files in this folder to have the new folder path
     const docsToUpdate = state.planningDocuments.filter(doc => doc.path.startsWith(oldFolderName + '/'));
     docsToUpdate.forEach(doc => {
       const restOfPath = doc.path.substring(oldFolderName.length + 1);
@@ -371,7 +367,6 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       });
     });
 
-    // Update folder expansion state if it was expanded
     if (expandedFolders[oldFolderName] !== undefined) {
       setExpandedFolders(prev => {
         const copy = { ...prev };
@@ -387,19 +382,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
   const handleDeleteFolder = (folderName: string) => {
     const filesInFolder = state.planningDocuments.filter(doc => doc.path.startsWith(folderName + '/'));
-    const message = filesInFolder.length > 0 
-      ? `Are you sure you want to delete the folder "${folderName}" and all of its ${filesInFolder.length} files? This action is local-only but irreversible.`
-      : `Are you sure you want to delete the folder "${folderName}"?`;
-
-    if (window.confirm(message)) {
-      filesInFolder.forEach(doc => {
-        deletePlanningDocument(doc.id);
-        if (selectedDocId === doc.id) {
-          setSelectedDocId('pdoc-00-1');
-          setIsEditMode(false);
-        }
-      });
-    }
+    filesInFolder.forEach(doc => {
+      deletePlanningDocument(doc.id);
+      if (selectedDocId === doc.id) {
+        setSelectedDocId('pdoc-00-1');
+        setIsEditMode(false);
+      }
+    });
   };
 
   // Dropdown list options for linking
@@ -427,21 +416,22 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full" id="planning-view-root">
       
       {/* LEFT COLUMN: VIRTUAL MARKDOWN DIRECTORY TREE */}
-      <div className="lg:col-span-1 bg-zinc-900/40 border border-white/5 rounded-lg p-4 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)]">
+      <div className="lg:col-span-1 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl p-4 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] shadow-xl relative overflow-hidden">
+        <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
         
         {/* Sidebar Header */}
         <div className="space-y-3 mb-4">
           <div className="flex justify-between items-center">
             <h3 className="font-display text-sm font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
-              <Folder className="h-4 w-4 text-cyan-400 shrink-0" />
-              PLANNING DIRECTORY
+              <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0" />
+              GRIMOIRE DIRECTORY
             </h3>
             
             {/* New File Trigger */}
             <button 
               onClick={() => setIsCreatingFile(true)}
-              className="p-1 rounded bg-cyan-950/40 border border-cyan-500/20 hover:border-cyan-500/50 text-cyan-400 transition"
-              title="Create New Document"
+              className="p-1 rounded-lg bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] text-[#fef08a] transition cursor-pointer"
+              title="Create New Scroll"
               id="btn-create-planning-doc"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -450,13 +440,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
           {/* Search Box */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#c5a059]" />
             <input 
               type="text" 
-              placeholder="Search documents..."
+              placeholder="Search scrolls & strategies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-950/80 border border-white/5 rounded pl-8 pr-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/30 placeholder-zinc-600"
+              className="w-full bg-[#07080c] border border-[#c5a059]/20 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-[#c5a059] placeholder-zinc-500"
             />
           </div>
         </div>
@@ -471,14 +461,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
             return (
               <div key={folderName} className="space-y-0.5">
                 {/* Folder Header Row */}
-                <div className="group/folder flex items-center justify-between rounded hover:bg-white/[0.02] transition">
+                <div className="group/folder flex items-center justify-between rounded-lg hover:bg-white/[0.03] transition">
                   {editingFolder === folderName ? (
                     <div className="flex items-center gap-1.5 p-1 w-full">
                       <input
                         type="text"
                         value={folderRenameValue}
                         onChange={(e) => setFolderRenameValue(e.target.value)}
-                        className="flex-1 bg-zinc-950 border border-cyan-500/50 rounded px-1.5 py-0.5 text-xs font-mono text-zinc-300 focus:outline-none"
+                        className="flex-1 bg-[#07080c] border border-[#c5a059] rounded px-1.5 py-0.5 text-xs font-mono text-zinc-200 focus:outline-none"
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
                       />
@@ -487,7 +477,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                           e.stopPropagation();
                           handleRenameFolder(folderName, folderRenameValue);
                         }}
-                        className="px-1.5 py-0.5 bg-cyan-950 text-cyan-400 hover:bg-cyan-900 border border-cyan-500/30 rounded text-[9px] font-mono shrink-0"
+                        className="px-2 py-0.5 bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] rounded text-[9px] font-mono shrink-0 cursor-pointer font-bold"
                       >
                         SAVE
                       </button>
@@ -496,7 +486,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                           e.stopPropagation();
                           setEditingFolder(null);
                         }}
-                        className="px-1.5 py-0.5 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 border border-white/5 rounded text-[9px] font-mono shrink-0"
+                        className="px-1.5 py-0.5 bg-zinc-900 text-zinc-400 border border-white/10 rounded text-[9px] font-mono shrink-0 cursor-pointer"
                       >
                         CANCEL
                       </button>
@@ -505,10 +495,10 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <>
                       <button
                         onClick={() => toggleFolder(folderName)}
-                        className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-400 hover:text-white transition"
+                        className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-300 hover:text-white transition cursor-pointer"
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <span className="text-[10px] text-zinc-600">
+                          <span className="text-[10px] text-[#c5a059]">
                             {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
                           </span>
                           <span>{folderEmoji} {folderName}</span>
@@ -524,8 +514,8 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                               setEditingFolder(folderName);
                               setFolderRenameValue(folderName);
                             }}
-                            className="p-0.5 text-zinc-500 hover:text-cyan-400 transition"
-                            title="Rename Folder"
+                            className="p-0.5 text-zinc-500 hover:text-[#e5c875] transition cursor-pointer"
+                            title="Rename"
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
@@ -534,13 +524,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                               e.stopPropagation();
                               handleDeleteFolder(folderName);
                             }}
-                            className="p-0.5 text-zinc-500 hover:text-rose-400 transition"
-                            title="Delete Folder"
+                            className="p-0.5 text-zinc-500 hover:text-rose-400 transition cursor-pointer"
+                            title="Delete"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
-                        <span className="text-[9px] bg-zinc-950 px-1.5 py-0.5 rounded border border-white/5 text-zinc-500">
+                        <span className="text-[9px] bg-[#07080c] px-1.5 py-0.5 rounded border border-[#c5a059]/20 text-[#c5a059]">
                           {filteredFolderStructure[folderName].length}
                         </span>
                       </div>
@@ -550,17 +540,17 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
                 {/* Folder Children Files */}
                 {isExpanded && (
-                  <div className="pl-4 border-l border-white/5 ml-3.5 space-y-0.5 my-1">
+                  <div className="pl-4 border-l border-[#c5a059]/20 ml-3.5 space-y-0.5 my-1">
                     {hasFiles ? (
                       filteredFolderStructure[folderName].map((doc) => {
                         const isSelected = doc.id === selectedDocId;
                         return (
                           <div 
                             key={doc.id}
-                            className={`group flex items-center justify-between pl-2 pr-1.5 py-1 rounded text-xs transition-all duration-150 ${
+                            className={`group flex items-center justify-between pl-2 pr-1.5 py-1 rounded text-xs transition-all duration-150 cursor-pointer ${
                               isSelected 
-                                ? 'bg-cyan-500/10 text-cyan-300 font-bold border-l-2 border-cyan-400' 
-                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.01]'
+                                ? 'bg-[#141824] text-[#fef08a] font-bold border-l-2 border-[#c5a059]' 
+                                : 'text-zinc-400 hover:text-white hover:bg-white/[0.02]'
                             }`}
                           >
                             <button
@@ -568,16 +558,16 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                                 setSelectedDocId(doc.id);
                                 setIsEditMode(false);
                               }}
-                              className="flex-1 text-left font-mono truncate flex items-center gap-1.5 py-0.5"
+                              className="flex-1 text-left font-mono truncate flex items-center gap-1.5 py-0.5 cursor-pointer"
                             >
-                              <FileText className={`h-3 w-3 shrink-0 ${isSelected ? 'text-cyan-400' : 'text-zinc-600'}`} />
+                              <FileText className={`h-3 w-3 shrink-0 ${isSelected ? 'text-[#c5a059]' : 'text-zinc-600'}`} />
                               <span className="truncate">{doc.name}</span>
                             </button>
 
                             {/* Delete specific document */}
                             <button
                               onClick={() => handleDeleteFile(doc.id, doc.name)}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-600 hover:text-rose-400 transition"
+                              className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-600 hover:text-rose-400 transition cursor-pointer"
                               title="Delete File"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -586,7 +576,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         );
                       })
                     ) : (
-                      <span className="text-[10px] text-zinc-600 italic pl-5 block py-1 font-mono">Empty Folder</span>
+                      <span className="text-[10px] text-zinc-600 italic pl-5 block py-1 font-mono">Empty Grimoire</span>
                     )}
                   </div>
                 )}
@@ -602,16 +592,16 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="mt-3 p-3 bg-zinc-950 border border-cyan-500/20 rounded"
+              className="mt-3 p-3.5 bg-[#07080c] border border-[#c5a059]/40 rounded-xl shadow-xl"
               id="create-file-widget"
             >
               <form onSubmit={handleCreateFile} className="space-y-2.5">
                 <div>
-                  <label className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider block mb-1">TARGET DIRECTORY</label>
+                  <label className="text-[9px] font-mono text-[#c5a059] uppercase tracking-wider block mb-1 font-bold">TARGET DIRECTORY</label>
                   <select 
                     value={newFileFolder}
                     onChange={(e) => setNewFileFolder(e.target.value)}
-                    className="w-full bg-zinc-900 border border-white/5 rounded px-2 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/30"
+                    className="w-full bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#c5a059]"
                   >
                     {Object.keys(folderStructure).map(f => (
                       <option key={f} value={f}>{getFolderEmoji(f)} {f}</option>
@@ -621,13 +611,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
                   {newFileFolder === '__custom__' && (
                     <div className="mt-2">
-                      <label className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">NEW FOLDER NAME</label>
+                      <label className="text-[8px] font-mono text-zinc-400 uppercase tracking-wider block mb-1">NEW FOLDER NAME</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. 08 My Special Plans"
+                        placeholder="e.g. 08 Celestial Arcana"
                         value={customFolder}
                         onChange={(e) => setCustomFolder(e.target.value)}
-                        className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/50 placeholder-zinc-600"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#c5a059]"
                         autoFocus
                       />
                     </div>
@@ -635,13 +625,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-mono text-cyan-400 uppercase tracking-wider block mb-1">FILE NAME</label>
+                  <label className="text-[9px] font-mono text-[#c5a059] uppercase tracking-wider block mb-1 font-bold">SCROLL / FILE NAME</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Health Roadmap.md"
+                    placeholder="e.g. Mastery Roadmap.md"
                     value={newFileName}
                     onChange={(e) => setNewFileName(e.target.value)}
-                    className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/50 placeholder-zinc-600"
+                    className="w-full bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#c5a059]"
                     autoFocus
                   />
                 </div>
@@ -656,9 +646,9 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                   </button>
                   <button 
                     type="submit" 
-                    className="bg-cyan-950 border border-cyan-500/30 text-cyan-300 px-2.5 py-1 rounded hover:bg-cyan-900/50"
+                    className="bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] px-3 py-1 rounded font-bold cursor-pointer"
                   >
-                    CREATE
+                    INSCRIBE
                   </button>
                 </div>
               </form>
@@ -670,16 +660,17 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       {/* RIGHT WORKSPACE: MARKDOWN VIEWER OR EDITOR */}
       <div className="lg:col-span-3 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)]">
         {activeDoc ? (
-          <div className="bg-zinc-900/25 border border-white/5 rounded-lg flex flex-col h-full overflow-hidden">
+          <div className="bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl flex flex-col h-full overflow-hidden shadow-xl relative">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
             
             {/* Workspace Header */}
-            <div className="glass-panel border-b border-white/5 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
+            <div className="glass-panel border-b border-[#c5a059]/20 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0 bg-[#07080c]/80">
               <div className="space-y-1">
-                <span className="text-[9px] font-mono text-zinc-500 tracking-wider uppercase block">
+                <span className="text-[9px] font-mono text-[#c5a059] tracking-wider uppercase block font-bold">
                   📂 {activeDoc.path}
                 </span>
                 <h2 className="font-display text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-cyan-400 shrink-0 animate-pulse" />
+                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0 animate-pulse" />
                   {activeDoc.name}
                 </h2>
               </div>
@@ -688,22 +679,22 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
               <div className="flex items-center gap-2 font-mono text-[10px]">
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded border transition ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition cursor-pointer font-bold ${
                     isEditMode
-                      ? 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'
-                      : 'bg-cyan-950/40 border-cyan-500/20 text-cyan-400 hover:border-cyan-500/40'
+                      ? 'bg-[#141824] border-[#c5a059]/50 text-zinc-300 hover:text-white'
+                      : 'bg-[#3a2e12] border-[#c5a059]/40 text-[#fef08a] hover:border-[#c5a059]'
                   }`}
                   id="btn-toggle-view-edit"
                 >
                   {isEditMode ? (
                     <>
                       <Eye className="h-3.5 w-3.5" />
-                      PREVIEW MODE
+                      PREVIEW SCROLL
                     </>
                   ) : (
                     <>
                       <Edit2 className="h-3.5 w-3.5" />
-                      EDIT MARKDOWN
+                      INSCRIBE / EDIT
                     </>
                   )}
                 </button>
@@ -711,28 +702,28 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                 {isEditMode && (
                   <button
                     onClick={handleSaveDoc}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950 border border-cyan-500/30 text-cyan-300 rounded hover:bg-cyan-900/50 transition font-black"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#8a6d2b] to-[#c5a059] text-black font-black rounded-lg transition cursor-pointer"
                     title="Save Changes"
                     id="btn-save-planning-doc"
                   >
-                    <Save className="h-3.5 w-3.5 animate-bounce" />
-                    SAVE
+                    <Save className="h-3.5 w-3.5" />
+                    SAVE SCROLL
                   </button>
                 )}
               </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#0b0d13]">
               {isEditMode ? (
                 /* EDIT MODE: TEXTAREA AND FORMATTING GUIDES */
                 <div className="h-full flex flex-col space-y-3">
                   {/* Markdown Format Helpers Bar */}
-                  <div className="flex flex-wrap gap-1 border-b border-white/5 pb-2">
+                  <div className="flex flex-wrap gap-1 border-b border-[#c5a059]/20 pb-2">
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\n# `)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-[#c5a059]/20 text-[10px] font-mono text-[#c5a059] hover:border-[#c5a059] rounded transition cursor-pointer font-bold"
                       title="Header 1"
                     >
                       # H1
@@ -740,7 +731,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\n## `)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-[#c5a059]/20 text-[10px] font-mono text-[#c5a059] hover:border-[#c5a059] rounded transition cursor-pointer font-bold"
                       title="Header 2"
                     >
                       ## H2
@@ -748,7 +739,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\n- `)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition cursor-pointer"
                       title="Bullet List"
                     >
                       • List
@@ -756,7 +747,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\n- [ ] `)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition cursor-pointer"
                       title="Checklist Item"
                     >
                       ☑ Checklist
@@ -764,7 +755,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}**bold**`)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition font-bold"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition font-bold cursor-pointer"
                       title="Bold"
                     >
                       B
@@ -772,7 +763,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}*italic*`)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition italic"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition italic cursor-pointer"
                       title="Italic"
                     >
                       I
@@ -780,7 +771,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\`code\``)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition cursor-pointer"
                       title="Code Block"
                     >
                       &lt;/&gt;
@@ -788,7 +779,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                     <button 
                       type="button" 
                       onClick={() => setEditContent(p => `${p}\n> `)}
-                      className="px-2 py-1 bg-zinc-950 border border-white/5 text-[10px] font-mono hover:text-cyan-400 hover:border-cyan-500/20 rounded transition"
+                      className="px-2 py-1 bg-[#07080c] border border-white/10 text-[10px] font-mono hover:text-[#e5c875] rounded transition cursor-pointer"
                       title="Quote"
                     >
                       &ldquo; Quote
@@ -798,8 +789,8 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full flex-1 bg-zinc-950 border border-white/5 rounded-lg p-4 font-mono text-sm leading-relaxed text-zinc-200 focus:outline-none focus:border-cyan-500/30 resize-none h-64 sm:h-auto min-h-[300px]"
-                    placeholder="Write your markdown here..."
+                    className="w-full flex-1 bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 font-mono text-sm leading-relaxed text-zinc-200 focus:outline-none focus:border-[#c5a059] resize-none h-64 sm:h-auto min-h-[300px]"
+                    placeholder="Inscribe your sacred directives here..."
                   />
                   
                   <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1">
@@ -812,36 +803,36 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                 <div className="space-y-8" id="planning-document-view-content">
                   
                   {/* HTML Styled Markdown Output */}
-                  <div className="prose max-w-none border-b border-white/5 pb-8">
+                  <div className="prose max-w-none border-b border-[#c5a059]/20 pb-8">
                     {renderMarkdown(activeDoc.content)}
                   </div>
 
-                  {/* CONNECTED SYSTEMS PANEL (INTEGRATING CRITICAL SYSTEM HOOKS) */}
+                  {/* CONNECTED SYSTEMS PANEL */}
                   <div className="space-y-4" id="document-connections-panel">
-                    <h3 className="font-display text-xs font-bold text-zinc-400 tracking-widest uppercase flex items-center gap-2 border-b border-white/5 pb-2">
-                      <Link2 className="h-3.5 w-3.5 text-cyan-400" />
-                      CONNECTED SYSTEM HOOKS
+                    <h3 className="font-display text-xs font-bold text-[#e5c875] tracking-widest uppercase flex items-center gap-2 border-b border-[#c5a059]/20 pb-2">
+                      <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                      CONNECTED SACRED HOOKS
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       
                       {/* Strategic Goals Connection */}
-                      <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-3.5 space-y-3">
+                      <div className="bg-[#07080c] border border-[#c5a059]/20 rounded-xl p-3.5 space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase flex items-center gap-1.5">
-                            🎯 STRATEGIC GOALS
+                          <span className="text-[10px] font-mono text-[#c5a059] font-bold uppercase flex items-center gap-1.5">
+                            🎯 STRATEGIC DESTINIES
                           </span>
                           <button 
                             onClick={() => setShowLinkSelector(showLinkSelector === 'goal' ? null : 'goal')}
-                            className="text-[9px] font-mono text-cyan-400 hover:underline"
+                            className="text-[9px] font-mono text-[#fef08a] hover:underline cursor-pointer"
                           >
-                            {showLinkSelector === 'goal' ? '[CLOSE]' : '[LINK GOAL]'}
+                            {showLinkSelector === 'goal' ? '[CLOSE]' : '[LINK DESTINY]'}
                           </button>
                         </div>
 
                         {/* Dropdown Goal selector */}
                         {showLinkSelector === 'goal' && (
-                          <div className="p-2 bg-zinc-950 border border-white/5 rounded space-y-2">
+                          <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg space-y-2">
                             {linkableGoals.length > 0 ? (
                               <div className="max-h-24 overflow-y-auto space-y-1">
                                 {linkableGoals.map(g => (
@@ -851,14 +842,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                                       linkPlanningDocToComponent(activeDoc.id, 'goal', g.id, true);
                                       setShowLinkSelector(null);
                                     }}
-                                    className="w-full text-left font-mono text-[10px] hover:text-cyan-300 p-1 rounded hover:bg-white/[0.02]"
+                                    className="w-full text-left font-mono text-[10px] hover:text-[#fef08a] p-1 rounded hover:bg-white/[0.02] cursor-pointer"
                                   >
-                                    + {g.title}
+                                    + {g.name}
                                   </button>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[9px] font-mono text-zinc-600 italic">No unlinked goals in terminal.</p>
+                              <p className="text-[9px] font-mono text-zinc-500 italic">No unlinked destinies found.</p>
                             )}
                           </div>
                         )}
@@ -867,17 +858,17 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         <div className="space-y-1.5">
                           {activeDoc.linkedGoals && activeDoc.linkedGoals.length > 0 ? (
                             state.goals.filter(g => activeDoc.linkedGoals.includes(g.id)).map(g => (
-                              <div key={g.id} className="flex justify-between items-center bg-zinc-950 border border-white/[0.02] p-2 rounded text-xs">
+                              <div key={g.id} className="flex justify-between items-center bg-[#0b0d13] border border-[#c5a059]/20 p-2 rounded-lg text-xs">
                                 <button
                                   onClick={() => onNavigate && onNavigate('goals')}
-                                  className="font-mono text-[10px] text-zinc-300 hover:text-cyan-400 flex items-center gap-1.5 truncate text-left"
+                                  className="font-mono text-[10px] text-zinc-300 hover:text-[#fef08a] flex items-center gap-1.5 truncate text-left cursor-pointer"
                                 >
-                                  <ExternalLink className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">{g.title}</span>
+                                  <ExternalLink className="h-3 w-3 shrink-0 text-[#c5a059]" />
+                                  <span className="truncate">{g.name}</span>
                                 </button>
                                 <button
                                   onClick={() => linkPlanningDocToComponent(activeDoc.id, 'goal', g.id, false)}
-                                  className="text-[9px] font-mono text-rose-500 hover:underline shrink-0 pl-2"
+                                  className="text-[9px] font-mono text-rose-400 hover:underline shrink-0 pl-2 cursor-pointer"
                                   title="Unlink"
                                 >
                                   UNLINK
@@ -885,20 +876,20 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                               </div>
                             ))
                           ) : (
-                            <p className="text-[10px] font-mono text-zinc-600 italic">No goals connected to this planning strategy.</p>
+                            <p className="text-[10px] font-mono text-zinc-500 italic">No destinies bound to this scroll.</p>
                           )}
                         </div>
                       </div>
 
                       {/* Operational Projects Connection */}
-                      <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-3.5 space-y-3">
+                      <div className="bg-[#07080c] border border-[#c5a059]/20 rounded-xl p-3.5 space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-[#c5a059] font-bold uppercase flex items-center gap-1.5">
                             💼 OPERATIONAL PROJECTS
                           </span>
                           <button 
                             onClick={() => setShowLinkSelector(showLinkSelector === 'project' ? null : 'project')}
-                            className="text-[9px] font-mono text-cyan-400 hover:underline"
+                            className="text-[9px] font-mono text-[#fef08a] hover:underline cursor-pointer"
                           >
                             {showLinkSelector === 'project' ? '[CLOSE]' : '[LINK PROJECT]'}
                           </button>
@@ -906,7 +897,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
                         {/* Dropdown Project selector */}
                         {showLinkSelector === 'project' && (
-                          <div className="p-2 bg-zinc-950 border border-white/5 rounded space-y-2">
+                          <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg space-y-2">
                             {linkableProjects.length > 0 ? (
                               <div className="max-h-24 overflow-y-auto space-y-1">
                                 {linkableProjects.map(p => (
@@ -916,14 +907,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                                       linkPlanningDocToComponent(activeDoc.id, 'project', p.id, true);
                                       setShowLinkSelector(null);
                                     }}
-                                    className="w-full text-left font-mono text-[10px] hover:text-cyan-300 p-1 rounded hover:bg-white/[0.02]"
+                                    className="w-full text-left font-mono text-[10px] hover:text-[#fef08a] p-1 rounded hover:bg-white/[0.02] cursor-pointer"
                                   >
                                     + {p.name}
                                   </button>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[9px] font-mono text-zinc-600 italic">No unlinked projects in terminal.</p>
+                              <p className="text-[9px] font-mono text-zinc-500 italic">No unlinked projects found.</p>
                             )}
                           </div>
                         )}
@@ -932,45 +923,45 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         <div className="space-y-1.5">
                           {activeDoc.linkedProjects && activeDoc.linkedProjects.length > 0 ? (
                             state.projects.filter(p => activeDoc.linkedProjects.includes(p.id)).map(p => (
-                              <div key={p.id} className="flex justify-between items-center bg-zinc-950 border border-white/[0.02] p-2 rounded text-xs">
+                              <div key={p.id} className="flex justify-between items-center bg-[#0b0d13] border border-[#c5a059]/20 p-2 rounded-lg text-xs">
                                 <button
                                   onClick={() => onNavigate && onNavigate('projects')}
-                                  className="font-mono text-[10px] text-zinc-300 hover:text-cyan-400 flex items-center gap-1.5 truncate text-left"
+                                  className="font-mono text-[10px] text-zinc-300 hover:text-[#fef08a] flex items-center gap-1.5 truncate text-left cursor-pointer"
                                 >
-                                  <ExternalLink className="h-3 w-3 shrink-0" />
+                                  <ExternalLink className="h-3 w-3 shrink-0 text-[#c5a059]" />
                                   <span className="truncate">{p.name}</span>
                                 </button>
                                 <button
                                   onClick={() => linkPlanningDocToComponent(activeDoc.id, 'project', p.id, false)}
-                                  className="text-[9px] font-mono text-rose-500 hover:underline shrink-0 pl-2"
+                                  className="text-[9px] font-mono text-rose-400 hover:underline shrink-0 pl-2 cursor-pointer"
                                 >
                                   UNLINK
                                 </button>
                               </div>
                             ))
                           ) : (
-                            <p className="text-[10px] font-mono text-zinc-600 italic">No projects connected to this master plan.</p>
+                            <p className="text-[10px] font-mono text-zinc-500 italic">No projects connected to this master plan.</p>
                           )}
                         </div>
                       </div>
 
                       {/* Active Quests Connection */}
-                      <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-3.5 space-y-3">
+                      <div className="bg-[#07080c] border border-[#c5a059]/20 rounded-xl p-3.5 space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase flex items-center gap-1.5">
-                            ⚔️ ACTIVE TERMINAL QUESTS
+                          <span className="text-[10px] font-mono text-[#c5a059] font-bold uppercase flex items-center gap-1.5">
+                            ⚔️ DIRECTIVES & TRIALS
                           </span>
                           <button 
                             onClick={() => setShowLinkSelector(showLinkSelector === 'quest' ? null : 'quest')}
-                            className="text-[9px] font-mono text-cyan-400 hover:underline"
+                            className="text-[9px] font-mono text-[#fef08a] hover:underline cursor-pointer"
                           >
-                            {showLinkSelector === 'quest' ? '[CLOSE]' : '[LINK QUEST]'}
+                            {showLinkSelector === 'quest' ? '[CLOSE]' : '[LINK DIRECTIVE]'}
                           </button>
                         </div>
 
                         {/* Dropdown Quest selector */}
                         {showLinkSelector === 'quest' && (
-                          <div className="p-2 bg-zinc-950 border border-white/5 rounded space-y-2">
+                          <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg space-y-2">
                             {linkableQuests.length > 0 ? (
                               <div className="max-h-24 overflow-y-auto space-y-1">
                                 {linkableQuests.map(q => (
@@ -980,14 +971,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                                       linkPlanningDocToComponent(activeDoc.id, 'quest', q.id, true);
                                       setShowLinkSelector(null);
                                     }}
-                                    className="w-full text-left font-mono text-[10px] hover:text-cyan-300 p-1 rounded hover:bg-white/[0.02]"
+                                    className="w-full text-left font-mono text-[10px] hover:text-[#fef08a] p-1 rounded hover:bg-white/[0.02] cursor-pointer"
                                   >
                                     + {q.name}
                                   </button>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[9px] font-mono text-zinc-600 italic">No unlinked quests in terminal.</p>
+                              <p className="text-[9px] font-mono text-zinc-500 italic">No unlinked directives.</p>
                             )}
                           </div>
                         )}
@@ -996,37 +987,37 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         <div className="space-y-1.5">
                           {activeDoc.linkedQuests && activeDoc.linkedQuests.length > 0 ? (
                             state.quests.filter(q => activeDoc.linkedQuests.includes(q.id)).map(q => (
-                              <div key={q.id} className="flex justify-between items-center bg-zinc-950 border border-white/[0.02] p-2 rounded text-xs">
+                              <div key={q.id} className="flex justify-between items-center bg-[#0b0d13] border border-[#c5a059]/20 p-2 rounded-lg text-xs">
                                 <button
                                   onClick={() => onNavigate && onNavigate('quests')}
-                                  className="font-mono text-[10px] text-zinc-300 hover:text-cyan-400 flex items-center gap-1.5 truncate text-left"
+                                  className="font-mono text-[10px] text-zinc-300 hover:text-[#fef08a] flex items-center gap-1.5 truncate text-left cursor-pointer"
                                 >
-                                  <ExternalLink className="h-3 w-3 shrink-0" />
+                                  <ExternalLink className="h-3 w-3 shrink-0 text-[#c5a059]" />
                                   <span className="truncate">{q.name}</span>
                                 </button>
                                 <button
                                   onClick={() => linkPlanningDocToComponent(activeDoc.id, 'quest', q.id, false)}
-                                  className="text-[9px] font-mono text-rose-500 hover:underline shrink-0 pl-2"
+                                  className="text-[9px] font-mono text-rose-400 hover:underline shrink-0 pl-2 cursor-pointer"
                                 >
                                   UNLINK
                                 </button>
                               </div>
                             ))
                           ) : (
-                            <p className="text-[10px] font-mono text-zinc-600 italic">No quests associated with this playbook/SOP.</p>
+                            <p className="text-[10px] font-mono text-zinc-500 italic">No directives associated.</p>
                           )}
                         </div>
                       </div>
 
                       {/* Skills Path Connection */}
-                      <div className="bg-zinc-900/30 border border-white/5 rounded-lg p-3.5 space-y-3">
+                      <div className="bg-[#07080c] border border-[#c5a059]/20 rounded-xl p-3.5 space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase flex items-center gap-1.5">
-                            🎖️ SKILL COMPETENCIES
+                          <span className="text-[10px] font-mono text-[#c5a059] font-bold uppercase flex items-center gap-1.5">
+                            🎖️ DISCIPLINES & SKILLS
                           </span>
                           <button 
                             onClick={() => setShowLinkSelector(showLinkSelector === 'skill' ? null : 'skill')}
-                            className="text-[9px] font-mono text-cyan-400 hover:underline"
+                            className="text-[9px] font-mono text-[#fef08a] hover:underline cursor-pointer"
                           >
                             {showLinkSelector === 'skill' ? '[CLOSE]' : '[LINK SKILL]'}
                           </button>
@@ -1034,7 +1025,7 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
                         {/* Dropdown Skill selector */}
                         {showLinkSelector === 'skill' && (
-                          <div className="p-2 bg-zinc-950 border border-white/5 rounded space-y-2">
+                          <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg space-y-2">
                             {linkableSkills.length > 0 ? (
                               <div className="max-h-24 overflow-y-auto space-y-1">
                                 {linkableSkills.map(s => (
@@ -1044,14 +1035,14 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                                       linkPlanningDocToComponent(activeDoc.id, 'skill', s.id, true);
                                       setShowLinkSelector(null);
                                     }}
-                                    className="w-full text-left font-mono text-[10px] hover:text-cyan-300 p-1 rounded hover:bg-white/[0.02]"
+                                    className="w-full text-left font-mono text-[10px] hover:text-[#fef08a] p-1 rounded hover:bg-white/[0.02] cursor-pointer"
                                   >
                                     + {s.name}
                                   </button>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[9px] font-mono text-zinc-600 italic">No unlinked skills in terminal.</p>
+                              <p className="text-[9px] font-mono text-zinc-500 italic">No unlinked skills.</p>
                             )}
                           </div>
                         )}
@@ -1060,24 +1051,24 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         <div className="space-y-1.5">
                           {activeDoc.linkedSkills && activeDoc.linkedSkills.length > 0 ? (
                             state.skills.filter(s => activeDoc.linkedSkills.includes(s.id)).map(s => (
-                              <div key={s.id} className="flex justify-between items-center bg-zinc-950 border border-white/[0.02] p-2 rounded text-xs">
+                              <div key={s.id} className="flex justify-between items-center bg-[#0b0d13] border border-[#c5a059]/20 p-2 rounded-lg text-xs">
                                 <button
                                   onClick={() => onNavigate && onNavigate('skills')}
-                                  className="font-mono text-[10px] text-zinc-300 hover:text-cyan-400 flex items-center gap-1.5 truncate text-left"
+                                  className="font-mono text-[10px] text-zinc-300 hover:text-[#fef08a] flex items-center gap-1.5 truncate text-left cursor-pointer"
                                 >
-                                  <ExternalLink className="h-3 w-3 shrink-0" />
+                                  <ExternalLink className="h-3 w-3 shrink-0 text-[#c5a059]" />
                                   <span className="truncate">{s.name}</span>
                                 </button>
                                 <button
                                   onClick={() => linkPlanningDocToComponent(activeDoc.id, 'skill', s.id, false)}
-                                  className="text-[9px] font-mono text-rose-500 hover:underline shrink-0 pl-2"
+                                  className="text-[9px] font-mono text-rose-400 hover:underline shrink-0 pl-2 cursor-pointer"
                                 >
                                   UNLINK
                                 </button>
                               </div>
                             ))
                           ) : (
-                            <p className="text-[10px] font-mono text-zinc-600 italic">No active skills bound to this document.</p>
+                            <p className="text-[10px] font-mono text-zinc-500 italic">No disciplines bound.</p>
                           )}
                         </div>
                       </div>
@@ -1091,9 +1082,9 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
 
           </div>
         ) : (
-          <div className="flex-1 bg-zinc-900/25 border border-white/5 rounded-lg flex flex-col justify-center items-center p-8 text-center text-zinc-500">
-            <BookOpen className="h-10 w-10 text-zinc-700 mb-3 animate-pulse" />
-            <p className="text-sm font-mono uppercase tracking-widest">Select a document from the directory to begin tracking strategy.</p>
+          <div className="flex-1 bg-[#0b0d13] border border-[#c5a059]/20 rounded-xl flex flex-col justify-center items-center p-8 text-center text-zinc-500">
+            <BookOpen className="h-10 w-10 text-[#c5a059]/50 mb-3 animate-pulse" />
+            <p className="text-sm font-mono uppercase tracking-widest text-zinc-400">Select a scroll from the grimoire directory to view strategy.</p>
           </div>
         )}
       </div>

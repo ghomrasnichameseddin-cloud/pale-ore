@@ -7,6 +7,7 @@ import {
   Layers, Brain, RefreshCw, Sparkles, Tag, Sparkle
 } from 'lucide-react';
 import { getCategoryDetails } from './ActiveDirectives';
+import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 export const ExecuteQuestForm: React.FC = () => {
   const { state, addQuest, systemDate, selectedListId } = usePOS();
@@ -104,18 +105,18 @@ export const ExecuteQuestForm: React.FC = () => {
     newQuestDeadline !== '';
 
   return (
-    <div className="glass-panel rounded-lg p-5 border border-white/5 bg-zinc-900/40 relative overflow-hidden" id="quick-add-panel">
+    <div className="glass-panel rounded-xl p-5 border border-[#c5a059]/25 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg shadow-black/60" id="quick-add-panel">
       {/* Decorative gradient blur in background */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[80px] pointer-events-none rounded-full" />
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-fuchsia-500/5 blur-[80px] pointer-events-none rounded-full" />
+      <div className="absolute top-0 right-0 w-32 h-32 bg-[#c5a059]/5 blur-[80px] pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/5 blur-[80px] pointer-events-none rounded-full" />
 
-      <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-2.5">
-        <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+      <div className="flex justify-between items-center mb-4 border-b border-[#c5a059]/20 pb-2.5">
+        <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-widest flex items-center gap-2 font-bold">
+          <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
           EXECUTE_NEW_QUEST_PROMPT
         </h4>
-        <div className="text-[10px] font-mono text-zinc-500">
-          SYS_DATE: <span className="text-zinc-400">{systemDate}</span>
+        <div className="text-[10px] font-mono text-zinc-400">
+          SYS_DATE: <span className="text-[#e5c875] font-bold">{systemDate}</span>
         </div>
       </div>
       
@@ -123,13 +124,13 @@ export const ExecuteQuestForm: React.FC = () => {
         {/* Main Inputs: Title and Description */}
         <div className="space-y-2">
           <div>
-            <label className="block text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">Quest Directive Name</label>
+            <label className="block text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">Quest Directive Name</label>
             <input 
               type="text" 
-              placeholder="Enter active directive title... (e.g., Code API endpoints)"
+              placeholder="Enter active directive title... (e.g., Memorize Surah Verse / Code API endpoints)"
               value={newQuestName}
               onChange={(e) => setNewQuestName(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/5 rounded-lg px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 font-sans transition-all"
+              className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-3.5 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059]/30 font-sans transition-all"
               required
             />
           </div>
@@ -141,7 +142,7 @@ export const ExecuteQuestForm: React.FC = () => {
               placeholder="Enter a brief description or context of this task..."
               value={newQuestDescription}
               onChange={(e) => setNewQuestDescription(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/5 rounded-lg px-3.5 py-2 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 font-sans transition-all"
+              className="w-full bg-[#07080c] border border-white/10 rounded-lg px-3.5 py-2 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]/50 font-sans transition-all"
             />
           </div>
         </div>
@@ -151,8 +152,8 @@ export const ExecuteQuestForm: React.FC = () => {
           {/* Category Type */}
           <div className="space-y-1">
             <div className="flex items-center justify-between mb-1">
-              <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
-                <Layers className="h-3 w-3 text-zinc-500" />
+              <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider font-bold">
+                <Layers className="h-3 w-3 text-[#c5a059]" />
                 Category
               </label>
               {(() => {
@@ -168,7 +169,7 @@ export const ExecuteQuestForm: React.FC = () => {
             <select 
               value={newQuestType}
               onChange={(e) => setNewQuestType(e.target.value as QuestType)}
-              className="w-full bg-zinc-950 border border-white/5 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer"
+              className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all cursor-pointer"
             >
               <option value="Main">🏆 Main Quest</option>
               <option value="Side">🎯 Side Quest</option>
@@ -182,14 +183,14 @@ export const ExecuteQuestForm: React.FC = () => {
 
           {/* Difficulty Selection */}
           <div>
-            <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-              <SlidersHorizontal className="h-3 w-3 text-zinc-500" />
+            <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
+              <SlidersHorizontal className="h-3 w-3 text-[#c5a059]" />
               Difficulty
             </label>
             <select 
               value={newQuestDiff}
               onChange={(e) => setNewQuestDiff(e.target.value as QuestDifficulty)}
-              className="w-full bg-zinc-950 border border-white/5 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer"
+              className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all cursor-pointer"
             >
               <option value="Easy">🟢 Easy (+50 XP)</option>
               <option value="Normal">🟡 Normal (+100 XP)</option>
@@ -200,8 +201,8 @@ export const ExecuteQuestForm: React.FC = () => {
 
           {/* Duration */}
           <div>
-            <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
-              <Clock className="h-3 w-3 text-zinc-500" />
+            <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
+              <Clock className="h-3 w-3 text-[#c5a059]" />
               Est. Duration
             </label>
             <div className="relative">
@@ -211,29 +212,29 @@ export const ExecuteQuestForm: React.FC = () => {
                 max="480"
                 value={newQuestDuration}
                 onChange={(e) => setNewQuestDuration(Number(e.target.value))}
-                className="w-full bg-zinc-950 border border-white/5 rounded-lg pl-3 pr-10 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all"
+                className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg pl-3 pr-10 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all"
               />
-              <span className="absolute right-3 top-2 text-[10px] font-mono text-zinc-500 select-none">MIN</span>
+              <span className="absolute right-3 top-2 text-[10px] font-mono text-[#c5a059] select-none font-bold">MIN</span>
             </div>
           </div>
         </div>
 
         {/* Collapsible Advanced Parameters Panel */}
-        <div className="pt-2 border-t border-white/5">
+        <div className="pt-2 border-t border-[#c5a059]/15">
           <button
             type="button"
             onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
             className={`w-full flex items-center justify-between py-1.5 px-3 rounded-lg border text-xs font-mono transition-all ${
               isAdvancedOpen 
-                ? 'bg-zinc-950 border-cyan-500/20 text-cyan-400' 
-                : 'bg-zinc-950/40 border-white/5 text-zinc-400 hover:border-white/10'
+                ? 'bg-[#141824] border-[#c5a059]/40 text-[#fef08a]' 
+                : 'bg-[#07080c] border-white/5 text-zinc-400 hover:border-[#c5a059]/30 hover:text-zinc-200'
             }`}
           >
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className={`h-3 w-3 ${hasAdvancedChanges ? 'text-amber-400 animate-pulse' : ''}`} />
-              <span className="text-[10px] tracking-wider uppercase">ADVANCED PARAMETERS</span>
+              <SlidersHorizontal className={`h-3 w-3 ${hasAdvancedChanges ? 'text-[#e5c875] animate-pulse' : 'text-[#c5a059]'}`} />
+              <span className="text-[10px] tracking-wider uppercase font-bold">ADVANCED PARAMETERS</span>
               {hasAdvancedChanges && (
-                <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[8px] font-bold px-1.5 py-0.5 rounded leading-none">
+                <span className="bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] text-[8px] font-bold px-1.5 py-0.5 rounded leading-none">
                   MODIFIED
                 </span>
               )}
@@ -242,31 +243,31 @@ export const ExecuteQuestForm: React.FC = () => {
             {/* Quick Summary Badge Row when Advanced is closed */}
             <div className="flex items-center gap-3">
               {!isAdvancedOpen && (
-                <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-zinc-500">
-                  {newQuestRecurrence !== 'None' && <span>🔁 {newQuestRecurrence}</span>}
+                <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-zinc-400">
+                  {newQuestRecurrence !== 'None' && <span className="text-[#e5c875]">🔁 {newQuestRecurrence}</span>}
                   {newQuestGoal && <span className="text-purple-400">🎯 Goal</span>}
-                  {newQuestListId && <span className="text-blue-400">📋 List</span>}
-                  {newQuestSkills.length > 0 && <span className="text-amber-400">⚡ {newQuestSkills.length} Skills</span>}
+                  {newQuestListId && <span className="text-cyan-400">📋 List</span>}
+                  {newQuestSkills.length > 0 && <span className="text-emerald-400">⚡ {newQuestSkills.length} Skills</span>}
                 </div>
               )}
-              {isAdvancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {isAdvancedOpen ? <ChevronUp className="h-3.5 w-3.5 text-[#c5a059]" /> : <ChevronDown className="h-3.5 w-3.5 text-[#c5a059]" />}
             </div>
           </button>
 
           {/* Expandable Advanced Area */}
           {isAdvancedOpen && (
-            <div className="mt-3.5 p-4 bg-zinc-950/60 rounded-lg border border-white/5 space-y-4 animate-fadeIn">
+            <div className="mt-3.5 p-4 bg-[#07080c]/90 rounded-lg border border-[#c5a059]/20 space-y-4 animate-fadeIn">
               {/* Row 1: Recurrence, Deadline */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Recurrence Selection */}
                 <div>
-                  <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
+                  <label className="flex items-center gap-1 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
                     <RefreshCw className="h-2.5 w-2.5" /> Recurrence
                   </label>
                   <select 
                     value={newQuestRecurrence}
                     onChange={(e) => setNewQuestRecurrence(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer"
+                    className="w-full bg-[#0b0d13] border border-[#c5a059]/25 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all cursor-pointer"
                   >
                     <option value="None">Once Only</option>
                     <option value="Daily">🔁 Daily</option>
@@ -280,14 +281,14 @@ export const ExecuteQuestForm: React.FC = () => {
                 {/* Target Date / Deadline */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="flex items-center gap-1 text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+                    <label className="flex items-center gap-1 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider font-bold">
                       <Calendar className="h-2.5 w-2.5" /> Target Date
                     </label>
                     <button
                       type="button"
                       onClick={() => setNewQuestDeadline(newQuestDeadline ? '' : systemDate)}
                       className={`text-[9px] font-mono hover:underline ${
-                        !newQuestDeadline ? 'text-cyan-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
+                        !newQuestDeadline ? 'text-[#e5c875] font-bold' : 'text-zinc-500 hover:text-zinc-300'
                       }`}
                     >
                       {!newQuestDeadline ? '♾️ No Date (Click to Set)' : 'Clear Date'}
@@ -297,16 +298,18 @@ export const ExecuteQuestForm: React.FC = () => {
                     type="date"
                     value={newQuestDeadline}
                     onChange={(e) => setNewQuestDeadline(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all"
+                    style={{ colorScheme: 'dark' }}
+                    className="w-full bg-[#0b0d13] border border-[#c5a059]/25 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all"
                   />
                 </div>
               </div>
 
               {/* Custom Recurrence Parameters Sub-Section */}
               {newQuestRecurrence === 'Custom' && (
-                <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-lg space-y-3">
-                  <div className="text-[9px] font-mono text-cyan-400 uppercase font-bold tracking-wider">
-                    ⚙️ Custom Recurrence Frequency Setup
+                <div className="p-3 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg space-y-3">
+                  <div className="text-[9px] font-mono text-[#e5c875] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                    <RubElHizbIcon className="h-2.5 w-2.5" />
+                    Custom Recurrence Frequency Setup
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2">
@@ -317,8 +320,8 @@ export const ExecuteQuestForm: React.FC = () => {
                         onClick={() => setCustomRecurrenceType(type)}
                         className={`py-1 text-[9px] font-mono rounded-md border uppercase transition-all ${
                           customRecurrenceType === type 
-                            ? 'bg-cyan-950/60 border-cyan-500/30 text-cyan-400 font-bold' 
-                            : 'bg-zinc-950 border-white/5 text-zinc-500 hover:text-zinc-300'
+                            ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-bold' 
+                            : 'bg-[#07080c] border-white/5 text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
                         {type}
@@ -335,7 +338,7 @@ export const ExecuteQuestForm: React.FC = () => {
                         max="365"
                         value={customRecurrenceDays}
                         onChange={(e) => setCustomRecurrenceDays(Number(e.target.value))}
-                        className="w-16 bg-zinc-950 border border-white/10 rounded-md px-2 py-0.5 text-white text-center font-mono text-xs focus:outline-none focus:border-cyan-500/40"
+                        className="w-16 bg-[#07080c] border border-[#c5a059]/40 rounded-md px-2 py-0.5 text-[#e5c875] text-center font-mono text-xs focus:outline-none focus:border-[#c5a059]"
                       />
                       <span className="text-zinc-500 font-mono text-[11px]">day(s)</span>
                     </div>
@@ -358,8 +361,8 @@ export const ExecuteQuestForm: React.FC = () => {
                               }}
                               className={`px-2 py-0.5 text-[9px] font-mono rounded border transition-all ${
                                 isSelected 
-                                  ? 'bg-cyan-950/80 border-cyan-500/30 text-cyan-300 font-bold' 
-                                  : 'bg-zinc-950 border-white/5 text-zinc-500 hover:text-zinc-400'
+                                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-bold' 
+                                  : 'bg-[#07080c] border-white/5 text-zinc-500 hover:text-zinc-400'
                               }`}
                             >
                               {day}
@@ -378,7 +381,7 @@ export const ExecuteQuestForm: React.FC = () => {
                         value={customRecurrenceText}
                         onChange={(e) => setCustomRecurrenceText(e.target.value)}
                         placeholder="e.g. Every 1st Tuesday, every other Friday"
-                        className="w-full bg-zinc-950 border border-white/5 rounded-md px-2 py-1 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-cyan-500/40 font-sans"
+                        className="w-full bg-[#07080c] border border-white/10 rounded-md px-2 py-1 text-xs text-white placeholder-zinc-700 focus:outline-none focus:border-[#c5a059] font-sans"
                       />
                     </div>
                   )}
@@ -389,13 +392,13 @@ export const ExecuteQuestForm: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Goal assignment */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
+                  <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
                     <Target className="h-3 w-3" /> Assign Goal Link
                   </label>
                   <select 
                     value={newQuestGoal}
                     onChange={(e) => setNewQuestGoal(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer"
+                    className="w-full bg-[#0b0d13] border border-[#c5a059]/25 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all cursor-pointer"
                   >
                     <option value="">No Assigned Goal</option>
                     {state.goals.map(g => (
@@ -406,13 +409,13 @@ export const ExecuteQuestForm: React.FC = () => {
 
                 {/* List assignment */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider mb-1">
+                  <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
                     <Folder className="h-3 w-3" /> Assign List Link
                   </label>
                   <select 
                     value={newQuestListId}
                     onChange={(e) => setNewQuestListId(e.target.value)}
-                    className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/40 font-mono transition-all cursor-pointer truncate"
+                    className="w-full bg-[#0b0d13] border border-[#c5a059]/25 rounded-lg px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-mono transition-all cursor-pointer truncate"
                   >
                     <option value="">No Assigned List</option>
                     {(state.folders || []).filter(f => !f.archived).map(folder => {
@@ -438,8 +441,8 @@ export const ExecuteQuestForm: React.FC = () => {
               </div>
 
               {/* Row 4: Skills matrix */}
-              <div className="space-y-2 border-t border-white/5 pt-3">
-                <label className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-wider">
+              <div className="space-y-2 border-t border-[#c5a059]/15 pt-3">
+                <label className="flex items-center gap-1.5 text-[9px] font-mono text-[#c5a059] uppercase tracking-wider font-bold">
                   <Brain className="h-3.5 w-3.5" /> Associate Skill Matrix Alignments
                 </label>
                 
@@ -447,14 +450,14 @@ export const ExecuteQuestForm: React.FC = () => {
                 {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-mono text-cyan-500 uppercase tracking-widest block font-bold">
+                      <span className="text-[8px] font-mono text-[#e5c875] uppercase tracking-widest block font-bold">
                         Primary Disciplines (Multi-Select Enabled)
                       </span>
                       {newQuestSkills.filter(id => {
                         const sk = state.skills.find(s => s.id === id);
                         return sk && (sk.tier || 'Primary') === 'Primary';
                       }).length > 0 && (
-                        <span className="text-[8px] font-mono text-cyan-400 font-bold bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                        <span className="text-[8px] font-mono text-[#fef08a] font-bold bg-[#3a2e12] px-1.5 py-0.5 rounded border border-[#c5a059]/50">
                           {newQuestSkills.filter(id => {
                             const sk = state.skills.find(s => s.id === id);
                             return sk && (sk.tier || 'Primary') === 'Primary';
@@ -474,8 +477,8 @@ export const ExecuteQuestForm: React.FC = () => {
                               onClick={() => handleSkillToggle(skill.id)}
                               className={`text-[10px] font-mono px-2.5 py-1 rounded-md border transition-all flex items-center gap-1 ${
                                 isSelected 
-                                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40 font-bold shadow-[0_0_10px_rgba(6,182,212,0.1)]' 
-                                  : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10 hover:text-zinc-300'
+                                  ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold shadow-[0_0_10px_rgba(197,160,89,0.2)]' 
+                                  : 'bg-[#07080c] text-zinc-400 border-white/5 hover:border-[#c5a059]/30 hover:text-zinc-200'
                               }`}
                             >
                               <span>{isSelected ? '✓' : '+'}</span>
@@ -490,7 +493,7 @@ export const ExecuteQuestForm: React.FC = () => {
                 {/* Secondary Skills */}
                 {state.skills.filter(s => s.tier === 'Secondary').length > 0 && (
                   <div className="space-y-1 pt-1.5">
-                    <span className="text-[8px] font-mono text-fuchsia-500 uppercase tracking-widest block">Secondary Attributes</span>
+                    <span className="text-[8px] font-mono text-purple-400 uppercase tracking-widest block font-bold">Secondary Attributes</span>
                     <div className="flex flex-wrap gap-1.5">
                       {state.skills
                         .filter(s => s.tier === 'Secondary')
@@ -503,8 +506,8 @@ export const ExecuteQuestForm: React.FC = () => {
                               onClick={() => handleSkillToggle(skill.id)}
                               className={`text-[10px] font-mono px-2.5 py-1 rounded-md border transition-all ${
                                 isSelected 
-                                  ? 'bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-500/40 font-bold' 
-                                  : 'bg-zinc-950 text-zinc-500 border-white/5 hover:border-white/10 hover:text-zinc-300'
+                                  ? 'bg-purple-950/80 text-purple-300 border-purple-500/40 font-bold' 
+                                  : 'bg-[#07080c] text-zinc-500 border-white/5 hover:border-purple-500/30 hover:text-zinc-300'
                               }`}
                             >
                               {skill.name} (L{skill.level})
@@ -523,9 +526,9 @@ export const ExecuteQuestForm: React.FC = () => {
         <div className="flex justify-end pt-1">
           <button 
             type="submit"
-            className="w-full sm:w-auto bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 px-6 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(6,182,212,0.05)] hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] cursor-pointer"
+            className="w-full sm:w-auto bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] hover:from-[#a38033] hover:to-[#a38033] text-[#07080c] px-6 py-2.5 rounded-lg text-xs font-mono font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(197,160,89,0.3)] cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 stroke-[3]" />
             EXECUTE QUEST DIRECTIVE
           </button>
         </div>

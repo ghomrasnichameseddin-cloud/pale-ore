@@ -8,6 +8,7 @@ import {
   GripVertical, Zap, Edit3, ChevronDown, ChevronUp, Clock, Filter, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 type FrameworkTab = 'eisenhower' | 'swot' | 'smart' | 'pareto' | 'ooda';
 
@@ -216,8 +217,9 @@ export const FrameworksView: React.FC = () => {
       let quad = eisenhowerMap[q.id];
 
       // 2. Check quest tags for explicit quadrant
-      if (!quad && q.tags && q.tags.length > 0) {
-        const tagMatch = q.tags.find(t => ['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
+      const qTags = (q as any).tags;
+      if (!quad && qTags && qTags.length > 0) {
+        const tagMatch = qTags.find((t: string) => ['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
         if (tagMatch) {
           quad = tagMatch.toUpperCase() as 'Q1' | 'Q2' | 'Q3' | 'Q4';
         }
@@ -274,10 +276,10 @@ export const FrameworksView: React.FC = () => {
     // Synchronize tag with global quest state in POSContext
     const targetQuest = state.quests.find(q => q.id === questId);
     if (targetQuest) {
-      const existingOtherTags = (targetQuest.tags || []).filter(t => !['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
+      const existingOtherTags = ((targetQuest as any).tags || []).filter((t: string) => !['Q1', 'Q2', 'Q3', 'Q4'].includes(t.toUpperCase()));
       updateQuest(questId, {
         tags: [quad, ...existingOtherTags]
-      });
+      } as any);
     }
   };
 
@@ -307,7 +309,7 @@ export const FrameworksView: React.FC = () => {
       relatedSkills: [],
       subquests: [],
       tags: [quad]
-    });
+    } as any);
 
     setEisenhowerMap(prev => ({
       ...prev,
@@ -317,7 +319,7 @@ export const FrameworksView: React.FC = () => {
     setQuickAddTexts(prev => ({ ...prev, [quad]: '' }));
 
     addSystemMessage({
-      sender: 'EISENHOWER_ENGINE',
+      sender: 'PROGRESS_ENGINE',
       category: 'alert',
       title: `🎯 DIRECTIVE SEEDED TO ${quad}`,
       content: `"${title}" created in ${quad} [Scheduled: ${computedDeadline}].`,
@@ -345,7 +347,7 @@ export const FrameworksView: React.FC = () => {
     setEisenhowerMap(updatedMap);
 
     addSystemMessage({
-      sender: 'EISENHOWER_ENGINE',
+      sender: 'PROGRESS_ENGINE',
       category: 'achievement',
       title: '⚡ AUTO-CALIBRATION COMPLETE',
       content: `Calibrated ${count} active directive(s) into strategic Eisenhower matrix quadrants.`,
@@ -443,7 +445,6 @@ export const FrameworksView: React.FC = () => {
     const newQuestId = addQuest({
       name: questName,
       description: questDesc,
-      important: true,
       difficulty: 'Normal',
       estimatedTime: 25,
       xp: 25,
@@ -555,47 +556,47 @@ export const FrameworksView: React.FC = () => {
     <div className="space-y-6" id="frameworks-hub-view">
       
       {/* Header Banner */}
-      <div className="glass-panel border-cyan-500/10 bg-zinc-950/20 p-5 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-        <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-cyan-500/[0.02] to-transparent pointer-events-none" />
+      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden shadow-xl">
+        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
         <div className="space-y-1 relative z-10">
           <div className="flex items-center gap-2">
-            <Compass className="h-5 w-5 text-cyan-400" />
+            <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
             <h2 className="font-display text-base font-black tracking-widest text-white uppercase">INTERACTIVE STRATEGIC FRAMEWORKS</h2>
           </div>
-          <p className="text-xs text-zinc-500 font-mono">
+          <p className="text-xs text-zinc-400 font-mono">
             Execute tactical models & calibrate operational friction into bulletproof execution tracks.
           </p>
         </div>
 
         {/* Framework Tabs Selectors */}
-        <div className="flex flex-wrap gap-1 bg-zinc-950/80 border border-white/5 p-1 rounded font-mono text-[10px]">
+        <div className="flex flex-wrap gap-1 bg-[#07080c] border border-[#c5a059]/30 p-1.5 rounded-lg font-mono text-[10px]">
           <button
             onClick={() => setActiveTab('eisenhower')}
-            className={`px-3 py-1.5 rounded transition ${activeTab === 'eisenhower' ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'eisenhower' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
           >
             🔲 EISENHOWER
           </button>
           <button
             onClick={() => setActiveTab('swot')}
-            className={`px-3 py-1.5 rounded transition ${activeTab === 'swot' ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'swot' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
           >
             📊 SWOT MATRIX
           </button>
           <button
             onClick={() => setActiveTab('smart')}
-            className={`px-3 py-1.5 rounded transition ${activeTab === 'smart' ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'smart' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
           >
             🎯 SMART AUDIT
           </button>
           <button
             onClick={() => setActiveTab('pareto')}
-            className={`px-3 py-1.5 rounded transition ${activeTab === 'pareto' ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'pareto' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
           >
             ⚡ Pareto (80/20)
           </button>
           <button
             onClick={() => setActiveTab('ooda')}
-            className={`px-3 py-1.5 rounded transition ${activeTab === 'ooda' ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'ooda' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
           >
             🔄 OODA LOOP
           </button>

@@ -5,6 +5,7 @@ import {
   Briefcase, ArrowRight, Target, Plus, Trash2, Calendar, 
   Clock, CheckCircle, Award, ListTodo, CircleAlert, Edit3
 } from 'lucide-react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 export const ProjectsView: React.FC = () => {
   const { 
@@ -100,12 +101,9 @@ export const ProjectsView: React.FC = () => {
     const projToDelete = state.projects.find(p => p.id === selectedProjId);
     if (!projToDelete) return;
 
-    if (window.confirm(`Are you sure you want to delete the project "${projToDelete.name}"? This action is permanent.`)) {
-      deleteProject(selectedProjId);
-      
-      const remaining = state.projects.filter(p => p.id !== selectedProjId);
-      setSelectedProjId(remaining[0]?.id || null);
-    }
+    deleteProject(selectedProjId);
+    const remaining = state.projects.filter(p => p.id !== selectedProjId);
+    setSelectedProjId(remaining[0]?.id || null);
   };
 
   // Handle Purge/Empty All Projects
@@ -128,12 +126,15 @@ export const ProjectsView: React.FC = () => {
       
       {/* LEFT PANEL: PROJECT SELECTOR & CREATOR */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="flex justify-between items-center pb-2 border-b border-white/5">
-          <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">PROJECTS_LOG ({state.projects.length})</span>
+        <div className="flex justify-between items-center pb-2 border-b border-[#c5a059]/20">
+          <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+            <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+            PROJECTS ({state.projects.length})
+          </span>
           <div className="flex gap-2">
             <button 
               onClick={() => { setShowCreateProj(!showCreateProj); setShowEmptyProjectsConfirm(false); }}
-              className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-cyan-500/30 text-cyan-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+              className="text-xs font-mono bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] text-[#fef08a] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-bold"
             >
               <Plus className="h-3 w-3" />
               NEW
@@ -141,10 +142,10 @@ export const ProjectsView: React.FC = () => {
             {state.projects.length > 0 && (
               <button 
                 onClick={() => { setShowEmptyProjectsConfirm(!showEmptyProjectsConfirm); setShowCreateProj(false); }}
-                className="text-xs font-mono bg-zinc-900 border border-white/5 hover:border-rose-500/30 text-rose-400 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
+                className="text-xs font-mono bg-rose-950/60 border border-rose-500/30 hover:border-rose-500 text-rose-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="h-3 w-3" />
-                EMPTY ALL
+                PURGE
               </button>
             )}
           </div>
@@ -152,12 +153,12 @@ export const ProjectsView: React.FC = () => {
 
         {/* Empty All Projects Confirmation */}
         {showEmptyProjectsConfirm && (
-          <div className="p-4 bg-zinc-950 border border-rose-500/20 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1">
+          <div className="p-4 bg-[#1a0808] border border-rose-500/30 rounded-xl space-y-3">
+            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1 font-bold">
               <Trash2 className="h-3 w-3" /> PURGE ALL PROJECTS
             </h4>
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              Are you sure you want to empty all projects? This clears all existing projects and milestones, and unlinks them from quests. This cannot be undone.
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              Are you sure you want to empty all projects? This clears all existing projects and milestones, and unlinks them from directives.
             </p>
             <div className="flex justify-end gap-2">
               <button 
@@ -168,9 +169,9 @@ export const ProjectsView: React.FC = () => {
                 CANCEL
               </button>
               <button 
-                type="button"
+                type="button" 
                 onClick={handleEmptyAllProjects}
-                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/30 text-rose-300 text-xs font-mono px-3 py-1 rounded transition-colors"
+                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/50 text-rose-300 text-xs font-mono font-bold px-3 py-1.5 rounded cursor-pointer"
               >
                 CONFIRM_PURGE
               </button>
@@ -180,41 +181,44 @@ export const ProjectsView: React.FC = () => {
 
         {/* Project Creation Form */}
         {showCreateProj && (
-          <form onSubmit={handleCreateProj} className="p-4 bg-zinc-950 border border-white/10 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider">INITIATE_PROJECT_PROMPT</h4>
+          <form onSubmit={handleCreateProj} className="p-4 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl space-y-3 shadow-xl">
+            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              INITIATE_PROJECT_BLUEPRINT
+            </h4>
             
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Project Title</label>
+              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Project Title</label>
               <input 
                 type="text" 
-                placeholder="Portfolio design v2..."
+                placeholder="e.g. Celestial Astrolabe App..."
                 value={newProjName}
                 onChange={(e) => setNewProjName(e.target.value)}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none font-sans"
+                className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded p-2 text-xs text-white focus:outline-none focus:border-[#c5a059] font-sans"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Project Description</label>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Project Description</label>
               <textarea 
                 placeholder="Core objectives & roadmap..."
                 value={newProjDesc}
                 onChange={(e) => setNewProjDesc(e.target.value)}
                 rows={2}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none font-sans"
+                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-sans"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Parent Goal</label>
+              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Parent Destiny / Goal</label>
               <select 
                 value={newProjGoalId}
                 onChange={(e) => setNewProjGoalId(e.target.value)}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                 required
               >
-                <option value="">Select Target Goal</option>
+                <option value="">Select Target Destiny</option>
                 {state.goals.map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
@@ -222,13 +226,13 @@ export const ProjectsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Est. Duration (Text)</label>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Est. Duration</label>
               <input 
                 type="text" 
                 placeholder="20 hours / 4 weeks..."
                 value={newProjEstTime}
                 onChange={(e) => setNewProjEstTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-white/5 rounded p-1.5 text-xs text-white focus:outline-none"
+                className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none font-mono"
               />
             </div>
 
@@ -242,9 +246,9 @@ export const ProjectsView: React.FC = () => {
               </button>
               <button 
                 type="submit" 
-                className="bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono px-3 py-1 rounded"
+                className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[10px] font-mono font-black px-3.5 py-1 rounded cursor-pointer"
               >
-                INIT
+                INITIATE
               </button>
             </div>
           </form>
@@ -260,39 +264,43 @@ export const ProjectsView: React.FC = () => {
             return (
               <div
                 key={proj.id}
-                className={`group relative p-3.5 rounded-lg border text-xs transition-all flex flex-col gap-3 ${
+                className={`group relative p-3.5 rounded-xl border text-xs transition-all flex flex-col gap-3 cursor-pointer overflow-hidden ${
                   isSelected 
-                    ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
-                    : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
+                    ? 'bg-[#141824]/90 border-[#c5a059] shadow-[0_0_18px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40' 
+                    : 'bg-[#0b0d13]/80 border-[#c5a059]/20 hover:border-[#c5a059]/40 hover:bg-[#131722]/60'
                 }`}
               >
+                {isSelected && (
+                  <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
+                )}
+
                 {/* Clickable area for selection */}
                 <div
                   onClick={() => {
                     setSelectedProjId(proj.id);
                     setIsEditingProj(false);
                   }}
-                  className="cursor-pointer space-y-3 flex-1 w-full text-left"
+                  className="space-y-3 flex-1 w-full text-left"
                 >
                   <div className="space-y-1 pr-6">
                     {parentGoal && (
-                      <span className="text-[9px] font-mono text-zinc-500 uppercase truncate block max-w-full">
-                        🎯 {parentGoal.name}
+                      <span className="text-[9px] font-mono text-[#c5a059] uppercase truncate block max-w-full font-bold">
+                        ✦ {parentGoal.name}
                       </span>
                     )}
-                    <h4 className={`font-sans font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                    <h4 className={`font-display font-bold leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                       {proj.name}
                     </h4>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                      <span>COMPLETED</span>
+                    <div className="flex justify-between text-[9px] font-mono text-zinc-400">
+                      <span className="text-[#c5a059]">PROGRESS</span>
                       <span>{progress}%</span>
                     </div>
-                    <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
+                    <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden border border-white/5">
                       <div 
-                        className="bg-cyan-500 h-full rounded transition-all duration-300"
+                        className="rpg-progress-gold h-full rounded-full transition-all duration-300"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -303,15 +311,13 @@ export const ProjectsView: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`Are you sure you want to delete the project "${proj.name}"? This action is permanent.`)) {
-                      deleteProject(proj.id);
-                      if (selectedProjId === proj.id) {
-                        const remaining = state.projects.filter(p => p.id !== proj.id);
-                        setSelectedProjId(remaining[0]?.id || null);
-                      }
+                    deleteProject(proj.id);
+                    if (selectedProjId === proj.id) {
+                      const remaining = state.projects.filter(p => p.id !== proj.id);
+                      setSelectedProjId(remaining[0]?.id || null);
                     }
                   }}
-                  className="absolute top-3.5 right-3.5 p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="absolute top-3.5 right-3.5 p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
                   title="Delete Project"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -325,14 +331,15 @@ export const ProjectsView: React.FC = () => {
       {/* RIGHT PANEL: PROJECT DETAIL MONITOR */}
       <div className="lg:col-span-3 space-y-6">
         {selectedProj ? (
-          <div className="glass-panel rounded-lg p-6 space-y-6">
+          <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
             
             {/* PROJECT NAME HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-white/5 pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-[#c5a059]/20 pb-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-cyan-400 shrink-0" />
-                  <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">PROJECT_MONITOR_NODE</span>
+                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                  <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">PROJECT_MONITOR_NODE</span>
                 </div>
 
                 {isEditingProj ? (
@@ -341,7 +348,7 @@ export const ProjectsView: React.FC = () => {
                       type="text" 
                       value={editProjName}
                       onChange={(e) => setEditProjName(e.target.value)}
-                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-sm text-white font-sans font-bold"
+                      className="w-full bg-[#07080c] border border-[#c5a059] rounded px-3 py-1.5 text-sm text-white font-sans font-bold"
                       required
                     />
 
@@ -349,7 +356,7 @@ export const ProjectsView: React.FC = () => {
                       type="text" 
                       value={editProjEstTime}
                       onChange={(e) => setEditProjEstTime(e.target.value)}
-                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white font-mono"
+                      className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-white font-mono"
                       placeholder="Estimated hours (e.g. 20 hours)"
                     />
 
@@ -358,7 +365,7 @@ export const ProjectsView: React.FC = () => {
                       onChange={(e) => setEditProjDesc(e.target.value)}
                       rows={2}
                       placeholder="Project description..."
-                      className="w-full bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-zinc-300 font-sans focus:outline-none"
+                      className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-sans focus:outline-none"
                     />
 
                     <div className="flex gap-2 justify-end">
@@ -371,7 +378,7 @@ export const ProjectsView: React.FC = () => {
                       </button>
                       <button 
                         type="submit" 
-                        className="bg-cyan-950 border border-cyan-500/30 text-cyan-300 text-[10px] font-mono px-3 py-1 rounded"
+                        className="bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer"
                       >
                         UPDATE
                       </button>
@@ -379,20 +386,20 @@ export const ProjectsView: React.FC = () => {
                   </form>
                 ) : (
                   <>
-                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1">
+                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1 tracking-wide">
                       {selectedProj.name}
                     </h3>
 
                     {selectedProj.description && (
-                      <p className="text-xs text-zinc-400 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-xs text-zinc-300 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed">
                         {selectedProj.description}
                       </p>
                     )}
                     
                     {relatedGoal && (
-                      <p className="text-xs text-zinc-400 font-sans flex items-center gap-1 mt-1">
-                        <Target className="h-3.5 w-3.5 text-cyan-500 shrink-0" />
-                        Related Goal: <span className="text-cyan-400 font-bold uppercase">{relatedGoal.name}</span>
+                      <p className="text-xs text-zinc-400 font-sans flex items-center gap-1.5 mt-1.5">
+                        <Target className="h-3.5 w-3.5 text-[#c5a059] shrink-0" />
+                        Parent Destiny: <span className="text-[#e5c875] font-bold uppercase">{relatedGoal.name}</span>
                       </p>
                     )}
                   </>
@@ -403,14 +410,16 @@ export const ProjectsView: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
                     onClick={startEditing}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-white/20 text-zinc-400 hover:text-white rounded text-xs flex items-center gap-1.5 font-mono"
+                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#e5c875] rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
                   >
+                    <Edit3 className="h-3.5 w-3.5" />
                     EDIT
                   </button>
                   <button 
                     onClick={handleDeleteProj}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-rose-500/20 text-zinc-400 hover:text-rose-400 rounded text-xs flex items-center gap-1.5 font-mono"
+                    className="p-1.5 bg-[#07080c] border border-rose-500/20 hover:border-rose-500 text-zinc-300 hover:text-rose-400 rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
                   >
+                    <Trash2 className="h-3.5 w-3.5" />
                     DELETE
                   </button>
                 </div>
@@ -419,47 +428,47 @@ export const ProjectsView: React.FC = () => {
 
             {/* THREE COLUMN SUMMARY METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4 flex flex-col justify-between">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">PROJECT COMPLETION</span>
-                <p className="text-3xl font-display font-bold text-white mt-2">
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">PROJECT COMPLETION</span>
+                <p className="text-3xl font-display font-extrabold text-white mt-2">
                   {getProjectProgress(selectedProj.id)}%
                 </p>
-                <div className="w-full bg-zinc-900 rounded-full h-1 mt-3">
-                  <div className="bg-cyan-500 h-full rounded" style={{ width: `${getProjectProgress(selectedProj.id)}%` }} />
+                <div className="w-full bg-[#0b0d13] rounded-full h-1.5 mt-3 border border-white/5">
+                  <div className="rpg-progress-gold h-full rounded-full" style={{ width: `${getProjectProgress(selectedProj.id)}%` }} />
                 </div>
               </div>
 
-              <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4 flex flex-col justify-between">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">XP RECOLLECTED</span>
-                <p className="text-3xl font-display font-bold text-emerald-400 mt-2">
+              <div className="bg-[#07080c] border border-emerald-500/30 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">ESSENCE HARVESTED</span>
+                <p className="text-3xl font-display font-extrabold text-emerald-400 mt-2">
                   +{projXpEarned} XP
                 </p>
-                <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                  From {completedQuests.length} solved directives
+                <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
+                  From {completedQuests.length} resolved directives
                 </p>
               </div>
 
-              <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4 flex flex-col justify-between">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">ESTIMATED CYCLE LIMIT</span>
-                <p className="text-lg font-mono font-bold text-white mt-2 flex items-center gap-1.5">
-                  <Clock className="h-4 w-4 text-cyan-400" />
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ESTIMATED BUDGET</span>
+                <p className="text-base font-mono font-bold text-white mt-2 flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 text-[#c5a059]" />
                   {selectedProj.estimatedTime || 'Undefined budget'}
                 </p>
-                <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                  Active remaining quests: {remainingQuests.length}
+                <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
+                  Active directives: {remainingQuests.length}
                 </p>
               </div>
             </div>
 
             {/* MINI-PROJECTS & SUB-PROJECTS BREAKDOWN */}
-            <div className="p-4 bg-zinc-950/80 border border-cyan-500/20 rounded-lg space-y-4">
+            <div className="p-4 bg-[#07080c] border border-[#c5a059]/30 rounded-xl space-y-4 shadow-sm">
               <div className="flex justify-between items-center">
-                <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Briefcase className="h-4 w-4 text-cyan-400" />
-                  MINI-PROJECTS & SUB-TASKS ({(selectedProj.subProjects || []).filter(sp => sp.completed).length}/{(selectedProj.subProjects || []).length})
+                <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                  SUB-PROJECT DELIVERABLES ({(selectedProj.subProjects || []).filter(sp => sp.completed).length}/{(selectedProj.subProjects || []).length})
                 </h4>
-                <span className="text-[10px] font-mono text-zinc-500">
-                  Break project deliverables into sub-components
+                <span className="text-[10px] font-mono text-zinc-400">
+                  Deconstruct project deliverables
                 </span>
               </div>
 
@@ -467,32 +476,32 @@ export const ProjectsView: React.FC = () => {
               <form onSubmit={handleAddSubProjSubmit} className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
-                  placeholder="Enter mini-project or sub-task name (e.g. Design UI components, Set up API routes)..."
+                  placeholder="Enter sub-deliverable title..."
                   value={newSubProjName}
                   onChange={(e) => setNewSubProjName(e.target.value)}
-                  className="flex-1 bg-zinc-900 border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/50"
+                  className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]"
                 />
                 <input 
                   type="date" 
                   value={newSubProjDate}
                   onChange={(e) => setNewSubProjDate(e.target.value)}
-                  className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none"
+                  className="bg-[#0b0d13] border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
                 />
                 <button 
                   type="submit"
-                  className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 px-3 py-1.5 rounded text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 transition"
+                  className="bg-[#3a2e12] hover:bg-[#524119] text-[#fef08a] border border-[#c5a059] px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  ADD MINI PROJECT
+                  ADD DELIVERABLE
                 </button>
               </form>
 
               {/* SubProjects Checklist */}
               <div className="space-y-2">
                 {(!selectedProj.subProjects || selectedProj.subProjects.length === 0) ? (
-                  <div className="p-3 border border-dashed border-white/5 rounded text-center">
+                  <div className="p-3 border border-dashed border-[#c5a059]/20 rounded-lg text-center bg-[#07080c]/50">
                     <p className="text-xs font-mono text-zinc-500">
-                      No mini-projects created yet. Add sub-components to track detailed project execution.
+                      No sub-deliverables marked yet.
                     </p>
                   </div>
                 ) : (
@@ -501,19 +510,19 @@ export const ProjectsView: React.FC = () => {
 
                     if (isEditing) {
                       return (
-                        <div key={sp.id} className="p-3 bg-zinc-900 border border-cyan-500/40 rounded-lg flex flex-col sm:flex-row gap-2">
+                        <div key={sp.id} className="p-3 bg-[#07080c] border border-[#c5a059] rounded-lg flex flex-col sm:flex-row gap-2">
                           <input
                             type="text"
                             value={editSubProjName}
                             onChange={(e) => setEditSubProjName(e.target.value)}
-                            className="flex-1 bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-cyan-500"
-                            placeholder="Mini Project Name..."
+                            className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                            placeholder="Deliverable Name..."
                           />
                           <input
                             type="date"
                             value={editSubProjDate}
                             onChange={(e) => setEditSubProjDate(e.target.value)}
-                            className="bg-zinc-950 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none"
+                            className="bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none font-mono"
                           />
                           <div className="flex items-center gap-1 shrink-0">
                             <button
@@ -524,14 +533,14 @@ export const ProjectsView: React.FC = () => {
                                 }
                                 setEditingSubProjId(null);
                               }}
-                              className="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 text-xs px-2.5 py-1 rounded font-mono font-bold"
+                              className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-xs px-2.5 py-1 rounded font-mono font-bold cursor-pointer"
                             >
                               SAVE
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingSubProjId(null)}
-                              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono"
+                              className="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded font-mono cursor-pointer"
                             >
                               CANCEL
                             </button>
@@ -545,18 +554,18 @@ export const ProjectsView: React.FC = () => {
                         key={sp.id} 
                         className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
                           sp.completed 
-                            ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-400' 
-                            : 'bg-zinc-900/60 border-white/5 text-white'
+                            ? 'bg-[#07080c]/60 border-emerald-500/20 text-zinc-400' 
+                            : 'bg-[#07080c] border-[#c5a059]/20 text-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <button
                             type="button"
                             onClick={() => toggleSubProject(selectedProj.id, sp.id)}
-                            className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 ${
+                            className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 cursor-pointer ${
                               sp.completed 
-                                ? 'bg-emerald-500 border-emerald-400 text-black' 
-                                : 'border-white/20 hover:border-cyan-400 text-transparent'
+                                ? 'bg-gradient-to-br from-[#8a6d2b] to-[#c5a059] border-[#c5a059] text-black font-black' 
+                                : 'border-zinc-600 hover:border-[#c5a059] text-transparent'
                             }`}
                           >
                             ✓
@@ -568,7 +577,7 @@ export const ProjectsView: React.FC = () => {
 
                         <div className="flex items-center gap-2 shrink-0">
                           {sp.targetDate && (
-                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 rounded border border-white/5">
+                            <span className="text-[10px] font-mono text-[#c5a059] bg-[#0b0d13] px-2 py-0.5 rounded border border-[#c5a059]/20">
                               📅 {sp.targetDate}
                             </span>
                           )}
@@ -579,16 +588,16 @@ export const ProjectsView: React.FC = () => {
                               setEditSubProjName(sp.name);
                               setEditSubProjDate(sp.targetDate || '');
                             }}
-                            className="text-zinc-600 hover:text-cyan-400 p-1 transition"
-                            title="Edit mini-project"
+                            className="text-zinc-500 hover:text-[#e5c875] p-1 transition cursor-pointer"
+                            title="Edit"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => deleteSubProject(selectedProj.id, sp.id)}
-                            className="text-zinc-600 hover:text-rose-400 p-1 transition"
-                            title="Delete mini-project"
+                            className="text-zinc-500 hover:text-rose-400 p-1 transition cursor-pointer"
+                            title="Delete"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -605,23 +614,23 @@ export const ProjectsView: React.FC = () => {
               
               {/* MILESTONES LIST */}
               <div className="space-y-3">
-                <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Award className="h-4 w-4 text-cyan-400" />
+                <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                  <Award className="h-4 w-4 text-[#c5a059]" />
                   ASSOCIATED MILESTONES ({projMilestones.length})
                 </h4>
 
                 <div className="space-y-2">
                   {projMilestones.length === 0 ? (
-                    <p className="text-xs font-mono text-zinc-600">No milestone logs configured for this project structure.</p>
+                    <p className="text-xs font-mono text-zinc-500">No milestone logs configured for this project structure.</p>
                   ) : (
                     projMilestones.map(mile => {
                       const progress = getMilestoneProgress(mile.id);
                       return (
-                        <div key={mile.id} className="p-3 bg-zinc-950 border border-white/5 rounded flex justify-between items-center text-xs">
+                        <div key={mile.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                           <div>
                             <span className="text-white font-sans font-medium">{mile.name}</span>
                           </div>
-                          <span className={`text-[10px] font-mono ${progress === 100 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                          <span className={`text-[10px] font-mono font-bold ${progress === 100 ? 'text-emerald-400' : 'text-[#c5a059]'}`}>
                             {progress === 100 ? 'ACHIEVED' : 'ACTIVE'}
                           </span>
                         </div>
@@ -633,27 +642,27 @@ export const ProjectsView: React.FC = () => {
 
               {/* REMAINING QUESTS IN PROJECT */}
               <div className="space-y-3">
-                <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <ListTodo className="h-4 w-4 text-cyan-400" />
+                <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                  <ListTodo className="h-4 w-4 text-[#c5a059]" />
                   ACTIVE WORK DIRECTIVES ({remainingQuests.length})
                 </h4>
 
                 <div className="space-y-2 max-h-[250px] overflow-y-auto">
                   {remainingQuests.length === 0 ? (
-                    <div className="p-4 border border-dashed border-white/5 rounded text-center">
-                      <p className="text-xs font-mono text-zinc-600">All work directives solved for this block.</p>
+                    <div className="p-4 border border-dashed border-[#c5a059]/20 rounded-lg text-center bg-[#07080c]/50">
+                      <p className="text-xs font-mono text-zinc-500">All work directives solved for this block.</p>
                     </div>
                   ) : (
                     remainingQuests.map(quest => (
-                      <div key={quest.id} className="p-3 bg-zinc-950/60 border border-white/5 rounded-lg flex justify-between items-center text-xs">
+                      <div key={quest.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                         <div className="space-y-1">
                           <p className="text-white font-sans font-medium leading-tight">{quest.name}</p>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-mono text-zinc-500 uppercase">{quest.difficulty} Difficulty</span>
+                            <span className="text-[9px] font-mono text-[#c5a059] uppercase">{quest.difficulty} Difficulty</span>
                             {quest.recurrence && quest.recurrence !== 'None' && (
                               <>
                                 <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase">🔁 {quest.recurrence}</span>
+                                <span className="text-[9px] font-mono text-purple-300 font-bold uppercase">🔁 {quest.recurrence}</span>
                               </>
                             )}
                           </div>
@@ -663,7 +672,7 @@ export const ProjectsView: React.FC = () => {
                           <span className="text-xs font-mono font-bold text-emerald-400 shrink-0">+{quest.xp} XP</span>
                           <button 
                             onClick={() => completeQuest(quest.id)}
-                            className="bg-zinc-900 hover:bg-emerald-950 hover:text-emerald-400 border border-white/5 p-1 rounded font-mono text-[9px]"
+                            className="bg-[#3a2e12] hover:bg-[#524119] text-[#fef08a] border border-[#c5a059] px-2.5 py-1 rounded font-mono text-[9px] font-bold cursor-pointer"
                           >
                             SOLVE
                           </button>
@@ -677,21 +686,22 @@ export const ProjectsView: React.FC = () => {
             </div>
 
             {/* Connected Planning Documents Section */}
-            <div className="mt-6 pt-5 border-t border-white/5 space-y-3">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                📄 STRATEGIC PLANNING DIRECTIVES
+            <div className="mt-6 pt-5 border-t border-[#c5a059]/20 space-y-3">
+              <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                CODEX STRATEGIC SCROLLS & DOCUMENTS
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {(!state.planningDocuments || state.planningDocuments.filter(doc => doc.linkedProjects?.includes(selectedProj.id)).length === 0) ? (
-                  <p className="text-xs font-mono text-zinc-600 col-span-2">No active strategic planning documents linked to this project. Link them from the PLANNING tab.</p>
+                  <p className="text-xs font-mono text-zinc-400 col-span-2">No active strategic planning scrolls linked to this operation.</p>
                 ) : (
                   state.planningDocuments.filter(doc => doc.linkedProjects?.includes(selectedProj.id)).map(doc => (
-                    <div key={doc.id} className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg flex justify-between items-center text-xs">
+                    <div key={doc.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs shadow-sm">
                       <span className="text-zinc-300 font-mono text-[10px] truncate flex items-center gap-1.5">
-                        📂 {doc.path}
+                        📜 {doc.path}
                       </span>
-                      <span className="text-[9px] bg-cyan-950/40 text-cyan-400 border border-cyan-500/10 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
-                        Connected
+                      <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                        Attuned
                       </span>
                     </div>
                   ))
@@ -701,10 +711,11 @@ export const ProjectsView: React.FC = () => {
 
           </div>
         ) : (
-          <div className="glass-panel rounded-lg p-10 text-center space-y-2">
-            <Briefcase className="h-8 w-8 text-zinc-600 mx-auto" />
-            <h3 className="font-display text-sm font-bold text-white uppercase">No Project Selected</h3>
-            <p className="text-xs text-zinc-500 font-mono">Create or choose a project parameter on the left panel to begin monitoring.</p>
+          <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[#c5a059]/20 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+            <RubElHizbIcon className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
+            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">No Active Operation Selected</h3>
+            <p className="text-xs text-[#c5a059]/80 font-mono">Inscribe or choose an operation parameter on the left panel to begin monitoring.</p>
           </div>
         )}
       </div>

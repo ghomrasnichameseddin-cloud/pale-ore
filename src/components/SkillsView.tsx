@@ -8,6 +8,7 @@ import {
   GitMerge, Layers, Filter, AlertTriangle, Unlink, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 export const SkillsView: React.FC = () => {
   const { 
@@ -70,7 +71,7 @@ export const SkillsView: React.FC = () => {
     // Check if skill already exists
     const duplicate = state.skills.find(s => s.name.toLowerCase() === newSkillName.trim().toLowerCase());
     if (duplicate) {
-      alert('This skill track is already initialized.');
+      alert('This discipline track is already initialized.');
       return;
     }
 
@@ -97,7 +98,7 @@ export const SkillsView: React.FC = () => {
     const skillToDelete = state.skills.find(s => s.id === selectedSkillId);
     if (!skillToDelete) return;
 
-    if (window.confirm(`Are you sure you want to delete the skill "${skillToDelete.name}"? This action is permanent.`)) {
+    if (window.confirm(`Are you sure you want to purge the discipline "${skillToDelete.name}"? This action is permanent.`)) {
       deleteSkill(selectedSkillId);
       
       const remaining = state.skills.filter(s => s.id !== selectedSkillId);
@@ -126,14 +127,14 @@ export const SkillsView: React.FC = () => {
   const handleMergeSkillsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!mergeSourceId || !mergeTargetId || mergeSourceId === mergeTargetId) {
-      alert('Please select two distinct skills to merge.');
+      alert('Please select two distinct disciplines to merge.');
       return;
     }
     const sourceSkill = state.skills.find(s => s.id === mergeSourceId);
     const targetSkill = state.skills.find(s => s.id === mergeTargetId);
     if (!sourceSkill || !targetSkill) return;
 
-    if (window.confirm(`Merge skill "${sourceSkill.name}" into "${targetSkill.name}"? All related quests, goals, and history will be reassigned to "${targetSkill.name}", and "${sourceSkill.name}" will be deleted.`)) {
+    if (window.confirm(`Merge discipline "${sourceSkill.name}" into "${targetSkill.name}"? All related directives, goals, and history will be reassigned to "${targetSkill.name}", and "${sourceSkill.name}" will be purged.`)) {
       mergeSkills(mergeSourceId, mergeTargetId);
       setShowMergeModal(false);
       setSelectedSkillId(targetSkill.id);
@@ -144,12 +145,10 @@ export const SkillsView: React.FC = () => {
 
   // Filter skills list
   const filteredSkills = state.skills.filter(skill => {
-    // Search query filter
     if (searchQuery.trim() && !skill.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
       return false;
     }
 
-    // Filter status tabs
     if (filterStatus === 'Active') return !skill.archived;
     if (filterStatus === 'Archived') return !!skill.archived;
     if (filterStatus === 'Primary') return (skill.tier || 'Primary') === 'Primary';
@@ -160,7 +159,7 @@ export const SkillsView: React.FC = () => {
       const hasXpHistory = state.xpHistory.some(h => h.skillIds && h.skillIds.includes(skill.id));
       return !hasGoal && !hasQuest && !hasXpHistory;
     }
-    return true; // 'All'
+    return true;
   });
 
   // Find related goals/projects/quests for selected skill
@@ -180,23 +179,24 @@ export const SkillsView: React.FC = () => {
       
       {/* LEFT PANEL: SKILLS DIRECTORY */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2 border-b border-white/5 gap-2">
-          <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider">
-            SKILL_TRACKS ({state.skills.length})
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-2 border-b border-[#c5a059]/20 gap-2">
+          <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+            <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+            DISCIPLINE_ARCHIVE ({state.skills.length})
           </span>
           <div className="flex flex-wrap gap-1.5">
             <button 
               onClick={() => { setShowAddSkill(!showAddSkill); setShowEmptyConfirm(false); setShowCleanUnusedConfirm(false); setShowMergeModal(false); }}
-              className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-cyan-500/30 text-cyan-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
-              title="Create a new skill track"
+              className="text-[11px] font-mono bg-[#3a2e12]/80 border border-[#c5a059]/40 hover:border-[#c5a059] text-[#fef08a] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-bold"
+              title="Create a new discipline track"
             >
               <Plus className="h-3 w-3" />
               CREATE
             </button>
             <button 
               onClick={() => { setShowMergeModal(!showMergeModal); setShowAddSkill(false); setShowEmptyConfirm(false); setShowCleanUnusedConfirm(false); }}
-              className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-fuchsia-500/30 text-fuchsia-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
-              title="Merge redundant skills together"
+              className="text-[11px] font-mono bg-[#141824] border border-[#c5a059]/30 hover:border-[#c5a059] text-purple-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+              title="Merge redundant disciplines together"
             >
               <GitMerge className="h-3 w-3" />
               MERGE
@@ -204,20 +204,20 @@ export const SkillsView: React.FC = () => {
             {unusedSkillsCount > 0 && (
               <button 
                 onClick={() => { setShowCleanUnusedConfirm(!showCleanUnusedConfirm); setShowAddSkill(false); setShowEmptyConfirm(false); setShowMergeModal(false); }}
-                className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-amber-500/30 text-amber-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
-                title="Clean skills with 0 XP and no links"
+                className="text-[11px] font-mono bg-[#141824] border border-[#c5a059]/30 hover:border-[#c5a059] text-[#e5c875] px-2 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                title="Clean disciplines with 0 XP and no links"
               >
                 <Layers className="h-3 w-3" />
-                CLEAN UNUSED ({unusedSkillsCount})
+                CLEAN ({unusedSkillsCount})
               </button>
             )}
             {state.skills.length > 0 && (
               <button 
                 onClick={() => { setShowEmptyConfirm(!showEmptyConfirm); setShowAddSkill(false); setShowCleanUnusedConfirm(false); setShowMergeModal(false); }}
-                className="text-[11px] font-mono bg-zinc-900 border border-white/5 hover:border-rose-500/30 text-rose-400 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                className="text-[11px] font-mono bg-rose-950/60 border border-rose-500/30 hover:border-rose-500 text-rose-300 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="h-3 w-3" />
-                EMPTY ALL
+                EMPTY
               </button>
             )}
           </div>
@@ -225,23 +225,23 @@ export const SkillsView: React.FC = () => {
 
         {/* Merge Skills Modal / Form */}
         {showMergeModal && (
-          <form onSubmit={handleMergeSkillsSubmit} className="p-4 bg-zinc-950 border border-fuchsia-500/30 rounded-lg space-y-3 shadow-[0_0_15px_rgba(217,70,239,0.05)]">
-            <h4 className="text-xs font-mono text-fuchsia-400 uppercase tracking-wider flex items-center gap-1.5 font-bold">
-              <GitMerge className="h-3.5 w-3.5" /> CONSOLIDATE & MERGE SKILLS
+          <form onSubmit={handleMergeSkillsSubmit} className="p-4 bg-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 shadow-xl">
+            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+              <GitMerge className="h-3.5 w-3.5 text-[#c5a059]" /> CONSOLIDATE & MERGE DISCIPLINES
             </h4>
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              Combine duplicate or redundant skills into a single track. All associated goals, directives, and history will transfer automatically to the target skill.
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              Combine duplicate or redundant disciplines into a single track. Associated directives and history will transfer automatically.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Source Skill (To Remove)</label>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Source Discipline (To Purge)</label>
                 <select
                   value={mergeSourceId}
                   onChange={(e) => setMergeSourceId(e.target.value)}
-                  className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-rose-300 font-mono focus:outline-none focus:border-rose-500"
+                  className="w-full bg-[#07080c] border border-rose-500/40 rounded px-2.5 py-1.5 text-xs text-rose-300 font-mono focus:outline-none"
                   required
                 >
-                  <option value="">-- Select Skill --</option>
+                  <option value="">-- Select Discipline --</option>
                   {state.skills.map(s => (
                     <option key={s.id} value={s.id}>{s.name} ({s.xp} XP)</option>
                   ))}
@@ -249,11 +249,11 @@ export const SkillsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Target Skill (Destination)</label>
+                <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1">Target Discipline (Destination)</label>
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="w-full bg-zinc-900 border border-white/10 rounded px-2.5 py-1.5 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-[#07080c] border border-[#c5a059]/40 rounded px-2.5 py-1.5 text-xs text-[#fef08a] font-mono focus:outline-none"
                   required
                 >
                   <option value="">-- Select Target --</option>
@@ -268,14 +268,14 @@ export const SkillsView: React.FC = () => {
               <button 
                 type="button" 
                 onClick={() => setShowMergeModal(false)}
-                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
               >
                 CANCEL
               </button>
               <button 
                 type="submit"
                 disabled={!mergeSourceId || !mergeTargetId || mergeSourceId === mergeTargetId}
-                className="bg-fuchsia-950 hover:bg-fuchsia-900 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-mono px-3.5 py-1 rounded transition-colors disabled:opacity-50"
+                className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-xs font-mono font-bold px-3.5 py-1.5 rounded transition-colors disabled:opacity-50 cursor-pointer"
               >
                 EXECUTE_MERGE
               </button>
@@ -285,27 +285,27 @@ export const SkillsView: React.FC = () => {
 
         {/* Clean Unused Confirmation */}
         {showCleanUnusedConfirm && (
-          <div className="p-4 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5" /> PURGE UNUSED SKILLS ({unusedSkillsCount})
+          <div className="p-4 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl space-y-3">
+            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+              <Layers className="h-3.5 w-3.5 text-[#c5a059]" /> PURGE UNUSED DISCIPLINES ({unusedSkillsCount})
             </h4>
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              Found <strong>{unusedSkillsCount}</strong> skills with 0 XP and no linked goals or directives ({unusedSkillsList.map(s => `"${s.name}"`).join(', ')}). Cleaning them up will declutter your active skill lists immediately.
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              Found <strong>{unusedSkillsCount}</strong> disciplines with 0 XP and no linked objectives ({unusedSkillsList.map(s => `"${s.name}"`).join(', ')}).
             </p>
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
                 onClick={() => setShowCleanUnusedConfirm(false)}
-                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
               >
                 CANCEL
               </button>
               <button 
-                type="button"
+                type="button" 
                 onClick={handleCleanUnusedSkills}
-                className="bg-amber-950 hover:bg-amber-900 border border-amber-500/30 text-amber-300 text-xs font-mono px-3 py-1 rounded transition-colors"
+                className="bg-[#3a2e12] hover:bg-[#524119] border border-[#c5a059] text-[#fef08a] text-xs font-mono font-bold px-3 py-1.5 rounded cursor-pointer"
               >
-                PURGE {unusedSkillsCount} UNUSED SKILLS
+                PURGE {unusedSkillsCount} DISCIPLINES
               </button>
             </div>
           </div>
@@ -313,25 +313,25 @@ export const SkillsView: React.FC = () => {
 
         {/* Empty All Skills Confirmation */}
         {showEmptyConfirm && (
-          <div className="p-4 bg-zinc-950 border border-rose-500/20 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1">
-              <Trash2 className="h-3 w-3" /> PURGE ALL SKILL TRACKS
+          <div className="p-4 bg-[#1a0808] border border-rose-500/30 rounded-xl space-y-3">
+            <h4 className="text-xs font-mono text-rose-400 uppercase tracking-wider flex items-center gap-1 font-bold">
+              <Trash2 className="h-3 w-3" /> PURGE ALL DISCIPLINE TRACKS
             </h4>
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
               Are you sure you want to empty all skill tracks? This clears all existing skill categories and unlinks them from active/completed goals and quests. This cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button 
                 type="button" 
                 onClick={() => setShowEmptyConfirm(false)}
-                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
               >
                 CANCEL
               </button>
               <button 
-                type="button"
+                type="button" 
                 onClick={handleEmptyAllSkills}
-                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/30 text-rose-300 text-xs font-mono px-3 py-1 rounded transition-colors"
+                className="bg-rose-950 hover:bg-rose-900 border border-rose-500/50 text-rose-300 text-xs font-mono font-bold px-3 py-1.5 rounded cursor-pointer"
               >
                 CONFIRM_PURGE
               </button>
@@ -341,31 +341,34 @@ export const SkillsView: React.FC = () => {
 
         {/* Custom Skill Creator Form */}
         {showAddSkill && (
-          <form onSubmit={handleCreateSkill} className="p-4 bg-zinc-950 border border-white/10 rounded-lg space-y-3">
-            <h4 className="text-xs font-mono text-cyan-400 uppercase tracking-wider">INITIALIZE_CUSTOM_TRACK</h4>
+          <form onSubmit={handleCreateSkill} className="p-4 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl space-y-3">
+            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              INITIALIZE_CUSTOM_DISCIPLINE
+            </h4>
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Skill Name</label>
+                <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Discipline Name</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Public Speaking, Arabic..."
+                  placeholder="e.g. Classical Arabic, System Architecture..."
                   value={newSkillName}
                   onChange={(e) => setNewSkillName(e.target.value)}
-                  className="w-full bg-zinc-900 border border-white/5 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Skill Tier / Classification</label>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Tier / Classification</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setNewSkillTier('Primary')}
-                    className={`flex-1 text-[10px] font-mono py-1 rounded border transition-all ${
+                    className={`flex-1 text-[10px] font-mono py-1.5 rounded-lg border transition-all cursor-pointer ${
                       newSkillTier === 'Primary'
-                        ? 'bg-cyan-950/40 border-cyan-500/30 text-cyan-400 font-bold shadow-[0_0_10px_rgba(6,182,212,0.05)]'
-                        : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10'
+                        ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-bold shadow-[0_0_10px_rgba(197,160,89,0.2)]'
+                        : 'bg-[#07080c] border-white/5 text-zinc-500 hover:border-white/10'
                     }`}
                   >
                     PRIMARY (CORE)
@@ -373,24 +376,24 @@ export const SkillsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setNewSkillTier('Secondary')}
-                    className={`flex-1 text-[10px] font-mono py-1 rounded border transition-all ${
+                    className={`flex-1 text-[10px] font-mono py-1.5 rounded-lg border transition-all cursor-pointer ${
                       newSkillTier === 'Secondary'
-                        ? 'bg-fuchsia-950/40 border-fuchsia-500/30 text-fuchsia-400 font-bold shadow-[0_0_10px_rgba(217,70,239,0.05)]'
-                        : 'bg-zinc-900 border-white/5 text-zinc-500 hover:border-white/10'
+                        ? 'bg-purple-950 border-purple-500/50 text-purple-300 font-bold'
+                        : 'bg-[#07080c] border-white/5 text-zinc-500 hover:border-white/10'
                     }`}
                   >
-                    SECONDARY (SUPPORTING)
+                    SECONDARY (SUPPORT)
                   </button>
                 </div>
               </div>
 
               {newSkillTier === 'Secondary' && (
                 <div>
-                  <label className="block text-[10px] font-mono text-zinc-500 uppercase mb-1">Linked Primary Skill</label>
+                  <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Linked Primary Discipline</label>
                   <select
                     value={newSkillParentId}
                     onChange={(e) => setNewSkillParentId(e.target.value)}
-                    className="w-full bg-zinc-900 border border-white/5 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-fuchsia-500 font-mono"
+                    className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059] font-mono"
                   >
                     <option value="">-- No Linked Primary --</option>
                     {state.skills
@@ -414,7 +417,7 @@ export const SkillsView: React.FC = () => {
                 </button>
                 <button 
                   type="submit"
-                  className="bg-cyan-950 border border-cyan-500/30 text-cyan-300 text-xs font-mono px-4 py-1.5 rounded hover:bg-cyan-900 transition-colors"
+                  className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-xs font-mono font-black px-4 py-1.5 rounded-lg shadow cursor-pointer"
                 >
                   INITIALIZE
                 </button>
@@ -427,13 +430,13 @@ export const SkillsView: React.FC = () => {
         <div className="space-y-2">
           {/* Search Box */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#c5a059]" />
             <input 
               type="text"
-              placeholder="Search skill tracks..."
+              placeholder="Search disciplines..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-950/80 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg pl-8 pr-3 py-1.5 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]"
             />
             {searchQuery && (
               <button 
@@ -446,7 +449,7 @@ export const SkillsView: React.FC = () => {
           </div>
 
           {/* Filter Pill Tabs */}
-          <div className="flex flex-wrap bg-zinc-950/60 p-1 border border-white/5 rounded-lg gap-1">
+          <div className="flex flex-wrap bg-[#07080c] p-1 border border-[#c5a059]/20 rounded-lg gap-1">
             {([
               { id: 'Active', label: `ACTIVE (${activeSkillsCount})` },
               { id: 'All', label: `ALL (${state.skills.length})` },
@@ -459,10 +462,10 @@ export const SkillsView: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setFilterStatus(tab.id)}
-                className={`flex-1 min-w-[70px] py-1 px-1.5 text-[9px] font-mono rounded transition-all uppercase whitespace-nowrap text-center ${
+                className={`flex-1 min-w-[70px] py-1 px-1.5 text-[9px] font-mono rounded transition-all uppercase whitespace-nowrap text-center cursor-pointer ${
                   filterStatus === tab.id
-                    ? 'bg-zinc-900 border border-white/10 text-white font-bold'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    ? 'bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] font-bold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {tab.label}
@@ -474,8 +477,8 @@ export const SkillsView: React.FC = () => {
         {/* Skills grid list */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[580px] overflow-y-auto pr-1">
           {filteredSkills.length === 0 ? (
-            <div className="col-span-2 p-8 text-center bg-zinc-950/30 border border-dashed border-white/5 rounded-lg">
-              <p className="text-xs font-mono text-zinc-500">No skill tracks matched your filter criteria.</p>
+            <div className="col-span-2 p-8 text-center bg-[#07080c]/50 border border-dashed border-[#c5a059]/20 rounded-lg">
+              <p className="text-xs font-mono text-zinc-500">No disciplines matched your filter criteria.</p>
             </div>
           ) : (
             filteredSkills.map(skill => {
@@ -485,23 +488,24 @@ export const SkillsView: React.FC = () => {
               const isPrimary = tier === 'Primary';
               const isArchived = !!skill.archived;
 
-              // Find active/total linked quests count
               const linkedQuests = state.quests.filter(q => q.relatedSkills.includes(skill.id));
               const activeLinkedCount = linkedQuests.filter(q => q.status === 'Active').length;
 
               return (
                 <div
                   key={skill.id}
-                  className={`group relative rounded-lg border transition-all p-4 space-y-3 flex flex-col justify-between ${
+                  className={`group relative rounded-xl border transition-all p-4 space-y-3 flex flex-col justify-between overflow-hidden ${
                     isArchived
-                      ? 'bg-zinc-950/20 border-white/5 opacity-60 hover:opacity-100'
+                      ? 'bg-[#07080c]/40 border-white/5 opacity-60 hover:opacity-100'
                       : isSelected 
-                        ? isPrimary 
-                          ? 'bg-zinc-900/80 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.05)]' 
-                          : 'bg-zinc-900/80 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.05)]'
-                        : 'bg-zinc-950/40 border-white/5 hover:border-white/10'
+                        ? 'bg-[#141824]/90 border-[#c5a059] shadow-[0_0_18px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40' 
+                        : 'bg-[#0b0d13]/80 border-[#c5a059]/20 hover:border-[#c5a059]/40 hover:bg-[#131722]/60'
                   }`}
                 >
+                  {isSelected && (
+                    <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
+                  )}
+
                   {/* Clickable area for selection */}
                   <div 
                     onClick={() => {
@@ -513,9 +517,11 @@ export const SkillsView: React.FC = () => {
                     <div className="space-y-1 w-full">
                       <div className="flex justify-between items-start gap-1 pr-14">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono text-zinc-500 uppercase">LVL_{stats.level}</span>
-                          <span className={`text-[8px] font-mono px-1 rounded uppercase font-semibold ${
-                            isPrimary ? 'text-cyan-400 bg-cyan-950/40' : 'text-fuchsia-400 bg-fuchsia-950/40'
+                          <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">LVL_{stats.level}</span>
+                          <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded uppercase font-bold border ${
+                            isPrimary 
+                              ? 'text-[#fef08a] bg-[#3a2e12] border-[#c5a059]/40' 
+                              : 'text-purple-300 bg-purple-950 border-purple-500/40'
                           }`}>
                             {tier}
                           </span>
@@ -525,19 +531,18 @@ export const SkillsView: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <span className={`text-[9px] font-mono font-bold bg-zinc-950 px-1 rounded uppercase ${
-                          isPrimary ? 'text-cyan-400' : 'text-fuchsia-400'
-                        }`}>
+                        <span className="text-[9px] font-mono font-bold bg-[#07080c] text-[#e5c875] border border-[#c5a059]/30 px-1.5 py-0.5 rounded uppercase">
                           MSTRY {stats.mastery}%
                         </span>
                       </div>
-                      <h4 className={`font-sans font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                      <h4 className={`font-display font-bold text-sm leading-tight ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                         {skill.name}
                       </h4>
                       {skill.equippedTitle && (
                         <div className="pt-1">
-                          <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            🛡️ {skill.equippedTitle}
+                          <span className="text-[9px] font-mono text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/50 px-2 py-0.5 rounded uppercase tracking-wider font-bold inline-flex items-center gap-1">
+                            <RubElHizbIcon className="h-2 w-2 text-[#e5c875]" />
+                            {skill.equippedTitle}
                           </span>
                         </div>
                       )}
@@ -548,7 +553,7 @@ export const SkillsView: React.FC = () => {
                         return parent ? (
                           <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-zinc-400">
                             <span className="text-zinc-500">↳ Linked to</span>
-                            <span className="text-cyan-400 font-semibold">{parent.name}</span>
+                            <span className="text-[#e5c875] font-semibold">{parent.name}</span>
                           </div>
                         ) : null;
                       })()}
@@ -558,13 +563,13 @@ export const SkillsView: React.FC = () => {
                         return subSkillsCount > 0 ? (
                           <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-zinc-400">
                             <span className="text-zinc-500">↲ Links</span>
-                            <span className="text-fuchsia-400 font-semibold">{subSkillsCount} sub-skill{subSkillsCount > 1 ? 's' : ''}</span>
+                            <span className="text-purple-300 font-semibold">{subSkillsCount} sub-discipline{subSkillsCount > 1 ? 's' : ''}</span>
                           </div>
                         ) : null;
                       })()}
 
                       {activeLinkedCount > 0 && (
-                        <div className="pt-0.5 text-[9px] font-mono text-zinc-500">
+                        <div className="pt-0.5 text-[9px] font-mono text-zinc-400">
                           🎯 {activeLinkedCount} active directive{activeLinkedCount > 1 ? 's' : ''}
                         </div>
                       )}
@@ -572,17 +577,15 @@ export const SkillsView: React.FC = () => {
 
                     {/* Progress bar */}
                     <div className="w-full space-y-1">
-                      <div className="w-full bg-zinc-950 rounded-full h-1 overflow-hidden">
+                      <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden border border-white/5">
                         <div 
-                          className={`h-full rounded transition-all duration-300 ${
-                            isPrimary ? 'bg-cyan-500' : 'bg-fuchsia-500'
-                          }`}
+                          className="rpg-progress-gold h-full rounded transition-all duration-300"
                           style={{ width: `${stats.progress}%` }}
                         />
                       </div>
                       <div className="flex justify-between text-[8px] font-mono text-zinc-500">
-                        <span>{stats.xp} TOTAL XP</span>
-                        <span>{stats.progress}% LEVEL_GAP</span>
+                        <span className="text-[#c5a059]">{stats.xp} TOTAL XP</span>
+                        <span>{stats.progress}% GAP</span>
                       </div>
                     </div>
                   </div>
@@ -594,15 +597,15 @@ export const SkillsView: React.FC = () => {
                         e.stopPropagation();
                         toggleArchiveSkill(skill.id);
                       }}
-                      className="p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-amber-400 transition-colors"
-                      title={isArchived ? "Unarchive Skill" : "Archive Skill"}
+                      className="p-1 rounded hover:bg-[#3a2e12] text-zinc-500 hover:text-[#e5c875] transition-colors cursor-pointer"
+                      title={isArchived ? "Unarchive Discipline" : "Archive Discipline"}
                     >
-                      {isArchived ? <ArchiveRestore className="h-3.5 w-3.5 text-amber-400" /> : <Archive className="h-3.5 w-3.5" />}
+                      {isArchived ? <ArchiveRestore className="h-3.5 w-3.5 text-[#e5c875]" /> : <Archive className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`Are you sure you want to delete the skill "${skill.name}"? This action is permanent.`)) {
+                        if (window.confirm(`Are you sure you want to delete the discipline "${skill.name}"? This action is permanent.`)) {
                           deleteSkill(skill.id);
                           if (selectedSkillId === skill.id) {
                             const remaining = state.skills.filter(s => s.id !== skill.id);
@@ -610,8 +613,8 @@ export const SkillsView: React.FC = () => {
                           }
                         }
                       }}
-                      className="p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors"
-                      title="Delete Skill Track"
+                      className="p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors cursor-pointer"
+                      title="Purge Discipline Track"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -626,15 +629,16 @@ export const SkillsView: React.FC = () => {
       {/* RIGHT PANEL: SELECTED SKILL MATRIX & HISTORY */}
       <div className="lg:col-span-2 space-y-6">
         {selectedSkill && selectedSkillStats ? (
-          <div className="glass-panel rounded-lg p-6 space-y-6">
-            
+          <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+
             {/* Header with edit / archive / delete */}
-            <div className="flex justify-between items-start border-b border-white/5 pb-4 gap-4">
+            <div className="flex justify-between items-start border-b border-[#c5a059]/20 pb-4 gap-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <Award className={`h-4 w-4 ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`} />
-                  <span className={`text-xs font-mono uppercase tracking-wider ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`}>
-                    {(selectedSkill.tier || 'Primary').toUpperCase()}_SKILL_TRACK
+                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                  <span className="text-xs font-mono uppercase tracking-wider text-[#e5c875] font-bold">
+                    {(selectedSkill.tier || 'Primary').toUpperCase()}_DISCIPLINE_CODEX
                   </span>
                   {selectedSkill.archived && (
                     <span className="text-[9px] font-mono text-amber-400 bg-amber-950/40 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase">
@@ -649,23 +653,23 @@ export const SkillsView: React.FC = () => {
                       type="text" 
                       value={editSkillName}
                       onChange={(e) => setEditSkillName(e.target.value)}
-                      className="bg-zinc-950 border border-white/10 rounded px-2.5 py-1 text-xs text-white"
+                      className="bg-[#07080c] border border-[#c5a059]/40 rounded px-2.5 py-1 text-xs text-white"
                       required
                     />
-                    <button type="submit" className="bg-cyan-950 text-cyan-300 border border-cyan-500/20 text-[10px] font-mono px-2 rounded">
+                    <button type="submit" className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-2.5 rounded font-bold cursor-pointer">
                       SAVE
                     </button>
-                    <button type="button" onClick={() => setIsEditingSkill(false)} className="text-[10px] font-mono text-zinc-500">
+                    <button type="button" onClick={() => setIsEditingSkill(false)} className="text-[10px] font-mono text-zinc-500 cursor-pointer">
                       CANCEL
                     </button>
                   </form>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <h3 className="font-display text-xl font-bold text-white uppercase">
+                    <h3 className="font-display text-xl font-bold text-white uppercase tracking-wide">
                       {selectedSkill.name}
                     </h3>
                     {selectedSkill.equippedTitle && (
-                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded uppercase tracking-wider font-bold">
+                      <span className="text-[10px] font-mono text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/50 px-2 py-0.5 rounded uppercase tracking-wider font-bold">
                         🛡️ {selectedSkill.equippedTitle}
                       </span>
                     )}
@@ -677,8 +681,8 @@ export const SkillsView: React.FC = () => {
                 <div className="flex flex-wrap gap-1.5 shrink-0 justify-end">
                   <button 
                     onClick={() => toggleArchiveSkill(selectedSkill.id)}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400 rounded text-[10px] font-mono flex items-center gap-1"
-                    title="Archive or unarchive this skill"
+                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-400 hover:text-[#e5c875] rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer"
+                    title="Archive or unarchive this discipline"
                   >
                     {selectedSkill.archived ? <ArchiveRestore className="h-3 w-3" /> : <Archive className="h-3 w-3" />}
                     <span>{selectedSkill.archived ? 'UNARCHIVE' : 'ARCHIVE'}</span>
@@ -689,24 +693,24 @@ export const SkillsView: React.FC = () => {
                       const newTier = currentTier === 'Primary' ? 'Secondary' : 'Primary';
                       updateSkillTier(selectedSkill.id, newTier);
                     }}
-                    className={`p-1.5 border rounded text-[10px] font-mono uppercase transition-colors ${
+                    className={`p-1.5 border rounded text-[10px] font-mono uppercase transition-colors cursor-pointer ${
                       (selectedSkill.tier || 'Primary') === 'Primary'
-                        ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-400 hover:bg-cyan-950/40'
-                        : 'bg-fuchsia-950/20 border-fuchsia-500/30 text-fuchsia-400 hover:bg-fuchsia-950/40'
+                        ? 'bg-[#3a2e12]/60 border-[#c5a059]/50 text-[#fef08a]'
+                        : 'bg-purple-950/60 border-purple-500/40 text-purple-300'
                     }`}
-                    title="Click to toggle skill tier (Primary / Secondary)"
+                    title="Click to toggle discipline tier"
                   >
                     Tier: {selectedSkill.tier || 'Primary'}
                   </button>
                   <button 
                     onClick={() => { setEditSkillName(selectedSkill.name); setIsEditingSkill(true); }}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-white/20 text-zinc-400 hover:text-white rounded text-[10px] font-mono"
+                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-400 hover:text-[#e5c875] rounded text-[10px] font-mono cursor-pointer"
                   >
                     RENAME
                   </button>
                   <button 
                     onClick={handleDeleteSkill}
-                    className="p-1.5 bg-zinc-900 border border-white/5 hover:border-rose-500/20 text-zinc-400 hover:text-rose-400 rounded text-[10px] font-mono"
+                    className="p-1.5 bg-[#07080c] border border-rose-500/20 hover:border-rose-500 text-zinc-400 hover:text-rose-400 rounded text-[10px] font-mono cursor-pointer"
                   >
                     PURGE
                   </button>
@@ -716,27 +720,35 @@ export const SkillsView: React.FC = () => {
 
             {/* HIGH-LEVEL METRICS */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">CURRENT LEVEL</span>
-                <p className="text-3xl font-display font-bold text-white mt-2">LVL {selectedSkillStats.level}</p>
-                <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold flex items-center gap-1">
+                  <RubElHizbIcon className="h-2 w-2" />
+                  CURRENT RANK
+                </span>
+                <p className="text-3xl font-display font-extrabold text-white mt-2">LVL {selectedSkillStats.level}</p>
+                <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
                   {selectedSkillStats.xpIntoLevel} / {selectedSkillStats.xpRequiredForNextLevel} XP to next level
                 </p>
               </div>
 
-              <div className="bg-zinc-950/60 border border-white/5 rounded-lg p-4">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase">TOTAL SKILL XP</span>
-                <p className="text-3xl font-display font-bold text-emerald-400 mt-2">+{selectedSkillStats.xp} XP</p>
-                <p className="text-[9px] font-mono text-zinc-500 mt-1 uppercase">
-                  Accumulated competency index
+              <div className="bg-[#07080c] border border-emerald-500/30 rounded-xl p-4 shadow-sm">
+                <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  TOTAL DISCIPLINE XP
+                </span>
+                <p className="text-3xl font-display font-extrabold text-emerald-400 mt-2">+{selectedSkillStats.xp} XP</p>
+                <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
+                  Accumulated mastery index
                 </p>
               </div>
             </div>
 
             {/* PARENT PRIMARY SKILL LINKAGE (For Secondary Skills) */}
             {(selectedSkill.tier || 'Primary') === 'Secondary' && (
-              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-3 mt-4">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase block text-fuchsia-400">Linked Primary Skill (XP Distribution)</span>
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 space-y-3 mt-4">
+                <span className="text-[10px] font-mono text-[#e5c875] uppercase block font-bold">
+                  Linked Primary Discipline (XP Routing)
+                </span>
                 <div className="flex gap-2">
                   <select
                     value={selectedSkill.parentId || ''}
@@ -744,9 +756,9 @@ export const SkillsView: React.FC = () => {
                       const val = e.target.value;
                       updateSkillParent(selectedSkill.id, val ? val : null);
                     }}
-                    className="bg-zinc-900 border border-white/10 rounded px-2 py-1.5 text-xs font-mono text-white flex-grow focus:outline-none focus:border-fuchsia-500"
+                    className="bg-[#0b0d13] border border-[#c5a059]/30 rounded px-2.5 py-1.5 text-xs font-mono text-white flex-grow focus:outline-none focus:border-[#c5a059]"
                   >
-                    <option value="">-- No Linked Primary Skill --</option>
+                    <option value="">-- No Linked Primary Discipline --</option>
                     {state.skills
                       .filter(s => (s.tier || 'Primary') === 'Primary' && s.id !== selectedSkill.id)
                       .map(s => (
@@ -757,28 +769,28 @@ export const SkillsView: React.FC = () => {
                   </select>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
-                  Linking this secondary skill to a primary skill allows it to receive an equal share of the primary skill's allocated XP when quests are completed!
+                  Linking this secondary discipline to a primary discipline allows it to receive a proportional share of XP when directives are executed.
                 </p>
               </div>
             )}
 
             {/* LINKED SECONDARY SKILLS (For Primary Skills) */}
             {(selectedSkill.tier || 'Primary') === 'Primary' && (
-              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-4 mt-4">
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 space-y-4 mt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5" />
-                    LINKED SECONDARY SKILLS (PROPORTIONAL XP ROUTING)
+                  <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                    <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                    LINKED SPECIALIZATIONS
                   </span>
-                  <span className="text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded font-semibold">
+                  <span className="text-[9px] font-mono bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded font-semibold">
                     {state.skills.filter(s => s.parentId === selectedSkill.id).length} Specializations
                   </span>
                 </div>
 
-                {/* List of currently linked secondary skills with Edit / Rename, Unlink, and Delete (Purge) */}
+                {/* List of currently linked secondary skills */}
                 {state.skills.filter(s => s.parentId === selectedSkill.id).length === 0 ? (
-                  <div className="p-3 bg-zinc-900/40 border border-dashed border-white/10 rounded-lg text-center">
-                    <p className="text-xs font-mono text-zinc-500">No secondary specializations linked to this primary skill yet.</p>
+                  <div className="p-3 bg-[#0b0d13] border border-dashed border-[#c5a059]/20 rounded-lg text-center">
+                    <p className="text-xs font-mono text-zinc-500">No secondary specializations linked to this primary discipline yet.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -791,7 +803,7 @@ export const SkillsView: React.FC = () => {
                         return (
                           <div
                             key={secSkill.id}
-                            className="flex items-center justify-between gap-2 p-2.5 bg-zinc-900/80 border border-fuchsia-500/20 rounded-lg transition-all hover:border-fuchsia-500/40"
+                            className="flex items-center justify-between gap-2 p-2.5 bg-[#0b0d13] border border-[#c5a059]/30 rounded-lg transition-all hover:border-[#c5a059]/60"
                           >
                             {isEditingThis ? (
                               <div className="flex items-center gap-1.5 flex-1">
@@ -799,7 +811,7 @@ export const SkillsView: React.FC = () => {
                                   type="text"
                                   value={editingSecSkillName}
                                   onChange={(e) => setEditingSecSkillName(e.target.value)}
-                                  className="bg-zinc-950 border border-fuchsia-500/50 rounded px-2 py-1 text-xs text-white font-sans flex-1 focus:outline-none"
+                                  className="bg-[#07080c] border border-[#c5a059] rounded px-2 py-1 text-xs text-white font-sans flex-1 focus:outline-none"
                                   autoFocus
                                 />
                                 <button
@@ -810,7 +822,7 @@ export const SkillsView: React.FC = () => {
                                     }
                                     setEditingSecSkillId(null);
                                   }}
-                                  className="p-1 bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-900"
+                                  className="p-1 bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-900 cursor-pointer"
                                   title="Save Name"
                                 >
                                   <Check className="h-3.5 w-3.5" />
@@ -818,7 +830,7 @@ export const SkillsView: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => setEditingSecSkillId(null)}
-                                  className="p-1 bg-zinc-800 border border-white/10 text-zinc-400 rounded hover:text-white"
+                                  className="p-1 bg-zinc-800 border border-white/10 text-zinc-400 rounded hover:text-white cursor-pointer"
                                   title="Cancel"
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -827,7 +839,7 @@ export const SkillsView: React.FC = () => {
                             ) : (
                               <>
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <span className="text-[10px] font-mono font-bold text-fuchsia-400 bg-fuchsia-950/50 border border-fuchsia-500/30 px-1.5 py-0.5 rounded">
+                                  <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/60 border border-purple-500/30 px-1.5 py-0.5 rounded">
                                     LVL {secStats.level}
                                   </span>
                                   <span className="text-xs font-sans font-semibold text-zinc-200 truncate">
@@ -836,43 +848,40 @@ export const SkillsView: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                  {/* Rename / Edit */}
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setEditingSecSkillId(secSkill.id);
                                       setEditingSecSkillName(secSkill.name);
                                     }}
-                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-fuchsia-500/30 text-zinc-400 hover:text-fuchsia-300 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
-                                    title="Rename Secondary Skill"
+                                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-400 hover:text-[#e5c875] rounded text-[9px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Rename"
                                   >
                                     <Edit2 className="h-3 w-3" />
                                     <span className="hidden sm:inline">RENAME</span>
                                   </button>
 
-                                  {/* Unlink */}
                                   <button
                                     type="button"
                                     onClick={() => {
                                       updateSkillParent(secSkill.id, null);
                                     }}
-                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
-                                    title="Unlink from Primary Skill"
+                                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Unlink"
                                   >
                                     <Unlink className="h-3 w-3" />
                                     <span className="hidden sm:inline">UNLINK</span>
                                   </button>
 
-                                  {/* Delete / Purge */}
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (window.confirm(`Delete secondary skill "${secSkill.name}" permanently?`)) {
+                                      if (window.confirm(`Delete secondary specialization "${secSkill.name}" permanently?`)) {
                                         deleteSkill(secSkill.id);
                                       }
                                     }}
-                                    className="p-1.5 bg-zinc-950 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors"
-                                    title="Delete Secondary Skill"
+                                    className="p-1.5 bg-[#07080c] border border-rose-500/20 hover:border-rose-500 text-zinc-400 hover:text-rose-400 rounded text-[9px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Delete"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                     <span className="hidden sm:inline">PURGE</span>
@@ -888,15 +897,15 @@ export const SkillsView: React.FC = () => {
 
                 {/* ADD SECONDARY SKILLS CONTROLS */}
                 <div className="pt-3 border-t border-white/5 space-y-3">
-                  <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block font-bold">
+                  <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider block font-bold">
                     ADD SECONDARY SPECIALIZATION
                   </span>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Option A: Create New Secondary Skill */}
-                    <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-lg space-y-2">
-                      <span className="text-[9px] font-mono text-fuchsia-400 uppercase block font-semibold">
-                        ➕ Create New Secondary Skill
+                    <div className="p-3 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg space-y-2">
+                      <span className="text-[9px] font-mono text-purple-300 uppercase block font-semibold">
+                        ➕ Create New Specialization
                       </span>
                       <div className="flex gap-1.5">
                         <input
@@ -910,8 +919,8 @@ export const SkillsView: React.FC = () => {
                               setNewSecSkillName('');
                             }
                           }}
-                          placeholder="e.g. Applied Statistics"
-                          className="bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-fuchsia-500 flex-1 font-sans"
+                          placeholder="e.g. Arabic Calligraphy"
+                          className="bg-[#07080c] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059] flex-1 font-sans"
                         />
                         <button
                           type="button"
@@ -922,7 +931,7 @@ export const SkillsView: React.FC = () => {
                               setNewSecSkillName('');
                             }
                           }}
-                          className="px-3 py-1.5 bg-fuchsia-950/60 border border-fuchsia-500/40 text-fuchsia-300 rounded hover:bg-fuchsia-900 text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] rounded hover:bg-[#524119] text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 cursor-pointer"
                         >
                           CREATE
                         </button>
@@ -930,17 +939,17 @@ export const SkillsView: React.FC = () => {
                     </div>
 
                     {/* Option B: Link Existing Skill */}
-                    <div className="p-3 bg-zinc-900/60 border border-white/5 rounded-lg space-y-2">
-                      <span className="text-[9px] font-mono text-cyan-400 uppercase block font-semibold">
-                        🔗 Attach Existing Skill
+                    <div className="p-3 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg space-y-2">
+                      <span className="text-[9px] font-mono text-[#e5c875] uppercase block font-semibold">
+                        🔗 Attach Existing Track
                       </span>
                       <div className="flex gap-1.5">
                         <select
                           value={attachSecSkillId}
                           onChange={(e) => setAttachSecSkillId(e.target.value)}
-                          className="bg-zinc-950 border border-white/10 rounded px-2.5 py-1.5 text-xs text-white flex-1 focus:outline-none focus:border-cyan-500 font-mono truncate"
+                          className="bg-[#07080c] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white flex-1 focus:outline-none focus:border-[#c5a059] font-mono truncate"
                         >
-                          <option value="">-- Choose Existing Skill --</option>
+                          <option value="">-- Choose Existing Track --</option>
                           {state.skills
                             .filter(s => s.id !== selectedSkill.id && s.parentId !== selectedSkill.id)
                             .map(s => (
@@ -959,7 +968,7 @@ export const SkillsView: React.FC = () => {
                               setAttachSecSkillId('');
                             }
                           }}
-                          className="px-3 py-1.5 bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 rounded hover:bg-cyan-900 text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] rounded hover:bg-[#524119] text-xs font-mono font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 cursor-pointer"
                         >
                           ATTACH
                         </button>
@@ -967,33 +976,28 @@ export const SkillsView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
-                <p className="text-[10px] text-zinc-400 leading-relaxed font-mono pt-1 border-t border-white/5">
-                  💡 <strong>Proportional XP Routing:</strong> Quest XP is split equally among linked Primary Skills. Each Primary Skill's allocated XP is then split equally among its linked Secondary Specializations!
-                </p>
               </div>
             )}
 
             {/* TITLES OPTIONS SECTION */}
-            <div className="space-y-3.5 border-t border-b border-white/5 py-5">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Crown className={`h-4 w-4 ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`} />
-                SKILL_TITLES_ALIGNMENT
+            <div className="space-y-3.5 border-t border-b border-[#c5a059]/20 py-5">
+              <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                <Crown className="h-4 w-4 text-[#c5a059]" />
+                DISCIPLINE_TITLES_ALIGNMENT
               </h4>
               
-              <div className="bg-zinc-950/40 border border-white/5 rounded-lg p-4 space-y-4">
+              <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
                     { title: "Novice", lvl: 1 },
-                    { title: "Apprentice", lvl: 5 },
-                    { title: "Adept", lvl: 10 },
-                    { title: "Expert", lvl: 20 },
-                    { title: "Master", lvl: 30 },
-                    { title: "Sovereign", lvl: 50 }
+                    { title: "Seeker", lvl: 5 },
+                    { title: "Scholar", lvl: 10 },
+                    { title: "Master", lvl: 20 },
+                    { title: "Grand Sage", lvl: 30 },
+                    { title: "Apex Sovereign", lvl: 50 }
                   ].map((preset) => {
                     const isUnlocked = selectedSkillStats.level >= preset.lvl;
                     const isEquipped = selectedSkill.equippedTitle === preset.title;
-                    const isPrimary = (selectedSkill.tier || 'Primary') === 'Primary';
                     
                     return (
                       <button
@@ -1001,28 +1005,22 @@ export const SkillsView: React.FC = () => {
                         type="button"
                         disabled={!isUnlocked}
                         onClick={() => equipSkillTitle(selectedSkill.id, preset.title)}
-                        className={`p-2.5 rounded border text-left transition-all relative flex flex-col justify-between h-[68px] ${
+                        className={`p-2.5 rounded-lg border text-left transition-all relative flex flex-col justify-between h-[68px] cursor-pointer ${
                           isEquipped
-                            ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
+                            ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_12px_rgba(197,160,89,0.3)]'
                             : isUnlocked
-                              ? isPrimary
-                                ? 'bg-zinc-900/60 border-white/5 hover:border-cyan-500/30 text-zinc-300 hover:text-white'
-                                : 'bg-zinc-900/60 border-white/5 hover:border-fuchsia-500/30 text-zinc-300 hover:text-white'
-                              : 'bg-zinc-950/80 border-white/5 opacity-40 cursor-not-allowed text-zinc-600'
+                              ? 'bg-[#0b0d13] border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-white'
+                              : 'bg-[#07080c] border-white/5 opacity-40 cursor-not-allowed text-zinc-600'
                         }`}
                       >
                         <div className="flex justify-between items-center w-full">
                           <span className="text-[10px] font-sans font-bold leading-tight truncate">{preset.title}</span>
                           {isEquipped ? (
-                            <Check className="h-3 w-3 text-emerald-400 shrink-0" />
+                            <Check className="h-3 w-3 text-[#e5c875] shrink-0" />
                           ) : !isUnlocked ? (
                             <Lock className="h-2.5 w-2.5 text-zinc-600 shrink-0" />
                           ) : (
-                            <span className={`text-[8px] font-mono font-semibold ${
-                              isPrimary 
-                                ? 'text-cyan-500 group-hover:text-cyan-400' 
-                                : 'text-fuchsia-500 group-hover:text-fuchsia-400'
-                            }`}>UNLOCKED</span>
+                            <span className="text-[8px] font-mono font-semibold text-[#c5a059]">UNLOCKED</span>
                           )}
                         </div>
                         <span className="text-[8px] font-mono text-zinc-500 mt-1 uppercase">REQS LVL {preset.lvl}</span>
@@ -1034,19 +1032,17 @@ export const SkillsView: React.FC = () => {
                 {/* Custom Title Option */}
                 <div className="pt-3 border-t border-white/5 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase">ASSIGN CUSTOM ALIAS</span>
+                    <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ASSIGN CUSTOM ALIAS</span>
                     <span className="text-[8px] font-mono text-zinc-500">UNLOCKS AT LVL 10</span>
                   </div>
                   
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder={selectedSkillStats.level >= 10 ? "e.g. Master of Languages..." : "Lvl 10 Required"}
+                      placeholder={selectedSkillStats.level >= 10 ? "e.g. Master of Sacred Geometry..." : "Lvl 10 Required"}
                       disabled={selectedSkillStats.level < 10}
                       id="custom-title-input"
-                      className={`flex-1 bg-zinc-950/80 border border-white/5 rounded px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                        (selectedSkill.tier || 'Primary') === 'Primary' ? 'focus:border-cyan-500' : 'focus:border-fuchsia-500'
-                      }`}
+                      className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059] disabled:opacity-50 disabled:cursor-not-allowed"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -1069,11 +1065,7 @@ export const SkillsView: React.FC = () => {
                           input.value = '';
                         }
                       }}
-                      className={`text-[10px] font-mono px-3.5 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase font-semibold border ${
-                        (selectedSkill.tier || 'Primary') === 'Primary'
-                          ? 'bg-cyan-950/80 hover:bg-cyan-900 border-cyan-500/20 text-cyan-300'
-                          : 'bg-fuchsia-950/80 hover:bg-fuchsia-900 border-fuchsia-500/20 text-fuchsia-300'
-                      }`}
+                      className="text-[10px] font-mono px-3.5 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase font-bold border bg-[#3a2e12] hover:bg-[#524119] border-[#c5a059]/40 text-[#fef08a] cursor-pointer"
                     >
                       EQUIP
                     </button>
@@ -1081,7 +1073,7 @@ export const SkillsView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => equipSkillTitle(selectedSkill.id, '')}
-                        className="bg-zinc-900 hover:bg-zinc-800 border border-white/5 text-zinc-400 text-[10px] font-mono px-2.5 rounded transition-all uppercase"
+                        className="bg-[#07080c] hover:bg-zinc-800 border border-white/5 text-zinc-400 text-[10px] font-mono px-2.5 rounded transition-all uppercase cursor-pointer"
                         title="Unequip Title"
                       >
                         CLEAR
@@ -1094,19 +1086,19 @@ export const SkillsView: React.FC = () => {
 
             {/* ASSOCIATED GOALS */}
             <div className="space-y-3">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Target className={`h-4 w-4 ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`} />
-                ASSOCIATED GOAL PATHS ({relatedGoals.length})
+              <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                <Target className="h-4 w-4 text-[#c5a059]" />
+                ASSOCIATED GOAL PATHWAYS ({relatedGoals.length})
               </h4>
               
               <div className="space-y-2">
                 {relatedGoals.length === 0 ? (
-                  <p className="text-xs font-mono text-zinc-600">No goals are explicitly associated with this skill parameter.</p>
+                  <p className="text-xs font-mono text-zinc-500">No goals are explicitly associated with this discipline parameter.</p>
                 ) : (
                   relatedGoals.map(g => (
-                    <div key={g.id} className="p-3 bg-zinc-950 border border-white/5 rounded flex justify-between items-center text-xs">
+                    <div key={g.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                       <span className="text-white font-sans font-medium">{g.name}</span>
-                      <span className={`font-mono font-bold ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`}>{getGoalProgress(g.id)}%</span>
+                      <span className="font-mono font-bold text-[#e5c875]">{getGoalProgress(g.id)}%</span>
                     </div>
                   ))
                 )}
@@ -1115,20 +1107,20 @@ export const SkillsView: React.FC = () => {
 
             {/* COMPLETED / ACTIVE DIRECTIVES UNDER THIS SKILL */}
             <div className="space-y-4">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                <ListTodo className={`h-4 w-4 ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`} />
-                SKILL HISTORIC DIRECTIVES
+              <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                <ListTodo className="h-4 w-4 text-[#c5a059]" />
+                DISCIPLINE DIRECTIVE LOGS
               </h4>
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
                 {/* Active skill quests */}
                 {activeSkillQuests.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">ACTIVE DISPATCHES ({activeSkillQuests.length})</span>
+                    <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold">ACTIVE DISPATCHES ({activeSkillQuests.length})</span>
                     {activeSkillQuests.map(q => (
-                      <div key={q.id} className="p-2.5 bg-zinc-950/60 border border-white/5 rounded text-xs flex justify-between items-center">
+                      <div key={q.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded text-xs flex justify-between items-center">
                         <span className="text-zinc-200">{q.name}</span>
-                        <span className={`font-mono ${(selectedSkill.tier || 'Primary') === 'Primary' ? 'text-cyan-400' : 'text-fuchsia-400'}`}>+{q.xp} XP</span>
+                        <span className="font-mono text-[#e5c875]">+{q.xp} XP</span>
                       </div>
                     ))}
                   </div>
@@ -1137,9 +1129,9 @@ export const SkillsView: React.FC = () => {
                 {/* Completed skill quests */}
                 {completedSkillQuests.length > 0 && (
                   <div className="space-y-1.5 pt-2">
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase">SOLVED DIRECTIVES ({completedSkillQuests.length})</span>
+                    <span className="text-[9px] font-mono text-emerald-400 uppercase font-bold">SOLVED DIRECTIVES ({completedSkillQuests.length})</span>
                     {completedSkillQuests.map(q => (
-                      <div key={q.id} className="p-2.5 bg-zinc-950/30 border border-white/5 rounded text-xs flex justify-between items-center">
+                      <div key={q.id} className="p-2.5 bg-[#07080c]/50 border border-white/5 rounded text-xs flex justify-between items-center">
                         <span className="text-zinc-500 line-through">{q.name}</span>
                         <span className="text-emerald-400 font-mono">+{q.xp} XP</span>
                       </div>
@@ -1155,7 +1147,7 @@ export const SkillsView: React.FC = () => {
 
             {/* Connected Planning Documents Section */}
             <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
                 📄 STRATEGIC PLANNING DIRECTIVES
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1163,11 +1155,11 @@ export const SkillsView: React.FC = () => {
                   <p className="text-xs font-mono text-zinc-600 col-span-2">No active strategic planning documents linked to this skill path. Link them from the PLANNING tab.</p>
                 ) : (
                   state.planningDocuments.filter(doc => doc.linkedSkills?.includes(selectedSkill.id)).map(doc => (
-                    <div key={doc.id} className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg flex justify-between items-center text-xs">
+                    <div key={doc.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
                       <span className="text-zinc-300 font-mono text-[10px] truncate flex items-center gap-1.5">
                         📂 {doc.path}
                       </span>
-                      <span className="text-[9px] bg-cyan-950/40 text-cyan-400 border border-cyan-500/10 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                      <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
                         Connected
                       </span>
                     </div>
@@ -1178,10 +1170,10 @@ export const SkillsView: React.FC = () => {
 
           </div>
         ) : (
-          <div className="glass-panel rounded-lg p-10 text-center space-y-2">
-            <Award className="h-8 w-8 text-zinc-600 mx-auto" />
-            <h3 className="font-display text-sm font-bold text-white uppercase">No Skill Selected</h3>
-            <p className="text-xs text-zinc-500 font-mono">Select a skill parameter on the left directory to inspect its metrics.</p>
+          <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[#c5a059]/20 bg-[#0b0d13]/80">
+            <Award className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
+            <h3 className="font-display text-sm font-bold text-white uppercase">No Discipline Selected</h3>
+            <p className="text-xs text-zinc-500 font-mono">Select a discipline parameter on the left directory to inspect its metrics.</p>
           </div>
         )}
       </div>

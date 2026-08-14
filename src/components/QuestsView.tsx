@@ -4,6 +4,7 @@ import { Swords, Compass, ShieldAlert, CheckCircle2, Circle } from 'lucide-react
 import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
 import { QuestDirectory } from './QuestDirectory';
+import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 
 export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
@@ -32,28 +33,28 @@ export const QuestsView: React.FC = () => {
   return (
     <div className="space-y-6" id="quests-view-root">
       {/* HEADER BAR */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#c5a059]/20 pb-4">
         <div>
           <h2 className="font-display text-2xl font-bold tracking-tight text-white uppercase flex items-center gap-2">
-            <Swords className="h-5 w-5 text-cyan-400 animate-pulse" />
-            QUESTS LOG & TERMINAL
+            <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+            DIRECTIVES & EXPEDITIONS TERMINAL
           </h2>
-          <p className="text-xs text-zinc-400 font-mono mt-1">
-            CORE_DIRECTIVES • Track, complete, and customize active operational objectives
+          <p className="text-xs text-zinc-300 font-mono mt-1">
+            SACRED_TRIALS • Execute trials, channel spiritual resonance, and conquer active operations
           </p>
         </div>
 
         {/* Quick summary status badges */}
         <div className="flex flex-wrap gap-2.5 font-mono text-[11px]">
-          <div className="px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-lg flex items-center gap-1.5 text-zinc-400">
-            <Compass className="h-3.5 w-3.5 text-cyan-400" />
+          <div className="px-3 py-1.5 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg flex items-center gap-1.5 text-zinc-300 shadow-sm">
+            <Compass className="h-3.5 w-3.5 text-[#c5a059]" />
             <span>TOTAL: {totalQuests}</span>
           </div>
-          <div className="px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-lg flex items-center gap-1.5 text-yellow-500/80">
-            <Circle className="h-3 w-3 text-yellow-500 fill-yellow-500/20 animate-pulse" />
+          <div className="px-3 py-1.5 bg-[#141824] border border-[#c5a059]/40 rounded-lg flex items-center gap-1.5 text-[#fef08a] font-bold shadow-sm">
+            <Circle className="h-3 w-3 text-[#c5a059] fill-[#c5a059]/20 animate-pulse" />
             <span>ACTIVE: {activeQuests.length}</span>
           </div>
-          <div className="px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-lg flex items-center gap-1.5 text-emerald-400">
+          <div className="px-3 py-1.5 bg-[#0b0d13] border border-emerald-500/30 rounded-lg flex items-center gap-1.5 text-emerald-400 font-bold shadow-sm">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
             <span>COMPLETED: {completedQuests.length}</span>
           </div>

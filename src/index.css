@@ -1,57 +1,169 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --font-serif: "Cinzel Decorative", "Cinzel", serif;
+  --font-arabic: "Amiri", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+:root {
+  --bg-onyx: #07080c;
+  --bg-charcoal: #0b0d13;
+  --bg-card: #0f121a;
+  --bg-card-hover: #141824;
+  
+  --gold-antique: #c5a059;
+  --gold-bright: #e5c875;
+  --gold-dim: #8a6d2b;
+  --gold-dark: #3a2e12;
+  
+  --emerald-deep: #064e3b;
+  --emerald-bright: #10b981;
+  --teal-celestial: #0e7490;
+  --navy-royal: #1e1b4b;
+  --ruby-burgundy: #881337;
+  --violet-astral: #581c87;
+}
+
 html, body, #root {
-  background-color: #09090b;
+  background-color: #07080c;
   color: #d4d4d8;
   min-height: 100%;
   margin: 0;
   padding: 0;
+  font-family: var(--font-sans);
 }
 
-/* Glassmorphism custom classes */
+/* SUBTLE ISLAMIC GIRIH 8-STAR GEOMETRIC BACKGROUND PATTERN */
+.islamic-girih-bg {
+  background-color: #07080c;
+  background-image: 
+    radial-gradient(ellipse at 50% 0%, rgba(197, 160, 89, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(14, 116, 144, 0.03) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L40 10 L50 10 L50 20 L60 30 L50 40 L50 50 L40 50 L30 60 L20 50 L10 50 L10 40 L0 30 L10 20 L10 10 L20 10 Z' fill='none' stroke='rgba(197, 160, 89, 0.025)' stroke-width='0.75'/%3E%3Cpolygon points='30,12 36,24 48,30 36,36 30,48 24,36 12,30 24,24' fill='none' stroke='rgba(255, 255, 255, 0.015)' stroke-width='0.5'/%3E%3C/svg%3E");
+}
+
+/* ISLAMIC MASHRABIYA LATTICE PATTERN */
+.mashrabiya-lattice-bg {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(197, 160, 89, 0.03)' stroke-width='0.6'%3E%3Cpath d='M0 20 L20 0 L40 20 L20 40 Z'/%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='0' cy='0' r='3'/%3E%3Ccircle cx='40' cy='0' r='3'/%3E%3Ccircle cx='0' cy='40' r='3'/%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ARABIC MANUSCRIPT BORDER & TALISMAN FRAMES */
+.talisman-frame {
+  position: relative;
+  background: #0b0d13;
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.talisman-frame::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(197, 160, 89, 0.08);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Gilded corner brackets for cards and panels */
+.gilded-corners {
+  position: relative;
+}
+
+.gilded-corners::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #c5a059;
+  border-left: 2px solid #c5a059;
+  pointer-events: none;
+}
+
+/* Glassmorphism custom classes with Islamic Dark RPG polish */
 .glass-panel {
-  background: rgba(10, 10, 12, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(11, 13, 19, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(197, 160, 89, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-panel-hover:hover {
-  background: rgba(16, 16, 20, 0.85);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(16, 20, 28, 0.95);
+  border-color: rgba(197, 160, 89, 0.35);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 15px rgba(197, 160, 89, 0.08);
 }
 
-/* Custom glowing effects */
+/* ISLAMIC ARCH SHAPED CRESTS */
+.arch-crest {
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  position: relative;
+}
+
+/* RPG Glow & Lighting Effects */
+.glow-gold {
+  box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
+}
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 0 20px rgba(14, 116, 144, 0.25);
 }
 .glow-emerald {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+.glow-ruby {
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.2);
+}
+.glow-violet {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+}
+.glow-amber {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
-/* Custom scrollbar */
+/* RPG Level Progress Inlay */
+.rpg-progress-gold {
+  background: linear-gradient(90deg, #8a6d2b 0%, #c5a059 50%, #fef08a 100%);
+  box-shadow: 0 0 8px rgba(197, 160, 89, 0.5);
+}
+
+.rpg-progress-emerald {
+  background: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.rpg-progress-cyan {
+  background: linear-gradient(90deg, #0e7490 0%, #06b6d4 50%, #a5f3fc 100%);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
+
+.rpg-progress-ruby {
+  background: linear-gradient(90deg, #881337 0%, #e11d48 50%, #fecdd3 100%);
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.5);
+}
+
+/* Custom Gilded Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: #07080c;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgba(197, 160, 89, 0.25);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(197, 160, 89, 0.5);
 }
 
 /* HARDWARE BATTERY SAVER / ECO DEFENSE MODE OVERRIDES */
@@ -66,10 +178,10 @@ html.battery-saver-active * {
 .battery-saver-active .glass-panel,
 html.battery-saver-active .glass-panel {
   backdrop-filter: none !important;
-  background-color: #0c0c0e !important;
+  background-color: #0b0d13 !important;
 }
 
-/* OLED PURE BLACK DISPLAY MODE FOR MINIMUM DISPLAY POWER DRAW */
+/* OLED PURE BLACK DISPLAY MODE */
 .oled-mode-active,
 html.oled-mode-active,
 body.oled-mode-active,
@@ -79,6 +191,5 @@ body.oled-mode-active,
 
 .oled-mode-active .glass-panel {
   background-color: #000000 !important;
-  border-color: #1c1c22 !important;
+  border-color: #1a1710 !important;
 }
-
