@@ -27,50 +27,57 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
       color: 'text-cyan-400',
     },
     {
+      id: 'ranks-levels',
+      title: '2. Ranks & Levels Hierarchy',
+      icon: Trophy,
+      badge: 'RANKS & TIERS',
+      color: 'text-amber-400',
+    },
+    {
       id: 'core-attributes',
-      title: '2. Attributes & Math Engine',
+      title: '3. Attributes & Math Engine',
       icon: Cpu,
       badge: 'MECHANICS',
       color: 'text-purple-400',
     },
     {
       id: 'operations',
-      title: '3. Quest Categories & Recovery Engine',
+      title: '4. Quest Categories & Recovery Engine',
       icon: Swords,
       badge: 'CATEGORIES & RECOVERY',
       color: 'text-emerald-400',
     },
     {
       id: 'strategy',
-      title: '4. Goals, Projects & Mini-Breakdowns',
+      title: '5. Goals, Projects & Mini-Breakdowns',
       icon: Target,
       badge: 'PLANNING',
       color: 'text-amber-400',
     },
     {
       id: 'strategic-models',
-      title: '5. Decision Models & SOP Docs',
+      title: '6. Decision Models & SOP Docs',
       icon: Compass,
       badge: 'MODELS',
       color: 'text-blue-400',
     },
     {
       id: 'mastery',
-      title: '6. Skills, Seals & Ores Classification',
+      title: '7. Skills, Seals & Ores Classification',
       icon: Award,
       badge: 'PROGRESSION',
       color: 'text-pink-400',
     },
     {
       id: 'shop-rewards',
-      title: '7. Luminescent Ore Shop',
+      title: '8. Luminescent Ore Shop',
       icon: ShoppingBag,
       badge: 'REWARDS',
       color: 'text-amber-400',
     },
     {
       id: 'analytics-system',
-      title: '8. Analytics, Node Canvas & Override',
+      title: '9. Analytics, Node Canvas & Override',
       icon: Settings,
       badge: 'CONTROL',
       color: 'text-indigo-400',
@@ -253,13 +260,273 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 2. ATTRIBUTES & MATH ENGINE */}
+            {/* 2. RANKS & LEVELS HIERARCHY */}
+            {activeSection === 'ranks-levels' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-white/10 pb-3">
+                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-400" />
+                    2. System Ranks, Levels & Progression Scale
+                  </h3>
+                  <p className="text-xs font-mono text-zinc-400 mt-1">
+                    Definitive reference for Hunter System Ranks, 7-Tier Career Jobs & Titles, Quest Threat levels, Skill proficiencies, and Power Seals.
+                  </p>
+                </div>
+
+                {/* 1. OPERATOR SYSTEM RANKS (HUNTER SCALE) */}
+                <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-2 text-xs">
+                      <Shield className="h-4 w-4 text-amber-400" />
+                      <span>1. OPERATOR SYSTEM RANKS (HUNTER SCALE)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-amber-950 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded uppercase">
+                      SOLO_SCALE_VERIFIED
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Your global Operator Rank is determined dynamically by your <strong>System Level</strong>, calculated from cumulative XP earned across all directives and focus sessions.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 font-mono text-[11px]">
+                    {/* E-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-zinc-700/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-300 font-bold">🔘 E-RANK</span>
+                        <span className="text-[9px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">Lvl 1 – 4</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Initiate / Novice Progressor</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Foundation phase. Establishing core morning/evening routines and baseline habit consistency.</p>
+                    </div>
+
+                    {/* D-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-cyan-500/30 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-cyan-300 font-bold">🔷 D-RANK</span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded">Lvl 5 – 9</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Proven Operative</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Demonstrated habit consistency, initial project kickoff, and early streak building.</p>
+                    </div>
+
+                    {/* C-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-300 font-bold">🟢 C-RANK</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded">Lvl 10 – 14</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Advanced Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Autonomous execution across multiple active projects and balanced attribute growth.</p>
+                    </div>
+
+                    {/* B-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300 font-bold">🟣 B-RANK</span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded">Lvl 15 – 19</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Elite Specialist</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">High-velocity delivery, multiple unsealed Power Seals, and specialized technical mastery.</p>
+                    </div>
+
+                    {/* A-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-amber-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-300 font-bold">🟡 A-RANK</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded">Lvl 20 – 29</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Commander / High-Tier Operative</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Architect of complex systems, extreme cognitive stamina, and sustained momentum execution.</p>
+                    </div>
+
+                    {/* S-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-rose-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-400 font-bold">👑 S-RANK</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded font-bold">Lvl 30+</span>
+                      </div>
+                      <div className="text-xs text-rose-200 font-sans font-semibold">Sovereign / Apex System Master</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Transcendent mastery over craft, bio-performance, and long-term strategic vision.</p>
+                    </div>
+                  </div>
+
+                  {/* MATHEMATICAL LEVEL XP FORMULA */}
+                  <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-lg space-y-1 text-xs">
+                    <div className="font-mono text-[11px] text-amber-300 font-bold flex items-center gap-1.5">
+                      <Cpu className="h-3.5 w-3.5" /> EXACT SYSTEM LEVEL FORMULA:
+                    </div>
+                    <div className="p-2 bg-black/50 border border-white/5 rounded text-cyan-300 font-mono text-center text-xs">
+                      XP Required to Advance from Level L to L+1 = <code>500 × L + 500</code> XP
+                    </div>
+                    <p className="text-[10px] text-zinc-400 font-sans">
+                      (Level 1 requires 1,000 XP; Level 2 requires 1,500 XP; Level 3 requires 2,000 XP, scaling linearly).
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. CAREER JOB & TITLE PROGRESSION (LEVELS 1 TO 7) */}
+                <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
+                      <Briefcase className="h-4 w-4 text-cyan-400" />
+                      <span>2. CAREER JOB & TITLE PROGRESSION (LEVELS 1 TO 7)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded uppercase">
+                      7-TIER_MASTERY_LADDER
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Equipped Job Classes (e.g. <em>Cyber Architect, Code Alchemist, Titan Enforcer</em>) and Honorific Titles (e.g. <em>Grand Architect, Iron Will</em>) scale from Level 1 to 7 as you fulfill their milestone requirements:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-300 font-bold">Lvl 1</span>
+                        <span className="text-[9px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">Novice</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Base perk unlocked upon initial class activation.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-cyan-300 font-bold">Lvl 2</span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded">Apprentice</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Early operational application & routine practice.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-300 font-bold">Lvl 3</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">Specialist</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Focused discipline & milestone sprint execution.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-blue-500/20 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-blue-300 font-bold">Lvl 4</span>
+                        <span className="text-[9px] bg-blue-950 text-blue-400 px-1.5 py-0.5 rounded">Senior Operator</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Deep immersion, long streaks & high output velocity.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-purple-500/20 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300 font-bold">Lvl 5</span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded">Master</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Cross-functional competency across projects & goals.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-300 font-bold">Lvl 6</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">Grandmaster</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Long-term operational excellence & sustained momentum.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-rose-500/30 rounded-lg space-y-1 sm:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-400 font-bold">Lvl 7</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded font-bold">Apex Legend (MAX)</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">The absolute pinnacle level cap — flawless mastery and maximum perk multipliers.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. DIRECTIVE / QUEST THREAT & DIFFICULTY RANKS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-2.5">
+                    <div className="font-mono font-bold text-emerald-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Swords className="h-4 w-4" /> 3. Directive Threat & Difficulty Tiers
+                    </div>
+                    <ul className="text-xs space-y-1.5 font-mono">
+                      <li className="flex items-center justify-between p-1.5 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-zinc-300">🟢 Easy</span>
+                        <span className="text-emerald-400 font-bold">+25 XP (Quick tasks, habit check-ins)</span>
+                      </li>
+                      <li className="flex items-center justify-between p-1.5 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-cyan-300">🔷 Normal</span>
+                        <span className="text-cyan-400 font-bold">+50 XP (Standard deliverables)</span>
+                      </li>
+                      <li className="flex items-center justify-between p-1.5 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-purple-300">🟣 Hard</span>
+                        <span className="text-purple-400 font-bold">+100 XP (High-focus sprints)</span>
+                      </li>
+                      <li className="flex items-center justify-between p-1.5 bg-zinc-950 rounded border border-amber-500/20">
+                        <span className="text-amber-300">🔥 Boss Fight</span>
+                        <span className="text-amber-400 font-bold">+250 XP + Luminescent Coins</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* 4. SKILL PROFICIENCY & MASTERY LEVELS */}
+                  <div className="p-4 bg-zinc-900/90 border border-pink-500/30 rounded-xl space-y-2.5">
+                    <div className="font-mono font-bold text-pink-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Award className="h-4 w-4" /> 4. Skill Proficiency & Mastery (1 to 50+)
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Skills accumulate XP from practice sessions and linked quest completions:
+                    </p>
+                    <ul className="text-xs space-y-1 font-mono text-zinc-300">
+                      <li>• <strong>Primary vs Secondary:</strong> Hierarchical skill tree parent-child links.</li>
+                      <li>• <strong>Level Scale:</strong> Level 1 up to Level 50+.</li>
+                      <li>• <strong>Domain Mastery %:</strong> Progresses from <code>0% → 100%</code>, where reaching <strong>Level 50</strong> marks complete domain mastery.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* 5. POWER SEAL 10 EVOLUTIONARY TIERS */}
+                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <span>5. POWER SEAL 10-TIER PROGRESSION</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
+                      LEVEL_GATED_UNSEALING
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Shatter internal seals as your System Level rises to unlock passive permanent multipliers and attribute boosts:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 font-mono text-[11px]">
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-0.5">
+                      <span className="text-zinc-300 font-bold block text-[10px]">SEALS 1 – 3 (Lvl 1 – 5)</span>
+                      <p className="text-zinc-400 font-sans text-[10px]">Restless Mind, Fragmented Focus, Sluggish Starter.</p>
+                    </div>
+                    <div className="p-2.5 bg-zinc-950 border border-cyan-500/20 rounded-lg space-y-0.5">
+                      <span className="text-cyan-300 font-bold block text-[10px]">SEALS 4 – 6 (Lvl 8 – 18)</span>
+                      <p className="text-zinc-400 font-sans text-[10px]">Hesitation, Lone Wolf, Shallow Roots.</p>
+                    </div>
+                    <div className="p-2.5 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-0.5">
+                      <span className="text-amber-300 font-bold block text-[10px]">SEALS 7 – 9 (Lvl 22 – 35)</span>
+                      <p className="text-zinc-400 font-sans text-[10px]">Diminishing Returns, Imposter Shadow, Burnout Horizon.</p>
+                    </div>
+                    <div className="p-2.5 bg-zinc-950 border border-rose-500/30 rounded-lg space-y-0.5">
+                      <span className="text-rose-400 font-bold block text-[10px]">SEAL 10 (Lvl 50)</span>
+                      <p className="text-rose-200 font-sans text-[10px]">Crown of the Apex Architect (Ultimate Transcendence).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. ATTRIBUTES & MATH ENGINE */}
             {activeSection === 'core-attributes' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-purple-400" />
-                    2. Attribute Matrix & Precision Mathematical Engine
+                    3. Attribute Matrix & Precision Mathematical Engine
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     How core stats are dynamically computed using baseline levels, quest completion evidence, and seal multipliers.
@@ -343,13 +610,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 3. QUEST CATEGORIES & RECOVERY ENGINE */}
+            {/* 4. QUEST CATEGORIES & RECOVERY ENGINE */}
             {activeSection === 'operations' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Swords className="h-5 w-5 text-emerald-400" />
-                    3. Directives Classification & System Recovery Mechanism
+                    4. Directives Classification & System Recovery Mechanism
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Complete architectural specification of all 7 quest categories, difficulty multipliers, failure dynamics, and the automated Recovery Protocol.
@@ -561,13 +828,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 4. GOALS, PROJECTS & MINI-BREAKDOWNS */}
+            {/* 5. GOALS, PROJECTS & MINI-BREAKDOWNS */}
             {activeSection === 'strategy' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Target className="h-5 w-5 text-amber-400" />
-                    4. Strategic Goals, Projects & Mini-Breakdowns
+                    5. Strategic Goals, Projects & Mini-Breakdowns
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Deconstructing macro vision into actionable micro-milestones with automated progress calculation.
@@ -617,13 +884,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 5. STRATEGIC MODELS & SOP DOCS */}
+            {/* 6. STRATEGIC MODELS & SOP DOCS */}
             {activeSection === 'strategic-models' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Compass className="h-5 w-5 text-blue-400" />
-                    5. Strategic Decision Models & SOP Planning Logs
+                    6. Strategic Decision Models & SOP Planning Logs
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Interactive decision frameworks and connected Standard Operating Procedure documents.
@@ -654,13 +921,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 6. MASTERY, SEALS & ORES CLASSIFICATION */}
+            {/* 7. MASTERY, SEALS & ORES CLASSIFICATION */}
             {activeSection === 'mastery' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Award className="h-5 w-5 text-pink-400" />
-                    6. Skills Mastery, Power Seals & Ores Classification
+                    7. Skills Mastery, Power Seals & Ores Classification
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Leveling skill competencies, unsealing ancient Ore cores for permanent stat multipliers, and equipping class titles.
@@ -811,13 +1078,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 7. LUMINESCENT SHOP */}
+            {/* 8. LUMINESCENT SHOP */}
             {activeSection === 'shop-rewards' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-amber-400" />
-                    7. Luminescent Ore Reward Shop & Vouchers
+                    8. Luminescent Ore Reward Shop & Vouchers
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Redeem Luminescent Coins earned through quest completions for custom real-life treats or system perks.
@@ -845,13 +1112,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 8. ANALYTICS, NODE CANVAS & OVERRIDE */}
+            {/* 9. ANALYTICS, NODE CANVAS & OVERRIDE */}
             {activeSection === 'analytics-system' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Settings className="h-5 w-5 text-indigo-400" />
-                    8. Analytics, Spiderweb Node Canvas & System Override
+                    9. Analytics, Spiderweb Node Canvas & System Override
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Performance telemetries, visual node connection canvas, and manual baseline stat overrides.
