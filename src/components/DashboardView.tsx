@@ -640,7 +640,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <span className="text-sm font-bold text-emerald-400">+{bonusVal}</span>
                     </div>
                     <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg">
-                      <span className="text-[9px] text-zinc-400 uppercase block">TALISMAN BOOST</span>
+                      <span className="text-[9px] text-zinc-400 uppercase block">CHAIN BOOST</span>
                       <span className="text-sm font-bold text-[#fef08a]">+{sealVal}</span>
                     </div>
                     <div className="p-2 bg-[#3a2e12] border border-[#c5a059]/50 rounded-lg">
@@ -652,7 +652,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   {/* LINKED SKILLS & DIRECTIVES QUICK ACTION */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#c5a059]/20">
                     <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono">
-                      <span className="text-[#c5a059] font-bold uppercase">LINKED DISCIPLINES:</span>
+                      <span className="text-[#c5a059] font-bold uppercase">LINKED SKILLS:</span>
                       {relatedSkills.length > 0 ? (
                         relatedSkills.map(sk => (
                           <span key={sk.id} className="bg-[#3a2e12]/60 border border-[#c5a059]/30 text-[#fef08a] px-2 py-0.5 rounded-md">
@@ -1224,7 +1224,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             )}
           </div>
 
-          {/* QUICK-TAP DAILY HABITS LOBBY */}
+          {/* QUICK-TAP DAILY HABITS / RITES LOBBY */}
           <div className="glass-panel rounded-2xl p-5 space-y-3 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="habit-lobby-panel">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
 
@@ -1233,17 +1233,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
                 <span className="text-xs font-mono font-bold text-[#c5a059] uppercase tracking-wider">⚡ DAILY RITES LOBBY</span>
               </div>
-              <span className="text-[9px] font-mono text-zinc-400">QUICK TAP</span>
+              <span className="text-[9px] font-mono text-[#e5c875] bg-[#3a2e12]/60 border border-[#c5a059]/30 px-2 py-0.5 rounded-full font-bold">1-TAP RITE</span>
             </div>
             
             {state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders) && (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).length === 0 ? (
-              <p className="text-xs text-zinc-400 font-mono text-center py-2">
-                No active daily rites registered for today.
-              </p>
+              <div className="text-center py-4 space-y-1">
+                <p className="text-xs text-zinc-400 font-mono">
+                  No active daily rites registered for today.
+                </p>
+                {onNavigate && (
+                  <button
+                    onClick={() => onNavigate('quests')}
+                    className="text-[10px] font-mono text-[#c5a059] hover:underline"
+                  >
+                    + Register Daily Habit in Directives →
+                  </button>
+                )}
+              </div>
             ) : (
-              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
                 {state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders) && (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).map(habit => {
                   const isFinished = isQuestFinishedForToday(habit);
+                  const streakDays = habit.streakDays || 0;
+
                   return (
                     <div 
                       key={habit.id}
@@ -1252,22 +1264,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           completeQuest(habit.id);
                         }
                       }}
-                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                      className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${
                         isFinished 
                           ? 'bg-emerald-950/20 border-emerald-500/20 text-zinc-500' 
-                          : 'bg-[#07080c] border-[#c5a059]/20 hover:border-[#c5a059] text-white'
+                          : 'bg-[#07080c] border-[#c5a059]/20 hover:border-[#c5a059] hover:bg-[#141824] text-white shadow-sm'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`p-1 rounded-full shrink-0 ${isFinished ? 'bg-emerald-950 text-emerald-400' : 'bg-[#0b0d13] text-[#c5a059]'}`}>
-                          <Check className="h-3 w-3" />
+                        <div className={`p-1.5 rounded-lg border shrink-0 transition-all ${
+                          isFinished 
+                            ? 'bg-emerald-950 border-emerald-500/40 text-emerald-400' 
+                            : 'bg-[#0b0d13] border-[#c5a059]/30 text-[#c5a059] group-hover:border-[#c5a059] group-hover:text-[#fef08a]'
+                        }`}>
+                          <Check className="h-3 w-3 stroke-[2.5]" />
                         </div>
-                        <span className={`text-xs font-sans font-medium truncate ${isFinished ? 'line-through text-zinc-500' : ''}`}>
-                          {habit.name}
-                        </span>
+                        <div className="min-w-0">
+                          <span className={`text-xs font-sans font-medium truncate block ${isFinished ? 'line-through text-zinc-500' : 'group-hover:text-[#fef08a] transition-colors'}`}>
+                            {habit.name}
+                          </span>
+                          {streakDays > 0 && (
+                            <span className="text-[9px] font-mono text-[#c5a059] flex items-center gap-1">
+                              <Flame className="h-2.5 w-2.5 text-[#e5c875]" /> {streakDays} Day Streak
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <span className={`text-[10px] font-mono font-bold shrink-0 ${isFinished ? 'text-emerald-500/40' : 'text-[#fef08a]'}`}>
-                        {isFinished ? 'DONE' : `+${habit.xp} XP`}
+                      <span className={`text-[10px] font-mono font-bold shrink-0 px-2 py-0.5 rounded ${
+                        isFinished ? 'text-emerald-400 bg-emerald-950/50' : 'text-[#fef08a] bg-[#3a2e12]/80 border border-[#c5a059]/40'
+                      }`}>
+                        {isFinished ? '✓ RITE COMPLETED' : `+${habit.xp} XP`}
                       </span>
                     </div>
                   );

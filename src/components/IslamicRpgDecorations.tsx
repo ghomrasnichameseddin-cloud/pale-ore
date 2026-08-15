@@ -192,8 +192,8 @@ export const ArabesqueCorner: React.FC<{
   );
 };
 
-// Talismanic Badge / Cartouche
-export const TalismanBadge: React.FC<{
+// Chain / Seal Cartouche Badge (formerly Talismanic Badge)
+export const ChainBadge: React.FC<{
   children: React.ReactNode;
   variant?: 'gold' | 'emerald' | 'cyan' | 'ruby' | 'violet' | 'amber' | 'neutral';
   className?: string;
@@ -221,3 +221,7 @@ export const TalismanBadge: React.FC<{
     </span>
   );
 };
+
+// Backward-compatibility alias
+export const TalismanBadge = ChainBadge;
+

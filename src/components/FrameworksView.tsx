@@ -616,19 +616,20 @@ export const FrameworksView: React.FC = () => {
           {/* --- EISENHOWER MATRIX VIEW --- */}
           {activeTab === 'eisenhower' && (
             <div className="space-y-4" id="framework-eisenhower-window">
-              <div className="glass-panel border-white/5 bg-zinc-950/30 p-4 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+              <div className="glass-panel border-[#c5a059]/25 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs relative overflow-hidden shadow-lg shadow-black/50">
+                <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-white uppercase flex items-center gap-1.5">
-                      <Layers className="h-4 w-4 text-cyan-400" />
-                      Eisenhower Priority Matrix
+                    <h3 className="font-display font-bold text-white uppercase flex items-center gap-2 tracking-wide text-sm">
+                      <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                      EISENHOWER STRATEGIC DECREES MATRIX
                     </h3>
-                    <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded font-bold">
+                    <span className="text-[10px] font-mono text-[#e5c875] bg-[#3a2e12]/80 border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold">
                       {activeQuests.length} ACTIVE DIRECTIVES
                     </span>
                   </div>
                   <p className="text-zinc-400 font-mono text-[10px]">
-                    Drag tasks into strategic quadrants or seed them directly. Protect Q2 (Important, Not Urgent) for high-leverage mastery.
+                    Organize sacred trials into tactical quadrants. Guard Q2 (Sacred Mastery) for exponential compounding.
                   </p>
                 </div>
 
@@ -637,21 +638,21 @@ export const FrameworksView: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAutoClassify}
-                    className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 font-mono text-[10px] font-bold px-3 py-1.5 rounded flex items-center gap-1.5 transition-all shadow-sm"
+                    className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/50 text-[#fef08a] font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
                     title="Auto-classify unmapped tasks based on type & difficulty"
                   >
-                    <Zap className="h-3.5 w-3.5 text-cyan-400" />
+                    <Zap className="h-3.5 w-3.5 text-[#e5c875]" />
                     AUTO-CALIBRATE
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowMatrixGuide(!showMatrixGuide)}
-                    className="bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 font-mono text-[10px] px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors"
+                    className="bg-[#07080c] hover:bg-[#141824] border border-[#c5a059]/30 text-zinc-300 font-mono text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
                   >
-                    <Info className="h-3.5 w-3.5 text-amber-400" />
-                    STRATEGY GUIDE
-                    {showMatrixGuide ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    <Info className="h-3.5 w-3.5 text-[#c5a059]" />
+                    STRATEGY DOCTRINE
+                    {showMatrixGuide ? <ChevronUp className="h-3 w-3 text-[#c5a059]" /> : <ChevronDown className="h-3 w-3 text-[#c5a059]" />}
                   </button>
                 </div>
               </div>
@@ -665,37 +666,37 @@ export const FrameworksView: React.FC = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-zinc-950/80 border border-white/10 p-4 rounded-lg text-[11px] font-sans">
-                      <div className="p-3 bg-rose-950/20 border border-rose-500/20 rounded">
-                        <div className="font-mono font-bold text-rose-400 flex items-center gap-1 mb-1">
-                          🟥 Q1: URGENT & IMPORTANT
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#0b0d13] border border-[#c5a059]/30 p-4 rounded-xl text-[11px] font-sans shadow-lg">
+                      <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
+                        <div className="font-mono font-bold text-rose-300 flex items-center gap-1.5 mb-1 text-[11px]">
+                          <RubElHizbIcon className="h-3 w-3" color="#f43f5e" /> Q1: IMPERIAL CRISIS
                         </div>
                         <p className="text-zinc-300 text-[10px] leading-relaxed">
-                          Critical deadlines & penalty threats. Execute immediately. Do not defer or accumulate.
+                          Urgent decrees, critical penalty threats & hard deadlines. Slay with immediate focus.
                         </p>
                       </div>
-                      <div className="p-3 bg-cyan-950/20 border border-cyan-500/20 rounded">
-                        <div className="font-mono font-bold text-cyan-400 flex items-center gap-1 mb-1">
-                          🟦 Q2: IMPORTANT, NOT URGENT
+                      <div className="p-3 bg-[#3a2e12]/40 border border-[#c5a059]/40 rounded-lg">
+                        <div className="font-mono font-bold text-[#fef08a] flex items-center gap-1.5 mb-1 text-[11px]">
+                          <RubElHizbIcon className="h-3 w-3" color="#e5c875" /> Q2: SACRED MASTERY
                         </div>
                         <p className="text-zinc-300 text-[10px] leading-relaxed">
-                          Strategic skill mastery, long-term roadmap items. Protect this block for high ROI growth.
+                          Strategic skill progression, deep work & long-term destiny. Safeguard this chamber from shallow distractions.
                         </p>
                       </div>
-                      <div className="p-3 bg-amber-950/20 border border-amber-500/20 rounded">
-                        <div className="font-mono font-bold text-amber-400 flex items-center gap-1 mb-1">
-                          🟨 Q3: URGENT, NOT IMPORTANT
+                      <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-lg">
+                        <div className="font-mono font-bold text-amber-300 flex items-center gap-1.5 mb-1 text-[11px]">
+                          <RubElHizbIcon className="h-3 w-3" color="#f59e0b" /> Q3: SHALLOW FRICTION
                         </div>
                         <p className="text-zinc-300 text-[10px] leading-relaxed">
-                          Interrupting requests & shallow admin work. Batch or automate aggressively.
+                          Urgent administrative interruptions & recurring low-leverage demands. Batch or automate with haste.
                         </p>
                       </div>
-                      <div className="p-3 bg-zinc-900 border border-white/5 rounded">
-                        <div className="font-mono font-bold text-zinc-400 flex items-center gap-1 mb-1">
-                          ⬛ Q4: NOT URGENT / NOT IMPORTANT
+                      <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg">
+                        <div className="font-mono font-bold text-zinc-400 flex items-center gap-1.5 mb-1 text-[11px]">
+                          <RubElHizbIcon className="h-3 w-3" color="#71717a" /> Q4: DISCARDED SHADOWS
                         </div>
-                        <p className="text-zinc-300 text-[10px] leading-relaxed">
-                          Time sinks, friction & distractions. Purge or drop from active operational queues.
+                        <p className="text-zinc-400 text-[10px] leading-relaxed">
+                          Distractions, cognitive noise & irrelevant loops. Purge relentlessly from active queues.
                         </p>
                       </div>
                     </div>
@@ -704,10 +705,10 @@ export const FrameworksView: React.FC = () => {
               </AnimatePresence>
 
               {/* Timeline Horizon Filter Bar */}
-              <div className="bg-zinc-950/60 p-2.5 rounded-lg border border-white/10 font-mono text-[10px]">
+              <div className="bg-[#0b0d13]/90 p-2.5 rounded-xl border border-[#c5a059]/25 font-mono text-[10px] shadow-sm">
                 <div className="flex items-center gap-1.5 overflow-x-auto">
-                  <span className="text-cyan-400 font-bold uppercase flex items-center gap-1 mr-1 shrink-0">
-                    <Calendar className="h-3 w-3 text-cyan-400" /> TIMELINE:
+                  <span className="text-[#c5a059] font-bold uppercase flex items-center gap-1 mr-1 shrink-0">
+                    <Calendar className="h-3 w-3 text-[#c5a059]" /> HORIZON:
                   </span>
                   {(['ALL', 'TODAY', 'TOMORROW', 'NEXT_7_DAYS', 'NO_DATE', 'OVERDUE'] as const).map(horizon => {
                     const labelMap = {
@@ -723,10 +724,10 @@ export const FrameworksView: React.FC = () => {
                       <button
                         key={horizon}
                         onClick={() => setSelectedTimelineFilter(horizon)}
-                        className={`px-2.5 py-1 rounded font-bold transition-all shrink-0 ${
+                        className={`px-2.5 py-1 rounded-lg font-bold transition-all shrink-0 ${
                           isSelected 
-                            ? 'bg-cyan-400 text-black shadow font-black' 
-                            : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-white/5'
+                            ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] shadow font-black' 
+                            : 'bg-[#07080c] text-zinc-400 hover:bg-[#141824] hover:text-white border border-white/5'
                         }`}
                       >
                         {labelMap[horizon]}
@@ -743,18 +744,19 @@ export const FrameworksView: React.FC = () => {
                 <div 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => moveQuestQuadrant(e.dataTransfer.getData('text'), 'Q1')}
-                  className="glass-panel border-rose-500/20 hover:border-rose-500/40 bg-zinc-950/40 p-4 rounded-lg flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3"
+                  className="glass-panel border-rose-500/30 hover:border-rose-500/50 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg"
                 >
-                    <div className="absolute top-0 right-0 p-2 text-[28px] font-black text-rose-500/5 font-mono select-none">Q1</div>
+                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-rose-500/5 font-mono select-none">Q1</div>
                     <div className="flex items-center justify-between border-b border-rose-500/20 pb-2.5">
                       <div>
                         <h4 className="font-mono text-xs font-black text-rose-400 flex items-center gap-1.5">
-                          🟥 URGENT & IMPORTANT (DO IMMEDIATELY)
+                          <RubElHizbIcon className="h-3.5 w-3.5" color="#f43f5e" />
+                          Q1: URGENT & IMPORTANT (IMMEDIATE DECREE)
                         </h4>
-                        <p className="text-[10px] font-mono text-rose-300/60 mt-0.5">High consequence / High priority threats</p>
+                        <p className="text-[10px] font-mono text-rose-300/60 mt-0.5">High consequence / High priority sacred obligations</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-rose-400 font-bold bg-rose-950/40 border border-rose-500/20 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-rose-300 font-bold bg-rose-950/60 border border-rose-500/30 px-2 py-0.5 rounded-lg">
                           {classifiedQuests.Q1.length} QUESTS ({classifiedQuests.Q1.reduce((sum, q) => sum + (q.estimatedTime || 0), 0)}m)
                         </span>
                       </div>
@@ -770,12 +772,12 @@ export const FrameworksView: React.FC = () => {
                         value={quickAddTexts.Q1}
                         onChange={(e) => setQuickAddTexts(prev => ({ ...prev, Q1: e.target.value }))}
                         placeholder="+ Seed urgent Q1 directive..."
-                        className="flex-1 bg-zinc-950 border border-rose-500/20 focus:border-rose-500/60 rounded px-2.5 py-1 text-xs text-white placeholder-rose-400/40 focus:outline-none font-mono"
+                        className="flex-1 bg-[#07080c] border border-rose-500/25 focus:border-rose-500 rounded-lg px-2.5 py-1 text-xs text-white placeholder-rose-400/40 focus:outline-none font-mono"
                       />
                       <select
                         value={quickAddTimelines.Q1}
                         onChange={(e) => setQuickAddTimelines(prev => ({ ...prev, Q1: e.target.value as any }))}
-                        className="bg-zinc-950 border border-rose-500/20 text-rose-300 font-mono text-[10px] rounded px-1.5 py-1 focus:outline-none shrink-0 font-bold"
+                        className="bg-[#07080c] border border-rose-500/25 text-rose-300 font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
                       >
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
@@ -784,7 +786,7 @@ export const FrameworksView: React.FC = () => {
                       </select>
                       <button
                         type="submit"
-                        className="bg-rose-950 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-xs px-2.5 py-1 rounded font-mono font-bold shrink-0 transition"
+                        className="bg-rose-950 hover:bg-rose-900 border border-rose-500/50 text-rose-200 text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
                       >
                         + ADD
                       </button>
@@ -821,18 +823,19 @@ export const FrameworksView: React.FC = () => {
                 <div 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => moveQuestQuadrant(e.dataTransfer.getData('text'), 'Q2')}
-                  className="glass-panel border-cyan-500/20 hover:border-cyan-500/40 bg-zinc-950/40 p-4 rounded-lg flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3"
+                  className="glass-panel border-[#c5a059]/40 hover:border-[#c5a059]/60 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg shadow-[#c5a059]/5"
                 >
-                    <div className="absolute top-0 right-0 p-2 text-[28px] font-black text-cyan-500/5 font-mono select-none">Q2</div>
-                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
+                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-[#c5a059]/10 font-mono select-none">Q2</div>
+                    <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2.5">
                       <div>
-                        <h4 className="font-mono text-xs font-black text-cyan-400 flex items-center gap-1.5">
-                          🟦 NOT URGENT & IMPORTANT (SCHEDULE & FOCUS)
+                        <h4 className="font-mono text-xs font-black text-[#fef08a] flex items-center gap-1.5">
+                          <RubElHizbIcon className="h-3.5 w-3.5" color="#e5c875" />
+                          Q2: SACRED MASTERY (IMPORTANT • STRATEGIC FOCUS)
                         </h4>
-                        <p className="text-[10px] font-mono text-cyan-300/60 mt-0.5">High leverage strategic & skill growth zone</p>
+                        <p className="text-[10px] font-mono text-[#c5a059]/80 mt-0.5">High leverage strategic execution & skill compounding</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-500/20 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-[#fef08a] font-bold bg-[#3a2e12]/80 border border-[#c5a059]/50 px-2 py-0.5 rounded-lg">
                           {classifiedQuests.Q2.length} QUESTS ({classifiedQuests.Q2.reduce((sum, q) => sum + (q.estimatedTime || 0), 0)}m)
                         </span>
                       </div>
@@ -847,13 +850,13 @@ export const FrameworksView: React.FC = () => {
                         type="text"
                         value={quickAddTexts.Q2}
                         onChange={(e) => setQuickAddTexts(prev => ({ ...prev, Q2: e.target.value }))}
-                        placeholder="+ Seed strategic Q2 growth directive..."
-                        className="flex-1 bg-zinc-950 border border-cyan-500/20 focus:border-cyan-500/60 rounded px-2.5 py-1 text-xs text-white placeholder-cyan-400/40 focus:outline-none font-mono"
+                        placeholder="+ Seed strategic Q2 mastery directive..."
+                        className="flex-1 bg-[#07080c] border border-[#c5a059]/25 focus:border-[#c5a059] rounded-lg px-2.5 py-1 text-xs text-white placeholder-[#c5a059]/40 focus:outline-none font-mono"
                       />
                       <select
                         value={quickAddTimelines.Q2}
                         onChange={(e) => setQuickAddTimelines(prev => ({ ...prev, Q2: e.target.value as any }))}
-                        className="bg-zinc-950 border border-cyan-500/20 text-cyan-300 font-mono text-[10px] rounded px-1.5 py-1 focus:outline-none shrink-0 font-bold"
+                        className="bg-[#07080c] border border-[#c5a059]/25 text-[#e5c875] font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
                       >
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
@@ -862,7 +865,7 @@ export const FrameworksView: React.FC = () => {
                       </select>
                       <button
                         type="submit"
-                        className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-xs px-2.5 py-1 rounded font-mono font-bold shrink-0 transition"
+                        className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/50 text-[#fef08a] text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
                       >
                         + ADD
                       </button>
@@ -899,18 +902,19 @@ export const FrameworksView: React.FC = () => {
                 <div 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => moveQuestQuadrant(e.dataTransfer.getData('text'), 'Q3')}
-                  className="glass-panel border-amber-500/20 hover:border-amber-500/40 bg-zinc-950/40 p-4 rounded-lg flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3"
+                  className="glass-panel border-amber-500/30 hover:border-amber-500/50 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg"
                 >
-                    <div className="absolute top-0 right-0 p-2 text-[28px] font-black text-amber-500/5 font-mono select-none">Q3</div>
+                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-amber-500/5 font-mono select-none">Q3</div>
                     <div className="flex items-center justify-between border-b border-amber-500/20 pb-2.5">
                       <div>
                         <h4 className="font-mono text-xs font-black text-amber-400 flex items-center gap-1.5">
-                          🟨 URGENT & UNIMPORTANT (DELEGATE / BATCH)
+                          <RubElHizbIcon className="h-3.5 w-3.5" color="#f59e0b" />
+                          Q3: SHALLOW FRICTION (DELEGATE / BATCH)
                         </h4>
-                        <p className="text-[10px] font-mono text-amber-300/60 mt-0.5">Shallow administrative tasks & interruptions</p>
+                        <p className="text-[10px] font-mono text-amber-300/60 mt-0.5">Administrative burdens & shallow recurring interruptions</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-amber-400 font-bold bg-amber-950/40 border border-amber-500/20 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-amber-300 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-lg">
                           {classifiedQuests.Q3.length} QUESTS ({classifiedQuests.Q3.reduce((sum, q) => sum + (q.estimatedTime || 0), 0)}m)
                         </span>
                       </div>
@@ -926,12 +930,12 @@ export const FrameworksView: React.FC = () => {
                         value={quickAddTexts.Q3}
                         onChange={(e) => setQuickAddTexts(prev => ({ ...prev, Q3: e.target.value }))}
                         placeholder="+ Seed batch/admin Q3 task..."
-                        className="flex-1 bg-zinc-950 border border-amber-500/20 focus:border-amber-500/60 rounded px-2.5 py-1 text-xs text-white placeholder-amber-400/40 focus:outline-none font-mono"
+                        className="flex-1 bg-[#07080c] border border-amber-500/25 focus:border-amber-500 rounded-lg px-2.5 py-1 text-xs text-white placeholder-amber-400/40 focus:outline-none font-mono"
                       />
                       <select
                         value={quickAddTimelines.Q3}
                         onChange={(e) => setQuickAddTimelines(prev => ({ ...prev, Q3: e.target.value as any }))}
-                        className="bg-zinc-950 border border-amber-500/20 text-amber-300 font-mono text-[10px] rounded px-1.5 py-1 focus:outline-none shrink-0 font-bold"
+                        className="bg-[#07080c] border border-amber-500/25 text-amber-300 font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
                       >
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
@@ -940,7 +944,7 @@ export const FrameworksView: React.FC = () => {
                       </select>
                       <button
                         type="submit"
-                        className="bg-amber-950 hover:bg-amber-900 border border-amber-500/40 text-amber-300 text-xs px-2.5 py-1 rounded font-mono font-bold shrink-0 transition"
+                        className="bg-amber-950 hover:bg-amber-900 border border-amber-500/50 text-amber-200 text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
                       >
                         + ADD
                       </button>
@@ -977,18 +981,19 @@ export const FrameworksView: React.FC = () => {
                 <div 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => moveQuestQuadrant(e.dataTransfer.getData('text'), 'Q4')}
-                  className="glass-panel border-zinc-700/30 hover:border-zinc-600 bg-zinc-950/40 p-4 rounded-lg flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3"
+                  className="glass-panel border-zinc-800 hover:border-zinc-700 bg-[#07080c]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg"
                 >
-                    <div className="absolute top-0 right-0 p-2 text-[28px] font-black text-zinc-500/5 font-mono select-none">Q4</div>
-                    <div className="flex items-center justify-between border-b border-zinc-700/30 pb-2.5">
+                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-zinc-600/5 font-mono select-none">Q4</div>
+                    <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                       <div>
                         <h4 className="font-mono text-xs font-black text-zinc-400 flex items-center gap-1.5">
-                          ⬛ NOT URGENT & UNIMPORTANT (ELIMINATE)
+                          <RubElHizbIcon className="h-3.5 w-3.5" color="#71717a" />
+                          Q4: DISCARDED SHADOWS (PURGE / DROP)
                         </h4>
-                        <p className="text-[10px] font-mono text-zinc-500 mt-0.5">Low-impact distractions & trivial items</p>
+                        <p className="text-[10px] font-mono text-zinc-500 mt-0.5">Low-impact distractions & trivial cognitive clutter</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-zinc-400 font-bold bg-zinc-900 border border-white/10 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-mono text-zinc-400 font-bold bg-[#0b0d13] border border-white/10 px-2 py-0.5 rounded-lg">
                           {classifiedQuests.Q4.length} QUESTS ({classifiedQuests.Q4.reduce((sum, q) => sum + (q.estimatedTime || 0), 0)}m)
                         </span>
                       </div>
@@ -1004,12 +1009,12 @@ export const FrameworksView: React.FC = () => {
                         value={quickAddTexts.Q4}
                         onChange={(e) => setQuickAddTexts(prev => ({ ...prev, Q4: e.target.value }))}
                         placeholder="+ Seed low-priority Q4 item..."
-                        className="flex-1 bg-zinc-950 border border-white/10 focus:border-zinc-500 rounded px-2.5 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none font-mono"
+                        className="flex-1 bg-[#0b0d13] border border-white/10 focus:border-zinc-500 rounded-lg px-2.5 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none font-mono"
                       />
                       <select
                         value={quickAddTimelines.Q4}
                         onChange={(e) => setQuickAddTimelines(prev => ({ ...prev, Q4: e.target.value as any }))}
-                        className="bg-zinc-950 border border-white/10 text-zinc-400 font-mono text-[10px] rounded px-1.5 py-1 focus:outline-none shrink-0 font-bold"
+                        className="bg-[#0b0d13] border border-white/10 text-zinc-400 font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
                       >
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
@@ -1018,7 +1023,7 @@ export const FrameworksView: React.FC = () => {
                       </select>
                       <button
                         type="submit"
-                        className="bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-zinc-300 text-xs px-2.5 py-1 rounded font-mono font-bold shrink-0 transition"
+                        className="bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-zinc-300 text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
                       >
                         + ADD
                       </button>

@@ -71,7 +71,7 @@ export const SkillsView: React.FC = () => {
     // Check if skill already exists
     const duplicate = state.skills.find(s => s.name.toLowerCase() === newSkillName.trim().toLowerCase());
     if (duplicate) {
-      alert('This discipline track is already initialized.');
+      alert('This skill track is already initialized.');
       return;
     }
 
@@ -478,7 +478,7 @@ export const SkillsView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[580px] overflow-y-auto pr-1">
           {filteredSkills.length === 0 ? (
             <div className="col-span-2 p-8 text-center bg-[#07080c]/50 border border-dashed border-[#c5a059]/20 rounded-lg">
-              <p className="text-xs font-mono text-zinc-500">No disciplines matched your filter criteria.</p>
+              <p className="text-xs font-mono text-zinc-500">No skills matched your filter criteria.</p>
             </div>
           ) : (
             filteredSkills.map(skill => {
@@ -563,7 +563,7 @@ export const SkillsView: React.FC = () => {
                         return subSkillsCount > 0 ? (
                           <div className="pt-1 flex items-center gap-1 text-[9px] font-mono text-zinc-400">
                             <span className="text-zinc-500">↲ Links</span>
-                            <span className="text-purple-300 font-semibold">{subSkillsCount} sub-discipline{subSkillsCount > 1 ? 's' : ''}</span>
+                            <span className="text-purple-300 font-semibold">{subSkillsCount} sub-skill{subSkillsCount > 1 ? 's' : ''}</span>
                           </div>
                         ) : null;
                       })()}
@@ -598,14 +598,14 @@ export const SkillsView: React.FC = () => {
                         toggleArchiveSkill(skill.id);
                       }}
                       className="p-1 rounded hover:bg-[#3a2e12] text-zinc-500 hover:text-[#e5c875] transition-colors cursor-pointer"
-                      title={isArchived ? "Unarchive Discipline" : "Archive Discipline"}
+                      title={isArchived ? "Unarchive Skill" : "Archive Skill"}
                     >
                       {isArchived ? <ArchiveRestore className="h-3.5 w-3.5 text-[#e5c875]" /> : <Archive className="h-3.5 w-3.5" />}
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`Are you sure you want to delete the discipline "${skill.name}"? This action is permanent.`)) {
+                        if (window.confirm(`Are you sure you want to delete the skill "${skill.name}"? This action is permanent.`)) {
                           deleteSkill(skill.id);
                           if (selectedSkillId === skill.id) {
                             const remaining = state.skills.filter(s => s.id !== skill.id);
@@ -614,7 +614,7 @@ export const SkillsView: React.FC = () => {
                         }
                       }}
                       className="p-1 rounded hover:bg-rose-950 hover:text-rose-400 text-zinc-500 transition-colors cursor-pointer"
-                      title="Purge Discipline Track"
+                      title="Purge Skill Track"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -638,7 +638,7 @@ export const SkillsView: React.FC = () => {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
                   <span className="text-xs font-mono uppercase tracking-wider text-[#e5c875] font-bold">
-                    {(selectedSkill.tier || 'Primary').toUpperCase()}_DISCIPLINE_CODEX
+                    {(selectedSkill.tier || 'Primary').toUpperCase()}_SKILL_CODEX
                   </span>
                   {selectedSkill.archived && (
                     <span className="text-[9px] font-mono text-amber-400 bg-amber-950/40 border border-amber-500/20 px-1.5 py-0.5 rounded font-bold uppercase">
@@ -682,7 +682,7 @@ export const SkillsView: React.FC = () => {
                   <button 
                     onClick={() => toggleArchiveSkill(selectedSkill.id)}
                     className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-400 hover:text-[#e5c875] rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer"
-                    title="Archive or unarchive this discipline"
+                    title="Archive or unarchive this skill"
                   >
                     {selectedSkill.archived ? <ArchiveRestore className="h-3 w-3" /> : <Archive className="h-3 w-3" />}
                     <span>{selectedSkill.archived ? 'UNARCHIVE' : 'ARCHIVE'}</span>
@@ -698,7 +698,7 @@ export const SkillsView: React.FC = () => {
                         ? 'bg-[#3a2e12]/60 border-[#c5a059]/50 text-[#fef08a]'
                         : 'bg-purple-950/60 border-purple-500/40 text-purple-300'
                     }`}
-                    title="Click to toggle discipline tier"
+                    title="Click to toggle skill tier"
                   >
                     Tier: {selectedSkill.tier || 'Primary'}
                   </button>
@@ -734,7 +734,7 @@ export const SkillsView: React.FC = () => {
               <div className="bg-[#07080c] border border-emerald-500/30 rounded-xl p-4 shadow-sm">
                 <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
                   <Sparkles className="h-2.5 w-2.5" />
-                  TOTAL DISCIPLINE XP
+                  TOTAL SKILL XP
                 </span>
                 <p className="text-3xl font-display font-extrabold text-emerald-400 mt-2">+{selectedSkillStats.xp} XP</p>
                 <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
@@ -747,7 +747,7 @@ export const SkillsView: React.FC = () => {
             {(selectedSkill.tier || 'Primary') === 'Secondary' && (
               <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 space-y-3 mt-4">
                 <span className="text-[10px] font-mono text-[#e5c875] uppercase block font-bold">
-                  Linked Primary Discipline (XP Routing)
+                  Linked Primary Skill (XP Routing)
                 </span>
                 <div className="flex gap-2">
                   <select
@@ -758,7 +758,7 @@ export const SkillsView: React.FC = () => {
                     }}
                     className="bg-[#0b0d13] border border-[#c5a059]/30 rounded px-2.5 py-1.5 text-xs font-mono text-white flex-grow focus:outline-none focus:border-[#c5a059]"
                   >
-                    <option value="">-- No Linked Primary Discipline --</option>
+                    <option value="">-- No Linked Primary Skill --</option>
                     {state.skills
                       .filter(s => (s.tier || 'Primary') === 'Primary' && s.id !== selectedSkill.id)
                       .map(s => (
@@ -769,7 +769,7 @@ export const SkillsView: React.FC = () => {
                   </select>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
-                  Linking this secondary discipline to a primary discipline allows it to receive a proportional share of XP when directives are executed.
+                  Linking this secondary skill to a primary skill allows it to receive a proportional share of XP when directives are executed.
                 </p>
               </div>
             )}
@@ -790,7 +790,7 @@ export const SkillsView: React.FC = () => {
                 {/* List of currently linked secondary skills */}
                 {state.skills.filter(s => s.parentId === selectedSkill.id).length === 0 ? (
                   <div className="p-3 bg-[#0b0d13] border border-dashed border-[#c5a059]/20 rounded-lg text-center">
-                    <p className="text-xs font-mono text-zinc-500">No secondary specializations linked to this primary discipline yet.</p>
+                    <p className="text-xs font-mono text-zinc-500">No secondary specializations linked to this primary skill yet.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -983,7 +983,7 @@ export const SkillsView: React.FC = () => {
             <div className="space-y-3.5 border-t border-b border-[#c5a059]/20 py-5">
               <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
                 <Crown className="h-4 w-4 text-[#c5a059]" />
-                DISCIPLINE_TITLES_ALIGNMENT
+                SKILL_TITLES_ALIGNMENT
               </h4>
               
               <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 space-y-4">
@@ -1093,7 +1093,7 @@ export const SkillsView: React.FC = () => {
               
               <div className="space-y-2">
                 {relatedGoals.length === 0 ? (
-                  <p className="text-xs font-mono text-zinc-500">No goals are explicitly associated with this discipline parameter.</p>
+                  <p className="text-xs font-mono text-zinc-500">No goals are explicitly associated with this skill parameter.</p>
                 ) : (
                   relatedGoals.map(g => (
                     <div key={g.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
@@ -1109,7 +1109,7 @@ export const SkillsView: React.FC = () => {
             <div className="space-y-4">
               <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
                 <ListTodo className="h-4 w-4 text-[#c5a059]" />
-                DISCIPLINE DIRECTIVE LOGS
+                SKILL DIRECTIVE LOGS
               </h4>
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
@@ -1172,8 +1172,8 @@ export const SkillsView: React.FC = () => {
         ) : (
           <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[#c5a059]/20 bg-[#0b0d13]/80">
             <Award className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
-            <h3 className="font-display text-sm font-bold text-white uppercase">No Discipline Selected</h3>
-            <p className="text-xs text-zinc-500 font-mono">Select a discipline parameter on the left directory to inspect its metrics.</p>
+            <h3 className="font-display text-sm font-bold text-white uppercase">No Skill Selected</h3>
+            <p className="text-xs text-zinc-500 font-mono">Select a skill parameter on the left directory to inspect its metrics.</p>
           </div>
         )}
       </div>

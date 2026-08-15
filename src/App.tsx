@@ -90,8 +90,8 @@ function AppContent() {
     {
       title: 'MASTERY & POWER',
       items: [
-        { id: 'skills', label: 'Disciplines', icon: Award, desc: 'Core mastery & competency tracks' },
-        { id: 'seals', label: 'Ores & Talismans', icon: Pickaxe, desc: 'Shatter chains on luminescent ores for passive multipliers' },
+        { id: 'skills', label: 'Skills', icon: Award, desc: 'Core mastery & competency tracks' },
+        { id: 'seals', label: 'Ores & Chains', icon: Pickaxe, desc: 'Shatter chains on luminescent ores for passive multipliers' },
         { id: 'shop', label: 'Imperial Vault', icon: ShoppingBag, desc: 'Channel gold dinars into bounties & perks' }
       ]
     },
