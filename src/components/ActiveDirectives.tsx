@@ -1759,11 +1759,11 @@ export const ActiveDirectives: React.FC = () => {
       )}
 
       {/* FAST_QUEST_INPUT_CONSOLE */}
-      <div className="glass-panel border-cyan-500/10 bg-zinc-950/30 p-4 rounded-lg space-y-3" id="fast-quest-console">
-        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-4 rounded-xl space-y-3 shadow-[0_0_20px_rgba(197,160,89,0.08)]" id="fast-quest-console">
+        <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2">
           <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-cyan-400" />
-            <span className="text-[10px] font-mono text-zinc-300 font-bold tracking-wider">
+            <Terminal className="h-4 w-4 text-[#e5c875]" />
+            <span className="text-[10px] font-mono text-[#fef08a] font-bold tracking-wider">
               PALE_ORE_DIRECTIVE_LOGGER_SYSTEM [v2.0]
             </span>
           </div>
@@ -1773,15 +1773,15 @@ export const ActiveDirectives: React.FC = () => {
               setIsBulkMode(!isBulkMode);
               setTerminalLog(null);
             }}
-            className="text-[9px] font-mono text-cyan-400 bg-cyan-950/40 hover:bg-cyan-950/80 border border-cyan-500/20 px-2 py-0.5 rounded transition-all"
+            className="text-[9px] font-mono text-[#fef08a] bg-[#3a2e12]/80 hover:bg-[#524017] border border-[#c5a059]/40 px-2 py-0.5 rounded transition-all"
           >
             {isBulkMode ? "⚡ QUICK_MODE" : "🗃️ BULK_MODE"}
           </button>
         </div>
 
         {terminalLog && (
-          <div className="p-2 bg-zinc-950 border border-white/5 rounded font-mono text-[10px] text-cyan-400 flex items-center gap-2">
-            <span className="animate-pulse">❯</span>
+          <div className="p-2 bg-[#07080c]/90 border border-[#c5a059]/20 rounded font-mono text-[10px] text-[#e5c875] flex items-center gap-2 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+            <span className="animate-pulse text-[#fef08a]">❯</span>
             <span>{terminalLog}</span>
           </div>
         )}
@@ -1790,7 +1790,7 @@ export const ActiveDirectives: React.FC = () => {
           <div className="space-y-1 relative">
             <form onSubmit={handleQuickAddSubmit} className="flex gap-2">
               <div className="relative flex-1">
-                <span className="absolute left-3 top-2.5 font-mono text-xs text-cyan-500/60 select-none">❯</span>
+                <span className="absolute left-3 top-2.5 font-mono text-xs text-[#e5c875] select-none">❯</span>
                 <input 
                   type="text"
                   placeholder="Type 'help' for commands, or write: Read books [easy] *habit @Discipline #Fitness /Health"
@@ -1802,14 +1802,14 @@ export const ActiveDirectives: React.FC = () => {
                   onKeyDown={handleInputKeyDown}
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-                  className="w-full bg-zinc-950/80 border border-white/5 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                  className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]/60 focus:ring-1 focus:ring-[#c5a059]/20 transition-all"
                   autoComplete="off"
                   spellCheck="false"
                 />
               </div>
               <button
                 type="submit"
-                className="px-4 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
+                className="px-4 bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/50 text-[#fef08a] rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
               >
                 Execute
               </button>
@@ -1817,7 +1817,7 @@ export const ActiveDirectives: React.FC = () => {
 
             {/* Suggestions Intellisense Overlay */}
             {isInputFocused && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 bg-zinc-950 border border-cyan-500/30 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-white/5 font-mono text-[10px]">
+              <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#07080c] border border-[#c5a059]/30 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-[#c5a059]/10 font-mono text-[10px]">
                 {suggestions.map((s, index) => (
                   <button
                     key={index}
@@ -1825,16 +1825,16 @@ export const ActiveDirectives: React.FC = () => {
                     onMouseDown={() => handleSelectSuggestion(s)}
                     onMouseEnter={() => setFocusedSuggestionIndex(index)}
                     className={`w-full text-left px-3 py-1.5 flex items-center justify-between transition-colors ${
-                      index === focusedSuggestionIndex ? 'bg-cyan-950/60 text-cyan-300' : 'text-zinc-400'
+                      index === focusedSuggestionIndex ? 'bg-[#3a2e12]/60 text-[#fef08a]' : 'text-zinc-400'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="text-cyan-500 font-bold select-none">❯</span>
+                      <span className="text-[#e5c875] font-bold select-none">❯</span>
                       <span className="font-bold text-zinc-100">{s.display}</span>
                       {s.desc && <span className="text-[9px] text-zinc-500">({s.desc})</span>}
                     </div>
                     <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border leading-none ${
-                      s.type === 'command' ? 'bg-cyan-950/40 border-cyan-500/20 text-cyan-400' :
+                      s.type === 'command' ? 'bg-[#3a2e12]/60 border-[#c5a059]/30 text-[#fef08a]' :
                       s.type === 'skill' ? 'bg-amber-950/40 border-amber-500/20 text-amber-400' :
                       s.type === 'project' ? 'bg-blue-950/40 border-blue-500/20 text-blue-400' :
                       s.type === 'goal' ? 'bg-purple-950/40 border-purple-500/20 text-purple-400' :
@@ -1850,7 +1850,7 @@ export const ActiveDirectives: React.FC = () => {
             )}
 
             <p className="text-[9px] font-mono text-zinc-500 pl-1 pt-1 flex items-center gap-1">
-              Supports <span className="text-cyan-500/70">@skill</span>, <span className="text-cyan-500/70">#project</span>, <span className="text-cyan-500/70">/goal</span>, <span className="text-cyan-500/70">[difficulty]</span>, <span className="text-cyan-500/70">*habit</span>, <span className="text-cyan-500/70">!</span> critical. Use <kbd className="bg-zinc-900 px-1 border border-white/5 rounded text-[8px]">↑/↓</kbd> for history, <kbd className="bg-zinc-900 px-1 border border-white/5 rounded text-[8px]">Tab</kbd> to autocomplete.
+              Supports <span className="text-[#e5c875]">@skill</span>, <span className="text-[#e5c875]">#project</span>, <span className="text-[#e5c875]">/goal</span>, <span className="text-[#e5c875]">[difficulty]</span>, <span className="text-[#e5c875]">*habit</span>, <span className="text-[#e5c875]">!</span> critical. Use <kbd className="bg-[#07080c] px-1 border border-[#c5a059]/20 rounded text-[8px]">↑/↓</kbd> for history, <kbd className="bg-[#07080c] px-1 border border-[#c5a059]/20 rounded text-[8px]">Tab</kbd> to autocomplete.
             </p>
           </div>
         ) : (
@@ -1886,9 +1886,9 @@ export const ActiveDirectives: React.FC = () => {
       </div>
 
       {/* Directives Filter Bar */}
-      <div className="p-3 bg-zinc-950/60 border border-white/5 rounded-lg flex flex-wrap items-center justify-between gap-3">
+      <div className="p-3 bg-[#0b0d13]/85 border border-[#c5a059]/20 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-[0_0_12px_rgba(197,160,89,0.04)]">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-cyan-400" />
+          <Layers className="h-4 w-4 text-[#c5a059]" />
           <span className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">DIRECTIVE FILTERS & SORTING</span>
         </div>
 
@@ -1897,7 +1897,7 @@ export const ActiveDirectives: React.FC = () => {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value as any)}
-            className="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+            className="bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-[#c5a059]/60 cursor-pointer"
           >
             <option value="All">Category: All ({categoryCounts['All'] || 0})</option>
             <option value="Main">🏆 Main ({categoryCounts['Main'] || 0})</option>
@@ -1913,7 +1913,7 @@ export const ActiveDirectives: React.FC = () => {
           <select
             value={difficultyFilter}
             onChange={(e) => setDifficultyFilter(e.target.value as any)}
-            className="bg-zinc-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+            className="bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-300 focus:outline-none focus:border-[#c5a059]/60 cursor-pointer"
           >
             <option value="All">Difficulty: All</option>
             <option value="Easy">🟢 Easy</option>
@@ -1926,7 +1926,7 @@ export const ActiveDirectives: React.FC = () => {
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as any)}
-            className="bg-zinc-900 border border-purple-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono text-purple-300 focus:outline-none focus:border-purple-500/60 cursor-pointer font-bold"
+            className="bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-2.5 py-1.5 text-xs font-mono text-[#fef08a] focus:outline-none focus:border-[#c5a059]/60 cursor-pointer font-bold"
           >
             <option value="none">Group: Flat List</option>
             <option value="list">Group: By List</option>
@@ -1939,7 +1939,7 @@ export const ActiveDirectives: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-zinc-900 border border-cyan-500/30 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500/60 cursor-pointer font-bold"
+            className="bg-[#07080c] border border-[#c5a059]/25 rounded-lg px-2.5 py-1.5 text-xs font-mono text-[#e5c875] focus:outline-none focus:border-[#c5a059]/60 cursor-pointer font-bold"
           >
             <option value="default">Sort: Default Order</option>
             <option value="name">Sort: Name (A-Z)</option>
@@ -1954,7 +1954,7 @@ export const ActiveDirectives: React.FC = () => {
           <button
             type="button"
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="bg-zinc-900 border border-cyan-500/30 hover:border-cyan-500/60 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 font-bold"
+            className="bg-[#07080c] border border-[#c5a059]/25 hover:border-[#c5a059]/60 rounded-lg px-2.5 py-1.5 text-xs font-mono text-[#e5c875] hover:text-[#fef08a] transition-all cursor-pointer flex items-center gap-1 font-bold"
             title={sortOrder === 'asc' ? "Sort Ascending (Click for Descending)" : "Sort Descending (Click for Ascending)"}
           >
             <span>{sortOrder === 'asc' ? '⬆️ ASC' : '⬇️ DESC'}</span>
@@ -2000,10 +2000,10 @@ export const ActiveDirectives: React.FC = () => {
 
     if (!quest) {
       return (
-        <div className="h-full flex flex-col justify-center items-center text-center p-6 border border-dashed border-cyan-500/10 rounded-lg bg-zinc-950/30">
-          <Terminal className="h-10 w-10 text-cyan-500/20 mb-3 animate-pulse" />
-          <p className="text-xs font-mono text-cyan-500/60 uppercase">SYSTEM_OPERATIONAL_LOG</p>
-          <p className="text-[10px] font-mono text-zinc-500 mt-2 max-w-xs leading-relaxed">
+        <div className="h-full flex flex-col justify-center items-center text-center p-6 border border-dashed border-[#c5a059]/20 rounded-lg bg-[#07080c]/80">
+          <Terminal className="h-10 w-10 text-[#c5a059]/40 mb-3 animate-pulse" />
+          <p className="text-xs font-mono text-[#fef08a] uppercase">SYSTEM_OPERATIONAL_LOG</p>
+          <p className="text-[10px] font-mono text-zinc-400 mt-2 max-w-xs leading-relaxed">
             No directives active or selected in this sector. Choose a directive from the operational board to inspect parameters and engage.
           </p>
         </div>
@@ -2016,30 +2016,30 @@ export const ActiveDirectives: React.FC = () => {
     const cat = getCategoryDetails(quest.type);
 
     return (
-      <div className="h-full flex flex-col overflow-hidden text-left" id="quest-hud-terminal">
+      <div className="h-full flex flex-col overflow-hidden text-left rounded-xl border border-[#c5a059]/20 bg-[#07080c]/80 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]" id="quest-hud-terminal">
         {/* HUD Top Bar */}
-        <div className="flex justify-between items-center pb-2 border-b border-cyan-500/15 shrink-0">
-          <div className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-400 font-bold uppercase tracking-wider">
-            <Cpu className="h-3.5 w-3.5 text-cyan-400 animate-spin" />
+        <div className="flex justify-between items-center pb-2 border-b border-[#c5a059]/20 px-3 pt-3 shrink-0 bg-[#0b0d13]/70">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#e5c875] font-bold uppercase tracking-wider">
+            <Cpu className="h-3.5 w-3.5 text-[#c5a059] animate-spin" />
             <span>DIRECTIVE_HUD_TERM :: {quest.id.slice(0, 8)}</span>
           </div>
-          <span className="text-[9px] font-mono text-cyan-500/60">SECURE_CHANNEL</span>
+          <span className="text-[9px] font-mono text-[#fef08a]">SECURE_CHANNEL</span>
         </div>
 
         {/* HUD Scrollable Main Area */}
-        <div className="flex-1 overflow-y-auto pr-1 py-3.5 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
+        <div className="flex-1 overflow-y-auto pr-1 py-3.5 px-3 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
           {/* Header Title & Status */}
           <div>
             <div className="flex justify-between items-start gap-2">
-              <h3 className={`font-sans text-xs sm:text-sm font-bold leading-tight ${finished ? 'line-through text-zinc-500' : 'text-white'}`}>
+              <h3 className={`font-sans text-xs sm:text-sm font-bold leading-tight ${finished ? 'line-through text-zinc-500' : 'text-[#f5f5f5]'}`}>
                 {quest.name}
               </h3>
-              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 px-2 py-0.5 rounded shrink-0">
+              <span className="text-[10px] font-mono font-bold text-[#fef08a] bg-[#3a2e12]/70 border border-[#c5a059]/40 px-2 py-0.5 rounded shrink-0">
                 +{quest.xp} XP
               </span>
             </div>
             {quest.description && (
-              <p className="text-[11px] text-zinc-400 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed bg-zinc-950/40 p-2 rounded border border-white/5">
+              <p className="text-[11px] text-zinc-300 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed bg-[#0b0d13]/80 p-2 rounded border border-[#c5a059]/15">
                 {quest.description}
               </p>
             )}
@@ -2047,11 +2047,11 @@ export const ActiveDirectives: React.FC = () => {
 
           {/* Quick Info Grid */}
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
-              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Difficulty</span>
+            <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+              <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Difficulty</span>
               <span className={`font-bold ${
                 quest.difficulty === 'Easy' ? 'text-emerald-400' :
-                quest.difficulty === 'Normal' ? 'text-cyan-400' :
+                quest.difficulty === 'Normal' ? 'text-[#e5c875]' :
                 quest.difficulty === 'Hard' ? 'text-purple-400' : 'text-rose-400 font-extrabold animate-pulse'
               }`}>
                 {quest.difficulty === 'Easy' ? '🟢 EASY' :
@@ -2059,34 +2059,34 @@ export const ActiveDirectives: React.FC = () => {
                  quest.difficulty === 'Hard' ? '🟣 HARD' : '🔴 BOSS'}
               </span>
             </div>
-            <div className={`p-2 rounded border border-white/5 ${cat.accentBg}`}>
-              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Category</span>
+            <div className={`p-2 rounded border border-[#c5a059]/15 ${cat.accentBg}`}>
+              <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Category</span>
               <span className={`font-bold flex items-center gap-1 ${cat.textColor}`}>
                 <span>{cat.icon}</span>
                 <span>{cat.label}</span>
               </span>
             </div>
-            <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
-              <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Est. Duration</span>
-              <span className="text-cyan-400 font-bold">⏱️ {quest.estimatedTime || 30} mins</span>
+            <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+              <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Est. Duration</span>
+              <span className="text-[#e5c875] font-bold">⏱️ {quest.estimatedTime || 30} mins</span>
             </div>
             {quest.recurrence && quest.recurrence !== 'None' && (
-              <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
-                <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Recurrence</span>
-                <span className="text-cyan-400 font-bold">🔁 {quest.recurrence}</span>
+              <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+                <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Recurrence</span>
+                <span className="text-[#e5c875] font-bold">🔁 {quest.recurrence}</span>
               </div>
             )}
             {quest.deadline && (
-              <div className="bg-zinc-950/50 p-2 rounded border border-white/5">
-                <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Target Date</span>
+              <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+                <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Target Date</span>
                 <span className="text-amber-400 font-bold">📅 {quest.deadline}</span>
               </div>
             )}
             {matchedGoal && (
-              <div className="col-span-2 bg-zinc-950/50 p-2 rounded border border-white/5 flex justify-between items-center">
+              <div className="col-span-2 bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15 flex justify-between items-center">
                 <div>
-                  <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Linked Goal</span>
-                  <span className="text-zinc-300 truncate font-semibold block max-w-[220px]">🎯 {matchedGoal.name}</span>
+                  <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Linked Goal</span>
+                  <span className="text-zinc-200 truncate font-semibold block max-w-[220px]">🎯 {matchedGoal.name}</span>
                 </div>
               </div>
             )}
@@ -2096,9 +2096,9 @@ export const ActiveDirectives: React.FC = () => {
               if (!matchedList) return null;
               const matchedFolder = matchedList.folderId ? (state.folders || []).find(f => f.id === matchedList.folderId) : null;
               return (
-                <div className="col-span-2 bg-zinc-950/50 p-2 rounded border border-white/5">
-                  <span className="text-zinc-500 uppercase block text-[8px] mb-0.5">Directory Path</span>
-                  <span className="text-cyan-400 truncate font-semibold block" style={{ color: matchedFolder?.color }}>
+                <div className="col-span-2 bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+                  <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Directory Path</span>
+                  <span className="text-[#e5c875] truncate font-semibold block" style={{ color: matchedFolder?.color }}>
                     📋 {matchedFolder ? `${matchedFolder.name} › ${matchedList.name}` : matchedList.name}
                   </span>
                 </div>
@@ -2107,7 +2107,7 @@ export const ActiveDirectives: React.FC = () => {
           </div>
 
           {/* Subquests Section */}
-          <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-white/5 space-y-2">
+          <div className="bg-[#0b0d13]/75 p-2.5 rounded-lg border border-[#c5a059]/15 space-y-2">
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
               <span>Subquests ({quest.subquests?.filter(s => s.completed).length || 0}/{quest.subquests?.length || 0})</span>
             </div>
@@ -2223,11 +2223,11 @@ export const ActiveDirectives: React.FC = () => {
                 type="text"
                 name="hudSubquestName"
                 placeholder="Break down task..."
-                className="bg-zinc-900 border border-white/5 rounded px-2 py-0.5 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 flex-1 font-sans"
+                className="bg-[#0b0d13]/90 border border-[#c5a059]/15 rounded px-2 py-0.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#c5a059]/40 flex-1 font-sans"
               />
               <button
                 type="submit"
-                className="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-400 px-2 py-0.5 rounded text-[10px] font-mono transition-colors shrink-0"
+                className="bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/45 text-[#fef08a] px-2 py-0.5 rounded text-[10px] font-mono transition-colors shrink-0"
               >
                 ADD
               </button>
@@ -2236,11 +2236,11 @@ export const ActiveDirectives: React.FC = () => {
 
           {/* Linked SOPs / Playbooks */}
           {linkedDocs.length > 0 && (
-            <div className="bg-zinc-950/40 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+            <div className="bg-[#0b0d13]/75 p-2.5 rounded-lg border border-[#c5a059]/15 space-y-1.5">
               <span className="text-[8px] font-mono text-zinc-400 font-bold uppercase tracking-wider block">📄 CONNECTED_OPERATIONAL_SOPs</span>
               <div className="flex flex-wrap gap-1.5">
                 {linkedDocs.map(doc => (
-                  <div key={doc.id} className="text-[9px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-500/15 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <div key={doc.id} className="text-[9px] font-mono text-[#e5c875] bg-[#1c160c]/80 border border-[#c5a059]/20 px-1.5 py-0.5 rounded flex items-center gap-1">
                     <span>📂</span>
                     <span className="max-w-[150px] truncate">{doc.name || doc.path.split('/').pop()?.replace('.md', '')}</span>
                   </div>
@@ -2251,19 +2251,19 @@ export const ActiveDirectives: React.FC = () => {
         </div>
 
         {/* HUD Bottom Controller / Primary Actions */}
-        <div className="pt-2.5 border-t border-cyan-500/15 shrink-0 space-y-2 bg-zinc-950/20">
+        <div className="pt-2.5 border-t border-[#c5a059]/20 shrink-0 space-y-2 bg-[#0b0d13]/70 px-3 pb-3">
           {/* POMODORO TRIGGER SECTION */}
           {!finished && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => {
                   setFocusChoiceQuestId(focusChoiceQuestId === quest.id ? null : quest.id);
                   startFocusSession(quest.id, 25);
                 }}
-                className="flex-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-400 font-bold font-mono text-xs py-1.5 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.05)]"
+                className="flex-1 bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/45 text-[#fef08a] font-bold font-mono text-xs py-1.5 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_12px_rgba(197,160,89,0.05)]"
               >
-                <Timer className="h-4 w-4 text-cyan-400 animate-pulse" />
+                <Timer className="h-4 w-4 text-[#e5c875] animate-pulse" />
                 <span>ENGAGE_FOCUS_POMODORO (25M)</span>
               </button>
             </div>
@@ -2278,10 +2278,10 @@ export const ActiveDirectives: React.FC = () => {
                 if (finished) reopenQuest(quest.id);
                 else completeQuest(quest.id);
               }}
-              className={`py-1 bg-zinc-900/60 border rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+              className={`py-1 bg-[#0b0d13]/80 border rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
                 finished 
                   ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900' 
-                  : 'border-white/5 text-zinc-400 hover:text-emerald-400 hover:border-emerald-500/20'
+                  : 'border-[#c5a059]/15 text-zinc-300 hover:text-emerald-400 hover:border-emerald-500/20'
               }`}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -2293,7 +2293,7 @@ export const ActiveDirectives: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleMoveToTomorrow(quest.id)}
-                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-amber-500/20 hover:text-amber-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+                className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-amber-500/20 hover:text-amber-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
                 title="Postpone to tomorrow"
               >
                 <Calendar className="h-3.5 w-3.5" />
@@ -2315,7 +2315,7 @@ export const ActiveDirectives: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleMoveToToday(quest.id)}
-                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-emerald-500/20 hover:text-emerald-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+                className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-emerald-500/20 hover:text-emerald-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
                 title="Postpone / Move to Today"
               >
                 <Clock className="h-3.5 w-3.5 text-emerald-400" />
@@ -2341,7 +2341,7 @@ export const ActiveDirectives: React.FC = () => {
                   setTerminalLog(`[STATUS] Quest marked as Won't Do / Failed.`);
                   setTimeout(() => setTerminalLog(null), 4000);
                 }}
-                className="py-1 bg-zinc-900/60 border border-white/5 hover:border-rose-500/20 hover:text-rose-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+                className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-rose-500/20 hover:text-rose-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
               >
                 <Ban className="h-3.5 w-3.5" />
                 <span>FAIL_SKIP</span>
@@ -2361,7 +2361,7 @@ export const ActiveDirectives: React.FC = () => {
             <button
               type="button"
               onClick={() => startEditingQuest(quest)}
-              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-cyan-500/20 hover:text-cyan-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+              className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-[#c5a059]/40 hover:text-[#e5c875] text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
             >
               <Edit3 className="h-3.5 w-3.5" />
               <span>EDIT</span>
@@ -2375,7 +2375,7 @@ export const ActiveDirectives: React.FC = () => {
                 setTerminalLog(`[SUCCESS] DUPLICATED: "${quest.name}" cloned.`);
                 setTimeout(() => setTerminalLog(null), 3000);
               }}
-              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-purple-500/20 hover:text-purple-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+              className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-purple-500/20 hover:text-purple-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
             >
               <Copy className="h-3.5 w-3.5" />
               <span>DUPLICATE</span>
@@ -2390,7 +2390,7 @@ export const ActiveDirectives: React.FC = () => {
                 setTerminalLog(`[SUCCESS] ARCHIVED: "${quest.name}" moved to vault. Exempt from midnight rules.`);
                 setTimeout(() => setTerminalLog(null), 5000);
               }}
-              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-amber-500/20 hover:text-amber-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer"
+              className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-amber-500/20 hover:text-amber-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer"
               title="Archive Directive (Exempt from midnight rule)"
             >
               <Archive className="h-3.5 w-3.5" />
@@ -2406,7 +2406,7 @@ export const ActiveDirectives: React.FC = () => {
                 setTerminalLog(`[STATUS] DELETED: "${quest.name}" removed.`);
                 setTimeout(() => setTerminalLog(null), 3000);
               }}
-              className="py-1 bg-zinc-900/60 border border-white/5 hover:border-red-500/20 hover:text-red-400 text-zinc-400 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
+              className="py-1 bg-[#0b0d13]/80 border border-[#c5a059]/15 hover:border-red-500/20 hover:text-red-400 text-zinc-300 rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>DELETE</span>
@@ -2418,23 +2418,28 @@ export const ActiveDirectives: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4" id="active-quests-panel">
+    <div
+      className="space-y-4 rounded-2xl border border-[#c5a059]/15 bg-[#0b0d13]/80 p-4 shadow-[0_0_24px_rgba(197,160,89,0.04)] backdrop-blur-sm relative overflow-hidden"
+      id="active-quests-panel"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(197,160,89,0.06),transparent_28%)] pointer-events-none" />
+      <div className="relative z-10 space-y-4">
       {upperDashboardJSX}
 
       {/* COMPACTED UNIFIED TERMINAL CONSOLE */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 h-[620px]" id="unified-terminal-container">
         {/* Left Column: Directives Board List */}
         <div 
-          className={`lg:col-span-3 glass-panel rounded-lg p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-full ${
+          className={`lg:col-span-3 glass-panel rounded-xl p-5 border transition-all duration-300 relative overflow-hidden flex flex-col h-full ${
             terminalTab === 'today'
-              ? 'border-cyan-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(6,182,212,0.03)]'
+              ? 'border-[#c5a059]/25 bg-[#0b0d13]/90 shadow-[0_0_24px_rgba(197,160,89,0.06)]'
               : terminalTab === 'tomorrow'
-              ? 'border-purple-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(168,85,247,0.03)]'
+              ? 'border-[#c5a059]/25 bg-[#0b0d13]/90 shadow-[0_0_24px_rgba(197,160,89,0.06)]'
               : terminalTab === 'week'
-              ? 'border-emerald-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(16,185,129,0.03)]'
+              ? 'border-[#c5a059]/25 bg-[#0b0d13]/90 shadow-[0_0_24px_rgba(197,160,89,0.06)]'
               : terminalTab === 'deferred'
-              ? 'border-amber-500/20 bg-zinc-950/45 shadow-[0_0_20px_rgba(245,158,11,0.02)]'
-              : 'border-rose-500/35 bg-zinc-950/50 shadow-[0_0_20px_rgba(239,68,68,0.04)]'
+              ? 'border-[#c5a059]/25 bg-[#0b0d13]/90 shadow-[0_0_24px_rgba(197,160,89,0.06)]'
+              : 'border-[#c5a059]/30 bg-[#0b0d13]/90 shadow-[0_0_24px_rgba(197,160,89,0.06)]'
           }`} 
           id="unified-terminal"
         >
@@ -2551,28 +2556,28 @@ export const ActiveDirectives: React.FC = () => {
 
           {/* Dynamic Body Log description box */}
           {terminalTab === 'today' ? (
-            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-              <span className="text-cyan-400/80">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
+            <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/today_operational_log<br/>
               Running daily operational protocol. Completed objectives archive below.
             </div>
           ) : terminalTab === 'tomorrow' ? (
-            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-              <span className="text-purple-400/80">root@pos-os:~#</span> cat /sys/tomorrow_operational_log<br/>
+            <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/tomorrow_operational_log<br/>
               Simulating next-cycle directives. Anticipating objective schedules.
             </div>
           ) : terminalTab === 'week' ? (
-            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-              <span className="text-emerald-400/80">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
+            <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/week_horizon_log<br/>
               Analyzing 7-day milestone projection. Balancing recurring workloads.
             </div>
           ) : terminalTab === 'deferred' ? (
-            <div className="bg-zinc-900/60 border border-white/5 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-              <span className="text-amber-500/80">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
+            <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/deferred_queue_log<br/>
               Operational objectives postponed to future cycles. Click &lt;Accelerate&gt; to pull back.
             </div>
           ) : (
-            <div className="bg-zinc-900/60 border border-rose-950/40 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-500 mb-4 shrink-0 leading-relaxed">
-              <span className="text-rose-500">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
+            <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
               ACTIVE SYSTEM PENALTIES DETECTED. Complete these directives immediately to disable Recovery Mode restriction lock.
             </div>
           )}
@@ -2591,8 +2596,8 @@ export const ActiveDirectives: React.FC = () => {
               if (activeQuests.length === 0) {
                 if (terminalTab === 'today') {
                   return (
-                    <div className="text-center py-12 px-4 border border-dashed border-cyan-500/15 rounded-lg bg-zinc-950/40">
-                      <Terminal className="h-8 w-8 text-cyan-400 mx-auto mb-2 animate-pulse" />
+                    <div className="text-center py-12 px-4 border border-dashed border-[#c5a059]/20 rounded-lg bg-[#07080c]/80">
+                      <Terminal className="h-8 w-8 text-[#e5c875] mx-auto mb-2 animate-pulse" />
                       <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO ACTIVE DIRECTIVES IN THIS SECTOR</p>
                       <p className="text-[10px] text-zinc-500 font-mono mt-1 max-w-sm mx-auto">
                         {hasActiveFilters 
@@ -2624,8 +2629,8 @@ export const ActiveDirectives: React.FC = () => {
                 }
                 if (terminalTab === 'tomorrow') {
                   return (
-                    <div className="text-center py-12 px-4 border border-dashed border-purple-500/15 rounded-lg bg-zinc-950/40">
-                      <Calendar className="h-8 w-8 text-purple-400 mx-auto mb-2 animate-pulse" />
+                    <div className="text-center py-12 px-4 border border-dashed border-[#c5a059]/20 rounded-lg bg-[#07080c]/80">
+                      <Calendar className="h-8 w-8 text-[#e5c875] mx-auto mb-2 animate-pulse" />
                       <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO DIRECTIVES FORECAST FOR TOMORROW</p>
                       <p className="text-[10px] text-zinc-500 font-mono mt-1">No tasks scheduled or due on tomorrow's date.</p>
                       {hasActiveFilters && (
@@ -2643,8 +2648,8 @@ export const ActiveDirectives: React.FC = () => {
                 }
                 if (terminalTab === 'week') {
                   return (
-                    <div className="text-center py-12 px-4 border border-dashed border-emerald-500/15 rounded-lg bg-zinc-950/40">
-                      <Compass className="h-8 w-8 text-emerald-400 mx-auto mb-2 animate-pulse" />
+                    <div className="text-center py-12 px-4 border border-dashed border-[#c5a059]/20 rounded-lg bg-[#07080c]/80">
+                      <Compass className="h-8 w-8 text-[#e5c875] mx-auto mb-2 animate-pulse" />
                       <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO DIRECTIVES PLANNED FOR THE 7-DAY HORIZON</p>
                       <p className="text-[10px] text-zinc-500 font-mono mt-1">All upcoming days are clear of operational loads.</p>
                       {hasActiveFilters && (
@@ -2662,8 +2667,8 @@ export const ActiveDirectives: React.FC = () => {
                 }
                 if (terminalTab === 'deferred') {
                   return (
-                    <div className="text-center py-12 px-4 border border-dashed border-amber-500/15 rounded-lg bg-zinc-950/40">
-                      <Calendar className="h-8 w-8 text-amber-400 mx-auto mb-2 animate-pulse" />
+                    <div className="text-center py-12 px-4 border border-dashed border-[#c5a059]/20 rounded-lg bg-[#07080c]/80">
+                      <Calendar className="h-8 w-8 text-[#e5c875] mx-auto mb-2 animate-pulse" />
                       <p className="text-xs text-zinc-300 font-mono font-bold uppercase tracking-wider">NO OBJECTIVES DELAYED OR POSTPONED</p>
                       <p className="text-[10px] text-zinc-500 font-mono mt-1">Postpone any active task to defer execution load.</p>
                       {hasActiveFilters && (
@@ -2844,11 +2849,12 @@ export const ActiveDirectives: React.FC = () => {
 
         {/* Right Column: Quest HUD Terminal Inspector */}
         <div 
-          className="lg:col-span-2 glass-panel rounded-lg p-5 border border-cyan-500/15 bg-zinc-950/60 shadow-[0_0_25px_rgba(6,182,212,0.03)] flex flex-col h-full relative overflow-hidden"
+          className="lg:col-span-2 glass-panel rounded-xl p-5 border border-[#c5a059]/25 bg-[#0b0d13]/90 shadow-[0_0_20px_rgba(197,160,89,0.05)] flex flex-col h-full relative overflow-hidden"
           id="unified-hud-inspector"
         >
           {renderQuestTerminalHUD()}
         </div>
+      </div>
       </div>
     </div>
   );

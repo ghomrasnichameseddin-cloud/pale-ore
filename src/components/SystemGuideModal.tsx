@@ -289,65 +289,115 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                     Your global Operator Rank is determined dynamically by your <strong>System Level</strong>, calculated from cumulative XP earned across all directives and focus sessions.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 font-mono text-[11px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 font-mono text-[11px]">
                     {/* E-Rank */}
                     <div className="p-3 bg-zinc-950 border border-zinc-700/40 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-zinc-300 font-bold">🔘 E-RANK</span>
-                        <span className="text-[9px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">Lvl 1 – 4</span>
+                        <span className="text-[9px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">Lvl 1–9</span>
                       </div>
-                      <div className="text-xs text-zinc-200 font-sans font-semibold">Initiate / Novice Progressor</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">Foundation phase. Establishing core morning/evening routines and baseline habit consistency.</p>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Beginner / Initiate</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Foundation phase. Building core rituals, discipline, and early system competence.</p>
                     </div>
 
                     {/* D-Rank */}
                     <div className="p-3 bg-zinc-950 border border-cyan-500/30 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-cyan-300 font-bold">🔷 D-RANK</span>
-                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded">Lvl 5 – 9</span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded">Lvl 10–24</span>
                       </div>
-                      <div className="text-xs text-zinc-200 font-sans font-semibold">Proven Operative</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">Demonstrated habit consistency, initial project kickoff, and early streak building.</p>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Developing Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Consistent execution, emerging specialty skills, and stronger reliability under pressure.</p>
                     </div>
 
                     {/* C-Rank */}
                     <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-emerald-300 font-bold">🟢 C-RANK</span>
-                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded">Lvl 10 – 14</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded">Lvl 25–39</span>
                       </div>
-                      <div className="text-xs text-zinc-200 font-sans font-semibold">Advanced Practitioner</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">Autonomous execution across multiple active projects and balanced attribute growth.</p>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Skilled Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Autonomous output across complex tasks and repeatable momentum in multiple domains.</p>
                     </div>
 
                     {/* B-Rank */}
                     <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-purple-300 font-bold">🟣 B-RANK</span>
-                        <span className="text-[9px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded">Lvl 15 – 19</span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded">Lvl 40–59</span>
                       </div>
-                      <div className="text-xs text-zinc-200 font-sans font-semibold">Elite Specialist</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">High-velocity delivery, multiple unsealed Power Seals, and specialized technical mastery.</p>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Advanced Specialist</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">High-velocity delivery, multiple seal advancements, and a refined strategic operating rhythm.</p>
                     </div>
 
                     {/* A-Rank */}
                     <div className="p-3 bg-zinc-950 border border-amber-500/40 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-amber-300 font-bold">🟡 A-RANK</span>
-                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded">Lvl 20 – 29</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded">Lvl 60–99</span>
                       </div>
-                      <div className="text-xs text-zinc-200 font-sans font-semibold">Commander / High-Tier Operative</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">Architect of complex systems, extreme cognitive stamina, and sustained momentum execution.</p>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Expert / Elite Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Command-level execution with elite consistency, escalation control, and system-level mastery.</p>
                     </div>
 
                     {/* S-Rank */}
                     <div className="p-3 bg-zinc-950 border border-rose-500/40 rounded-xl space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-rose-400 font-bold">👑 S-RANK</span>
-                        <span className="text-[9px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded font-bold">Lvl 30+</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded font-bold">Lvl 100–149</span>
                       </div>
-                      <div className="text-xs text-rose-200 font-sans font-semibold">Sovereign / Apex System Master</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">Transcendent mastery over craft, bio-performance, and long-term strategic vision.</p>
+                      <div className="text-xs text-rose-200 font-sans font-semibold">Master Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Transcendent mastery over craft, strategic execution, and sustained long-range growth.</p>
+                    </div>
+
+                    {/* S+-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-fuchsia-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-fuchsia-300 font-bold">✨ S+-RANK</span>
+                        <span className="text-[9px] bg-fuchsia-950 text-fuchsia-300 px-2 py-0.5 rounded font-bold">Lvl 150–199</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Exceptional Master</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Rare operational excellence with elite command, precision, and influence at scale.</p>
+                    </div>
+
+                    {/* SS-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-indigo-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-indigo-300 font-bold">🌀 SS-RANK</span>
+                        <span className="text-[9px] bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded font-bold">Lvl 200–299</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Distinguished Master</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">A benchmark tier that reflects outstanding mastery and broad system leverage.</p>
+                    </div>
+
+                    {/* SS+-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-yellow-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-yellow-300 font-bold">🌟 SS+-RANK</span>
+                        <span className="text-[9px] bg-yellow-950 text-yellow-300 px-2 py-0.5 rounded font-bold">Lvl 300–399</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Outstanding Master</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">An exceptional apex tier marking elite global-class operational dominance.</p>
+                    </div>
+
+                    {/* SSS-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-emerald-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-300 font-bold">🏆 SSS-RANK</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold">Lvl 400–499</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Legendary Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Mythic-tier mastery reserved for rare, legendary operational achievement.</p>
+                    </div>
+
+                    {/* SSS+-Rank */}
+                    <div className="p-3 bg-zinc-950 border border-red-500/40 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-red-300 font-bold">👑 SSS+-RANK</span>
+                        <span className="text-[9px] bg-red-950 text-red-300 px-2 py-0.5 rounded font-bold">Lvl 500+</span>
+                      </div>
+                      <div className="text-xs text-zinc-200 font-sans font-semibold">Pinnacle Practitioner</div>
+                      <p className="text-zinc-400 text-[10px] font-sans">The apex of the Hunter-scale ladder: a true pinnacle operator in the Pale Ore system.</p>
                     </div>
                   </div>
 

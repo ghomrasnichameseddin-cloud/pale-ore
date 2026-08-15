@@ -1307,13 +1307,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const xpUntilNextLevel = xpRequiredForNextLevel - xpIntoLevel;
     const progress = Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100);
 
-    // Rank evaluation (Solo Leveling theme)
+    // Rank evaluation (Hunter System progression scale)
     let rank = 'E-Rank';
-    if (level >= 30) rank = 'S-Rank';
-    else if (level >= 20) rank = 'A-Rank';
-    else if (level >= 15) rank = 'B-Rank';
-    else if (level >= 10) rank = 'C-Rank';
-    else if (level >= 5) rank = 'D-Rank';
+    if (level >= 500) rank = 'SSS+-Rank';
+    else if (level >= 400) rank = 'SSS-Rank';
+    else if (level >= 300) rank = 'SS+-Rank';
+    else if (level >= 200) rank = 'SS-Rank';
+    else if (level >= 150) rank = 'S+-Rank';
+    else if (level >= 100) rank = 'S-Rank';
+    else if (level >= 60) rank = 'A-Rank';
+    else if (level >= 40) rank = 'B-Rank';
+    else if (level >= 25) rank = 'C-Rank';
+    else if (level >= 10) rank = 'D-Rank';
 
     return { level, totalXp, xpIntoLevel, xpUntilNextLevel, progress, rank, xpRequiredForNextLevel };
   };
