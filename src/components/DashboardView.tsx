@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuestDifficulty, QuestType } from '../types';
+import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 interface DashboardViewProps {
@@ -132,6 +133,38 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   // Active Goals for linkage cards
   const activeGoals = state.goals.filter(g => g.status === 'Active').slice(0, 3);
+
+  const activeDirectiveProjects = Array.from(
+    new Map(
+      activeQuests
+        .filter(q => q.projectId)
+        .map(q => {
+          const project = (state.projects || []).find((p: any) => p.id === q.projectId);
+          return project ? [project.id, project] as const : null;
+        })
+        .filter((entry): entry is readonly [string, any] => !!entry)
+    ).values()
+  ).slice(0, 3) as Array<{ id: string; name: string; goalId?: string; status?: string; description?: string; estimatedTime?: string; createdAt?: string }>;
+
+  const activeDirectiveSkillMap = new Map<string, { id: string; name: string; iconName?: string; level: number; xp: number; directives: number }>();
+  activeQuests.forEach(quest => {
+    const relatedSkillIds = Array.from(new Set((quest.relatedSkills || []) as string[]));
+    relatedSkillIds.forEach((skillId: string) => {
+      const existingSkill = (state.skills || []).find((s: any) => s.id === skillId);
+      if (!existingSkill) return;
+      const existingEntry = activeDirectiveSkillMap.get(skillId);
+      activeDirectiveSkillMap.set(skillId, {
+        id: existingSkill.id,
+        name: existingSkill.name,
+        iconName: existingSkill.iconName || 'Sparkles',
+        level: existingSkill.level ?? 1,
+        xp: existingSkill.xp ?? 0,
+        directives: (existingEntry?.directives ?? 0) + 1
+      });
+    });
+  });
+
+  const activeDirectiveSkills = Array.from(activeDirectiveSkillMap.values()).sort((a, b) => b.level - a.level || b.xp - a.xp).slice(0, 6);
 
   const handleSaveFocus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -371,12 +404,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   )}
 
                   <span className="text-[10px] font-mono font-bold bg-[#3a2e12]/60 border border-[#c5a059]/40 text-[#fef08a] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    <Star className="h-3.5 w-3.5 text-[#c5a059]" />
+                    {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
                     [{activeTitle.badge}] {activeTitle.name}
                   </span>
 
                   <span className="text-[10px] font-mono font-bold bg-[#141824] border border-[#c5a059]/30 text-zinc-200 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    <Shield className="h-3.5 w-3.5 text-[#c5a059]" />
+                    {renderTopicIcon(activeJob.iconName || 'Shield', 'h-3.5 w-3.5')}
                     DISCIPLINE: {activeJob.name}
                   </span>
 
@@ -1222,6 +1255,70 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 })}
               </div>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div className="glass-panel rounded-2xl p-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="active-directive-projects-preview">
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#c5a059]/20">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-[#c5a059]">
+                  <FolderKanban className="h-3 w-3" /> Projects
+                </div>
+                <span className="text-[9px] font-mono text-zinc-400">{activeDirectiveProjects.length} live</span>
+              </div>
+              {activeDirectiveProjects.length === 0 ? (
+                <p className="text-[10px] font-mono text-zinc-500">No active project links in today’s directives.</p>
+              ) : (
+                <div className="space-y-2">
+                  {activeDirectiveProjects.map(project => {
+                    const projectProgress = getProjectProgress(project.id);
+                    const projectQuestCount = activeQuests.filter(q => q.projectId === project.id).length;
+
+                    return (
+                      <div key={project.id} className="rounded-lg border border-[#c5a059]/15 bg-[#07080c] p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-sans font-semibold text-white truncate">{project.name}</span>
+                          <span className="text-[9px] font-mono text-[#e5c875]">{projectProgress}%</span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#10131a] border border-white/5">
+                          <div className="h-full rounded-full bg-gradient-to-r from-[#8a6d2b] to-[#c5a059]" style={{ width: `${projectProgress}%` }} />
+                        </div>
+                        <div className="mt-1 text-[9px] font-mono text-zinc-400">{projectQuestCount} directive{projectQuestCount === 1 ? '' : 's'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="glass-panel rounded-2xl p-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="active-directive-skills-preview">
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#c5a059]/20">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-[#c5a059]">
+                  <Sparkles className="h-3 w-3" /> Skills
+                </div>
+                <span className="text-[9px] font-mono text-zinc-400">{activeDirectiveSkills.length} affected</span>
+              </div>
+              {activeDirectiveSkills.length === 0 ? (
+                <p className="text-[10px] font-mono text-zinc-500">No skill links in today’s active directives.</p>
+              ) : (
+                <div className="space-y-2">
+                  {activeDirectiveSkills.map(skill => (
+                    <div key={skill.id} className="rounded-lg border border-[#c5a059]/15 bg-[#07080c] p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {renderTopicIcon(skill.iconName || 'Sparkles', 'h-3.5 w-3.5')}
+                          <span className="text-[11px] font-sans font-semibold text-white truncate">{skill.name}</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-[#fef08a]">LVL {skill.level}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                        <span>XP {skill.xp}</span>
+                        <span>{skill.directives} active directive{skill.directives === 1 ? '' : 's'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* QUICK-TAP DAILY HABITS / RITES LOBBY */}

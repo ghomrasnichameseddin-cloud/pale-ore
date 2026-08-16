@@ -2105,8 +2105,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         category: 'achievement',
         title: isBadHabitQuest ? 'Anti-Habit Victory' : 'Directive Completed',
         content: completionMessage,
-        timestamp: new Date().toISOString(),
-        read: false,
         priority: 'high'
       });
 

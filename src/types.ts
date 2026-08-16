@@ -41,6 +41,7 @@ export interface Project {
   estimatedTime: string;
   createdAt: string;
   subProjects?: SubProject[];
+  archived?: boolean;
 }
 
 export interface SubQuest {
@@ -64,6 +65,8 @@ export interface QuestFolder {
   description?: string;
   color?: string; // hex or tailwind color class
   createdAt: string;
+  archived?: boolean;
+  archivedAt?: string | null;
 }
 
 export interface QuestList {
@@ -72,6 +75,8 @@ export interface QuestList {
   name: string;
   description?: string;
   createdAt: string;
+  archived?: boolean;
+  archivedAt?: string | null;
 }
 
 export type QuestDifficulty = 'Easy' | 'Normal' | 'Hard' | 'Boss' | 'Custom';
@@ -105,6 +110,8 @@ export interface Quest {
   energyLevel?: 'Low' | 'Medium' | 'High';
   postponedFrom?: string | null;
   postponedTo?: string | null;
+  archived?: boolean;
+  archivedAt?: string | null;
 }
 
 export interface Skill {
@@ -116,6 +123,7 @@ export interface Skill {
   relatedGoals: string[]; // Goal IDs
   relatedProjects: string[]; // Project IDs
   equippedTitle?: string;
+  iconName?: string;
   tier?: 'Primary' | 'Secondary';
   parentId?: string | null;
   archived?: boolean;
