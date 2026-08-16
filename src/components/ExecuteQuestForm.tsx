@@ -177,6 +177,7 @@ export const ExecuteQuestForm: React.FC = () => {
               <option value="Recovery">🛡️ Recovery Quest</option>
               <option value="Penalty">💀 Penalty Quest</option>
               <option value="Habit">⚡ Habit Quest</option>
+              <option value="Bad Habit">🚫 Bad Habit Tracker</option>
               <option value="Optional">🌟 Optional Quest</option>
             </select>
           </div>

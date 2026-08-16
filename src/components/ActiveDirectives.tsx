@@ -28,11 +28,11 @@ export const getCategoryDetails = (type: string) => {
       label: 'Side Quest',
       shortLabel: 'Side',
       icon: '🎯',
-      badgeClass: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40',
-      borderLeftClass: 'border-l-4 border-l-cyan-500',
-      textColor: 'text-cyan-400',
-      bgHeader: 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300',
-      accentBg: 'bg-cyan-500/10',
+      badgeClass: 'bg-[#3a2e12]/80 text-[#fef08a] border-[#c5a059]/45',
+      borderLeftClass: 'border-l-4 border-l-[#c5a059]',
+      textColor: 'text-[#e5c875]',
+      bgHeader: 'bg-[#20170b]/80 border-[#c5a059]/30 text-[#fef08a]',
+      accentBg: 'bg-[#c5a059]/10',
     };
   }
   if (t === 'boss') {
@@ -57,6 +57,18 @@ export const getCategoryDetails = (type: string) => {
       textColor: 'text-emerald-400',
       bgHeader: 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300',
       accentBg: 'bg-emerald-500/10',
+    };
+  }
+  if (t === 'bad habit' || t === 'anti-habit') {
+    return {
+      label: 'Bad Habit / Anti-Habit',
+      shortLabel: 'Bad Habit',
+      icon: '🚫',
+      badgeClass: 'bg-rose-950/80 text-rose-300 border-rose-500/60 font-black',
+      borderLeftClass: 'border-l-4 border-l-rose-500',
+      textColor: 'text-rose-400',
+      bgHeader: 'bg-rose-950/60 border-rose-500/40 text-rose-300',
+      accentBg: 'bg-rose-500/10',
     };
   }
   if (t === 'recovery') {
@@ -1117,9 +1129,11 @@ export const ActiveDirectives: React.FC = () => {
     });
   };
 
-  const renderQuestCard = (quest: Quest, isDeferred: boolean) => {
+  const renderQuestCard = (quest: Quest, isDeferred: boolean, indexOverride?: number) => {
     const matchedGoal = state.goals.find(g => g.id === quest.goalId);
     const isEditing = editingQuestId === quest.id;
+    const activeList = terminalTab === 'today' ? todayQuests : terminalTab === 'tomorrow' ? tomorrowQuests : terminalTab === 'week' ? weekQuests : terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+    const currentIndex = typeof indexOverride === 'number' ? indexOverride : activeList.findIndex(item => item.id === quest.id) + 1;
     
     if (isEditing) {
       return (
@@ -1507,14 +1521,14 @@ export const ActiveDirectives: React.FC = () => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'QUEST', questId: quest.id }));
           e.dataTransfer.effectAllowed = 'move';
         }}
-        className={`p-2.5 bg-zinc-950/50 hover:bg-zinc-900/70 border rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
+        className={`p-2.5 bg-[#0b0d13]/80 hover:bg-[#11151b] border rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
           isSelected 
-            ? 'border-cyan-500 bg-cyan-950/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]' 
+            ? 'border-[#c5a059] bg-[#3a2e12]/30 shadow-[0_0_12px_rgba(197,160,89,0.18)]' 
             : finished 
               ? 'border-emerald-500/10 bg-emerald-950/5 opacity-70' 
               : isDeferred 
                 ? 'border-amber-500/10 hover:border-amber-500/20' 
-                : 'border-white/5 hover:border-white/10'
+                : 'border-[#c5a059]/20 hover:border-[#c5a059]/35'
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1567,7 +1581,7 @@ export const ActiveDirectives: React.FC = () => {
               {/* Difficulty Badge */}
               <span className={`text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border ${
                 quest.difficulty === 'Easy' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' :
-                quest.difficulty === 'Normal' ? 'bg-cyan-950/40 text-cyan-400 border border-cyan-500/20' :
+                quest.difficulty === 'Normal' ? 'bg-[#3a2e12]/80 text-[#fef08a] border border-[#c5a059]/35' :
                 quest.difficulty === 'Hard' ? 'bg-purple-950/40 text-purple-400 border border-purple-500/20' :
                 'bg-rose-950/60 text-rose-300 border border-rose-500/40 font-bold animate-pulse'
               }`}>
@@ -1585,7 +1599,7 @@ export const ActiveDirectives: React.FC = () => {
                       key={sId}
                       className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${
                         isPrimary
-                          ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/30'
+                          ? 'bg-[#3a2e12]/80 text-[#fef08a] border-[#c5a059]/35'
                           : 'bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-500/30'
                       }`}
                     >
@@ -1597,7 +1611,7 @@ export const ActiveDirectives: React.FC = () => {
 
               {/* Recurrence */}
               {quest.recurrence && quest.recurrence !== 'None' && (
-                <span className="text-[8px] font-mono text-cyan-400 uppercase bg-cyan-950/20 px-1 py-0.5 rounded">
+                <span className="text-[8px] font-mono text-[#e5c875] uppercase bg-[#3a2e12]/60 px-1 py-0.5 rounded border border-[#c5a059]/30">
                   🔁 {quest.recurrence}
                 </span>
               )}
@@ -1666,7 +1680,7 @@ export const ActiveDirectives: React.FC = () => {
             +{quest.xp} XP
           </span>
           <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-            isSelected ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee]' : 'bg-transparent'
+            isSelected ? 'bg-[#c5a059] shadow-[0_0_6px_rgba(197,160,89,0.85)]' : 'bg-transparent'
           }`} />
         </div>
       </motion.div>
@@ -2696,7 +2710,7 @@ export const ActiveDirectives: React.FC = () => {
               if (groupBy === 'none') {
                 return (
                   <AnimatePresence mode="popLayout">
-                    {sortQuests(activeQuests).map(q => renderQuestCard(q, isDeferredTab))}
+                    {sortQuests(activeQuests).map((q, index) => renderQuestCard(q, isDeferredTab, index + 1))}
                   </AnimatePresence>
                 );
               }

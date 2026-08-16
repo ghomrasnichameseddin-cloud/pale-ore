@@ -975,7 +975,7 @@ export const QuestDirectory: React.FC = () => {
           </div>
 
           <div className={`space-y-1 p-1 rounded transition-colors ${
-            dragOverTarget?.id === 'standalone_section' ? 'bg-cyan-950/30 border border-dashed border-cyan-400/60' : ''
+            dragOverTarget?.id === 'standalone_section' ? 'bg-[#3a2e12]/40 border border-dashed border-[#c5a059]/60' : ''
           }`}>
             {activeStandaloneLists.length === 0 ? (
               <div className="text-[10px] font-mono text-zinc-600 py-1 pl-2">
@@ -1400,7 +1400,7 @@ export const QuestDirectory: React.FC = () => {
                                 setTargetListForUnarchive(quest.listId || '');
                                 setUnarchivePickerQuest(quest);
                               }}
-                              className="px-1.5 py-0.5 bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900 border border-cyan-500/30 rounded text-[9px] flex items-center gap-0.5 transition-all"
+                              className="px-1.5 py-0.5 bg-[#3a2e12]/80 text-[#fef08a] hover:bg-[#524017] border border-[#c5a059]/35 rounded text-[9px] flex items-center gap-0.5 transition-all"
                               title="Restore to a specific list/folder"
                             >
                               <span>TO...</span>

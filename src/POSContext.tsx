@@ -1977,6 +1977,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if ((!questToComplete.recurrence || questToComplete.recurrence === 'None') && questToComplete.status === 'Completed') return;
 
     const completedTimestamp = getSystemTimestamp(state.systemDate);
+    const isBadHabitQuest = questToComplete.type === 'Bad Habit' || questToComplete.type === 'Anti-Habit';
     
     // Calculate Job Perk XP & Coin Multiplier
     const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -1984,13 +1985,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Calculate Habit Streak XP Bonus (+5% per streak day up to +50%)
     const currentStreak = questToComplete.streakCount || 0;
-    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit';
+    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit' || isBadHabitQuest;
     let habitXpMultiplier = 1.0;
     if (isRecurringOrHabit && currentStreak > 0) {
       habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
     }
 
-    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier);
+    const antiHabitXpBonus = isBadHabitQuest ? 1.25 : 1.0;
+    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier * antiHabitXpBonus);
 
     // Calculate Power Seal XP Bonus Multiplier
     const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
@@ -2024,7 +2026,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
-          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit';
+          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit' || q.type === 'Bad Habit' || q.type === 'Anti-Habit';
           if (isRecurring) {
             const isAlreadyCompletedToday = q.lastCompletedDate === state.systemDate;
             const newStreak = isAlreadyCompletedToday ? (q.streakCount || 1) : ((q.streakCount || 0) + 1);
@@ -2093,6 +2095,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                            questToComplete.difficulty === 'Hard' ? 18 : 25;
       const currentFatigue = prev.profile.fatigueLevel || 0;
       const newFatigue = Math.min(100, currentFatigue + addedFatigue);
+
+      const completionMessage = isBadHabitQuest
+        ? `Anti-habit cleared: you avoided "${questToComplete.name}" and earned ${earnedXp} XP.`
+        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: isBadHabitQuest ? 'Anti-Habit Victory' : 'Directive Completed',
+        content: completionMessage,
+        timestamp: new Date().toISOString(),
+        read: false,
+        priority: 'high'
+      });
 
       return {
         ...prev,
@@ -3598,16 +3614,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         oledMode: false,
         maxFpsCap: 60
       };
-      const updated: BatterySettings = { 
-        ...current, 
-        ...updates, 
-        batterySaverMode: true, 
-        animationThrottle: (updates.animationThrottle ?? 'Off') as 'Full' | 'Reduced' | 'Off' 
+      const nextBatterySaverMode = updates.batterySaverMode ?? current.batterySaverMode;
+      const updated: BatterySettings = {
+        ...current,
+        ...updates,
+        batterySaverMode: nextBatterySaverMode,
+        animationThrottle: (updates.animationThrottle ?? current.animationThrottle ?? 'Off') as 'Full' | 'Reduced' | 'Off'
       };
-      
-      // Apply global DOM performance classes
+
       if (typeof document !== 'undefined') {
-        document.documentElement.classList.add('battery-saver-active');
+        document.documentElement.classList.toggle('battery-saver-active', updated.batterySaverMode);
 
         if (updated.oledMode) {
           document.documentElement.classList.add('oled-mode-active');
@@ -3621,8 +3637,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleBatterySaverMode = () => {
-    // Eco Mode is permanently enabled
-    updateBatterySettings({ batterySaverMode: true });
+    setState(prev => {
+      const active = prev.batterySettings?.batterySaverMode ?? true;
+      const next = !active;
+      const updated = {
+        ...(prev.batterySettings || {
+          batterySaverMode: true,
+          autoEcoLowBattery: true,
+          animationThrottle: 'Off',
+          oledMode: false,
+          maxFpsCap: 60
+        }),
+        batterySaverMode: next,
+        animationThrottle: next ? 'Off' : 'Reduced'
+      };
+
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('battery-saver-active', next);
+      }
+
+      return { ...prev, batterySettings: updated };
+    });
   };
 
   // Monitor real PC Battery status via Web Battery API if available
