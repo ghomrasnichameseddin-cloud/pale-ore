@@ -1013,19 +1013,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const applyMidnightPenalties = (prev: POSState, oldDate: string, newDateStr: string) => {
     const daysDiff = getDaysDifference(oldDate, newDateStr);
-    let updatedQuests = [...prev.quests];
+    const normalizedQuests = prev.quests.map(q => {
+      if (q.status === 'Active' && q.postponedTo && q.postponedTo <= newDateStr) {
+        return {
+          ...q,
+          postponedFrom: null,
+          postponedTo: null
+        };
+      }
+      return q;
+    });
+
+    let updatedQuests = [...normalizedQuests];
     let updatedHistory = [...prev.xpHistory];
     let updatedMomentum = prev.profile.momentum;
     let recoveryModeActivated = false;
 
     if (daysDiff >= 1) {
       // Find ALL quests active on oldDate that were left unchecked (incomplete)
-      const uncheckedQuests = prev.quests.filter(q => {
+      const uncheckedQuests = normalizedQuests.filter(q => {
         if (q.status !== 'Active') return false;
         if (isQuestArchived(q, prev.lists, prev.folders)) return false;
         if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
 
-        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate
+        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate.
+        // If the postponed target date has arrived, the quest has already been normalized back into its regular active state.
         if (q.postponedFrom === oldDate) return false;
         if (q.postponedTo && q.postponedTo > oldDate) return false;
         if (q.deadline && q.deadline > oldDate) return false;

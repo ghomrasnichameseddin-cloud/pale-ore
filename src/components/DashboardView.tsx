@@ -23,7 +23,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     state, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
     isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate,
     toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getGoalProgress,
-    getProjectProgress, addQuest
+    getProjectProgress, addQuest, getSkillXpAndLevel
   } = usePOS();
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
@@ -146,25 +146,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     ).values()
   ).slice(0, 3) as Array<{ id: string; name: string; goalId?: string; status?: string; description?: string; estimatedTime?: string; createdAt?: string }>;
 
-  const activeDirectiveSkillMap = new Map<string, { id: string; name: string; iconName?: string; level: number; xp: number; directives: number }>();
+  const activeDirectiveSkillMap = new Map<string, {
+    id: string;
+    name: string;
+    iconName?: string;
+    tier: 'Primary' | 'Secondary';
+    parentId?: string | null;
+    level: number;
+    xp: number;
+    progress: number;
+    xpIntoLevel: number;
+    xpRequiredForNextLevel: number;
+    directives: number;
+  }>();
+
   activeQuests.forEach(quest => {
     const relatedSkillIds = Array.from(new Set((quest.relatedSkills || []) as string[]));
     relatedSkillIds.forEach((skillId: string) => {
       const existingSkill = (state.skills || []).find((s: any) => s.id === skillId);
       if (!existingSkill) return;
+
       const existingEntry = activeDirectiveSkillMap.get(skillId);
+      const skillStats = getSkillXpAndLevel(skillId);
+
       activeDirectiveSkillMap.set(skillId, {
         id: existingSkill.id,
         name: existingSkill.name,
         iconName: existingSkill.iconName || 'Sparkles',
-        level: existingSkill.level ?? 1,
-        xp: existingSkill.xp ?? 0,
+        tier: (existingSkill.tier || 'Primary') as 'Primary' | 'Secondary',
+        parentId: existingSkill.parentId || null,
+        level: skillStats.level,
+        xp: skillStats.xp,
+        progress: skillStats.progress,
+        xpIntoLevel: skillStats.xpIntoLevel,
+        xpRequiredForNextLevel: skillStats.xpRequiredForNextLevel,
         directives: (existingEntry?.directives ?? 0) + 1
       });
     });
   });
 
-  const activeDirectiveSkills = Array.from(activeDirectiveSkillMap.values()).sort((a, b) => b.level - a.level || b.xp - a.xp).slice(0, 6);
+  const activeDirectiveSkills = Array.from(activeDirectiveSkillMap.values())
+    .sort((a, b) => b.level - a.level || b.xp - a.xp)
+    .slice(0, 3);
 
   const handleSaveFocus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1301,21 +1324,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <p className="text-[10px] font-mono text-zinc-500">No skill links in today’s active directives.</p>
               ) : (
                 <div className="space-y-2">
-                  {activeDirectiveSkills.map(skill => (
-                    <div key={skill.id} className="rounded-lg border border-[#c5a059]/15 bg-[#07080c] p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          {renderTopicIcon(skill.iconName || 'Sparkles', 'h-3.5 w-3.5')}
-                          <span className="text-[11px] font-sans font-semibold text-white truncate">{skill.name}</span>
+                  {activeDirectiveSkills.map(skill => {
+                    const parentSkill = skill.parentId ? state.skills.find(s => s.id === skill.parentId) : null;
+
+                    return (
+                      <div key={skill.id} className="rounded-lg border border-[#c5a059]/15 bg-[#07080c] p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {renderTopicIcon(skill.iconName || 'Sparkles', 'h-3.5 w-3.5')}
+                            <span className="text-[11px] font-sans font-semibold text-white truncate">{skill.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${
+                              skill.tier === 'Secondary' ? 'border-violet-500/40 bg-violet-950/40 text-violet-300' : 'border-[#c5a059]/40 bg-[#3a2e12]/60 text-[#fef08a]'
+                            }`}>
+                              {skill.tier}
+                            </span>
+                            <span className="text-[9px] font-mono text-[#fef08a]">LVL {skill.level}</span>
+                          </div>
                         </div>
-                        <span className="text-[9px] font-mono text-[#fef08a]">LVL {skill.level}</span>
+
+                        {parentSkill && (
+                          <div className="mt-1 text-[8px] font-mono text-zinc-400">
+                            Linked primary: <span className="text-[#c5a059]">{parentSkill.name}</span>
+                          </div>
+                        )}
+
+                        <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                          <span>XP {skill.xp}</span>
+                          <span>{skill.progress}%</span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#10131a] border border-white/5">
+                          <div className="h-full rounded-full bg-gradient-to-r from-[#8a6d2b] to-[#c5a059]" style={{ width: `${skill.progress}%` }} />
+                        </div>
+                        <div className="mt-2 text-[9px] font-mono text-zinc-400">
+                          {skill.directives} active directive{skill.directives === 1 ? '' : 's'}
+                        </div>
                       </div>
-                      <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-zinc-400">
-                        <span>XP {skill.xp}</span>
-                        <span>{skill.directives} active directive{skill.directives === 1 ? '' : 's'}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
