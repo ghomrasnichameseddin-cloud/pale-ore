@@ -59,18 +59,6 @@ export const getCategoryDetails = (type: string) => {
       accentBg: 'bg-emerald-500/10',
     };
   }
-  if (t === 'bad habit' || t === 'anti-habit') {
-    return {
-      label: 'Bad Habit / Anti-Habit',
-      shortLabel: 'Bad Habit',
-      icon: '🚫',
-      badgeClass: 'bg-rose-950/80 text-rose-300 border-rose-500/60 font-black',
-      borderLeftClass: 'border-l-4 border-l-rose-500',
-      textColor: 'text-rose-400',
-      bgHeader: 'bg-rose-950/60 border-rose-500/40 text-rose-300',
-      accentBg: 'bg-rose-500/10',
-    };
-  }
   if (t === 'recovery') {
     return {
       label: 'Recovery Quest',

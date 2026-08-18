@@ -731,22 +731,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                       </div>
                     </div>
 
-                    {/* BAD HABIT */}
-                    <div className="p-3.5 bg-zinc-900/90 border border-rose-500/40 rounded-xl space-y-1.5">
-                      <div className="flex items-center justify-between font-mono font-bold">
-                        <span className="text-rose-300 flex items-center gap-1.5">🚫 Bad Habit / Anti-Habit (`Bad Habit`)</span>
-                        <span className="text-[9px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">AVOIDANCE XP</span>
-                      </div>
-                      <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        A recurring anti-habit tracker for things you want to avoid: doomscrolling, phone before prayer, binge eating, skipping sleep, etc. You gain XP when you successfully avoid the behavior.
-                      </p>
-                      <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
-                        <div>• <strong>Win Condition:</strong> Marking the task complete means you did not do the bad habit today.</div>
-                        <div>• <strong>Reward:</strong> Full XP + streak growth for each successful avoidance.</div>
-                        <div>• <strong>Failure:</strong> If you do the bad habit, fail the anti-habit and trigger normal Recovery / Penalty logic.</div>
-                      </div>
-                    </div>
-
                     {/* PENALTY */}
                     <div className="p-3.5 bg-zinc-900/90 border border-rose-500/40 rounded-xl space-y-1.5">
                       <div className="flex items-center justify-between font-mono font-bold">
@@ -754,7 +738,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                         <span className="text-[9px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">AUTO-GENERATED</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Created automatically when a Main, Boss, Habit, or Anti-Habit quest is left unchecked past midnight or marked failed.
+                        Created automatically when a Main, Boss, or Habit quest is left unchecked past midnight or marked failed.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Half-Time Rule:</strong> Estimated duration is cut to <strong>50% (half)</strong> of the original quest time.</div>

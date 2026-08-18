@@ -2011,7 +2011,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if ((!questToComplete.recurrence || questToComplete.recurrence === 'None') && questToComplete.status === 'Completed') return;
 
     const completedTimestamp = getSystemTimestamp(state.systemDate);
-    const isBadHabitQuest = questToComplete.type === 'Bad Habit' || questToComplete.type === 'Anti-Habit';
     
     // Calculate Job Perk XP & Coin Multiplier
     const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -2019,14 +2018,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Calculate Habit Streak XP Bonus (+5% per streak day up to +50%)
     const currentStreak = questToComplete.streakCount || 0;
-    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit' || isBadHabitQuest;
+    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit';
     let habitXpMultiplier = 1.0;
     if (isRecurringOrHabit && currentStreak > 0) {
       habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
     }
 
-    const antiHabitXpBonus = isBadHabitQuest ? 1.25 : 1.0;
-    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier * antiHabitXpBonus);
+    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier);
 
     // Calculate Power Seal XP Bonus Multiplier
     const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
@@ -2060,7 +2058,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
-          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit' || q.type === 'Bad Habit' || q.type === 'Anti-Habit';
+          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit';
           if (isRecurring) {
             const isAlreadyCompletedToday = q.lastCompletedDate === state.systemDate;
             const newStreak = isAlreadyCompletedToday ? (q.streakCount || 1) : ((q.streakCount || 0) + 1);
@@ -2130,14 +2128,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentFatigue = prev.profile.fatigueLevel || 0;
       const newFatigue = Math.min(100, currentFatigue + addedFatigue);
 
-      const completionMessage = isBadHabitQuest
-        ? `Anti-habit cleared: you avoided "${questToComplete.name}" and earned ${earnedXp} XP.`
-        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
+      const completionMessage = `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
 
       addSystemMessage({
         sender: 'SYSTEM',
         category: 'achievement',
-        title: isBadHabitQuest ? 'Anti-Habit Victory' : 'Directive Completed',
+        title: 'Directive Completed',
         content: completionMessage,
         priority: 'high'
       });
