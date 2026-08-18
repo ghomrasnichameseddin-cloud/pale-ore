@@ -243,10 +243,10 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                     isOpen: true,
                     job
                   })}
-                  onDelete={job.isCustom ? () => {
+                  onDelete={() => {
                     deleteJobSpec(job.id);
-                    showToast(`Deleted custom job class "${job.name}"`);
-                  } : undefined}
+                    showToast(`Deleted job class "${job.name}"`);
+                  }}
                   onEquip={() => {
                     updateJob(job.id);
                     showToast(`Switched active Job Class to "${job.name}"!`);
@@ -277,10 +277,10 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                     isOpen: true,
                     title
                   })}
-                  onDelete={title.isCustom ? () => {
+                  onDelete={() => {
                     deleteTitleSpec(title.id);
-                    showToast(`Deleted custom title "${title.name}"`);
-                  } : undefined}
+                    showToast(`Deleted title "${title.name}"`);
+                  }}
                   onEquip={() => {
                     updateTitle(title.id);
                     showToast(`Equipped honorific title "${title.name}"!`);

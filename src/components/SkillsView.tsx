@@ -184,6 +184,9 @@ export const SkillsView: React.FC = () => {
             <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
             DISCIPLINE_ARCHIVE ({state.skills.length})
           </span>
+          <span className="text-[9px] font-mono font-black uppercase tracking-wider px-2 py-1 rounded border border-[#c5a059]/45 bg-[#3a2e12] text-[#fef08a] shadow-[0_0_12px_rgba(197,160,89,0.18)]">
+            10/10 READY
+          </span>
           <div className="flex flex-wrap gap-1.5">
             <button 
               onClick={() => { setShowAddSkill(!showAddSkill); setShowEmptyConfirm(false); setShowCleanUnusedConfirm(false); setShowMergeModal(false); }}

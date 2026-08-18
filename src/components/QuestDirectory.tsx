@@ -372,11 +372,11 @@ export const QuestDirectory: React.FC = () => {
   const totalArchivedCount = archivedFolders.length + archivedLists.length + directlyArchivedQuests.length;
 
   return (
-    <div className="glass-panel rounded-lg p-5 flex flex-col h-full" id="quest-directory-panel">
+    <div className="glass-panel rounded-2xl border border-[#c5a059]/20 bg-[#0b0d13]/85 p-5 flex flex-col h-full shadow-[0_0_20px_rgba(13,18,26,0.8)]" id="quest-directory-panel">
       {/* HEADER BAR */}
       <div className="flex justify-between items-center pb-2 border-b border-white/5 mb-3">
         <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-          <FolderOpen className="h-4 w-4 text-cyan-400" /> QUEST_ORGANIZER_TREE
+          <FolderOpen className="h-4 w-4 text-[#c5a059]" /> QUEST_ORGANIZER_TREE
         </h4>
         <div className="flex gap-1">
           <button
@@ -386,7 +386,7 @@ export const QuestDirectory: React.FC = () => {
               setEditingFolderId(null);
               setEditingListId(null);
             }}
-            className="p-1 text-zinc-400 hover:text-cyan-400 transition-colors"
+            className="p-1 text-zinc-400 hover:text-[#e5c875] transition-colors"
             title="Create Folder"
           >
             <FolderPlus className="h-4 w-4" />
@@ -403,7 +403,7 @@ export const QuestDirectory: React.FC = () => {
                 setListTargetFolderId('');
               }
             }}
-            className="p-1 text-zinc-400 hover:text-cyan-400 transition-colors"
+            className="p-1 text-zinc-400 hover:text-[#e5c875] transition-colors"
             title="Create List"
           >
             <PlusCircle className="h-4 w-4" />
@@ -419,9 +419,9 @@ export const QuestDirectory: React.FC = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleCreateFolder}
-            className="bg-zinc-900/90 border border-cyan-500/30 rounded p-3 mb-3 space-y-2 text-xs font-mono"
+            className="bg-[#0b0d13]/90 border border-[#c5a059]/30 rounded p-3 mb-3 space-y-2 text-xs font-mono"
           >
-            <div className="flex justify-between items-center text-cyan-400 font-bold">
+            <div className="flex justify-between items-center text-[#e5c875] font-bold">
               <span className="flex items-center gap-1">
                 <FolderPlus className="h-3.5 w-3.5" /> NEW_DIRECTORY_FOLDER
               </span>
@@ -438,7 +438,7 @@ export const QuestDirectory: React.FC = () => {
               placeholder="Folder Name (e.g. Work, Health, Mastery)..."
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60"
+              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]/60"
               autoFocus
             />
             <input
@@ -446,7 +446,7 @@ export const QuestDirectory: React.FC = () => {
               placeholder="Optional Description..."
               value={folderDesc}
               onChange={(e) => setFolderDesc(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60"
+              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]/60"
             />
             <div className="flex items-center gap-2 pt-1">
               <span className="text-[10px] text-zinc-500">Color:</span>
@@ -467,7 +467,7 @@ export const QuestDirectory: React.FC = () => {
               <button
                 type="submit"
                 disabled={!folderName.trim()}
-                className="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded hover:bg-cyan-500/30 disabled:opacity-40 transition-colors font-bold"
+                className="px-2.5 py-1 bg-[#3a2e12]/80 text-[#fef08a] border border-[#c5a059]/40 rounded hover:bg-[#524017] disabled:opacity-40 transition-colors font-bold"
               >
                 CREATE
               </button>
@@ -484,9 +484,9 @@ export const QuestDirectory: React.FC = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleCreateList}
-            className="bg-zinc-900/90 border border-cyan-500/30 rounded p-3 mb-3 space-y-2 text-xs font-mono"
+            className="bg-[#0b0d13]/90 border border-[#c5a059]/30 rounded p-3 mb-3 space-y-2 text-xs font-mono"
           >
-            <div className="flex justify-between items-center text-cyan-400 font-bold">
+            <div className="flex justify-between items-center text-[#e5c875] font-bold">
               <span className="flex items-center gap-1">
                 <PlusCircle className="h-3.5 w-3.5" /> NEW_QUEST_LIST
               </span>
@@ -503,7 +503,7 @@ export const QuestDirectory: React.FC = () => {
               placeholder="List Name (e.g. Sprint Tasks, Daily Rituals)..."
               value={listName}
               onChange={(e) => setListName(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60"
+              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]/60"
               autoFocus
             />
             <input
@@ -511,7 +511,7 @@ export const QuestDirectory: React.FC = () => {
               placeholder="Optional Description..."
               value={listDesc}
               onChange={(e) => setListDesc(e.target.value)}
-              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60"
+              className="w-full bg-zinc-950 border border-white/10 rounded px-2 py-1 text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]/60"
             />
             <div className="flex items-center gap-2 pt-1">
               <select
@@ -527,7 +527,7 @@ export const QuestDirectory: React.FC = () => {
               <button
                 type="submit"
                 disabled={!listName.trim()}
-                className="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded hover:bg-cyan-500/30 disabled:opacity-40 transition-colors font-bold"
+                className="px-2.5 py-1 bg-[#3a2e12]/80 text-[#fef08a] border border-[#c5a059]/40 rounded hover:bg-[#524017] disabled:opacity-40 transition-colors font-bold"
               >
                 ADD_LIST
               </button>
@@ -737,7 +737,7 @@ export const QuestDirectory: React.FC = () => {
           onClick={() => handleSelectFolder(null)}
           className={`w-full flex items-center justify-between text-xs font-mono py-2 px-3 border rounded text-left transition-all ${
             selectedFolderId === null && selectedListId === null
-              ? 'bg-cyan-950/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.1)] font-bold'
+              ? 'bg-[#3a2e12]/60 border-[#c5a059]/40 text-[#fef08a] shadow-[0_0_10px_rgba(197,160,89,0.12)] font-bold'
               : 'bg-zinc-900/30 border-white/5 text-zinc-400 hover:border-white/10 hover:bg-zinc-900/50'
           }`}
         >
@@ -776,11 +776,11 @@ export const QuestDirectory: React.FC = () => {
                   onClick={() => handleSelectFolder(folder.id)}
                   className={`group flex items-center justify-between text-xs py-1.5 px-2 border rounded cursor-pointer transition-all ${
                     isFolderDragging
-                      ? 'opacity-40 border-dashed border-cyan-500'
+                      ? 'opacity-40 border-dashed border-[#c5a059]'
                       : isFolderOver
-                        ? 'bg-cyan-950/50 text-white border-cyan-400 ring-2 ring-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.25)] font-bold'
+                        ? 'bg-[#3a2e12]/60 text-[#fef08a] border-[#c5a059] ring-2 ring-[#c5a059]/30 shadow-[0_0_15px_rgba(197,160,89,0.18)] font-bold'
                         : isFolderSelected
-                          ? 'bg-cyan-950/25 text-white border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.15)] font-bold'
+                          ? 'bg-[#3a2e12]/45 text-[#fef08a] border-[#c5a059]/40 shadow-[0_0_10px_rgba(197,160,89,0.12)] font-bold'
                           : 'bg-zinc-900/40 border-white/5 text-zinc-300 hover:bg-zinc-900/70 hover:border-white/10'
                   }`}
                 >
@@ -891,11 +891,11 @@ export const QuestDirectory: React.FC = () => {
                               onClick={() => handleSelectList(list.id, folder.id)}
                               className={`group flex items-center justify-between text-[11px] py-1.5 px-2 border rounded cursor-pointer transition-all ${
                                 isListDragging
-                                  ? 'opacity-40 border-dashed border-cyan-500'
+                                  ? 'opacity-40 border-dashed border-[#c5a059]'
                                   : isListOver
-                                    ? 'bg-cyan-950/50 text-white border-cyan-400 ring-1 ring-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)] font-bold'
+                                    ? 'bg-[#3a2e12]/60 text-[#fef08a] border-[#c5a059] ring-1 ring-[#c5a059]/30 shadow-[0_0_12px_rgba(197,160,89,0.15)] font-bold'
                                     : isListSelected
-                                      ? 'bg-cyan-950/35 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
+                                      ? 'bg-[#3a2e12]/45 text-[#fef08a] border-[#c5a059]/30 shadow-[0_0_8px_rgba(197,160,89,0.1)] font-bold'
                                       : 'bg-zinc-900/30 border-white/5 text-zinc-400 hover:bg-zinc-900/60 hover:border-white/10 hover:text-zinc-300'
                               }`}
                             >
@@ -975,7 +975,7 @@ export const QuestDirectory: React.FC = () => {
           </div>
 
           <div className={`space-y-1 p-1 rounded transition-colors ${
-            dragOverTarget?.id === 'standalone_section' ? 'bg-cyan-950/30 border border-dashed border-cyan-400/60' : ''
+            dragOverTarget?.id === 'standalone_section' ? 'bg-[#3a2e12]/40 border border-dashed border-[#c5a059]/60' : ''
           }`}>
             {activeStandaloneLists.length === 0 ? (
               <div className="text-[10px] font-mono text-zinc-600 py-1 pl-2">
@@ -1000,11 +1000,11 @@ export const QuestDirectory: React.FC = () => {
                     onClick={() => handleSelectList(list.id, null)}
                     className={`group flex items-center justify-between text-[11px] py-1.5 px-2 border rounded cursor-pointer transition-all ${
                       isListDragging
-                        ? 'opacity-40 border-dashed border-cyan-500'
+                        ? 'opacity-40 border-dashed border-[#c5a059]'
                         : isListOver
-                          ? 'bg-cyan-950/50 text-white border-cyan-400 ring-1 ring-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)] font-bold'
+                          ? 'bg-[#3a2e12]/60 text-[#fef08a] border-[#c5a059] ring-1 ring-[#c5a059]/30 shadow-[0_0_12px_rgba(197,160,89,0.15)] font-bold'
                           : isListSelected
-                            ? 'bg-cyan-950/35 text-cyan-300 border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.1)] font-bold'
+                            ? 'bg-[#3a2e12]/45 text-[#fef08a] border-[#c5a059]/30 shadow-[0_0_8px_rgba(197,160,89,0.1)] font-bold'
                             : 'bg-zinc-900/40 border-white/5 text-zinc-400 hover:bg-zinc-900/70 hover:border-white/10 hover:text-zinc-300'
                     }`}
                   >
@@ -1400,7 +1400,7 @@ export const QuestDirectory: React.FC = () => {
                                 setTargetListForUnarchive(quest.listId || '');
                                 setUnarchivePickerQuest(quest);
                               }}
-                              className="px-1.5 py-0.5 bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900 border border-cyan-500/30 rounded text-[9px] flex items-center gap-0.5 transition-all"
+                              className="px-1.5 py-0.5 bg-[#3a2e12]/80 text-[#fef08a] hover:bg-[#524017] border border-[#c5a059]/35 rounded text-[9px] flex items-center gap-0.5 transition-all"
                               title="Restore to a specific list/folder"
                             >
                               <span>TO...</span>

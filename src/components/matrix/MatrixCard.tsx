@@ -218,12 +218,12 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
               <span>LEVEL UP / RULES</span>
             </button>
 
-            {item.isCustom && onDelete && (
+            {onDelete && (
               <button
                 type="button"
                 onClick={onDelete}
                 className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg border border-transparent hover:border-rose-500/30 transition cursor-pointer"
-                title="Delete Custom Directive"
+                title={isJob ? 'Delete Job Class' : 'Delete Title'}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

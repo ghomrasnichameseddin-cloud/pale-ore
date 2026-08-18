@@ -31,7 +31,12 @@ export const QuestsView: React.FC = () => {
   const totalQuests = state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders)).length;
 
   return (
-    <div className="space-y-6" id="quests-view-root">
+    <div
+      className="space-y-6 rounded-2xl border border-[#c5a059]/15 bg-[#0b0d13]/70 p-4 md:p-6 shadow-[0_0_30px_rgba(197,160,89,0.06)] backdrop-blur-sm relative overflow-hidden"
+      id="quests-view-root"
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(197,160,89,0.08),transparent_32%)] pointer-events-none" />
+      <div className="relative z-10 space-y-6">
       {/* HEADER BAR */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#c5a059]/20 pb-4">
         <div>
@@ -74,6 +79,7 @@ export const QuestsView: React.FC = () => {
       {/* FULL-WIDTH QUEST TREE DIRECTORY EXPLORER */}
       <div className="w-full" id="quests-sidebar-container">
         <QuestDirectory />
+      </div>
       </div>
     </div>
   );

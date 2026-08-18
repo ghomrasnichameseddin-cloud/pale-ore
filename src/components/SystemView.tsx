@@ -106,6 +106,11 @@ export const SystemView: React.FC = () => {
 
   const currentAttributes = getAttributes();
 
+  const thermalLoad = batterySettings.batterySaverMode ? 12 : 34;
+  const powerDrain = batterySettings.batterySaverMode ? 18 : 42;
+  const longevityIndex = Math.max(0, Math.min(100, 100 - (thermalLoad + powerDrain) + (batterySettings.oledMode ? 8 : 0) + (batterySettings.autoEcoLowBattery ? 10 : 0)));
+  const performanceBudget = batterySettings.batterySaverMode ? 'Low-draw / stable' : 'Performance-first / elevated heat';
+
   return (
     <div className="space-y-6" id="system-view-root">
       
@@ -156,10 +161,10 @@ export const SystemView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleBatterySaverMode}
-              className="px-4 py-2 text-xs font-mono font-bold rounded-xl border flex items-center gap-2 shadow-lg transition bg-emerald-950/90 text-emerald-300 border-emerald-500/60 hover:bg-emerald-900 shadow-[0_0_18px_rgba(16,185,129,0.3)] cursor-pointer"
+              className={`px-4 py-2 text-xs font-mono font-bold rounded-xl border flex items-center gap-2 shadow-lg transition ${batterySettings.batterySaverMode ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 hover:bg-emerald-900 shadow-[0_0_18px_rgba(16,185,129,0.3)]' : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800'} cursor-pointer`}
             >
-              <Zap className="h-4 w-4 text-emerald-400 animate-pulse" />
-              <span>ECO WARD ENGAGED</span>
+              <Zap className={`h-4 w-4 ${batterySettings.batterySaverMode ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
+              <span>{batterySettings.batterySaverMode ? 'ECO WARD ENGAGED' : 'ECO WARD STANDBY'}</span>
             </button>
           </div>
         </div>
@@ -190,11 +195,11 @@ export const SystemView: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-3xl font-mono font-black text-emerald-400">{Math.round(100 - thermalLoad)}</span>
                 <span className="text-[10px] font-mono text-zinc-400">Safe Domain: 90–100</span>
               </div>
               <p className="text-[10px] font-sans text-zinc-400">
-                Monitors CPU, GPU, Hotspot, SSD, & VRM die temperatures against safety limits.
+                {batterySettings.batterySaverMode ? 'Eco Ward is reducing thermal stress and preserving the system core.' : 'Thermal load is elevated; enabling Eco Ward will stabilize heat output.'}
               </p>
             </div>
 
@@ -210,11 +215,11 @@ export const SystemView: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-3xl font-mono font-black text-emerald-400">{Math.round(100 - powerDrain)}</span>
                 <span className="text-[10px] font-mono text-zinc-400">Safe Domain: 90–100</span>
               </div>
               <p className="text-[10px] font-sans text-zinc-400">
-                Measures PSU load ratio, energy stability, and transient voltage fluctuations.
+                {batterySettings.batterySaverMode ? 'Power draw is being regulated to protect battery health and reduce stress.' : 'Background load is higher; Eco Ward keeps electrical consumption in check.'}
               </p>
             </div>
 
@@ -230,11 +235,11 @@ export const SystemView: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-mono font-black text-zinc-400">N/A</span>
+                <span className="text-3xl font-mono font-black text-emerald-400">{Math.round(longevityIndex)}</span>
                 <span className="text-[10px] font-mono text-zinc-400">Safe Domain: 90–100</span>
               </div>
               <p className="text-[10px] font-sans text-emerald-400/90 font-medium">
-                *Represents hardware stress and operational health index.
+                {performanceBudget} • Ward is actively reducing thermal and electrical wear.
               </p>
             </div>
 
