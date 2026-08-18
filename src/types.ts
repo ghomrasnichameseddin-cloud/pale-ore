@@ -126,6 +126,7 @@ export interface Skill {
   iconName?: string;
   tier?: 'Primary' | 'Secondary';
   parentId?: string | null;
+  createdAt?: string;
   archived?: boolean;
 }
 

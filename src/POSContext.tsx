@@ -205,8 +205,15 @@ const getSkillXpFromHistory = (skillId: string, history: XPHistoryEntry[], allSk
   
   const targetSkill = allSkills.find(s => s.id === skillId);
   if (!targetSkill) return 0;
+
+  const targetCreatedAt = targetSkill.createdAt ? Date.parse(targetSkill.createdAt) : NaN;
   
   for (const h of history) {
+    const hTime = h.timestamp ? Date.parse(h.timestamp) : NaN;
+    if (Number.isFinite(targetCreatedAt) && Number.isFinite(hTime) && hTime < targetCreatedAt) {
+      continue;
+    }
+
     const directSkills = allSkills.filter(s => h.skillIds.includes(s.id));
     if (directSkills.length === 0) continue;
     
@@ -2639,7 +2646,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       relatedGoals: [],
       relatedProjects: [],
       tier: tier || 'Primary',
-      parentId: parentId || null
+      parentId: parentId || null,
+      createdAt: new Date().toISOString()
     };
     setState(prev => ({
       ...prev,
