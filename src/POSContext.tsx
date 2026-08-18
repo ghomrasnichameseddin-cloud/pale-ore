@@ -205,8 +205,15 @@ const getSkillXpFromHistory = (skillId: string, history: XPHistoryEntry[], allSk
   
   const targetSkill = allSkills.find(s => s.id === skillId);
   if (!targetSkill) return 0;
+
+  const targetCreatedAt = targetSkill.createdAt ? Date.parse(targetSkill.createdAt) : NaN;
   
   for (const h of history) {
+    const hTime = h.timestamp ? Date.parse(h.timestamp) : NaN;
+    if (Number.isFinite(targetCreatedAt) && Number.isFinite(hTime) && hTime < targetCreatedAt) {
+      continue;
+    }
+
     const directSkills = allSkills.filter(s => h.skillIds.includes(s.id));
     if (directSkills.length === 0) continue;
     
@@ -322,6 +329,21 @@ export const getWeekdayStr = (dateStr: string): string => {
 };
 
 export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
+  // If the quest was explicitly postponed to this specific date, it is scheduled for this date
+  if (q.postponedTo === dateStr) {
+    return true;
+  }
+
+  // If the quest was postponed FROM this date to a DIFFERENT date, it is deferred away from this date
+  if (q.postponedFrom === dateStr && q.postponedTo && q.postponedTo !== dateStr) {
+    return false;
+  }
+
+  // If the quest has an explicit deadline matching this date, it is scheduled for this date
+  if (q.deadline === dateStr) {
+    return true;
+  }
+
   if (!q.recurrence || q.recurrence === 'None') {
     return true;
   }
@@ -1013,19 +1035,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const applyMidnightPenalties = (prev: POSState, oldDate: string, newDateStr: string) => {
     const daysDiff = getDaysDifference(oldDate, newDateStr);
-    let updatedQuests = [...prev.quests];
+    const normalizedQuests = prev.quests.map(q => {
+      if (q.status === 'Active' && q.postponedTo && q.postponedTo <= newDateStr) {
+        return {
+          ...q,
+          postponedFrom: null,
+          postponedTo: null
+        };
+      }
+      return q;
+    });
+
+    let updatedQuests = [...normalizedQuests];
     let updatedHistory = [...prev.xpHistory];
     let updatedMomentum = prev.profile.momentum;
     let recoveryModeActivated = false;
 
     if (daysDiff >= 1) {
       // Find ALL quests active on oldDate that were left unchecked (incomplete)
-      const uncheckedQuests = prev.quests.filter(q => {
+      const uncheckedQuests = normalizedQuests.filter(q => {
         if (q.status !== 'Active') return false;
         if (isQuestArchived(q, prev.lists, prev.folders)) return false;
         if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
 
-        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate
+        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate.
+        // If the postponed target date has arrived, the quest has already been normalized back into its regular active state.
         if (q.postponedFrom === oldDate) return false;
         if (q.postponedTo && q.postponedTo > oldDate) return false;
         if (q.deadline && q.deadline > oldDate) return false;
@@ -1307,13 +1341,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const xpUntilNextLevel = xpRequiredForNextLevel - xpIntoLevel;
     const progress = Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100);
 
-    // Rank evaluation (Solo Leveling theme)
+    // Rank evaluation (Hunter System progression scale)
     let rank = 'E-Rank';
-    if (level >= 30) rank = 'S-Rank';
-    else if (level >= 20) rank = 'A-Rank';
-    else if (level >= 15) rank = 'B-Rank';
-    else if (level >= 10) rank = 'C-Rank';
-    else if (level >= 5) rank = 'D-Rank';
+    if (level >= 500) rank = 'SSS+-Rank';
+    else if (level >= 400) rank = 'SSS-Rank';
+    else if (level >= 300) rank = 'SS+-Rank';
+    else if (level >= 200) rank = 'SS-Rank';
+    else if (level >= 150) rank = 'S+-Rank';
+    else if (level >= 100) rank = 'S-Rank';
+    else if (level >= 60) rank = 'A-Rank';
+    else if (level >= 40) rank = 'B-Rank';
+    else if (level >= 25) rank = 'C-Rank';
+    else if (level >= 10) rank = 'D-Rank';
 
     return { level, totalXp, xpIntoLevel, xpUntilNextLevel, progress, rank, xpRequiredForNextLevel };
   };
@@ -1972,6 +2011,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if ((!questToComplete.recurrence || questToComplete.recurrence === 'None') && questToComplete.status === 'Completed') return;
 
     const completedTimestamp = getSystemTimestamp(state.systemDate);
+    const isBadHabitQuest = questToComplete.type === 'Bad Habit' || questToComplete.type === 'Anti-Habit';
     
     // Calculate Job Perk XP & Coin Multiplier
     const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -1979,13 +2019,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Calculate Habit Streak XP Bonus (+5% per streak day up to +50%)
     const currentStreak = questToComplete.streakCount || 0;
-    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit';
+    const isRecurringOrHabit = (questToComplete.recurrence && questToComplete.recurrence !== 'None') || questToComplete.type === 'Habit' || isBadHabitQuest;
     let habitXpMultiplier = 1.0;
     if (isRecurringOrHabit && currentStreak > 0) {
       habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
     }
 
-    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier);
+    const antiHabitXpBonus = isBadHabitQuest ? 1.25 : 1.0;
+    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier * antiHabitXpBonus);
 
     // Calculate Power Seal XP Bonus Multiplier
     const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
@@ -2019,7 +2060,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
-          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit';
+          const isRecurring = (q.recurrence && q.recurrence !== 'None') || q.type === 'Habit' || q.type === 'Bad Habit' || q.type === 'Anti-Habit';
           if (isRecurring) {
             const isAlreadyCompletedToday = q.lastCompletedDate === state.systemDate;
             const newStreak = isAlreadyCompletedToday ? (q.streakCount || 1) : ((q.streakCount || 0) + 1);
@@ -2088,6 +2129,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                            questToComplete.difficulty === 'Hard' ? 18 : 25;
       const currentFatigue = prev.profile.fatigueLevel || 0;
       const newFatigue = Math.min(100, currentFatigue + addedFatigue);
+
+      const completionMessage = isBadHabitQuest
+        ? `Anti-habit cleared: you avoided "${questToComplete.name}" and earned ${earnedXp} XP.`
+        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: isBadHabitQuest ? 'Anti-Habit Victory' : 'Directive Completed',
+        content: completionMessage,
+        priority: 'high'
+      });
 
       return {
         ...prev,
@@ -2608,7 +2661,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       relatedGoals: [],
       relatedProjects: [],
       tier: tier || 'Primary',
-      parentId: parentId || null
+      parentId: parentId || null,
+      createdAt: new Date().toISOString()
     };
     setState(prev => ({
       ...prev,
@@ -3593,16 +3647,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         oledMode: false,
         maxFpsCap: 60
       };
-      const updated: BatterySettings = { 
-        ...current, 
-        ...updates, 
-        batterySaverMode: true, 
-        animationThrottle: (updates.animationThrottle ?? 'Off') as 'Full' | 'Reduced' | 'Off' 
+      const nextBatterySaverMode = updates.batterySaverMode ?? current.batterySaverMode;
+      const updated: BatterySettings = {
+        ...current,
+        ...updates,
+        batterySaverMode: nextBatterySaverMode,
+        animationThrottle: (updates.animationThrottle ?? current.animationThrottle ?? 'Off') as 'Full' | 'Reduced' | 'Off'
       };
-      
-      // Apply global DOM performance classes
+
       if (typeof document !== 'undefined') {
-        document.documentElement.classList.add('battery-saver-active');
+        document.documentElement.classList.toggle('battery-saver-active', updated.batterySaverMode);
 
         if (updated.oledMode) {
           document.documentElement.classList.add('oled-mode-active');
@@ -3616,8 +3670,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleBatterySaverMode = () => {
-    // Eco Mode is permanently enabled
-    updateBatterySettings({ batterySaverMode: true });
+    setState(prev => {
+      const active = prev.batterySettings?.batterySaverMode ?? true;
+      const next = !active;
+      const updated = {
+        ...(prev.batterySettings || {
+          batterySaverMode: true,
+          autoEcoLowBattery: true,
+          animationThrottle: 'Off',
+          oledMode: false,
+          maxFpsCap: 60
+        }),
+        batterySaverMode: next,
+        animationThrottle: next ? 'Off' : 'Reduced'
+      };
+
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('battery-saver-active', next);
+      }
+
+      return { ...prev, batterySettings: updated };
+    });
   };
 
   // Monitor real PC Battery status via Web Battery API if available
