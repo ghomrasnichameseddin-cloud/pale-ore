@@ -3,9 +3,10 @@ import {
   BookOpen, Activity, Swords, Target, Briefcase, Award, Sparkles, 
   ShoppingBag, Settings, Compass, X, HelpCircle, Cpu,
   Zap, Timer, Coins, ArrowRight, GitFork,
-  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy
+  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
 
 interface SystemGuideModalProps {
   isOpen: boolean;
@@ -69,15 +70,22 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
       color: 'text-pink-400',
     },
     {
+      id: 'muhasabah',
+      title: '8. Muhāsabah: Self-Accountability & Moral Friction',
+      icon: Scale,
+      badge: 'ACCOUNTABILITY',
+      color: 'text-amber-400',
+    },
+    {
       id: 'shop-rewards',
-      title: '8. Luminescent Ore Shop',
+      title: '9. Luminescent Ore Shop',
       icon: ShoppingBag,
       badge: 'REWARDS',
       color: 'text-amber-400',
     },
     {
       id: 'analytics-system',
-      title: '9. Analytics, Node Canvas & Override',
+      title: '10. Analytics, Node Canvas & Override',
       icon: Settings,
       badge: 'CONTROL',
       color: 'text-indigo-400',
@@ -253,6 +261,30 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                       <div>
                         <span className="font-bold text-white block">Projects & Sub-Projects</span>
                         <span className="text-[11px] text-zinc-400">Group tasks into project directories with sub-project components & deadlines.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('muhasabah')} className="p-3 bg-zinc-900/60 hover:bg-amber-950/30 border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Scale className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-white block">Muhāsabah Chamber</span>
+                        <span className="text-[11px] text-zinc-400">Self-accountability ledger, bounded XP friction (−500 cap), restitution quests & weakness seals.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('seals')} className="p-3 bg-zinc-900/60 hover:bg-purple-950/30 border border-white/5 hover:border-purple-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Award className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-white block">Skills, Seals & Ores</span>
+                        <span className="text-[11px] text-zinc-400">Level skill trees, shatter ancient Pale Ore chains, equip custom career job perks.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('shop')} className="p-3 bg-zinc-900/60 hover:bg-amber-950/30 border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <ShoppingBag className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-white block">Luminescent Shop</span>
+                        <span className="text-[11px] text-zinc-400">Exchange quest coins for real-world rewards and custom productivity vouchers.</span>
                       </div>
                     </div>
                   </div>
@@ -1161,13 +1193,299 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 8. LUMINESCENT SHOP */}
+            {/* 8. MUHASABAH (SELF-ACCOUNTABILITY) */}
+            {activeSection === 'muhasabah' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-white/10 pb-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                      <Scale className="h-5 w-5 text-amber-400" />
+                      8. Muhāsabah: Self-Accountability, Bounded Slips & Weakness Seals
+                    </h3>
+                    <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      SPIRITUAL_OPS
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-zinc-400 mt-1">
+                    Hold yourself to account before you are held to account. Realistic moral friction, bounded XP deductions, corrective restitution directives, and permanent weakness seals.
+                  </p>
+                </div>
+
+                {/* PHILOSOPHY & CORE OPERATING LOOP */}
+                <div className="p-4 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                      <span>THE CORE ACCOUNTABILITY LOOP</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded">
+                      7-STAGE_DISCIPLINE_ENGINE
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    <em>"Evaluate yourselves before you are evaluated, and weigh your deeds before they are weighed for you."</em> — Umar ibn al-Khattāb (RA). 
+                    The Muhāsabah engine bridges moral reflection with gamified RPG mechanics, ensuring lapses incur real consequence while maintaining an unbreakable forward trajectory.
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-center font-mono text-[10px] pt-1">
+                    <div className="p-2 bg-black/50 border border-[#c5a059]/20 rounded-lg">
+                      <span className="text-amber-400 font-bold block">1. RECORD</span>
+                      <span className="text-[9px] text-zinc-400">Log honest slip</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-[#c5a059]/20 rounded-lg">
+                      <span className="text-amber-400 font-bold block">2. REFLECT</span>
+                      <span className="text-[9px] text-zinc-400">Identify trigger</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-rose-500/30 rounded-lg">
+                      <span className="text-rose-400 font-bold block">3. XP LOSS</span>
+                      <span className="text-[9px] text-zinc-400">Bounded deduction</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-cyan-500/30 rounded-lg">
+                      <span className="text-cyan-400 font-bold block">4. RESTITUTION</span>
+                      <span className="text-[9px] text-zinc-400">Remedy directive</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-emerald-500/30 rounded-lg">
+                      <span className="text-emerald-400 font-bold block">5. RECOVERY</span>
+                      <span className="text-[9px] text-zinc-400">Reclaim 10–30%</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-purple-500/30 rounded-lg">
+                      <span className="text-purple-400 font-bold block">6. WEAKNESS</span>
+                      <span className="text-[9px] text-zinc-400">5 slips crystallize</span>
+                    </div>
+                    <div className="p-2 bg-black/50 border border-yellow-500/40 rounded-lg">
+                      <span className="text-yellow-300 font-bold block">7. SEAL FORGE</span>
+                      <span className="text-[9px] text-zinc-400">Shatter & conquer</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* THE 6 SELF-ACCOUNTABILITY CATEGORIES (REALMS) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Target className="h-4 w-4 text-amber-400" />
+                      The 6 Self-Examination Categories (Realms):
+                    </h4>
+                    <span className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
+                      6 SPHERES
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                    {/* Obligations */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-emerald-300 flex items-center gap-1.5">🕌 Obligations</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">CORE DUTIES</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Fard acts, missed or delayed prayers (Fajr on time), neglected core duties, breaking foundational promises or spiritual covenants.
+                      </p>
+                    </div>
+
+                    {/* Desires */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-rose-300 flex items-center gap-1.5">🔥 Desires</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">APPETITES</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Giving into unchecked impulses, impulse shopping, sensory overindulgence, junk consumption, or breaking personal fasting/diet standards.
+                      </p>
+                    </div>
+
+                    {/* Speech */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-cyan-300 flex items-center gap-1.5">🗣️ Speech</span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded">TONGUE</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Idle talk, backbiting (gheebah), sarcasm, arguing for ego, harsh tone with family, complaints, or exaggeration.
+                      </p>
+                    </div>
+
+                    {/* Heart */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-purple-300 flex items-center gap-1.5">🖤 Heart</span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded">INTERNAL</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Envy (hasad), arrogance (kibr), ostentation/seeking human praise (riya'), ingratitude, despair, or harboring hidden malice.
+                      </p>
+                    </div>
+
+                    {/* Rights */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-amber-300 flex items-center gap-1.5">🤝 Rights</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">JUSTICE</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Neglecting the rights of parents, spouse, children, neighbors, or team members; unpaid debts, broken trust, or unfulfilled promises.
+                      </p>
+                    </div>
+
+                    {/* Wasted Potential */}
+                    <div className="p-3.5 bg-zinc-900/90 border border-yellow-500/30 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between font-mono font-bold">
+                        <span className="text-yellow-300 flex items-center gap-1.5">⏳ Wasted Potential</span>
+                        <span className="text-[9px] bg-yellow-950 text-yellow-400 px-1.5 py-0.5 rounded">TIME LOSS</span>
+                      </div>
+                      <p className="text-zinc-300 text-[11px] leading-relaxed">
+                        Mindless algorithmic feed scrolling, doomscrolling, procrastination, aimless drift, delaying high-leverage work for cheap dopamine.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PENALTY TIERS & BOUNDED MATHEMATICAL RULES */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* SEVERITY TIERS */}
+                  <div className="p-4 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="font-mono font-bold text-rose-300 uppercase flex items-center gap-1.5 text-xs">
+                        <AlertTriangle className="h-4 w-4 text-rose-400" />
+                        <span>XP Loss Severity Tiers</span>
+                      </div>
+                      <span className="text-[9px] font-mono bg-rose-950 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded">
+                        DIRECT_DEDUCTION
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 font-mono text-xs">
+                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-zinc-300">Minor Slip</span>
+                        <span className="text-rose-400 font-bold">−100 XP</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-amber-300">Moderate Lapse</span>
+                        <span className="text-rose-400 font-bold">−200 XP</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-orange-300">Major Breach</span>
+                        <span className="text-rose-400 font-bold">−300 XP</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
+                        <span className="text-purple-300">Severe Violation</span>
+                        <span className="text-rose-400 font-bold">−400 XP</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-rose-500/30">
+                        <span className="text-red-400 font-bold">Critical Failure</span>
+                        <span className="text-red-400 font-black">−500 XP</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MATHEMATICAL RULES & FAILSAFE BOUNDS */}
+                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5 text-xs">
+                        <Shield className="h-4 w-4 text-cyan-400" />
+                        <span>Failsafe Rules & Friction Guard</span>
+                      </div>
+                      <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded">
+                        MOMENTUM_GUARD
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs font-sans text-zinc-300">
+                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                        <strong className="text-amber-300 font-mono block text-[11px]">🛡️ Maximum −500 XP / Day Bounded Cap</strong>
+                        <p className="text-[11px] text-zinc-400">
+                          Total Muhāsabah penalties are strictly capped at <strong>−500 XP per calendar day</strong>. This prevents death-spiral demoralization while preserving serious stakes.
+                        </p>
+                      </div>
+
+                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                        <strong className="text-cyan-300 font-mono block text-[11px]">📉 Zero XP Level Floor</strong>
+                        <p className="text-[11px] text-zinc-400">
+                          Your current Level XP can never drop below <code>0 XP</code>. You will never experience negative levels.
+                        </p>
+                      </div>
+
+                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                        <strong className="text-emerald-300 font-mono block text-[11px]">🔄 10% to 30% XP Restitution Engine</strong>
+                        <p className="text-[11px] text-zinc-400">
+                          Completing corrective restitution directives recovers <strong>10% to 30%</strong> of the lost XP, reinforcing that repentance and immediate restitution always triumph over despair.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* WEAKNESS IDENTIFICATION & POWER SEALS */}
+                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <span>WEAKNESS CRYSTALLIZATION & POWER SEAL FORGING</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
+                      CHAIN_TRANSFORMATION
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Instead of infinitely scaling punishment on repeating habits, the system recognizes recurrent behavioral patterns and converts them into tangible RPG progression milestones:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <span className="text-amber-400 font-bold block text-[11px]">1. 5× OCCURRENCES</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        When the same slip trigger recurs 5 times, it is officially crystallized as an <strong>Active Weakness</strong> in your registry.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-lg space-y-1">
+                      <span className="text-purple-300 font-bold block text-[11px]">2. WEAKNESS SEAL FORGE</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        Forge an Imperial Weakness Seal (e.g. <em>Seal of the Restrained Tongue</em> or <em>Seal of the Vigilant Dawn</em>) binding the vulnerability in heavy chains.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-lg space-y-1">
+                      <span className="text-emerald-400 font-bold block text-[11px]">3. SHATTER & CONQUER</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        Complete the seal's discipline criteria to permanently break the chains, claiming massive XP rewards and unlocking passive attribute perks!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DASHBOARD AUDIT WIDGET QUICK ACCESS */}
+                <div className="p-4 bg-[#141824] border border-[#c5a059]/40 rounded-xl space-y-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
+                      <Scale className="h-4 w-4 text-[#e5c875]" />
+                      <span>DASHBOARD INTEGRATION & DAILY TRAJECTORY</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans">
+                      The Dashboard features a live Muhāsabah status widget tracking today's lost XP, remaining cap headroom, and quick-audit triggers.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleNavigate('muhasabah')}
+                    className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524017] text-[#fef08a] border border-[#c5a059]/60 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                  >
+                    <span>OPEN MUHĀSABAH CHAMBER</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 9. LUMINESCENT SHOP */}
             {activeSection === 'shop-rewards' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-amber-400" />
-                    8. Luminescent Ore Reward Shop & Vouchers
+                    9. Luminescent Ore Reward Shop & Vouchers
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Redeem Luminescent Coins earned through quest completions for custom real-life treats or system perks.
@@ -1195,13 +1513,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
               </div>
             )}
 
-            {/* 9. ANALYTICS, NODE CANVAS & OVERRIDE */}
+            {/* 10. ANALYTICS, NODE CANVAS & OVERRIDE */}
             {activeSection === 'analytics-system' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Settings className="h-5 w-5 text-indigo-400" />
-                    9. Analytics, Spiderweb Node Canvas & System Override
+                    10. Analytics, Spiderweb Node Canvas & System Override
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Performance telemetries, visual node connection canvas, and manual baseline stat overrides.

@@ -273,6 +273,57 @@ export interface BatterySettings {
   maxFpsCap: number; // 60, 30, 15
 }
 
+export type MuhasabahCategory = 
+  | 'Obligations' 
+  | 'Desires' 
+  | 'Speech' 
+  | 'Heart' 
+  | 'Rights' 
+  | 'Wasted Potential';
+
+export type MuhasabahSeverity = 
+  | 'Minor'      // -100 XP
+  | 'Moderate'   // -200 XP
+  | 'Major'      // -300 XP
+  | 'Severe'     // -400 XP
+  | 'Critical';  // -500 XP
+
+export interface MuhasabahEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  timestamp: string; // ISO string
+  title: string;
+  description: string;
+  category: MuhasabahCategory;
+  severity: MuhasabahSeverity;
+  xpDeducted: number; // Actual XP deducted (respecting 500/day cap and available XP)
+  rawPenalty: number; // 100, 200, 300, 400, 500
+  cause: string; // Root trigger / environment / emotional state
+  reflection?: string; // Honest personal takeaway
+  correctiveQuestId?: string | null; // ID of linked corrective quest
+  correctiveQuestName?: string | null;
+  recoveryPercentage?: number; // 10, 20, 30%
+  recoveredXP?: number;
+  weaknessId?: string | null; // ID of linked weakness
+  weaknessName?: string | null;
+}
+
+export type WeaknessStatus = 'Active' | 'Under Control' | 'Overcome' | 'Sealed';
+
+export interface Weakness {
+  id: string;
+  name: string; // e.g. "Uncontrolled Scrolling", "Idle / Vanity Speech", "Fajr Hesitation"
+  category: MuhasabahCategory;
+  description?: string;
+  triggerCause: string; // Primary root cause
+  occurrenceCount: number;
+  lastOccurrenceDate: string;
+  status: WeaknessStatus;
+  correctiveStrategy?: string; // What the operator will do when triggered
+  sealId?: string | null; // Linked PowerSeal ID if converted to a Seal
+  createdAt: string;
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -295,4 +346,6 @@ export interface POSState {
   deletedTitleIds?: string[];
   messages?: SystemMessage[];
   batterySettings?: BatterySettings;
+  muhasabahEntries?: MuhasabahEntry[];
+  weaknesses?: Weakness[];
 }

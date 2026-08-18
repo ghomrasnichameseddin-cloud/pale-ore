@@ -262,5 +262,20 @@ export const INITIAL_STATE: POSState = {
     animationThrottle: 'Off',
     oledMode: false,
     maxFpsCap: 60
-  }
+  },
+  muhasabahEntries: [],
+  weaknesses: [
+    {
+      id: 'weakness-scrolling',
+      name: 'Uncontrolled Scrolling',
+      category: 'Wasted Potential',
+      description: 'Falling into passive endless feed loops on phone or browser when fatigued.',
+      triggerCause: 'Fatigue & idle unstructured downtime late in evening',
+      occurrenceCount: 2,
+      lastOccurrenceDate: getLocalDateString(),
+      status: 'Active',
+      correctiveStrategy: 'Leave phone in another room after Isha and switch to physical book or dhikr.',
+      createdAt: new Date().toISOString()
+    }
+  ]
 };

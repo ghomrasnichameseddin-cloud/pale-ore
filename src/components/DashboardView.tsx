@@ -7,15 +7,16 @@ import {
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
   Sliders, Timer, Zap, Star, Coins, ShoppingBag, Plus, Search,
   Filter, Target, FolderKanban, Sparkles, TrendingUp, BarChart2,
-  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock
+  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock, Scale
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuestDifficulty, QuestType } from '../types';
 import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
+import { MuhasabahModal } from './MuhasabahModal';
 
 interface DashboardViewProps {
-  onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop') => void;
+  onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
@@ -23,15 +24,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     state, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
     isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate,
     toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getGoalProgress,
-    getProjectProgress, addQuest, getSkillXpAndLevel
+    getProjectProgress, addQuest, getSkillXpAndLevel, getTodayMuhasabahStats
   } = usePOS();
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
+  const muhasabahStats = getTodayMuhasabahStats();
 
   const [focusText, setFocusText] = useState(state.profile.currentFocus);
   const [focusGoal, setFocusGoal] = useState(state.profile.focusGoalId || '');
   const [isEditingFocus, setIsEditingFocus] = useState(false);
   const [isJobTitleModalOpen, setIsJobTitleModalOpen] = useState(false);
+  const [isMuhasabahModalOpen, setIsMuhasabahModalOpen] = useState(false);
 
   // Quick Quest Creator Modal State
   const [isQuickQuestOpen, setIsQuickQuestOpen] = useState(false);
@@ -553,6 +556,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-xs font-mono font-bold mt-1 uppercase text-emerald-300">
                   ⚡ PERMANENT ECO
                 </span>
+              </div>
+            </div>
+
+            {/* MUHĀSABAH SELF-ACCOUNTABILITY WIDGET */}
+            <div className="mt-4 p-3 bg-[#0d1017] border border-[#c5a059]/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[#3a2e12]/70 border border-[#c5a059]/50 text-[#fef08a] shrink-0">
+                  <Scale className="h-4 w-4 text-[#c5a059]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-zinc-100 flex items-center gap-1">
+                      <RubElHizbIcon className="h-2.5 w-2.5 text-[#c5a059]" />
+                      MUHĀSABAH AUDIT
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                      muhasabahStats.todayLostXP > 0 
+                        ? 'bg-rose-950/60 border-rose-500/40 text-rose-300' 
+                        : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                    }`}>
+                      {muhasabahStats.todayLostXP > 0 ? `−${muhasabahStats.todayLostXP} XP Lost Today` : 'Clean Sheet Today'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400 mt-0.5">
+                    <span>Net: <strong className={muhasabahStats.todayNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{muhasabahStats.todayNetXP >= 0 ? `+${muhasabahStats.todayNetXP}` : muhasabahStats.todayNetXP} XP</strong></span>
+                    <span>•</span>
+                    <span>Cap: <strong className="text-amber-300">{muhasabahStats.dailyCapRemaining} XP</strong> left</span>
+                    {muhasabahStats.activeWeaknessesCount > 0 && (
+                      <>
+                        <span>•</span>
+                        <span className="text-amber-400 font-bold">{muhasabahStats.activeWeaknessesCount} Active Weakness</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsMuhasabahModalOpen(true)}
+                  className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-[#c5a059] text-black font-display text-[11px] font-bold tracking-wider hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-1.5 shadow"
+                  id="dashboard-record-slip-btn"
+                >
+                  <Scale className="h-3 w-3" />
+                  RECORD SLIP
+                </button>
+                {onNavigate && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('muhasabah' as any)}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#07080c] hover:bg-white/5 border border-white/10 text-[11px] font-mono text-zinc-300 transition flex items-center gap-1"
+                    title="Open Full Muhāsabah Chamber"
+                  >
+                    <span>CHAMBER</span>
+                    <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1659,6 +1720,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <JobTitleModal 
         isOpen={isJobTitleModalOpen} 
         onClose={() => setIsJobTitleModalOpen(false)} 
+      />
+
+      <MuhasabahModal
+        isOpen={isMuhasabahModalOpen}
+        onClose={() => setIsMuhasabahModalOpen(false)}
       />
     </div>
   );

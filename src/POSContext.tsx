@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { 
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal, QuestFolder, QuestList,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
-  ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject
+  ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
+  MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString } from './initialState';
 
@@ -194,6 +195,39 @@ interface POSContextType {
   clearVoucherHistory: () => void;
   clearAllVouchers: () => void;
   isShopLocked: boolean;
+
+  // Muhāsabah (Self-Accountability) Operations
+  addMuhasabahEntry: (entry: {
+    title: string;
+    description?: string;
+    category: MuhasabahCategory;
+    severity: MuhasabahSeverity;
+    cause: string;
+    reflection?: string;
+    createCorrectiveQuest?: boolean;
+    correctiveQuestName?: string;
+    recoveryPercentage?: number;
+    weaknessId?: string | null;
+    weaknessName?: string | null;
+  }) => { success: boolean; entryId: string; xpDeducted: number; rawPenalty: number; capReached: boolean; message: string };
+  updateMuhasabahEntry: (id: string, updates: Partial<MuhasabahEntry>) => void;
+  deleteMuhasabahEntry: (id: string) => void;
+  clearAllMuhasabahEntries: () => void;
+
+  // Weaknesses Management
+  addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
+  updateWeakness: (id: string, updates: Partial<Weakness>) => void;
+  deleteWeakness: (id: string) => void;
+  convertWeaknessToSeal: (weaknessId: string, customRarity?: SealRarity) => { success: boolean; sealId?: string; message: string };
+  getTodayMuhasabahStats: () => {
+    todayEarnedXP: number;
+    todayLostXP: number;
+    todayNetXP: number;
+    dailyCapRemaining: number;
+    totalEntriesCount: number;
+    activeWeaknessesCount: number;
+    sealedWeaknessesCount: number;
+  };
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -3720,6 +3754,348 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  const SEVERITY_XP_PENALTIES: Record<MuhasabahSeverity, number> = {
+    Minor: 100,
+    Moderate: 200,
+    Major: 300,
+    Severe: 400,
+    Critical: 500
+  };
+
+  const addMuhasabahEntry = (entry: {
+    title: string;
+    description?: string;
+    category: MuhasabahCategory;
+    severity: MuhasabahSeverity;
+    cause: string;
+    reflection?: string;
+    createCorrectiveQuest?: boolean;
+    correctiveQuestName?: string;
+    recoveryPercentage?: number;
+    weaknessId?: string | null;
+    weaknessName?: string | null;
+  }) => {
+    const rawPenalty = SEVERITY_XP_PENALTIES[entry.severity] || 200;
+    const currentSysDate = state.systemDate || getLocalDateString();
+    
+    // Calculate today's existing Muhasabah deductions to enforce daily 500 XP penalty cap
+    const todayMuhasabahLoss = (state.muhasabahEntries || [])
+      .filter(e => e.date === currentSysDate)
+      .reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
+    
+    const availableCap = Math.max(0, 500 - todayMuhasabahLoss);
+    const xpToDeduct = Math.min(rawPenalty, availableCap);
+    const capReached = availableCap <= 0 || xpToDeduct < rawPenalty;
+
+    let createdQuestId: string | null = null;
+    let createdQuestName: string | null = null;
+    let recoveryPercent = entry.recoveryPercentage ?? 20; // Default 20%
+    if (recoveryPercent < 10) recoveryPercent = 10;
+    if (recoveryPercent > 30) recoveryPercent = 30;
+    const recoveredXP = Math.max(15, Math.round(rawPenalty * (recoveryPercent / 100)));
+
+    if (entry.createCorrectiveQuest) {
+      createdQuestId = `quest-remedy-${Date.now()}`;
+      createdQuestName = entry.correctiveQuestName?.trim() || `[REMEDY] Restitution: ${entry.title.trim()}`;
+    }
+
+    const newEntryId = `muhasabah-${Date.now()}`;
+
+    setState(prev => {
+      // 1. Calculate new XP ensuring it never drops below 0
+      const currentProfileXp = prev.profile.xp || 0;
+      const actualDeducted = Math.min(currentProfileXp, xpToDeduct);
+      
+      let updatedXpHistory = [...prev.xpHistory];
+      if (actualDeducted > 0) {
+        const historyEntry: XPHistoryEntry = {
+          id: `xph-muhasabah-${Date.now()}`,
+          questId: null,
+          questName: `[MUHĀSABAH] ${entry.category}: ${entry.title}`,
+          xp: -actualDeducted,
+          timestamp: getSystemTimestamp(currentSysDate),
+          skillIds: []
+        };
+        updatedXpHistory = [historyEntry, ...prev.xpHistory];
+      }
+
+      const totalXp = Math.max(0, updatedXpHistory.reduce((sum, h) => sum + h.xp, 0));
+      const level = calculatePlayerLevel(totalXp);
+
+      // 2. Create Corrective Quest if requested
+      let updatedQuests = [...prev.quests];
+      if (entry.createCorrectiveQuest && createdQuestId && createdQuestName) {
+        const remedyQuest: Quest = {
+          id: createdQuestId,
+          name: createdQuestName,
+          description: `Corrective Restitution for Muhāsabah reflection on ${entry.category}.\n• Root Trigger: ${entry.cause}\n• Personal Resolution: ${entry.reflection || 'Re-align discipline through immediate focused action.'}`,
+          type: 'Recovery',
+          difficulty: rawPenalty >= 400 ? 'Hard' : rawPenalty >= 200 ? 'Normal' : 'Easy',
+          xp: recoveredXP,
+          estimatedTime: rawPenalty >= 400 ? 45 : 25,
+          deadline: currentSysDate,
+          status: 'Active',
+          recurrence: 'None',
+          streakCount: 0,
+          completedAt: null,
+          lastCompletedDate: null,
+          postponedFrom: null,
+          postponedTo: null,
+          goalId: null,
+          projectId: null,
+          milestoneId: null,
+          listId: null,
+          relatedSkills: [],
+          createdAt: getSystemTimestamp(currentSysDate)
+        };
+        updatedQuests = [remedyQuest, ...updatedQuests];
+      }
+
+      // 3. Weakness tracking & auto-trigger
+      let updatedWeaknesses = [...(prev.weaknesses || [])];
+      let targetWeaknessId: string | null = entry.weaknessId || null;
+      let targetWeaknessName: string | null = entry.weaknessName || null;
+
+      if (targetWeaknessId) {
+        updatedWeaknesses = updatedWeaknesses.map(w => {
+          if (w.id === targetWeaknessId) {
+            const nextCount = w.occurrenceCount + 1;
+            const isNowActive = nextCount >= 5 ? 'Active' : w.status;
+            targetWeaknessName = w.name;
+            return {
+              ...w,
+              occurrenceCount: nextCount,
+              lastOccurrenceDate: currentSysDate,
+              status: isNowActive
+            };
+          }
+          return w;
+        });
+      } else if (entry.weaknessName && entry.weaknessName.trim()) {
+        const trimmedName = entry.weaknessName.trim();
+        const existingWeaknessIndex = updatedWeaknesses.findIndex(
+          w => w.name.toLowerCase() === trimmedName.toLowerCase() || 
+               w.triggerCause.toLowerCase() === entry.cause.toLowerCase()
+        );
+
+        if (existingWeaknessIndex >= 0) {
+          const w = updatedWeaknesses[existingWeaknessIndex];
+          const nextCount = w.occurrenceCount + 1;
+          const isNowActive = nextCount >= 5 ? 'Active' : w.status;
+          targetWeaknessId = w.id;
+          targetWeaknessName = w.name;
+          updatedWeaknesses[existingWeaknessIndex] = {
+            ...w,
+            occurrenceCount: nextCount,
+            lastOccurrenceDate: currentSysDate,
+            status: isNowActive
+          };
+        } else {
+          targetWeaknessId = `weakness-${Date.now()}`;
+          targetWeaknessName = trimmedName;
+          const newWeakness: Weakness = {
+            id: targetWeaknessId,
+            name: trimmedName,
+            category: entry.category,
+            triggerCause: entry.cause,
+            occurrenceCount: 1,
+            lastOccurrenceDate: currentSysDate,
+            status: 'Under Control',
+            correctiveStrategy: entry.reflection || 'Guard against triggers with vigilant awareness.',
+            createdAt: getSystemTimestamp(currentSysDate)
+          };
+          updatedWeaknesses.push(newWeakness);
+        }
+      }
+
+      // Check if any weakness just hit threshold 5 to alert operator
+      const matchingWeakness = updatedWeaknesses.find(w => w.id === targetWeaknessId);
+      if (matchingWeakness && matchingWeakness.occurrenceCount === 5) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'warning',
+          title: `⚠️ BEHAVIORAL WEAKNESS ACTIVE: ${matchingWeakness.name}`,
+          content: `5 repeated occurrences recorded under ${matchingWeakness.category}. This pattern has been elevated to an Active Weakness. Deploy structured corrective protocols or forge a Weakness Seal to break its cycle.`,
+          priority: 'high'
+        });
+      }
+
+      // 4. Record the Muhasabah Entry
+      const newEntry: MuhasabahEntry = {
+        id: newEntryId,
+        date: currentSysDate,
+        timestamp: getSystemTimestamp(currentSysDate),
+        title: entry.title.trim(),
+        description: entry.description?.trim() || '',
+        category: entry.category,
+        severity: entry.severity,
+        rawPenalty,
+        xpDeducted: actualDeducted,
+        cause: entry.cause.trim(),
+        reflection: entry.reflection?.trim() || '',
+        correctiveQuestId: createdQuestId,
+        correctiveQuestName: createdQuestName,
+        recoveryPercentage: entry.createCorrectiveQuest ? recoveryPercent : undefined,
+        recoveredXP: entry.createCorrectiveQuest ? recoveredXP : undefined,
+        weaknessId: targetWeaknessId,
+        weaknessName: targetWeaknessName
+      };
+
+      const finalEntries = [newEntry, ...(prev.muhasabahEntries || [])];
+
+      addSystemMessage({
+        sender: 'OPERATOR',
+        category: 'log',
+        title: `⚖️ MUHĀSABAH RECORDED: ${entry.category}`,
+        content: `Reflected on "${entry.title}". Severity: ${entry.severity} (−${actualDeducted} XP). Cause: ${entry.cause}.${entry.createCorrectiveQuest ? ` Corrective Remedy quest issued (+${recoveredXP} XP restitution upon completion).` : ''}`,
+        priority: 'medium'
+      });
+
+      return {
+        ...prev,
+        muhasabahEntries: finalEntries,
+        weaknesses: updatedWeaknesses,
+        quests: updatedQuests,
+        xpHistory: updatedXpHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level
+        }
+      };
+    });
+
+    return {
+      success: true,
+      entryId: newEntryId,
+      xpDeducted: xpToDeduct,
+      rawPenalty,
+      capReached,
+      message: capReached 
+        ? `Daily XP loss cap of −500 XP reached for today. Slip recorded and added to Weakness tracking without extra XP loss.` 
+        : `Muhāsabah entry recorded. −${xpToDeduct} XP applied. Corrective quest calibrated.`
+    };
+  };
+
+  const updateMuhasabahEntry = (id: string, updates: Partial<MuhasabahEntry>) => {
+    setState(prev => ({
+      ...prev,
+      muhasabahEntries: (prev.muhasabahEntries || []).map(e => e.id === id ? { ...e, ...updates } : e)
+    }));
+  };
+
+  const deleteMuhasabahEntry = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      muhasabahEntries: (prev.muhasabahEntries || []).filter(e => e.id !== id)
+    }));
+  };
+
+  const clearAllMuhasabahEntries = () => {
+    setState(prev => ({
+      ...prev,
+      muhasabahEntries: []
+    }));
+  };
+
+  const addWeakness = (weakness: Omit<Weakness, 'id' | 'createdAt'>): string => {
+    const id = `weakness-${Date.now()}`;
+    const newWeakness: Weakness = {
+      ...weakness,
+      id,
+      createdAt: getSystemTimestamp(state.systemDate)
+    };
+    setState(prev => ({
+      ...prev,
+      weaknesses: [...(prev.weaknesses || []), newWeakness]
+    }));
+    return id;
+  };
+
+  const updateWeakness = (id: string, updates: Partial<Weakness>) => {
+    setState(prev => ({
+      ...prev,
+      weaknesses: (prev.weaknesses || []).map(w => w.id === id ? { ...w, ...updates } : w)
+    }));
+  };
+
+  const deleteWeakness = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      weaknesses: (prev.weaknesses || []).filter(w => w.id !== id)
+    }));
+  };
+
+  const convertWeaknessToSeal = (weaknessId: string, customRarity?: SealRarity) => {
+    const weakness = (state.weaknesses || []).find(w => w.id === weaknessId);
+    if (!weakness) {
+      return { success: false, message: 'Weakness not found' };
+    }
+
+    const sealId = `seal-weakness-${Date.now()}`;
+    const rarity: SealRarity = customRarity || (weakness.occurrenceCount >= 8 ? 'Epic' : weakness.occurrenceCount >= 5 ? 'Rare' : 'Common');
+    
+    const newSeal: PowerSeal = {
+      id: sealId,
+      name: `Chain of ${weakness.name}`,
+      description: `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
+      rarity,
+      status: 'Locked',
+      requiredLevel: Math.max(1, Math.min(10, Math.floor(weakness.occurrenceCount / 2))),
+      costXP: Math.max(100, weakness.occurrenceCount * 40),
+      requiredStreakDays: Math.min(7, Math.max(3, weakness.occurrenceCount)),
+      buffName: `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
+      buffDescription: `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips.`,
+      xpBonusMultiplier: 1.15,
+      momentumBoost: 10,
+      attributeBoosts: [{ attributeId: 'a-5', boostAmount: 2 }],
+      runeSymbol: '⛓️',
+      colorTheme: rarity === 'Epic' ? 'emerald' : rarity === 'Rare' ? 'purple' : 'cyan',
+      createdAt: getSystemTimestamp(state.systemDate)
+    };
+
+    setState(prev => ({
+      ...prev,
+      seals: [...(prev.seals || []), newSeal],
+      weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { ...w, status: 'Sealed', sealId } : w)
+    }));
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: `⛓️ WEAKNESS SEAL FORGED: Chain of ${weakness.name}`,
+      content: `The persistent weakness has been bound into a Power Seal in the Imperial Ores & Chains chamber. Fulfill its discipline requirements to shatter the chain and claim operator rewards.`,
+      priority: 'high'
+    });
+
+    return { success: true, sealId, message: `Weakness successfully bound to Power Seal: ${newSeal.name}` };
+  };
+
+  const getTodayMuhasabahStats = () => {
+    const currentSysDate = state.systemDate || getLocalDateString();
+    const todayEntries = (state.muhasabahEntries || []).filter(e => e.date === currentSysDate);
+    const todayLostXP = todayEntries.reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
+    
+    const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
+    const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
+    const todayNetXP = todayEarnedXP - todayLostXP;
+    const dailyCapRemaining = Math.max(0, 500 - todayLostXP);
+
+    const weaknesses = state.weaknesses || [];
+    const activeWeaknessesCount = weaknesses.filter(w => w.status === 'Active').length;
+    const sealedWeaknessesCount = weaknesses.filter(w => w.status === 'Sealed' || w.sealId).length;
+
+    return {
+      todayEarnedXP,
+      todayLostXP,
+      todayNetXP,
+      dailyCapRemaining,
+      totalEntriesCount: (state.muhasabahEntries || []).length,
+      activeWeaknessesCount,
+      sealedWeaknessesCount
+    };
+  };
+
   return (
     <POSContext.Provider value={{
       state,
@@ -3859,7 +4235,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearAllVouchers,
       isShopLocked,
       updateBatterySettings,
-      toggleBatterySaverMode
+      toggleBatterySaverMode,
+      addMuhasabahEntry,
+      updateMuhasabahEntry,
+      deleteMuhasabahEntry,
+      clearAllMuhasabahEntries,
+      addWeakness,
+      updateWeakness,
+      deleteWeakness,
+      convertWeaknessToSeal,
+      getTodayMuhasabahStats
     }}>
       {children}
     </POSContext.Provider>
