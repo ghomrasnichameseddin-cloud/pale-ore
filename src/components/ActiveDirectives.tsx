@@ -1123,7 +1123,7 @@ export const ActiveDirectives: React.FC = () => {
 
   const handleMoveToToday = (questId: string) => {
     updateQuest(questId, { 
-      deadline: null,
+      deadline: systemDate,
       postponedFrom: null,
       postponedTo: null
     });

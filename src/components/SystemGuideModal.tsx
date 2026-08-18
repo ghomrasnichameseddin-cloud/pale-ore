@@ -937,6 +937,39 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                       <li>• Link milestones and quests directly.</li>
                     </ul>
                   </div>
+
+                  {/* MILESTONES EXPLANATION */}
+                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                    <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
+                      <Zap className="h-4 w-4" />
+                      Milestones & Phase Gating
+                    </h4>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Milestones are sequential checkpoints that organize related quests into distinct phases within a Goal or Project. Each milestone tracks completion percentage in real-time.
+                    </p>
+                    <ul className="text-[11px] text-zinc-400 font-mono space-y-1">
+                      <li>• Create phases (e.g., "Design", "Build", "Deploy").</li>
+                      <li>• Link quests directly to a milestone.</li>
+                      <li>• Auto-calculate progress from quest completions.</li>
+                      <li>• Toggle milestone status (Active/Completed).</li>
+                    </ul>
+                  </div>
+
+                  {/* MILESTONE MECHANICS */}
+                  <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                    <h4 className="text-xs font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Milestone Mechanics
+                    </h4>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Each milestone automatically calculates its progress percentage based on the quests linked to it.
+                    </p>
+                    <div className="text-[10px] text-zinc-400 font-mono space-y-1 bg-black/40 p-2 rounded border border-white/5">
+                      <div>Progress = (Completed Quests / Total Quests) × 100%</div>
+                      <div className="text-zinc-500 text-[9px] mt-1">Example: 3/5 quests done = 60% milestone progress</div>
+                    </div>
+                    <p className="text-[11px] text-zinc-400">Deleting a milestone unlinks all its quests (they remain active but lose the milestone association).</p>
+                  </div>
                 </div>
 
                 <div className="p-3.5 bg-zinc-900/60 border border-white/5 rounded-xl space-y-1 text-xs">
