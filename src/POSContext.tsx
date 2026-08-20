@@ -4192,25 +4192,39 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const activeWeaknessesCount = weaknesses.filter(w => w.status === 'Active').length;
     const sealedWeaknessesCount = weaknesses.filter(w => w.status === 'Sealed' || w.sealId).length;
 
-    // Completed Hasanaat count today (positive completed quests + focus cycles)
-    const completedQuestsToday = (state.quests || []).filter(q => {
-      const isDone = q.status === 'Completed' || (q.completedAt && q.completedAt.startsWith(currentSysDate));
-      return isDone && q.type !== 'Penalty';
+    // Completed Hasanaat count today (positive completed quests + focus cycles logged today)
+    const questsDoneToday = (state.quests || []).filter(q => {
+      if (q.type === 'Penalty') return false;
+      const isCompletedToday = q.completedAt && q.completedAt.startsWith(currentSysDate);
+      return q.status === 'Completed' && isCompletedToday;
     }).length;
+    
+    // Also include completed positive XP events recorded in today's history
+    const hasanatEventsToday = todayHistory.filter(h => h.xp > 0).length;
+    const todayHasanatCount = Math.max(questsDoneToday, hasanatEventsToday);
 
     // Mīzān balance calculations
     const totalWeight = todayEarnedXP + todayLostXP;
-    let mizanTilt = 0; // -20deg (heavy Sayyiat) to +20deg (heavy Hasanat)
+    let mizanTilt = 0; // -18deg (heavy Sayyiat) to +18deg (heavy Hasanat)
     if (totalWeight > 0) {
       const netRatio = (todayEarnedXP - todayLostXP) / Math.max(100, totalWeight);
       mizanTilt = Math.round(netRatio * 18); // clamp around -18 to +18 degrees
     }
 
-    let equilibriumStatus: 'Radiant Balance' | 'Blessed Equilibrium' | 'Neutral Ground' | 'Spiritual Deficit' | 'Severe Nafs Warning' = 'Blessed Equilibrium';
-    if (todayNetXP >= 300) equilibriumStatus = 'Radiant Balance';
-    else if (todayNetXP >= 0) equilibriumStatus = 'Blessed Equilibrium';
-    else if (todayNetXP >= -200) equilibriumStatus = 'Spiritual Deficit';
-    else equilibriumStatus = 'Severe Nafs Warning';
+    let equilibriumStatus: 'Radiant Balance' | 'Blessed Equilibrium' | 'Neutral Ground' | 'Spiritual Deficit' | 'Severe Nafs Warning' = 'Neutral Ground';
+    if (todayEarnedXP === 0 && todayLostXP === 0) {
+      equilibriumStatus = 'Neutral Ground';
+    } else if (todayNetXP >= 250) {
+      equilibriumStatus = 'Radiant Balance';
+    } else if (todayNetXP > 0) {
+      equilibriumStatus = 'Blessed Equilibrium';
+    } else if (todayNetXP === 0) {
+      equilibriumStatus = 'Neutral Ground';
+    } else if (todayNetXP >= -200) {
+      equilibriumStatus = 'Spiritual Deficit';
+    } else {
+      equilibriumStatus = 'Severe Nafs Warning';
+    }
 
     return {
       todayEarnedXP,
@@ -4220,7 +4234,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dailyCapRemaining,
       totalEntriesCount: (state.muhasabahEntries || []).length,
       todaySlipsCount: todayEntries.length,
-      todayHasanatCount: completedQuestsToday,
+      todayHasanatCount,
       activeWeaknessesCount,
       sealedWeaknessesCount,
       pendingKaffarahCount: pendingKaffarah.length,
