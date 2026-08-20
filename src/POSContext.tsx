@@ -2156,6 +2156,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? (remainingDeactivatingQuestsCount === 0 ? false : prev.profile.recoveryMode)
         : prev.profile.recoveryMode;
 
+      const isKaffarahQuest = 
+        questToComplete.name.includes('[KAFFĀRAH]') || 
+        questToComplete.name.includes('[REMEDY]') ||
+        (prev.muhasabahEntries || []).some(e => e.correctiveQuestId === id);
+
+      let updatedMuhasabahEntries = prev.muhasabahEntries || [];
+      if (isKaffarahQuest) {
+        updatedMuhasabahEntries = updatedMuhasabahEntries.map(e => {
+          if (e.correctiveQuestId === id || (e.correctiveQuestName && questToComplete.name.includes(e.correctiveQuestName))) {
+            return { ...e, kaffarahCompleted: true };
+          }
+          return e;
+        });
+      }
+
       const addedFatigue = questToComplete.difficulty === 'Easy' ? 5 :
                            questToComplete.difficulty === 'Normal' ? 10 :
                            questToComplete.difficulty === 'Hard' ? 18 : 25;
@@ -2166,9 +2181,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       addSystemMessage({
         sender: 'SYSTEM',
-        category: 'achievement',
-        title: 'Directive Completed',
-        content: completionMessage,
+        category: isKaffarahQuest ? 'alert' : 'achievement',
+        title: isKaffarahQuest ? '🌿 KAFFĀRAH RESTITUTION FULFILLED' : 'Directive Completed',
+        content: isKaffarahQuest ? `Spiritual remedy "${questToComplete.name}" fulfilled. Sincere restitution recorded; spiritual equilibrium restored and shop locks lifted.` : completionMessage,
         priority: 'high'
       });
 
@@ -2177,12 +2192,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quests: updatedQuests,
         skills: updatedSkills,
         xpHistory: updatedHistory,
+        muhasabahEntries: updatedMuhasabahEntries,
         profile: {
           ...prev.profile,
           xp: totalXp,
           level,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
-          momentum: newMomentum,
+          momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
           recoveryMode: newRecoveryMode,
           fatigueLevel: newFatigue,
           lastFatigueUpdateDate: prev.systemDate
@@ -3003,6 +3019,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const todayStr = state.systemDate || getLocalDateString();
     const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
 
+    // Check if there are active unfulfilled Kaffārah / Spiritual Remedy quests from Muhasabah
+    const hasPendingKaffarah = (state.quests || []).some(q => 
+      q.status === 'Active' && 
+      (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+    );
+    if (hasPendingKaffarah) return true;
+
     const baseQuests = (state.quests || []).filter(q => {
       if (state.profile.recoveryMode) {
         if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
@@ -3762,6 +3785,61 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     Critical: 500
   };
 
+  const SEVERITY_COIN_FINES: Record<MuhasabahSeverity, number> = {
+    Minor: 10,
+    Moderate: 25,
+    Major: 50,
+    Severe: 100,
+    Critical: 200
+  };
+
+  const SEVERITY_MOMENTUM_PENALTIES: Record<MuhasabahSeverity, number> = {
+    Minor: 15,
+    Moderate: 35,
+    Major: 100, // Complete momentum wipe
+    Severe: 100,
+    Critical: 100
+  };
+
+  const DEFAULT_KAFFARAH_TEMPLATES: Record<MuhasabahCategory, { title: string; type: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus'; desc: string; xp: number }> = {
+    Obligations: {
+      title: '2 Rak\'ahs of Tawbah & Surah Al-Mulk Recitation',
+      type: 'Prayer',
+      desc: 'Immediate spiritual re-alignment through sincere voluntary prayer and solemn Quranic recitation.',
+      xp: 60
+    },
+    Desires: {
+      title: 'Dopamine Fast (45m Screen Detox) & $5 Sadaqah Charity',
+      type: 'Detox',
+      desc: 'Break appetite and impulse hooks through voluntary screen fasting and tangible monetary charity.',
+      xp: 50
+    },
+    Speech: {
+      title: '100x Istighfār & Sincere Secret Du\'a for Others',
+      type: 'Quran',
+      desc: 'Cleanse speech slips by uttering 100 sincere seeking of forgiveness and making heartfelt secret prayers for others.',
+      xp: 45
+    },
+    Heart: {
+      title: 'Perform 1 Hidden Good Deed with Zero Broadcast',
+      type: 'Service',
+      desc: 'Purge vanity and pride by executing an intentional act of goodness known only to the Creator.',
+      xp: 55
+    },
+    Rights: {
+      title: 'Direct Sincere Apology or Act of Service for Kin',
+      type: 'Service',
+      desc: 'Mend broken ties through prompt humility, verbal apology, or a physical act of helpfulness.',
+      xp: 50
+    },
+    'Wasted Potential': {
+      title: 'Execute 1 Locked Deep Focus Sprint (25m)',
+      type: 'Focus',
+      desc: 'Shatter procrastination drift with a strictly monitored 25-minute single-task deep focus cycle.',
+      xp: 60
+    }
+  };
+
   const addMuhasabahEntry = (entry: {
     title: string;
     description?: string;
@@ -3771,11 +3849,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     reflection?: string;
     createCorrectiveQuest?: boolean;
     correctiveQuestName?: string;
+    kaffarahType?: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus';
     recoveryPercentage?: number;
     weaknessId?: string | null;
     weaknessName?: string | null;
   }) => {
     const rawPenalty = SEVERITY_XP_PENALTIES[entry.severity] || 200;
+    const coinFine = SEVERITY_COIN_FINES[entry.severity] || 25;
+    const momentumLoss = SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35;
     const currentSysDate = state.systemDate || getLocalDateString();
     
     // Calculate today's existing Muhasabah deductions to enforce daily 500 XP penalty cap
@@ -3787,16 +3868,22 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const xpToDeduct = Math.min(rawPenalty, availableCap);
     const capReached = availableCap <= 0 || xpToDeduct < rawPenalty;
 
+    const defaultTemplate = DEFAULT_KAFFARAH_TEMPLATES[entry.category];
+    const kaffarahType = entry.kaffarahType || defaultTemplate.type;
+    const kaffarahTitle = entry.correctiveQuestName?.trim() || defaultTemplate.title;
+
     let createdQuestId: string | null = null;
     let createdQuestName: string | null = null;
     let recoveryPercent = entry.recoveryPercentage ?? 20; // Default 20%
     if (recoveryPercent < 10) recoveryPercent = 10;
     if (recoveryPercent > 30) recoveryPercent = 30;
-    const recoveredXP = Math.max(15, Math.round(rawPenalty * (recoveryPercent / 100)));
+    const recoveredXP = Math.max(25, Math.round(rawPenalty * (recoveryPercent / 100)));
 
-    if (entry.createCorrectiveQuest) {
-      createdQuestId = `quest-remedy-${Date.now()}`;
-      createdQuestName = entry.correctiveQuestName?.trim() || `[REMEDY] Restitution: ${entry.title.trim()}`;
+    // By default for Muhasabah, always create a Kaffārah restitution quest to enforce high stakes
+    const shouldCreateQuest = entry.createCorrectiveQuest !== false;
+    if (shouldCreateQuest) {
+      createdQuestId = `quest-kaffarah-${Date.now()}`;
+      createdQuestName = `[KAFFĀRAH] ${kaffarahTitle}`;
     }
 
     const newEntryId = `muhasabah-${Date.now()}`;
@@ -3811,7 +3898,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const historyEntry: XPHistoryEntry = {
           id: `xph-muhasabah-${Date.now()}`,
           questId: null,
-          questName: `[MUHĀSABAH] ${entry.category}: ${entry.title}`,
+          questName: `[MUHĀSABAH AUDIT] ${entry.category}: ${entry.title}`,
           xp: -actualDeducted,
           timestamp: getSystemTimestamp(currentSysDate),
           skillIds: []
@@ -3822,17 +3909,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const totalXp = Math.max(0, updatedXpHistory.reduce((sum, h) => sum + h.xp, 0));
       const level = calculatePlayerLevel(totalXp);
 
-      // 2. Create Corrective Quest if requested
+      // 2. Deduct Coins & Slash Momentum
+      const currentCoins = prev.profile.coins ?? 150;
+      const nextCoins = Math.max(0, currentCoins - coinFine);
+      const currentMomentum = prev.profile.momentum || 0;
+      const nextMomentum = momentumLoss >= 100 ? 0 : Math.max(0, currentMomentum - momentumLoss);
+
+      // 3. Create Kaffārah Restitution Quest
       let updatedQuests = [...prev.quests];
-      if (entry.createCorrectiveQuest && createdQuestId && createdQuestName) {
-        const remedyQuest: Quest = {
+      if (shouldCreateQuest && createdQuestId && createdQuestName) {
+        const kaffarahQuest: Quest = {
           id: createdQuestId,
           name: createdQuestName,
-          description: `Corrective Restitution for Muhāsabah reflection on ${entry.category}.\n• Root Trigger: ${entry.cause}\n• Personal Resolution: ${entry.reflection || 'Re-align discipline through immediate focused action.'}`,
+          description: `Solemn Kaffārah Restitution for Muhāsabah Slip: "${entry.title}" (${entry.category} • ${entry.severity}).\n• Root Cause: ${entry.cause}\n• Restitution Action: ${kaffarahTitle}\n• Note: Resolving this quest fulfills your penance, restores spiritual equilibrium, and unlocks Imperial Shop rewards.`,
           type: 'Recovery',
-          difficulty: rawPenalty >= 400 ? 'Hard' : rawPenalty >= 200 ? 'Normal' : 'Easy',
+          difficulty: entry.severity === 'Critical' || entry.severity === 'Severe' ? 'Hard' : entry.severity === 'Major' ? 'Normal' : 'Easy',
           xp: recoveredXP,
-          estimatedTime: rawPenalty >= 400 ? 45 : 25,
+          estimatedTime: entry.severity === 'Critical' ? 45 : 25,
           deadline: currentSysDate,
           status: 'Active',
           recurrence: 'None',
@@ -3848,10 +3941,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           relatedSkills: [],
           createdAt: getSystemTimestamp(currentSysDate)
         };
-        updatedQuests = [remedyQuest, ...updatedQuests];
+        updatedQuests = [kaffarahQuest, ...updatedQuests];
       }
 
-      // 3. Weakness tracking & auto-trigger
+      // 4. Weakness tracking & auto-trigger
       let updatedWeaknesses = [...(prev.weaknesses || [])];
       let targetWeaknessId: string | null = entry.weaknessId || null;
       let targetWeaknessName: string | null = entry.weaknessName || null;
@@ -3914,13 +4007,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addSystemMessage({
           sender: 'SYSTEM',
           category: 'warning',
-          title: `⚠️ BEHAVIORAL WEAKNESS ACTIVE: ${matchingWeakness.name}`,
-          content: `5 repeated occurrences recorded under ${matchingWeakness.category}. This pattern has been elevated to an Active Weakness. Deploy structured corrective protocols or forge a Weakness Seal to break its cycle.`,
+          title: `⛓️ BEHAVIORAL CHAIN ACTIVE: ${matchingWeakness.name}`,
+          content: `5 repeated occurrences recorded under ${matchingWeakness.category}. This pattern has been elevated to an Active Chain. Bind into a Power Seal to forge spiritual mastery.`,
           priority: 'high'
         });
       }
 
-      // 4. Record the Muhasabah Entry
+      // 5. Record the Muhasabah Entry with Kaffarah & Coin details
       const newEntry: MuhasabahEntry = {
         id: newEntryId,
         date: currentSysDate,
@@ -3931,12 +4024,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         severity: entry.severity,
         rawPenalty,
         xpDeducted: actualDeducted,
+        coinsDeducted: coinFine,
+        momentumLost: momentumLoss,
         cause: entry.cause.trim(),
         reflection: entry.reflection?.trim() || '',
         correctiveQuestId: createdQuestId,
         correctiveQuestName: createdQuestName,
-        recoveryPercentage: entry.createCorrectiveQuest ? recoveryPercent : undefined,
-        recoveredXP: entry.createCorrectiveQuest ? recoveredXP : undefined,
+        kaffarahTitle,
+        kaffarahType,
+        kaffarahCompleted: false,
+        recoveryPercentage: recoveryPercent,
+        recoveredXP,
         weaknessId: targetWeaknessId,
         weaknessName: targetWeaknessName
       };
@@ -3945,10 +4043,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       addSystemMessage({
         sender: 'OPERATOR',
-        category: 'log',
-        title: `⚖️ MUHĀSABAH RECORDED: ${entry.category}`,
-        content: `Reflected on "${entry.title}". Severity: ${entry.severity} (−${actualDeducted} XP). Cause: ${entry.cause}.${entry.createCorrectiveQuest ? ` Corrective Remedy quest issued (+${recoveredXP} XP restitution upon completion).` : ''}`,
-        priority: 'medium'
+        category: 'alert',
+        title: `⚖️ MUHĀSABAH AUDIT: ${entry.category.toUpperCase()} (${entry.severity})`,
+        content: `Reflected on "${entry.title}". Consequences applied: −${actualDeducted} XP, −${coinFine} Coins fine, ${momentumLoss >= 100 ? 'Momentum zeroed' : `−${momentumLoss}% Momentum`}. Pinned Kaffārah Restitution: "${kaffarahTitle}".`,
+        priority: 'high'
       });
 
       return {
@@ -3960,7 +4058,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile: {
           ...prev.profile,
           xp: totalXp,
-          level
+          level,
+          coins: nextCoins,
+          momentum: nextMomentum
         }
       };
     });
@@ -3969,11 +4069,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       success: true,
       entryId: newEntryId,
       xpDeducted: xpToDeduct,
+      coinsDeducted: coinFine,
       rawPenalty,
       capReached,
       message: capReached 
-        ? `Daily XP loss cap of −500 XP reached for today. Slip recorded and added to Weakness tracking without extra XP loss.` 
-        : `Muhāsabah entry recorded. −${xpToDeduct} XP applied. Corrective quest calibrated.`
+        ? `Daily XP loss capped at −500 XP. −${coinFine} Coins fine applied. Kaffārah restitution quest pinned.` 
+        : `Muhāsabah recorded: −${xpToDeduct} XP & −${coinFine} Coins fine. Kaffārah quest issued.`
     };
   };
 
@@ -4075,24 +4176,58 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentSysDate = state.systemDate || getLocalDateString();
     const todayEntries = (state.muhasabahEntries || []).filter(e => e.date === currentSysDate);
     const todayLostXP = todayEntries.reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
+    const todayLostCoins = todayEntries.reduce((sum, e) => sum + (e.coinsDeducted || 0), 0);
     
     const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
     const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
     const todayNetXP = todayEarnedXP - todayLostXP;
     const dailyCapRemaining = Math.max(0, 500 - todayLostXP);
 
+    const pendingKaffarah = (state.quests || []).filter(q => 
+      q.status === 'Active' && 
+      (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+    );
+
     const weaknesses = state.weaknesses || [];
     const activeWeaknessesCount = weaknesses.filter(w => w.status === 'Active').length;
     const sealedWeaknessesCount = weaknesses.filter(w => w.status === 'Sealed' || w.sealId).length;
+
+    // Completed Hasanaat count today (positive completed quests + focus cycles)
+    const completedQuestsToday = (state.quests || []).filter(q => {
+      const isDone = q.status === 'Completed' || (q.completedAt && q.completedAt.startsWith(currentSysDate));
+      return isDone && q.type !== 'Penalty';
+    }).length;
+
+    // Mīzān balance calculations
+    const totalWeight = todayEarnedXP + todayLostXP;
+    let mizanTilt = 0; // -20deg (heavy Sayyiat) to +20deg (heavy Hasanat)
+    if (totalWeight > 0) {
+      const netRatio = (todayEarnedXP - todayLostXP) / Math.max(100, totalWeight);
+      mizanTilt = Math.round(netRatio * 18); // clamp around -18 to +18 degrees
+    }
+
+    let equilibriumStatus: 'Radiant Balance' | 'Blessed Equilibrium' | 'Neutral Ground' | 'Spiritual Deficit' | 'Severe Nafs Warning' = 'Blessed Equilibrium';
+    if (todayNetXP >= 300) equilibriumStatus = 'Radiant Balance';
+    else if (todayNetXP >= 0) equilibriumStatus = 'Blessed Equilibrium';
+    else if (todayNetXP >= -200) equilibriumStatus = 'Spiritual Deficit';
+    else equilibriumStatus = 'Severe Nafs Warning';
 
     return {
       todayEarnedXP,
       todayLostXP,
       todayNetXP,
+      todayLostCoins,
       dailyCapRemaining,
       totalEntriesCount: (state.muhasabahEntries || []).length,
+      todaySlipsCount: todayEntries.length,
+      todayHasanatCount: completedQuestsToday,
       activeWeaknessesCount,
-      sealedWeaknessesCount
+      sealedWeaknessesCount,
+      pendingKaffarahCount: pendingKaffarah.length,
+      pendingKaffarahQuests: pendingKaffarah,
+      mizanTilt,
+      equilibriumStatus,
+      isSpiritualLocked: pendingKaffarah.length > 0
     };
   };
 

@@ -1200,62 +1200,96 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                       <Scale className="h-5 w-5 text-amber-400" />
-                      8. Muhāsabah: Self-Accountability, Bounded Slips & Weakness Seals
+                      8. Muhāsabah & The Sacred Mīzān: Self-Accountability & High-Stakes Restitution
                     </h3>
                     <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold uppercase">
-                      SPIRITUAL_OPS
+                      SPIRITUAL_OPERATING_SYSTEM
                     </span>
                   </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Hold yourself to account before you are held to account. Realistic moral friction, bounded XP deductions, corrective restitution directives, and permanent weakness seals.
+                    <em>"Evaluate yourselves before you are evaluated, and weigh your deeds before they are weighed for you."</em> — Umar ibn al-Khattāb (RA). Realistic moral friction, live dynamic deed scales, coin fines, momentum loss, shop lockdowns, and sacred Kaffārah penances.
                   </p>
                 </div>
 
-                {/* PHILOSOPHY & CORE OPERATING LOOP */}
+                {/* THE SACRED MĪZĀN SCALE EXPLANATION */}
                 <div className="p-4 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
                     <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
                       <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                      <span>THE CORE ACCOUNTABILITY LOOP</span>
+                      <span>THE SACRED MĪZĀN (LIVE DEED BALANCE SCALE)</span>
                     </div>
                     <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded">
-                      7-STAGE_DISCIPLINE_ENGINE
+                      PHYSICS_BALANCE_ENGINE
                     </span>
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    <em>"Evaluate yourselves before you are evaluated, and weigh your deeds before they are weighed for you."</em> — Umar ibn al-Khattāb (RA). 
-                    The Muhāsabah engine bridges moral reflection with gamified RPG mechanics, ensuring lapses incur real consequence while maintaining an unbreakable forward trajectory.
+                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds (<strong>Al-Hasanāt</strong>: completed quests, focus blocks, on-time prayers) and self-audited lapses (<strong>As-Sayyi'āt</strong>: slips recorded in Muhāsabah). The scale's crossbeam dynamically tilts in real-time based on your daily net XP standing.
                   </p>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-center font-mono text-[10px] pt-1">
-                    <div className="p-2 bg-black/50 border border-[#c5a059]/20 rounded-lg">
-                      <span className="text-amber-400 font-bold block">1. RECORD</span>
-                      <span className="text-[9px] text-zinc-400">Log honest slip</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono pt-1">
+                    <div className="p-3 bg-zinc-950/80 border border-emerald-500/30 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-300 font-bold">✨ Radiant Balance</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">Net +300 XP+</span>
+                      </div>
+                      <p className="text-zinc-400 font-sans text-[11px]">Hasanāt heavily outweigh slips. Peak spiritual momentum and morale.</p>
                     </div>
-                    <div className="p-2 bg-black/50 border border-[#c5a059]/20 rounded-lg">
-                      <span className="text-amber-400 font-bold block">2. REFLECT</span>
-                      <span className="text-[9px] text-zinc-400">Identify trigger</span>
+
+                    <div className="p-3 bg-zinc-950/80 border border-amber-500/30 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-300 font-bold">🛡️ Blessed Equilibrium</span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">Net 0 to +299 XP</span>
+                      </div>
+                      <p className="text-zinc-400 font-sans text-[11px]">Positive spiritual standing. Diligence and vigilance advised.</p>
                     </div>
-                    <div className="p-2 bg-black/50 border border-rose-500/30 rounded-lg">
-                      <span className="text-rose-400 font-bold block">3. XP LOSS</span>
-                      <span className="text-[9px] text-zinc-400">Bounded deduction</span>
+
+                    <div className="p-3 bg-zinc-950/80 border border-rose-500/40 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-300 font-bold">⚠️ Spiritual Deficit / Nafs Warning</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">Negative Net XP</span>
+                      </div>
+                      <p className="text-zinc-400 font-sans text-[11px]">Sayyi'āt outweigh good deeds. Urgent Kaffārah restitution required.</p>
                     </div>
-                    <div className="p-2 bg-black/50 border border-cyan-500/30 rounded-lg">
-                      <span className="text-cyan-400 font-bold block">4. RESTITUTION</span>
-                      <span className="text-[9px] text-zinc-400">Remedy directive</span>
+                  </div>
+                </div>
+
+                {/* 3-TAP ZEN TRIAGE WORKFLOW */}
+                <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
+                      <Zap className="h-4 w-4 text-cyan-400" />
+                      <span>THE 3-TAP ZEN TRIAGE AUDIT FLOW</span>
                     </div>
-                    <div className="p-2 bg-black/50 border border-emerald-500/30 rounded-lg">
-                      <span className="text-emerald-400 font-bold block">5. RECOVERY</span>
-                      <span className="text-[9px] text-zinc-400">Reclaim 10–30%</span>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded uppercase">
+                      FRICTIONLESS_ACCOUNTABILITY
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Recording a slip should be an act of quiet clarity, not tedious typing. The 3-Tap Zen Triage flow allows you to complete an honest self-audit in less than 5 seconds:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-lg space-y-1.5">
+                      <span className="text-amber-400 font-bold block text-[11px]">TAP 1: SELECT SLIP PRESET</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        Choose from 1-tap quick presets (e.g. <em>Fajr Delay</em>, <em>Feed Doomscrolling</em>, <em>Harsh Tongue</em>, <em>Gaze Slip</em>, <em>Arrogance</em>, <em>Neglected Promise</em>) or input custom details.
+                      </p>
                     </div>
-                    <div className="p-2 bg-black/50 border border-purple-500/30 rounded-lg">
-                      <span className="text-purple-400 font-bold block">6. WEAKNESS</span>
-                      <span className="text-[9px] text-zinc-400">5 slips crystallize</span>
+
+                    <div className="p-3 bg-zinc-950 border border-rose-500/30 rounded-lg space-y-1.5">
+                      <span className="text-rose-400 font-bold block text-[11px]">TAP 2: WEIGH SEVERITY (WAZN)</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        Select severity (Minor, Moderate, Major, Severe, Critical). View live consequence preview: XP deduction, Coin fine, and Momentum reset.
+                      </p>
                     </div>
-                    <div className="p-2 bg-black/50 border border-yellow-500/40 rounded-lg">
-                      <span className="text-yellow-300 font-bold block">7. SEAL FORGE</span>
-                      <span className="text-[9px] text-zinc-400">Shatter & conquer</span>
+
+                    <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-lg space-y-1.5">
+                      <span className="text-emerald-400 font-bold block text-[11px]">TAP 3: COMMIT KAFFĀRAH</span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        System auto-calibrates a tangible sacred penance deed (Tawbah prayer, Quran recitation, charity, or deep focus) that pins to your active quests.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1268,7 +1302,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                       The 6 Self-Examination Categories (Realms):
                     </h4>
                     <span className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded">
-                      6 SPHERES
+                      6 SPHERES OF ACCOUNTABILITY
                     </span>
                   </div>
 
@@ -1291,7 +1325,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                         <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">APPETITES</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Giving into unchecked impulses, impulse shopping, sensory overindulgence, junk consumption, or breaking personal fasting/diet standards.
+                        Giving into unchecked impulses, impulse shopping, unshielded gaze, sensory overindulgence, junk consumption, or breaking personal fasting standards.
                       </p>
                     </div>
 
@@ -1302,7 +1336,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                         <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded">TONGUE</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Idle talk, backbiting (gheebah), sarcasm, arguing for ego, harsh tone with family, complaints, or exaggeration.
+                        Idle talk, backbiting (gheebah), sarcasm, arguing for ego, harsh tone with family, complaining, or conversational exaggeration.
                       </p>
                     </div>
 
@@ -1324,7 +1358,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                         <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">JUSTICE</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Neglecting the rights of parents, spouse, children, neighbors, or team members; unpaid debts, broken trust, or unfulfilled promises.
+                        Neglecting rights of parents, spouse, children, neighbors, or team members; unpaid debts, broken trust, or unfulfilled promises.
                       </p>
                     </div>
 
@@ -1341,116 +1375,151 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                   </div>
                 </div>
 
-                {/* PENALTY TIERS & BOUNDED MATHEMATICAL RULES */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* SEVERITY TIERS */}
-                  <div className="p-4 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-2.5">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <div className="font-mono font-bold text-rose-300 uppercase flex items-center gap-1.5 text-xs">
-                        <AlertTriangle className="h-4 w-4 text-rose-400" />
-                        <span>XP Loss Severity Tiers</span>
-                      </div>
-                      <span className="text-[9px] font-mono bg-rose-950 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded">
-                        DIRECT_DEDUCTION
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 font-mono text-xs">
-                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
-                        <span className="text-zinc-300">Minor Slip</span>
-                        <span className="text-rose-400 font-bold">−100 XP</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
-                        <span className="text-amber-300">Moderate Lapse</span>
-                        <span className="text-rose-400 font-bold">−200 XP</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
-                        <span className="text-orange-300">Major Breach</span>
-                        <span className="text-rose-400 font-bold">−300 XP</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-white/5">
-                        <span className="text-purple-300">Severe Violation</span>
-                        <span className="text-rose-400 font-bold">−400 XP</span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-zinc-950 rounded border border-rose-500/30">
-                        <span className="text-red-400 font-bold">Critical Failure</span>
-                        <span className="text-red-400 font-black">−500 XP</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* MATHEMATICAL RULES & FAILSAFE BOUNDS */}
-                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5 text-xs">
-                        <Shield className="h-4 w-4 text-cyan-400" />
-                        <span>Failsafe Rules & Friction Guard</span>
-                      </div>
-                      <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded">
-                        MOMENTUM_GUARD
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-xs font-sans text-zinc-300">
-                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                        <strong className="text-amber-300 font-mono block text-[11px]">🛡️ Maximum −500 XP / Day Bounded Cap</strong>
-                        <p className="text-[11px] text-zinc-400">
-                          Total Muhāsabah penalties are strictly capped at <strong>−500 XP per calendar day</strong>. This prevents death-spiral demoralization while preserving serious stakes.
-                        </p>
-                      </div>
-
-                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                        <strong className="text-cyan-300 font-mono block text-[11px]">📉 Zero XP Level Floor</strong>
-                        <p className="text-[11px] text-zinc-400">
-                          Your current Level XP can never drop below <code>0 XP</code>. You will never experience negative levels.
-                        </p>
-                      </div>
-
-                      <div className="p-2 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                        <strong className="text-emerald-300 font-mono block text-[11px]">🔄 10% to 30% XP Restitution Engine</strong>
-                        <p className="text-[11px] text-zinc-400">
-                          Completing corrective restitution directives recovers <strong>10% to 30%</strong> of the lost XP, reinforcing that repentance and immediate restitution always triumph over despair.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* WEAKNESS IDENTIFICATION & POWER SEALS */}
-                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                {/* HIGH-STAKES CONSEQUENCE MATRIX */}
+                <div className="p-4 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
-                      <Sparkles className="h-4 w-4 text-purple-400" />
-                      <span>WEAKNESS CRYSTALLIZATION & POWER SEAL FORGING</span>
+                    <div className="font-mono font-bold text-rose-300 uppercase flex items-center gap-1.5 text-xs">
+                      <AlertTriangle className="h-4 w-4 text-rose-400" />
+                      <span>THE HIGH-STAKES CONSEQUENCE MATRIX</span>
                     </div>
-                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
-                      CHAIN_TRANSFORMATION
+                    <span className="text-[9px] font-mono bg-rose-950 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded">
+                      XP_FINES_LOCKS
                     </span>
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    Instead of infinitely scaling punishment on repeating habits, the system recognizes recurrent behavioral patterns and converts them into tangible RPG progression milestones:
+                    To prevent accountability from feeling like abstract roleplay, slips carry multi-dimensional tangible consequences that demand active correction:
+                  </p>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left font-mono text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/10 text-zinc-400 text-[11px]">
+                          <th className="py-2 pr-3">Severity</th>
+                          <th className="py-2 pr-3">XP Penalty</th>
+                          <th className="py-2 pr-3">Coin Fine (Sadaqah)</th>
+                          <th className="py-2 pr-3">Momentum Impact</th>
+                          <th className="py-2 pr-3">Shop Lockdown</th>
+                          <th className="py-2">Restitution XP</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        <tr>
+                          <td className="py-2 pr-3 text-blue-300 font-bold">Minor Slip</td>
+                          <td className="py-2 pr-3 text-rose-400">−100 XP</td>
+                          <td className="py-2 pr-3 text-amber-400">−10 Coins</td>
+                          <td className="py-2 pr-3 text-zinc-300">−15%</td>
+                          <td className="py-2 pr-3 text-zinc-500">No</td>
+                          <td className="py-2 text-emerald-400">+25–35 XP</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-3 text-amber-300 font-bold">Moderate Lapse</td>
+                          <td className="py-2 pr-3 text-rose-400">−200 XP</td>
+                          <td className="py-2 pr-3 text-amber-400">−25 Coins</td>
+                          <td className="py-2 pr-3 text-zinc-300">−35%</td>
+                          <td className="py-2 pr-3 text-zinc-500">No</td>
+                          <td className="py-2 text-emerald-400">+40–50 XP</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-3 text-orange-300 font-bold">Major Breach</td>
+                          <td className="py-2 pr-3 text-rose-400 font-bold">−300 XP</td>
+                          <td className="py-2 pr-3 text-amber-400 font-bold">−50 Coins</td>
+                          <td className="py-2 pr-3 text-rose-400 font-bold">Reset to 0%</td>
+                          <td className="py-2 pr-3 text-rose-300 font-bold">🔒 LOCKED</td>
+                          <td className="py-2 text-emerald-400">+50–60 XP</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-3 text-purple-300 font-bold">Severe Violation</td>
+                          <td className="py-2 pr-3 text-rose-400 font-bold">−400 XP</td>
+                          <td className="py-2 pr-3 text-amber-400 font-bold">−100 Coins</td>
+                          <td className="py-2 pr-3 text-rose-400 font-bold">Reset to 0%</td>
+                          <td className="py-2 pr-3 text-rose-300 font-bold">🔒 LOCKED</td>
+                          <td className="py-2 text-emerald-400">+60 XP</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-3 text-red-400 font-black">Critical Failure</td>
+                          <td className="py-2 pr-3 text-red-400 font-black">−500 XP</td>
+                          <td className="py-2 pr-3 text-amber-400 font-black">−200 Coins</td>
+                          <td className="py-2 pr-3 text-rose-400 font-bold">Reset to 0%</td>
+                          <td className="py-2 pr-3 text-rose-300 font-bold">🔒 LOCKED</td>
+                          <td className="py-2 text-emerald-400">+75 XP</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* SACRED KAFFĀRAH RESTITUTION & SPIRITUAL SHOP LOCK */}
+                <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Lock className="h-4 w-4 text-cyan-400" />
+                      <span>KAFFĀRAH RESTITUTION & SPIRITUAL REWARD LOCK</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded">
+                      PENANCE_LIFT_ENGINE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-xs font-sans text-zinc-300">
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <strong className="text-amber-300 font-mono block text-[11px]">🔒 Reward Shop Lockdown Mechanism</strong>
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        Whenever an active Kaffārah penance quest exists in your log, the <strong>Luminescent Reward Shop</strong> automatically engages a spiritual safety lock. You cannot purchase luxury rewards or leisure privileges while moral restitution remains pending.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <strong className="text-emerald-300 font-mono block text-[11px]">🌿 1-Click Kaffārah Fulfillment & Shop Unlocking</strong>
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        Once you perform your penance (e.g. 2 Rak'ahs of Tawbah, 100x Istighfar, deep focus sprint, or charity donation), fulfill the directive in your active queue to restore spiritual equilibrium, regain restitution XP, boost momentum by +15%, and immediately lift all shop locks.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
+                      <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Maximum −500 XP Daily Penalty Cap & 0 XP Floor</strong>
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        Total Muhāsabah penalties are strictly capped at <strong>−500 XP per calendar day</strong> to protect against death-spiral demoralization. Player XP can never drop below <code>0 XP</code>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CHAINS OF THE NAFS & POWER SEALS */}
+                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                      <span>CHAINS OF THE NAFS (BEHAVIORAL WEAKNESSES) & POWER SEALS</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
+                      5_LINK_FORGE_ENGINE
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Instead of treating repeated slips as isolated failures, the system tracks <strong>Chains of the Nafs</strong> through an iron 5-link progression meter:
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
                     <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                      <span className="text-amber-400 font-bold block text-[11px]">1. 5× OCCURRENCES</span>
+                      <span className="text-amber-400 font-bold block text-[11px]">1. 5-LINK ACCUMULATION</span>
                       <p className="text-zinc-400 font-sans text-[11px]">
-                        When the same slip trigger recurs 5 times, it is officially crystallized as an <strong>Active Weakness</strong> in your registry.
+                        Every recurrence of a linked slip fills 1 link of the 5-part iron chain meter.
                       </p>
                     </div>
 
                     <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-lg space-y-1">
-                      <span className="text-purple-300 font-bold block text-[11px]">2. WEAKNESS SEAL FORGE</span>
+                      <span className="text-purple-300 font-bold block text-[11px]">2. IMPERIAL SEAL FORGING</span>
                       <p className="text-zinc-400 font-sans text-[11px]">
-                        Forge an Imperial Weakness Seal (e.g. <em>Seal of the Restrained Tongue</em> or <em>Seal of the Vigilant Dawn</em>) binding the vulnerability in heavy chains.
+                        At 5/5 slips, click <strong>"FORGE INTO POWER SEAL"</strong> to bind the behavioral pattern into a heavy chained Power Seal in the Seals tab.
                       </p>
                     </div>
 
                     <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-lg space-y-1">
                       <span className="text-emerald-400 font-bold block text-[11px]">3. SHATTER & CONQUER</span>
                       <p className="text-zinc-400 font-sans text-[11px]">
-                        Complete the seal's discipline criteria to permanently break the chains, claiming massive XP rewards and unlocking passive attribute perks!
+                        Shatter the sealed chains through sustained discipline to unlock permanent passive attribute bonuses and XP multipliers!
                       </p>
                     </div>
                   </div>
@@ -1461,10 +1530,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                   <div className="space-y-1">
                     <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
                       <Scale className="h-4 w-4 text-[#e5c875]" />
-                      <span>DASHBOARD INTEGRATION & DAILY TRAJECTORY</span>
+                      <span>DASHBOARD INTEGRATION & SACRED MĪZĀN ACCESS</span>
                     </div>
                     <p className="text-xs text-zinc-300 font-sans">
-                      The Dashboard features a live Muhāsabah status widget tracking today's lost XP, remaining cap headroom, and quick-audit triggers.
+                      Access the Sacred Mīzān, rapid 1-tap realm triage, active Kaffārah restitution queue, and the chronological slip ledger anytime in the Muhāsabah chamber.
                     </p>
                   </div>
 

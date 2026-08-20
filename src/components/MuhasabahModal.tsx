@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { MuhasabahCategory, MuhasabahSeverity } from '../types';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 import { 
   X, AlertTriangle, Shield, CheckCircle2, Flame, Heart, 
   MessageSquare, Sparkles, Scale, BookOpen, Clock, ArrowRight,
-  Plus
+  Lock, Coins, Zap, ShieldAlert, HeartHandshake, EyeOff, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,51 +16,141 @@ interface MuhasabahModalProps {
   prefillCategory?: MuhasabahCategory;
 }
 
-const CATEGORY_INFO: Record<MuhasabahCategory, { label: string; icon: any; color: string; desc: string }> = {
-  Obligations: { 
-    label: 'Obligations', 
-    icon: Shield, 
-    color: 'text-amber-400 border-amber-500/30 bg-amber-950/20',
-    desc: 'Missed or delayed mandatory commitments, prayer hesitations, broken covenants.'
-  },
-  Desires: { 
-    label: 'Desires', 
-    icon: Flame, 
-    color: 'text-rose-400 border-rose-500/30 bg-rose-950/20',
-    desc: 'Indulgence, appetite lack of restraint, impulse spending, comfort trap.'
-  },
-  Speech: { 
-    label: 'Speech', 
-    icon: MessageSquare, 
-    color: 'text-cyan-400 border-cyan-500/30 bg-cyan-950/20',
-    desc: 'Idle chatter, harshness, arguing, sarcasm, vanity, complaining.'
-  },
-  Heart: { 
-    label: 'Heart', 
-    icon: Heart, 
-    color: 'text-purple-400 border-purple-500/30 bg-purple-950/20',
-    desc: 'Envy, arrogance, ungratefulness, despair, seeking human validation, insincerity.'
-  },
-  Rights: { 
-    label: 'Rights', 
-    icon: Scale, 
-    color: 'text-emerald-400 border-emerald-500/30 bg-emerald-950/20',
-    desc: 'Neglect of parents, family, colleagues, delayed dues, withholding kindness.'
-  },
-  'Wasted Potential': { 
-    label: 'Wasted Potential', 
-    icon: Clock, 
-    color: 'text-indigo-400 border-indigo-500/30 bg-indigo-950/20',
-    desc: 'Endless doomscrolling, procrastination, unstructured drift, laziness.'
-  }
-};
+interface QuickSlipPreset {
+  id: string;
+  title: string;
+  category: MuhasabahCategory;
+  severity: MuhasabahSeverity;
+  cause: string;
+  kaffarahTitle: string;
+  kaffarahType: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus';
+  icon: any;
+  color: string;
+}
 
-const SEVERITY_INFO: Record<MuhasabahSeverity, { penalty: number; label: string; color: string; badge: string }> = {
-  Minor: { penalty: 100, label: 'Minor', color: 'text-blue-400', badge: 'bg-blue-950/50 border-blue-500/40 text-blue-300' },
-  Moderate: { penalty: 200, label: 'Moderate', color: 'text-amber-400', badge: 'bg-amber-950/50 border-amber-500/40 text-amber-300' },
-  Major: { penalty: 300, label: 'Major', color: 'text-orange-400', badge: 'bg-orange-950/50 border-orange-500/40 text-orange-300' },
-  Severe: { penalty: 400, label: 'Severe', color: 'text-red-400', badge: 'bg-red-950/50 border-red-500/40 text-red-300' },
-  Critical: { penalty: 500, label: 'Critical', color: 'text-rose-500', badge: 'bg-rose-950/60 border-rose-500/50 text-rose-200' }
+const QUICK_SLIP_PRESETS: QuickSlipPreset[] = [
+  {
+    id: 'fajr-delay',
+    title: 'Delayed Prayer / Fajr Hesitation',
+    category: 'Obligations',
+    severity: 'Moderate',
+    cause: 'Late sleep without proper spiritual boundaries and immediate snooze reflex.',
+    kaffarahTitle: '2 Rak\'ahs of Tawbah & Recite Surah Al-Mulk',
+    kaffarahType: 'Prayer',
+    icon: Shield,
+    color: 'text-amber-400 border-amber-500/40 bg-amber-950/25'
+  },
+  {
+    id: 'feed-scrolling',
+    title: 'Mindless Feed Doomscrolling',
+    category: 'Wasted Potential',
+    severity: 'Moderate',
+    cause: 'Cognitive friction avoidance and opening algorithms without strict intention.',
+    kaffarahTitle: 'Execute 1 Locked Deep Focus Sprint (25m)',
+    kaffarahType: 'Focus',
+    icon: Clock,
+    color: 'text-indigo-400 border-indigo-500/40 bg-indigo-950/25'
+  },
+  {
+    id: 'tongue-gossip',
+    title: 'Harsh Tongue / Gossip / Idle Sarcasm',
+    category: 'Speech',
+    severity: 'Moderate',
+    cause: 'Social seeking of laughs, unmonitored tongue, or reactionary irritation.',
+    kaffarahTitle: '100x Istighfār & Sincere Secret Du\'a for Others',
+    kaffarahType: 'Quran',
+    icon: MessageSquare,
+    color: 'text-cyan-400 border-cyan-500/40 bg-cyan-950/25'
+  },
+  {
+    id: 'gaze-dopamine',
+    title: 'Uncontrolled Gaze / Dopamine Trap',
+    category: 'Desires',
+    severity: 'Major',
+    cause: 'Late night solitude with unshielded screen device & micro-rationalizations.',
+    kaffarahTitle: 'Dopamine Fast (45m Screen Detox) & $5 Sadaqah Charity',
+    kaffarahType: 'Detox',
+    icon: EyeOff,
+    color: 'text-rose-400 border-rose-500/40 bg-rose-950/25'
+  },
+  {
+    id: 'heart-arrogance',
+    title: 'Hidden Pride, Envy or Resentment',
+    category: 'Heart',
+    severity: 'Major',
+    cause: 'Comparing personal status, desiring public praise, or harboring ill-will.',
+    kaffarahTitle: 'Perform 1 Hidden Good Deed with Zero Broadcast',
+    kaffarahType: 'Service',
+    icon: Heart,
+    color: 'text-purple-400 border-purple-500/40 bg-purple-950/25'
+  },
+  {
+    id: 'rights-neglect',
+    title: 'Neglect of Kin / Delayed Promise',
+    category: 'Rights',
+    severity: 'Moderate',
+    cause: 'Self-absorption, impatience with family, or postponing promised duties.',
+    kaffarahTitle: 'Direct Sincere Apology or Act of Physical Service',
+    kaffarahType: 'Service',
+    icon: HeartHandshake,
+    color: 'text-emerald-400 border-emerald-500/40 bg-emerald-950/25'
+  }
+];
+
+const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
+  label: string;
+  xpPenalty: number;
+  coinFine: number;
+  momentumPenalty: string;
+  shopLocked: boolean;
+  badge: string;
+  desc: string;
+}> = {
+  Minor: {
+    label: 'Minor',
+    xpPenalty: 100,
+    coinFine: 10,
+    momentumPenalty: '−15% Momentum',
+    shopLocked: false,
+    badge: 'border-blue-500/40 bg-blue-950/40 text-blue-300',
+    desc: 'Momentary slip promptly noticed.'
+  },
+  Moderate: {
+    label: 'Moderate',
+    xpPenalty: 200,
+    coinFine: 25,
+    momentumPenalty: '−35% Momentum',
+    shopLocked: false,
+    badge: 'border-amber-500/40 bg-amber-950/40 text-amber-300',
+    desc: 'Noticeable lapse in discipline or routine.'
+  },
+  Major: {
+    label: 'Major',
+    xpPenalty: 300,
+    coinFine: 50,
+    momentumPenalty: 'Momentum Reset (0%)',
+    shopLocked: true,
+    badge: 'border-orange-500/40 bg-orange-950/40 text-orange-300',
+    desc: 'Significant violation. Shop locked until Kaffārah complete.'
+  },
+  Severe: {
+    label: 'Severe',
+    xpPenalty: 400,
+    coinFine: 100,
+    momentumPenalty: 'Momentum Reset (0%)',
+    shopLocked: true,
+    badge: 'border-red-500/50 bg-red-950/50 text-red-300',
+    desc: 'Heavy boundary breach. Shop locked + Attribute penalty.'
+  },
+  Critical: {
+    label: 'Critical',
+    xpPenalty: 500,
+    coinFine: 200,
+    momentumPenalty: 'Momentum Reset (0%)',
+    shopLocked: true,
+    badge: 'border-rose-500/60 bg-rose-950/60 text-rose-200',
+    desc: 'Emergency spiritual lockdown. Full XP loss cap applied.'
+  }
 };
 
 export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
@@ -72,33 +162,59 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
   const { state, addMuhasabahEntry, getTodayMuhasabahStats } = usePOS();
   const weaknesses = state.weaknesses || [];
 
-  const [category, setCategory] = useState<MuhasabahCategory>(prefillCategory || 'Wasted Potential');
-  const [severity, setSeverity] = useState<MuhasabahSeverity>('Moderate');
+  // Form states
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('fajr-delay');
+  const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
   const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<MuhasabahCategory>(prefillCategory || 'Obligations');
+  const [severity, setSeverity] = useState<MuhasabahSeverity>('Moderate');
   const [cause, setCause] = useState('');
-  const [reflection, setReflection] = useState('');
+  const [kaffarahTitle, setKaffarahTitle] = useState('');
   const [selectedWeaknessId, setSelectedWeaknessId] = useState<string>(prefillWeaknessId || '');
-  const [customWeaknessName, setCustomWeaknessName] = useState('');
-  const [createRemedyQuest, setCreateRemedyQuest] = useState(true);
-  const [recoveryPercent, setRecoveryPercent] = useState<number>(20);
-  const [customRemedyName, setCustomRemedyName] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Synchronize preset selections
+  useEffect(() => {
+    if (!isCustomMode && selectedPresetId) {
+      const preset = QUICK_SLIP_PRESETS.find(p => p.id === selectedPresetId);
+      if (preset) {
+        setTitle(preset.title);
+        setCategory(preset.category);
+        setSeverity(preset.severity);
+        setCause(preset.cause);
+        setKaffarahTitle(preset.kaffarahTitle);
+      }
+    }
+  }, [selectedPresetId, isCustomMode]);
+
+  // Handle prefilled category
+  useEffect(() => {
+    if (prefillCategory) {
+      const matchingPreset = QUICK_SLIP_PRESETS.find(p => p.category === prefillCategory);
+      if (matchingPreset) {
+        setSelectedPresetId(matchingPreset.id);
+        setIsCustomMode(false);
+      } else {
+        setIsCustomMode(true);
+        setCategory(prefillCategory);
+      }
+    }
+  }, [prefillCategory]);
+
   const stats = getTodayMuhasabahStats();
-  const rawPenalty = SEVERITY_INFO[severity].penalty;
-  const potentialDeduction = Math.min(rawPenalty, stats.dailyCapRemaining);
-  const recoveredXP = Math.max(15, Math.round(rawPenalty * (recoveryPercent / 100)));
+  const consequence = SEVERITY_CONSEQUENCES[severity];
+  const actualXpDeduction = Math.min(consequence.xpPenalty, stats.dailyCapRemaining);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setFeedback({ type: 'error', message: 'Please provide a title or summary for this slip.' });
+      setFeedback({ type: 'error', message: 'Please specify the slip summary.' });
       return;
     }
     if (!cause.trim()) {
-      setFeedback({ type: 'error', message: 'Please identify the root trigger or emotional cause.' });
+      setFeedback({ type: 'error', message: 'Please identify the root cause trigger.' });
       return;
     }
 
@@ -107,55 +223,47 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
       category,
       severity,
       cause: cause.trim(),
-      reflection: reflection.trim(),
-      createCorrectiveQuest: createRemedyQuest,
-      correctiveQuestName: customRemedyName.trim() || undefined,
-      recoveryPercentage: recoveryPercent,
-      weaknessId: selectedWeaknessId || undefined,
-      weaknessName: customWeaknessName.trim() || undefined
+      createCorrectiveQuest: true,
+      correctiveQuestName: kaffarahTitle.trim() || undefined,
+      weaknessId: selectedWeaknessId || undefined
     });
 
     if (res.success) {
       setFeedback({ type: 'success', message: res.message });
       setTimeout(() => {
         setFeedback(null);
-        setTitle('');
-        setCause('');
-        setReflection('');
-        setCustomWeaknessName('');
-        setCustomRemedyName('');
         onClose();
-      }, 1000);
+      }, 1200);
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto" id="muhasabah-modal-overlay">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        className="glass-panel border border-[#c5a059]/30 rounded-xl bg-[#0a0c12]/95 max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden text-zinc-300"
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        className="glass-panel border border-[#c5a059]/40 rounded-2xl bg-[#0b0d13]/98 max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden text-zinc-300"
         id="muhasabah-modal-container"
       >
-        {/* MODAL HEADER */}
+        {/* HEADER */}
         <div className="flex items-center justify-between pb-3.5 border-b border-[#c5a059]/20 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-[#3a2e12]/60 border border-[#c5a059]/40 text-[#fef08a]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-[#3a2e12] to-[#1a1408] border border-[#c5a059]/50 text-[#fef08a] shadow-inner">
               <Scale className="h-5 w-5 text-[#c5a059]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-display text-base font-bold text-zinc-100 tracking-wider flex items-center gap-1.5">
-                  <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
                   MUHĀSABAH AUDIT
                 </h3>
-                <span className="text-[10px] font-mono uppercase bg-[#181308] border border-[#c5a059]/30 text-[#e5c875] px-2 py-0.5 rounded">
-                  Self-Accountability
+                <span className="text-[10px] font-mono uppercase bg-[#1e1708] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded-full font-bold">
+                  3-Tap Zen Triage
                 </span>
               </div>
               <p className="text-xs text-zinc-400 font-mono">
-                Record → Reflect → Deduct XP → Issue Remedy Directive
+                Select Slip → Weigh Consequence → Commit Sacred Kaffārah
               </p>
             </div>
           </div>
@@ -169,240 +277,217 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
           </button>
         </div>
 
-        {/* DAILY CAP NOTICE STRIP */}
-        <div className="my-3 p-2.5 rounded-lg bg-[#11141d] border border-white/5 flex items-center justify-between text-xs font-mono shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-400">Daily Penalty Cap:</span>
-            <span className="text-amber-400 font-bold">−{stats.todayLostXP} / −500 XP</span>
-          </div>
-          <div className="text-[11px] text-zinc-400">
-            {stats.dailyCapRemaining > 0 ? (
-              <span className="text-emerald-400">{stats.dailyCapRemaining} XP headroom remaining today</span>
+        {/* MODAL BODY */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-3.5 pr-1">
+          {/* STEP 1: SELECT SLIP (1-TAP PRESETS OR CUSTOM) */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">1</span>
+                Identify the Slip
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomMode(!isCustomMode);
+                  if (!isCustomMode) {
+                    setTitle('');
+                    setCause('');
+                    setKaffarahTitle('');
+                  }
+                }}
+                className="text-xs font-mono text-amber-400 hover:underline flex items-center gap-1"
+              >
+                {isCustomMode ? '← Use Quick Presets' : 'Custom Slip Entry →'}
+              </button>
+            </div>
+
+            {!isCustomMode ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {QUICK_SLIP_PRESETS.map(preset => {
+                  const Icon = preset.icon;
+                  const isSelected = selectedPresetId === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setSelectedPresetId(preset.id)}
+                      className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition ${
+                        isSelected 
+                          ? `${preset.color} ring-1 ring-[#c5a059] shadow-lg` 
+                          : 'bg-[#0f121a] border-white/10 hover:border-white/20 text-zinc-400'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-zinc-100 truncate">{preset.title}</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/40 text-zinc-300">
+                            {preset.category}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 line-clamp-1 mt-0.5">
+                          {preset.cause}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             ) : (
-              <span className="text-rose-400 font-semibold">Max Daily Cap Reached (XP Loss Halted)</span>
+              <div className="space-y-2 p-3 rounded-xl bg-[#0e111a] border border-white/10">
+                <input 
+                  type="text"
+                  required
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="Slip Summary (e.g. Delayed Asr prayer by 30 mins)..."
+                  className="w-full bg-[#08090d] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
+                />
+                <input 
+                  type="text"
+                  required
+                  value={cause}
+                  onChange={e => setCause(e.target.value)}
+                  placeholder="Root Cause / Trigger (e.g. Phone notifications distraction)..."
+                  className="w-full bg-[#08090d] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
+                />
+                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                  {(['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'] as MuhasabahCategory[]).map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategory(cat)}
+                      className={`px-2 py-1 rounded text-[10px] font-mono border transition ${
+                        category === cat ? 'bg-amber-950/60 border-amber-500/50 text-amber-200 font-bold' : 'bg-black/30 border-white/5 text-zinc-400'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
-        </div>
 
-        {/* MODAL BODY (SCROLLABLE) */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 pr-1">
-          {/* CATEGORY SELECTOR */}
+          {/* STEP 2: WEIGH SEVERITY & CONSEQUENCES */}
           <div>
-            <label className="block text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider mb-1.5">
-              1. Breach Realm / Category
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {(Object.keys(CATEGORY_INFO) as MuhasabahCategory[]).map(catKey => {
-                const info = CATEGORY_INFO[catKey];
-                const Icon = info.icon;
-                const isSelected = category === catKey;
-                return (
-                  <button
-                    key={catKey}
-                    type="button"
-                    onClick={() => setCategory(catKey)}
-                    className={`p-2.5 rounded-lg border text-left flex flex-col gap-1 transition ${
-                      isSelected 
-                        ? `${info.color} ring-1 ring-[#c5a059]/60 shadow-md` 
-                        : 'bg-[#0f121a] border-white/10 hover:border-white/20 text-zinc-400'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs">
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{info.label}</span>
-                    </div>
-                    <span className="text-[10px] text-zinc-400 line-clamp-1 leading-tight">
-                      {info.desc}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* SEVERITY LEVEL & XP DEDUCTION */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">
-                2. Penalty Severity & XP Impact
-              </label>
-              <span className="text-xs font-mono font-bold text-rose-400">
-                −{potentialDeduction} XP {potentialDeduction < rawPenalty && `(Cap throttled from −${rawPenalty})`}
+            <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center justify-between mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">2</span>
+                Determine Consequence Weight (Wazn)
               </span>
-            </div>
+              <span className="text-xs text-rose-400 font-bold font-mono">
+                −{actualXpDeduction} XP & −{consequence.coinFine} Coins
+              </span>
+            </label>
+
             <div className="grid grid-cols-5 gap-1.5">
-              {(Object.keys(SEVERITY_INFO) as MuhasabahSeverity[]).map(sevKey => {
-                const sInfo = SEVERITY_INFO[sevKey];
-                const isSel = severity === sevKey;
+              {(Object.keys(SEVERITY_CONSEQUENCES) as MuhasabahSeverity[]).map(sevKey => {
+                const s = SEVERITY_CONSEQUENCES[sevKey];
+                const isSelected = severity === sevKey;
                 return (
                   <button
                     key={sevKey}
                     type="button"
                     onClick={() => setSeverity(sevKey)}
-                    className={`py-2 px-1 rounded-lg border text-center font-mono flex flex-col items-center justify-center transition ${
-                      isSel 
-                        ? `${sInfo.badge} ring-1 ring-white/30 font-bold shadow-md` 
-                        : 'bg-[#0f121a] border-white/10 hover:border-white/20 text-zinc-400'
+                    className={`py-2 px-1 rounded-xl border font-mono text-center flex flex-col items-center justify-center transition ${
+                      isSelected 
+                        ? `${s.badge} ring-1 ring-[#c5a059] shadow-lg font-bold scale-[1.02]` 
+                        : 'bg-[#0e111a] border-white/10 hover:border-white/20 text-zinc-400'
                     }`}
                   >
-                    <span className="text-[11px] font-semibold">{sInfo.label}</span>
-                    <span className="text-[10px] opacity-80">−{sInfo.penalty} XP</span>
+                    <span className="text-xs font-bold">{s.label}</span>
+                    <span className="text-[10px] opacity-80">−{s.xpPenalty} XP</span>
+                    <span className="text-[9px] text-amber-400">−{s.coinFine} Coins</span>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          {/* SLIP SUMMARY / TITLE */}
-          <div>
-            <label className="block text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider mb-1">
-              3. Slip Identification / Decree
-            </label>
-            <input 
-              type="text"
-              required
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="e.g., Delayed Fajr by 45 mins / Mindless doomscrolling feed after 11 PM..."
-              className="w-full bg-[#0d1017] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-600 transition"
-              id="muhasabah-title-input"
-            />
-          </div>
-
-          {/* ROOT CAUSE & TRIGGER */}
-          <div>
-            <label className="block text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider mb-1">
-              4. Root Cause / Trigger (Be Ruthlessly Honest)
-            </label>
-            <input 
-              type="text"
-              required
-              value={cause}
-              onChange={e => setCause(e.target.value)}
-              placeholder="e.g., Evening cognitive fatigue + keeping phone on bedside without friction..."
-              className="w-full bg-[#0d1017] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-600 transition"
-              id="muhasabah-cause-input"
-            />
-          </div>
-
-          {/* PERSONAL REFLECTION / RESOLUTION */}
-          <div>
-            <label className="block text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider mb-1">
-              5. Personal Reflection & Concrete Defense Strategy
-            </label>
-            <textarea 
-              rows={2}
-              value={reflection}
-              onChange={e => setReflection(e.target.value)}
-              placeholder="What immediate boundary will be erected to guard against this exact trigger?"
-              className="w-full bg-[#0d1017] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600 transition resize-none"
-              id="muhasabah-reflection-input"
-            />
-          </div>
-
-          {/* WEAKNESS LINKER / CREATOR */}
-          <div className="p-3 rounded-lg bg-[#11141d] border border-white/10 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-[#fef08a] font-bold flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                Link to Behavioral Weakness
-              </span>
-              <span className="text-[10px] text-zinc-400">Repeated slips form an active weakness</span>
-            </div>
-
-            {weaknesses.length > 0 ? (
-              <div className="space-y-2">
-                <select
-                  value={selectedWeaknessId}
-                  onChange={e => {
-                    setSelectedWeaknessId(e.target.value);
-                    if (e.target.value) setCustomWeaknessName('');
-                  }}
-                  className="w-full bg-[#0a0c12] border border-white/15 rounded-lg px-3 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#c5a059]"
-                >
-                  <option value="">-- Choose Existing Weakness (or create new below) --</option>
-                  {weaknesses.map(w => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} ({w.category}) — {w.occurrenceCount} Slips [{w.status}]
-                    </option>
-                  ))}
-                </select>
-                {!selectedWeaknessId && (
-                  <input
-                    type="text"
-                    value={customWeaknessName}
-                    onChange={e => setCustomWeaknessName(e.target.value)}
-                    placeholder="Or enter new Weakness Name (e.g. Uncontrolled Scrolling)..."
-                    className="w-full bg-[#0a0c12] border border-white/15 rounded-lg px-3 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#c5a059]"
-                  />
-                )}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={customWeaknessName}
-                onChange={e => setCustomWeaknessName(e.target.value)}
-                placeholder="Weakness Name (e.g., Uncontrolled Scrolling, Tongue Harshness)..."
-                className="w-full bg-[#0a0c12] border border-white/15 rounded-lg px-3 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#c5a059]"
-              />
-            )}
-          </div>
-
-          {/* CORRECTIVE REMEDY DIRECTIVE CONFIG */}
-          <div className="p-3 rounded-lg bg-[#0d141e] border border-cyan-500/20 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox"
-                  checked={createRemedyQuest}
-                  onChange={e => setCreateRemedyQuest(e.target.checked)}
-                  className="rounded border-zinc-700 bg-zinc-900 text-[#c5a059] focus:ring-0 h-4 w-4"
-                />
-                <span className="text-xs font-mono font-bold text-cyan-300 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-                  Issue Corrective Restitution Quest
-                </span>
-              </label>
-              <span className="text-xs font-mono text-emerald-400 font-bold">
-                +{recoveredXP} XP Recovery ({recoveryPercent}%)
-              </span>
-            </div>
-
-            {createRemedyQuest && (
-              <div className="space-y-2 pt-1 border-t border-cyan-500/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-zinc-400">Recovery Restitution:</span>
-                  {[10, 20, 30].map(pct => (
-                    <button
-                      key={pct}
-                      type="button"
-                      onClick={() => setRecoveryPercent(pct)}
-                      className={`px-2 py-0.5 rounded text-[11px] font-mono border transition ${
-                        recoveryPercent === pct 
-                          ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200 font-bold' 
-                          : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-zinc-200'
-                      }`}
-                    >
-                      {pct}% (+{Math.round(rawPenalty * (pct / 100))} XP)
-                    </button>
-                  ))}
+            {/* Consequence Impact Preview Strip */}
+            <div className="mt-2.5 p-2.5 rounded-xl bg-[#090b10] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 text-rose-400">
+                  <Flame className="h-3.5 w-3.5" />
+                  <span>−{consequence.xpPenalty} XP</span>
                 </div>
+                <div className="flex items-center gap-1 text-amber-400">
+                  <Coins className="h-3.5 w-3.5" />
+                  <span>−{consequence.coinFine} Coins Fine</span>
+                </div>
+                <div className="flex items-center gap-1 text-cyan-400">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{consequence.momentumPenalty}</span>
+                </div>
+              </div>
+              {consequence.shopLocked && (
+                <div className="flex items-center gap-1 text-rose-300 font-bold px-2 py-0.5 rounded bg-rose-950/60 border border-rose-500/40 text-[10px]">
+                  <Lock className="h-3 w-3" />
+                  Shop Locked until Kaffārah Done
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* STEP 3: SACRED KAFFĀRAH RESTITUTION */}
+          <div>
+            <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center justify-between mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">3</span>
+                Sacred Kaffārah Restitution (Unlocks Equilibrium)
+              </span>
+              <span className="text-[10px] text-emerald-400 font-mono">
+                +45–60 XP Restitution
+              </span>
+            </label>
+
+            <div className="p-3 rounded-xl bg-gradient-to-r from-[#0d161c] to-[#0a1215] border border-cyan-500/30 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-cyan-400 shrink-0" />
                 <input 
                   type="text"
-                  value={customRemedyName}
-                  onChange={e => setCustomRemedyName(e.target.value)}
-                  placeholder={`Default: [REMEDY] Restitution: ${title || 'Remedy Directive'}`}
-                  className="w-full bg-[#090b10] border border-cyan-500/20 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-zinc-200 outline-none"
+                  required
+                  value={kaffarahTitle}
+                  onChange={e => setKaffarahTitle(e.target.value)}
+                  placeholder="Restitution Action (e.g., 2 Rak'ahs of Tawbah & Al-Mulk)..."
+                  className="w-full bg-[#05090d] border border-cyan-500/30 focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs text-cyan-200 outline-none placeholder:text-zinc-600 font-mono"
                 />
               </div>
-            )}
+              <p className="text-[10px] text-zinc-400 font-mono">
+                Completing this directive fulfills your penance, restores spiritual equilibrium, and unlocks Imperial Shop perks.
+              </p>
+            </div>
           </div>
 
+          {/* OPTIONAL WEAKNESS LINKER */}
+          {weaknesses.length > 0 && (
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#0e111a] border border-white/10 text-xs font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                Link to Chain:
+              </span>
+              <select
+                value={selectedWeaknessId}
+                onChange={e => setSelectedWeaknessId(e.target.value)}
+                className="bg-[#07090e] border border-white/10 rounded px-2.5 py-1 text-xs text-zinc-200 outline-none focus:border-[#c5a059]"
+              >
+                <option value="">-- No specific chain --</option>
+                {weaknesses.map(w => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({w.occurrenceCount} slips)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* FEEDBACK BANNER */}
           {feedback && (
-            <div className={`p-2.5 rounded-lg text-xs font-mono flex items-center gap-2 ${
+            <div className={`p-3 rounded-xl text-xs font-mono flex items-center gap-2 ${
               feedback.type === 'success' 
-                ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300' 
-                : 'bg-rose-950/80 border border-rose-500/40 text-rose-300'
+                ? 'bg-emerald-950/90 border border-emerald-500/50 text-emerald-200' 
+                : 'bg-rose-950/90 border border-rose-500/50 text-rose-200'
             }`}>
               {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
               <span>{feedback.message}</span>
@@ -414,17 +499,17 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-white/10 text-xs font-mono text-zinc-400 hover:bg-white/5 transition"
+              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-mono text-zinc-400 hover:bg-white/5 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-[#c5a059] text-black font-display text-xs font-bold tracking-wider hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-lg shadow-amber-900/30"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 text-black font-display text-xs font-bold tracking-wider hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-xl shadow-amber-950/50"
               id="confirm-muhasabah-audit-btn"
             >
               <Scale className="h-4 w-4" />
-              CONFIRM AUDIT (−{potentialDeduction} XP)
+              COMMIT AUDIT (−{actualXpDeduction} XP, −{consequence.coinFine} Coins)
             </button>
           </div>
         </form>

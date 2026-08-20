@@ -298,10 +298,15 @@ export interface MuhasabahEntry {
   severity: MuhasabahSeverity;
   xpDeducted: number; // Actual XP deducted (respecting 500/day cap and available XP)
   rawPenalty: number; // 100, 200, 300, 400, 500
+  coinsDeducted?: number; // Real fine / charity obligation deducted
+  momentumLost?: number; // % momentum lost
   cause: string; // Root trigger / environment / emotional state
   reflection?: string; // Honest personal takeaway
   correctiveQuestId?: string | null; // ID of linked corrective quest
   correctiveQuestName?: string | null;
+  kaffarahTitle?: string; // Sacred penance deed title
+  kaffarahType?: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus';
+  kaffarahCompleted?: boolean;
   recoveryPercentage?: number; // 10, 20, 30%
   recoveredXP?: number;
   weaknessId?: string | null; // ID of linked weakness
