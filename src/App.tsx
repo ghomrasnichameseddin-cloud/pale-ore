@@ -39,6 +39,12 @@ function AppContent() {
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
   const [isInboxModalOpen, setIsInboxModalOpen] = useState(false);
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [guideInitialSection, setGuideInitialSection] = useState<string>('getting-started');
+
+  const openGuide = (section?: string) => {
+    if (section) setGuideInitialSection(section);
+    setIsGuideModalOpen(true);
+  };
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
@@ -590,7 +596,7 @@ function AppContent() {
               {activeTab === 'planning' && <PlanningView onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'quests' && <QuestsView />}
-              {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab)} />}
+              {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab)} onOpenGuide={openGuide} />}
               {activeTab === 'goals' && <GoalsView />}
               {activeTab === 'projects' && <ProjectsView />}
               {activeTab === 'skills' && <SkillsView />}
@@ -645,6 +651,7 @@ function AppContent() {
         isOpen={isGuideModalOpen}
         onClose={() => setIsGuideModalOpen(false)}
         onNavigateTab={(tab) => setActiveTab(tab as TabId)}
+        initialSection={guideInitialSection}
       />
 
       {/* FLOATING NOTIFICATION TOAST SYSTEM */}

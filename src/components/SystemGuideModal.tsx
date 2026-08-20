@@ -12,10 +12,17 @@ interface SystemGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigateTab?: (tab: string) => void;
+  initialSection?: string;
 }
 
-export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuideModalProps) {
-  const [activeSection, setActiveSection] = useState<string>('getting-started');
+export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSection }: SystemGuideModalProps) {
+  const [activeSection, setActiveSection] = useState<string>(initialSection || 'getting-started');
+
+  React.useEffect(() => {
+    if (initialSection) {
+      setActiveSection(initialSection);
+    }
+  }, [initialSection, isOpen]);
 
   if (!isOpen) return null;
 
@@ -1212,44 +1219,145 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab }: SystemGuide
                 </div>
 
                 {/* THE SACRED MĪZĀN SCALE EXPLANATION */}
-                <div className="p-4 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 relative overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-4 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2.5">
                     <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
                       <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                      <span>THE SACRED MĪZĀN (LIVE DEED BALANCE SCALE)</span>
+                      <span>THE SACRED MĪZĀN (LIVE DEED BALANCE & DYNAMIC PHYSICS ENGINE)</span>
                     </div>
-                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded">
-                      PHYSICS_BALANCE_ENGINE
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
+                      EQUILIBRIUM_ENGINE_V2
                     </span>
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds (<strong>Al-Hasanāt</strong>: completed quests, focus blocks, on-time prayers) and self-audited lapses (<strong>As-Sayyi'āt</strong>: slips recorded in Muhāsabah). The scale's crossbeam dynamically tilts in real-time based on your daily net XP standing.
+                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds (<strong>Al-Hasanāt</strong>) and your self-audited moral lapses (<strong>As-Sayyi'āt</strong>). The crossbeam dynamically pivots in real-time on its fulcrum based on your <strong>Daily Net XP</strong> (Hasanāt XP &minus; Sayyi'āt XP).
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono pt-1">
-                    <div className="p-3 bg-zinc-950/80 border border-emerald-500/30 rounded-lg space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-emerald-300 font-bold">✨ Radiant Balance</span>
-                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">Net +300 XP+</span>
+                  {/* TWO PANS BREAKDOWN: WHAT AFFECTS EACH SIDE */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                    {/* LEFT PAN */}
+                    <div className="p-3.5 bg-zinc-950/90 border border-emerald-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between font-mono font-bold border-b border-emerald-500/20 pb-1.5">
+                        <span className="text-emerald-300 flex items-center gap-1.5">
+                          ✨ LEFT PAN: AL-HASANĀT (+XP)
+                        </span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">LIGHT OF OBEDIENCE</span>
                       </div>
-                      <p className="text-zinc-400 font-sans text-[11px]">Hasanāt heavily outweigh slips. Peak spiritual momentum and morale.</p>
+                      <p className="text-[11px] text-zinc-300 font-sans">
+                        Any positive XP earned under today's system date adds physical downward weight to the emerald pan:
+                      </p>
+                      <ul className="text-[10.5px] space-y-1 font-mono text-zinc-300">
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
+                          <span><strong>Directive Completions:</strong> Main Quests (+100–200 XP), Habits (+50–100 XP), Side Quests & Boss Battles (+250–500 XP).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
+                          <span><strong>Deep Work & Focus Sessions:</strong> Each completed 25-min Pomodoro block awards +15 to +25 XP directly to today's ledger.</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
+                          <span><strong>Kaffārah Restitution:</strong> Fulfilling a corrective penance returns +10% to +30% recovered XP.</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
+                          <span><strong>Subquests & Milestones:</strong> Verified milestone progress and modular sub-deliverables.</span>
+                        </li>
+                      </ul>
                     </div>
 
-                    <div className="p-3 bg-zinc-950/80 border border-amber-500/30 rounded-lg space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-amber-300 font-bold">🛡️ Blessed Equilibrium</span>
-                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">Net 0 to +299 XP</span>
+                    {/* RIGHT PAN */}
+                    <div className="p-3.5 bg-zinc-950/90 border border-rose-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between font-mono font-bold border-b border-rose-500/20 pb-1.5">
+                        <span className="text-rose-300 flex items-center gap-1.5">
+                          🛑 RIGHT PAN: AS-SAYYI'ĀT (−XP)
+                        </span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">DARKNESS OF NEGLECT</span>
                       </div>
-                      <p className="text-zinc-400 font-sans text-[11px]">Positive spiritual standing. Diligence and vigilance advised.</p>
+                      <p className="text-[11px] text-zinc-300 font-sans">
+                        Any audited moral slip or behavioral relapse recorded in Muhāsabah adds weight to the ruby pan:
+                      </p>
+                      <ul className="text-[10.5px] space-y-1 font-mono text-zinc-300">
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Minor Slips (اللَّمَم):</strong> −50 to −100 XP (fleeting distractions, brief procrastination, idle chatter).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Moderate Lapses (الغَفْلَة):</strong> −150 to −200 XP (doomscrolling feeds, broken promises, skipping workouts).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Major Breaches (الكَبَائِر):</strong> −300 XP (delayed/missed Fajr or prayers, giving in to desires/triggers).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Critical Failures (الجُرْم):</strong> −400 to −500 XP (severe relapse, complete breakdown of daily discipline).</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* 5 EQUILIBRIUM TIERS & TILT ANGLES */}
+                  <div className="space-y-2 pt-1 border-t border-white/5">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-white uppercase">
+                      <span>THE 5 DYNAMIC EQUILIBRIUM TIERS & TILT PHYSICS:</span>
+                      <span className="text-[10px] text-[#c5a059]">RANGE: −18° TO +18°</span>
                     </div>
 
-                    <div className="p-3 bg-zinc-950/80 border border-rose-500/40 rounded-lg space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-rose-300 font-bold">⚠️ Spiritual Deficit / Nafs Warning</span>
-                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">Negative Net XP</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono">
+                      <div className="p-3 bg-zinc-950/80 border border-emerald-500/30 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-emerald-300 font-bold">🌟 Radiant Balance</span>
+                          <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-bold">Net ≥ +250 XP</span>
+                        </div>
+                        <p className="text-zinc-400 font-sans text-[11px]">Left pan drops to maximum +18° tilt. Peak spiritual radiance & active momentum multiplier.</p>
                       </div>
-                      <p className="text-zinc-400 font-sans text-[11px]">Sayyi'āt outweigh good deeds. Urgent Kaffārah restitution required.</p>
+
+                      <div className="p-3 bg-zinc-950/80 border border-amber-500/30 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-amber-300 font-bold">🛡️ Blessed Equilibrium</span>
+                          <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-bold">Net &gt; 0 XP</span>
+                        </div>
+                        <p className="text-zinc-400 font-sans text-[11px]">Gentle positive tilt. Righteous deeds lead the day; spiritual momentum protected.</p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/80 border border-zinc-700/50 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-300 font-bold">⚖️ Neutral Ground</span>
+                          <span className="text-[9px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded font-bold">Net = 0 XP</span>
+                        </div>
+                        <p className="text-zinc-400 font-sans text-[11px]">Beam rests perfectly level at 0°. Awaiting today's first directives and actions.</p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/80 border border-rose-500/30 rounded-lg space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-rose-300 font-bold">⚠️ Spiritual Deficit</span>
+                          <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-bold">0 to −200 XP</span>
+                        </div>
+                        <p className="text-zinc-400 font-sans text-[11px]">Right pan sinks down. Deficit warning badge active; Kaffārah penances recommended.</p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/80 border border-rose-600/50 rounded-lg space-y-1 sm:col-span-2 lg:col-span-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-red-400 font-bold">🔥 Severe Nafs Warning</span>
+                          <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-bold">Net &lt; −200 XP</span>
+                        </div>
+                        <p className="text-zinc-400 font-sans text-[11px]">Heavy −18° right tilt. High spiritual deficit detected; immediate sincere repentance, Tawbah, and disciplined recovery required.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RECALIBRATE & SYNC UTILITY */}
+                  <div className="p-3 bg-zinc-950/80 border border-[#c5a059]/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs font-mono">
+                    <div className="space-y-0.5">
+                      <span className="text-[#fef08a] font-bold flex items-center gap-1.5 text-[11px]">
+                        ⚖️ RECALIBRATE & SYSTEM SYNC FEATURE
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px]">
+                        Clicking <strong>RECALIBRATE</strong> on the scale or Sacred Ledger re-synchronizes scale weights, verifies date alignment, audits Kaffārah restitution quests, and logs an equilibrium audit message in your System Inbox.
+                      </p>
                     </div>
                   </div>
                 </div>

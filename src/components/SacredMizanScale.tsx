@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 interface SacredMizanScaleProps {
@@ -17,6 +17,7 @@ interface SacredMizanScaleProps {
   onViewRemedies?: () => void;
   onRecalibrate?: () => void;
   isRecalibrating?: boolean;
+  onOpenGuide?: () => void;
 }
 
 export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
@@ -32,7 +33,8 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
   onOpenAuditModal,
   onViewRemedies,
   onRecalibrate,
-  isRecalibrating
+  isRecalibrating,
+  onOpenGuide
 }) => {
   // Status configurations
   const statusConfigs = {
@@ -146,6 +148,18 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className="px-2.5 py-2 rounded-xl bg-[#0f1219] hover:bg-[#181d28] border border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95"
+              title="Open System Manual & Sacred Mīzān Guide"
+              id="sacred-mizan-guide-btn"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-[#c5a059]" />
+              <span className="hidden sm:inline">GUIDE</span>
+            </button>
+          )}
+
           {onRecalibrate && (
             <button
               onClick={onRecalibrate}

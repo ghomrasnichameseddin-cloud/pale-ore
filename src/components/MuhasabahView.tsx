@@ -35,9 +35,10 @@ type GroupMode = 'none' | 'category' | 'severity' | 'date';
 
 interface MuhasabahViewProps {
   onNavigate?: (tab: any) => void;
+  onOpenGuide?: (section?: string) => void;
 }
 
-export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
+export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpenGuide }) => {
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     convertWeaknessToSeal, deleteWeakness, updateWeakness,
@@ -227,6 +228,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
         }}
         onRecalibrate={handleRecalibrate}
         isRecalibrating={isRecalibrating}
+        onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
 
       {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
