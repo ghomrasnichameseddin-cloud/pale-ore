@@ -41,7 +41,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     convertWeaknessToSeal, deleteWeakness, updateWeakness,
-    completeQuest
+    completeQuest, recalibrateMizan
   } = usePOS();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,6 +52,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [groupMode, setGroupMode] = useState<GroupMode>('none');
   const [entryToDelete, setEntryToDelete] = useState<MuhasabahEntry | null>(null);
+  const [isRecalibrating, setIsRecalibrating] = useState(false);
+  const [recalibrateNotice, setRecalibrateNotice] = useState<string | null>(null);
 
   const [selectedEntryDetail, setSelectedEntryDetail] = useState<MuhasabahEntry | null>(null);
   const [prefillWeaknessId, setPrefillWeaknessId] = useState<string | undefined>(undefined);
@@ -163,8 +165,50 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
   };
 
+  const handleRecalibrate = () => {
+    setIsRecalibrating(true);
+    const res = recalibrateMizan();
+    setRecalibrateNotice(res.message || 'Sacred Mīzān Scale recalibrated and synchronized with the Sacred Ledger.');
+    
+    setTimeout(() => {
+      setIsRecalibrating(false);
+    }, 700);
+
+    setTimeout(() => {
+      setRecalibrateNotice(null);
+    }, 4500);
+  };
+
   return (
     <div className="space-y-6 pb-12" id="muhasabah-main-view">
+      {/* RECALIBRATION TOAST / NOTICE BANNER */}
+      <AnimatePresence>
+        {recalibrateNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            className="p-3.5 rounded-xl bg-gradient-to-r from-[#2a220e] via-[#1a1508] to-[#0c0f17] border border-[#c5a059]/60 shadow-lg flex items-center justify-between gap-3 text-xs font-mono text-[#fef08a]"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a]">
+                <RefreshCw className="h-4 w-4 text-[#c5a059]" />
+              </div>
+              <div>
+                <span className="font-bold uppercase tracking-wider text-amber-200">Scale Equilibrium Recalibrated</span>
+                <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{recalibrateNotice}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setRecalibrateNotice(null)}
+              className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-white/5"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 1. THE SACRED MĪZĀN HERO SCALE */}
       <SacredMizanScale
         todayEarnedXP={stats.todayEarnedXP}
@@ -181,6 +225,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
           const el = document.getElementById('active-kaffarah-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
+        onRecalibrate={handleRecalibrate}
+        isRecalibrating={isRecalibrating}
       />
 
       {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
@@ -464,16 +510,28 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* SEARCH INPUT */}
-              <div className="relative">
-                <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search slips, triggers..."
-                  className="bg-[#080a0f] border border-white/10 focus:border-[#c5a059] rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 outline-none w-full sm:w-48 font-mono"
-                />
+              {/* SEARCH & RECALIBRATE INPUT */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRecalibrate}
+                  disabled={isRecalibrating}
+                  className="px-2.5 py-1.5 rounded-lg bg-black/40 hover:bg-black/70 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono shrink-0 shadow-sm active:scale-95"
+                  title="Recalibrate scale physics & sync ledger"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isRecalibrating ? 'animate-spin text-[#c5a059]' : 'text-zinc-400'}`} />
+                  <span className="hidden sm:inline text-[11px] font-bold">Recalibrate</span>
+                </button>
+
+                <div className="relative">
+                  <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input 
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search slips, triggers..."
+                    className="bg-[#080a0f] border border-white/10 focus:border-[#c5a059] rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 outline-none w-full sm:w-48 font-mono"
+                  />
+                </div>
               </div>
             </div>
 

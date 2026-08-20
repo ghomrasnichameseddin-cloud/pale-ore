@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass } from 'lucide-react';
+import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 interface SacredMizanScaleProps {
@@ -15,6 +15,8 @@ interface SacredMizanScaleProps {
   pendingKaffarahCount: number;
   onOpenAuditModal: () => void;
   onViewRemedies?: () => void;
+  onRecalibrate?: () => void;
+  isRecalibrating?: boolean;
 }
 
 export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
@@ -28,7 +30,9 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
   isSpiritualLocked,
   pendingKaffarahCount,
   onOpenAuditModal,
-  onViewRemedies
+  onViewRemedies,
+  onRecalibrate,
+  isRecalibrating
 }) => {
   // Status configurations
   const statusConfigs = {
@@ -140,8 +144,25 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
           </div>
         </div>
 
-        {/* Quick Action Button */}
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          {onRecalibrate && (
+            <button
+              onClick={onRecalibrate}
+              disabled={isRecalibrating}
+              className={`px-3 py-2 rounded-xl border text-xs font-mono font-bold tracking-wide transition flex items-center gap-1.5 shadow-md ${
+                isRecalibrating
+                  ? 'bg-[#2a2210] border-[#c5a059] text-[#fef08a]'
+                  : 'bg-[#0f1219] hover:bg-[#181d28] border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-zinc-100 active:scale-95'
+              }`}
+              title="Recalibrate scale physics, sync deeds, and reconcile Sacred Ledger tally"
+              id="sacred-mizan-recalibrate-btn"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRecalibrating ? 'animate-spin text-[#c5a059]' : 'text-zinc-400 group-hover:text-[#c5a059]'}`} />
+              <span>{isRecalibrating ? 'RECALIBRATING...' : 'RECALIBRATE'}</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenAuditModal}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50"

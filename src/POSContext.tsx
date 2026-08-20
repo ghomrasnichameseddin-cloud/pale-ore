@@ -228,6 +228,7 @@ interface POSContextType {
     activeWeaknessesCount: number;
     sealedWeaknessesCount: number;
   };
+  recalibrateMizan: () => { success: boolean; message: string; timestamp: string };
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -4245,6 +4246,40 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const recalibrateMizan = () => {
+    const currentSysDate = state.systemDate || getLocalDateString();
+    
+    // 1. Audit entries for today
+    const todayEntries = (state.muhasabahEntries || []).filter(e => e.date === currentSysDate);
+    const todayLostXP = todayEntries.reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
+    
+    // 2. Audit positive XP events from history
+    const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
+    const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
+    const todayNetXP = todayEarnedXP - todayLostXP;
+
+    // 3. Audit active Kaffarah obligations
+    const activeKaffarah = (state.quests || []).filter(q => 
+      q.status === 'Active' && 
+      (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+    );
+
+    // 4. Dispatch System Notice
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: '⚖️ SACRED MĪZĀN RECALIBRATED',
+      content: `Equilibrium re-synchronized for ${currentSysDate}: +${todayEarnedXP} XP Hasanāt, −${todayLostXP} XP Sayyi'āt (Net: ${todayNetXP >= 0 ? '+' : ''}${todayNetXP} XP). Verified ${todayEntries.length} slip audits and ${activeKaffarah.length} pending Kaffārah obligations.`,
+      priority: 'medium'
+    });
+
+    return {
+      success: true,
+      message: `The Sacred Mīzān physics and weight coordinates successfully recalibrated for ${currentSysDate}.`,
+      timestamp: new Date().toISOString()
+    };
+  };
+
   return (
     <POSContext.Provider value={{
       state,
@@ -4393,7 +4428,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateWeakness,
       deleteWeakness,
       convertWeaknessToSeal,
-      getTodayMuhasabahStats
+      getTodayMuhasabahStats,
+      recalibrateMizan
     }}>
       {children}
     </POSContext.Provider>
