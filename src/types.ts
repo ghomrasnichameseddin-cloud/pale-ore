@@ -296,6 +296,8 @@ export interface MuhasabahEntry {
   description: string;
   category: MuhasabahCategory;
   severity: MuhasabahSeverity;
+  isExempt?: boolean; // True if due to legitimate excuse / lawful exemption (0 penalty)
+  exemptionReason?: string;
   xpDeducted: number; // Actual XP deducted (respecting 500/day cap and available XP)
   rawPenalty: number; // 100, 200, 300, 400, 500
   coinsDeducted?: number; // Real fine / charity obligation deducted

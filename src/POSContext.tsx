@@ -3935,6 +3935,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     severity: MuhasabahSeverity;
     cause: string;
     reflection?: string;
+    isExempt?: boolean;
+    exemptionReason?: string;
     createCorrectiveQuest?: boolean;
     correctiveQuestName?: string;
     kaffarahType?: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus';
@@ -3942,9 +3944,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     weaknessId?: string | null;
     weaknessName?: string | null;
   }) => {
-    const rawPenalty = SEVERITY_XP_PENALTIES[entry.severity] || 200;
-    const coinFine = SEVERITY_COIN_FINES[entry.severity] || 25;
-    const momentumLoss = SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35;
+    const isExempt = Boolean(entry.isExempt);
+    const rawPenalty = isExempt ? 0 : (SEVERITY_XP_PENALTIES[entry.severity] || 200);
+    const coinFine = isExempt ? 0 : (SEVERITY_COIN_FINES[entry.severity] || 25);
+    const momentumLoss = isExempt ? 0 : (SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35);
     const currentSysDate = state.systemDate || getLocalDateString();
     
     // Calculate today's existing Muhasabah deductions to enforce daily 500 XP penalty cap
@@ -3953,8 +3956,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
     
     const availableCap = Math.max(0, 500 - todayMuhasabahLoss);
-    const xpToDeduct = Math.min(rawPenalty, availableCap);
-    const capReached = availableCap <= 0 || xpToDeduct < rawPenalty;
+    const xpToDeduct = isExempt ? 0 : Math.min(rawPenalty, availableCap);
+    const capReached = !isExempt && (availableCap <= 0 || xpToDeduct < rawPenalty);
 
     const defaultTemplate = DEFAULT_KAFFARAH_TEMPLATES[entry.category];
     const kaffarahType = entry.kaffarahType || defaultTemplate.type;
@@ -3965,10 +3968,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let recoveryPercent = entry.recoveryPercentage ?? 20; // Default 20%
     if (recoveryPercent < 10) recoveryPercent = 10;
     if (recoveryPercent > 30) recoveryPercent = 30;
-    const recoveredXP = Math.max(25, Math.round(rawPenalty * (recoveryPercent / 100)));
+    const recoveredXP = isExempt ? 0 : Math.max(25, Math.round(rawPenalty * (recoveryPercent / 100)));
 
-    // By default for Muhasabah, always create a Kaffārah restitution quest to enforce high stakes
-    const shouldCreateQuest = entry.createCorrectiveQuest !== false;
+    // By default for non-exempt Muhasabah, create a Kaffārah restitution quest
+    const shouldCreateQuest = !isExempt && entry.createCorrectiveQuest !== false;
     if (shouldCreateQuest) {
       createdQuestId = `quest-kaffarah-${Date.now()}`;
       createdQuestName = `[KAFFĀRAH] ${kaffarahTitle}`;
@@ -3979,7 +3982,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => {
       // 1. Calculate new XP ensuring it never drops below 0
       const currentProfileXp = prev.profile.xp || 0;
-      const actualDeducted = Math.min(currentProfileXp, xpToDeduct);
+      const actualDeducted = isExempt ? 0 : Math.min(currentProfileXp, xpToDeduct);
       
       let updatedXpHistory = [...prev.xpHistory];
       if (actualDeducted > 0) {
@@ -4032,12 +4035,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedQuests = [kaffarahQuest, ...updatedQuests];
       }
 
-      // 4. Weakness tracking & auto-trigger
+      // 4. Weakness tracking & auto-trigger (only for non-exempt)
       let updatedWeaknesses = [...(prev.weaknesses || [])];
       let targetWeaknessId: string | null = entry.weaknessId || null;
       let targetWeaknessName: string | null = entry.weaknessName || null;
 
-      if (targetWeaknessId) {
+      if (!isExempt && targetWeaknessId) {
         updatedWeaknesses = updatedWeaknesses.map(w => {
           if (w.id === targetWeaknessId) {
             const nextCount = w.occurrenceCount + 1;
@@ -4052,7 +4055,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
           return w;
         });
-      } else if (entry.weaknessName && entry.weaknessName.trim()) {
+      } else if (!isExempt && entry.weaknessName && entry.weaknessName.trim()) {
         const trimmedName = entry.weaknessName.trim();
         const existingWeaknessIndex = updatedWeaknesses.findIndex(
           w => w.name.toLowerCase() === trimmedName.toLowerCase() || 
@@ -4101,7 +4104,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
-      // 5. Record the Muhasabah Entry with Kaffarah & Coin details
+      // 5. Record the Muhasabah Entry
       const newEntry: MuhasabahEntry = {
         id: newEntryId,
         date: currentSysDate,
@@ -4110,6 +4113,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         description: entry.description?.trim() || '',
         category: entry.category,
         severity: entry.severity,
+        isExempt,
+        exemptionReason: entry.exemptionReason?.trim() || undefined,
         rawPenalty,
         xpDeducted: actualDeducted,
         coinsDeducted: coinFine,
@@ -4118,9 +4123,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reflection: entry.reflection?.trim() || '',
         correctiveQuestId: createdQuestId,
         correctiveQuestName: createdQuestName,
-        kaffarahTitle,
-        kaffarahType,
-        kaffarahCompleted: false,
+        kaffarahTitle: isExempt ? undefined : kaffarahTitle,
+        kaffarahType: isExempt ? undefined : kaffarahType,
+        kaffarahCompleted: isExempt ? true : false,
         recoveryPercentage: recoveryPercent,
         recoveredXP,
         weaknessId: targetWeaknessId,
@@ -4129,13 +4134,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const finalEntries = [newEntry, ...(prev.muhasabahEntries || [])];
 
-      addSystemMessage({
-        sender: 'OPERATOR',
-        category: 'alert',
-        title: `⚖️ MUHĀSABAH AUDIT: ${entry.category.toUpperCase()} (${entry.severity})`,
-        content: `Reflected on "${entry.title}". Consequences applied: −${actualDeducted} XP, −${coinFine} Coins fine, ${momentumLoss >= 100 ? 'Momentum zeroed' : `−${momentumLoss}% Momentum`}. Pinned Kaffārah Restitution: "${kaffarahTitle}".`,
-        priority: 'high'
-      });
+      if (isExempt) {
+        addSystemMessage({
+          sender: 'OPERATOR',
+          category: 'alert',
+          title: `⚖️ MUHĀSABAH: LAWFUL EXEMPTION NOTED`,
+          content: `Noted "${entry.title}". Sickness, lawful travel, unintentional sleep/forgetfulness carry 0 penalty. Intention (Niyyah) & sincerity are accepted by Allah alone.`,
+          priority: 'medium'
+        });
+      } else {
+        addSystemMessage({
+          sender: 'OPERATOR',
+          category: 'alert',
+          title: `⚖️ MUHĀSABAH AUDIT: ${entry.category.toUpperCase()} (${entry.severity})`,
+          content: `Reflected on "${entry.title}". In-app consequences: −${actualDeducted} XP, −${coinFine} Coins fine, ${momentumLoss >= 100 ? 'Momentum zeroed' : `−${momentumLoss}% Momentum`}. Pinned Kaffārah Restitution: "${kaffarahTitle}".`,
+          priority: 'high'
+        });
+      }
 
       return {
         ...prev,
@@ -4152,6 +4167,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+
+    if (isExempt) {
+      return {
+        success: true,
+        entryId: newEntryId,
+        xpDeducted: 0,
+        coinsDeducted: 0,
+        rawPenalty: 0,
+        capReached: false,
+        message: `Lawful exemption recorded with 0 penalty. Genuine excuses carry no blame. Sincerity (Ikhlāṣ) to Allah comes first.`
+      };
+    }
 
     return {
       success: true,
@@ -4355,14 +4382,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addSystemMessage({
       sender: 'SYSTEM',
       category: 'log',
-      title: '⚖️ SACRED MĪZĀN RECALIBRATED',
-      content: `Equilibrium re-synchronized for ${currentSysDate}: +${todayEarnedXP} XP Hasanāt, −${todayLostXP} XP Sayyi'āt (Net: ${todayNetXP >= 0 ? '+' : ''}${todayNetXP} XP). Verified ${todayEntries.length} slip audits and ${activeKaffarah.length} pending Kaffārah obligations.`,
+      title: '⚖️ DAILY BALANCE RECALIBRATED',
+      content: `Equilibrium re-synchronized for ${currentSysDate}: +${todayEarnedXP} XP Earned, −${todayLostXP} XP Lost (Net: ${todayNetXP >= 0 ? '+' : ''}${todayNetXP} XP). Verified ${todayEntries.length} slip audits and ${activeKaffarah.length} pending Kaffārah obligations.`,
       priority: 'medium'
     });
 
     return {
       success: true,
-      message: `The Sacred Mīzān physics and weight coordinates successfully recalibrated for ${currentSysDate}.`,
+      message: `The Daily Balance Scale physics and weight coordinates successfully recalibrated for ${currentSysDate}.`,
       timestamp: new Date().toISOString()
     };
   };
@@ -4496,7 +4523,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'achievement',
           title: `🕌 SALAAT FULFILLED: ${reward.name}`,
-          content: `Obligatory ${reward.name} completed (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Recorded on the Sacred Mīzān.`,
+          content: `Obligatory ${reward.name} completed (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Recorded on the Daily Balance Scale.`,
           priority: 'medium'
         });
       } else if (newValue && (field === 'sunnahBefore' || field === 'sunnahAfter')) {
@@ -4504,7 +4531,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'achievement',
           title: `📿 DHUHR SUNNAH PERFORMED: ${field === 'sunnahBefore' ? '4 RAK\'AHS BEFORE' : '2 RAK\'AHS AFTER'}`,
-          content: `${actionLabel} logged (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Sunan Rawātib elevated on Sacred Mīzān.`,
+          content: `${actionLabel} logged (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Sunan Rawātib elevated on Daily Balance Scale.`,
           priority: 'low'
         });
       }
@@ -4635,7 +4662,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'achievement',
           title: `🌹 70+ SALAWĀT UPON RASOULULLAH (ﷺ) COMPLETE`,
-          content: `Milestone of 70+ blessings sent upon the Prophet (ﷺ) reached (+100 XP, +15 Coins). Spiritual radiance elevated on Sacred Mīzān.`,
+          content: `Milestone of 70+ blessings sent upon the Prophet (ﷺ) reached (+100 XP, +15 Coins). Consistency reflected on the Daily Balance Scale.`,
           priority: 'high'
         });
       } else if (wasCompleted && !isNowCompleted) {
@@ -4715,7 +4742,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'achievement',
           title: `🌙 QIYĀM AL-LAYL LOGGED: ${newRakats} RAK'AHS`,
-          content: `Night devotion recorded (+${qiyamXp} XP, +${coinsEarned} Coins). The honor of the believer shines on today's Sacred Mīzān.`,
+          content: `Night devotion recorded (+${qiyamXp} XP, +${coinsEarned} Coins). Recorded on today's Daily Balance Scale.`,
           priority: 'medium'
         });
       }

@@ -1402,9 +1402,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="text-emerald-300 font-bold">Spiritual Radiance Multiplier</span>
-                          <span className="text-emerald-400 font-bold">Tilts Mīzān</span>
+                          <span className="text-emerald-400 font-bold">Positive Balance</span>
                         </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Consistently fulfilling your daily 70 Salawāt infuses positive weight into the Mīzān scale.</p>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Consistently fulfilling your daily 70 Salawāt infuses positive weight into your daily balance scale.</p>
                       </div>
                     </div>
                   </div>
@@ -1435,13 +1435,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                           <span className="text-cyan-300 font-bold">Scalable Pair Bonuses</span>
                           <span className="text-cyan-400 font-bold">+30 XP / pair</span>
                         </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Each additional pair of raka'āt (4, 6, 8, 10+) stacks +30 bonus XP and amplifies Hasanāt.</p>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Each additional pair of raka'āt (4, 6, 8, 10+) stacks +30 bonus XP and amplifies positive practice XP.</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* LINKAGE TO SACRED MĪZĀN & FAITH ATTRIBUTE */}
+                {/* LINKAGE TO DAILY BALANCE SCALE & FAITH ATTRIBUTE */}
                 <div className="p-4 bg-gradient-to-r from-[#141824] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 font-mono text-xs">
                   <div className="text-xs font-bold text-[#fef08a] flex items-center justify-between">
                     <span className="flex items-center gap-2">
@@ -1455,9 +1455,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
-                      <span className="text-emerald-400 font-bold block text-[11px]">1. MĪZĀN WEIGHT (HASANĀT)</span>
+                      <span className="text-emerald-400 font-bold block text-[11px]">1. POSITIVE BALANCE WEIGHT</span>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        Every checked prayer, bonus, dhikr, salat count, and qiyam raka'ah directly registers as positive <strong>Al-Hasanāt</strong> on the emerald scale pan.
+                        Every checked prayer, bonus, dhikr, salat count, and qiyam raka'ah directly registers as positive progress on the emerald scale pan.
                       </p>
                     </div>
 
@@ -1471,7 +1471,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
                       <span className="text-cyan-400 font-bold block text-[11px]">3. MORAL FRICTION DEFENSE</span>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        Robust spiritual habits safeguard your momentum against unexpected slip penalties, preventing the Sacred Mīzān from tilting into severe deficit.
+                        Robust spiritual habits safeguard your momentum against unexpected slip penalties, preventing your daily balance from tilting into severe deficit.
                       </p>
                     </div>
                   </div>
@@ -1496,23 +1496,23 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                       <Scale className="h-5 w-5 text-amber-400" />
-                      9. Muhāsabah & The Sacred Mīzān: Self-Accountability & High-Stakes Restitution
+                      9. Muhāsabah & Daily Balance Scale: Self-Accountability & High-Stakes Restitution
                     </h3>
                     <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold uppercase">
-                      SPIRITUAL_OPERATING_SYSTEM
+                      ACCOUNTABILITY_SYSTEM
                     </span>
                   </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    <em>"Evaluate yourselves before you are evaluated, and weigh your deeds before they are weighed for you."</em> — Umar ibn al-Khattāb (RA). Realistic moral friction, live dynamic deed scales, coin fines, momentum loss, shop lockdowns, and sacred Kaffārah penances.
+                    <em>"Evaluate yourselves before you are evaluated, and weigh your deeds before they are weighed for you."</em> — Umar ibn al-Khattāb (RA). Realistic moral friction, live dynamic deed scales, coin fines, momentum loss, shop lockdowns, and Kaffārah penances.
                   </p>
                 </div>
 
-                {/* THE SACRED MĪZĀN SCALE EXPLANATION */}
+                {/* THE DAILY BALANCE SCALE EXPLANATION */}
                 <div className="p-4 sm:p-5 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-4 relative overflow-hidden">
                   <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2.5">
                     <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
                       <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                      <span>THE SACRED MĪZĀN (LIVE DEED BALANCE & DYNAMIC PHYSICS ENGINE)</span>
+                      <span>DAILY BALANCE SCALE (LIVE DEED BALANCE & DYNAMIC PHYSICS ENGINE)</span>
                     </div>
                     <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
                       EQUILIBRIUM_ENGINE_V2
@@ -1520,7 +1520,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds & sacred duties (<strong>Al-Hasanāt</strong>) and your self-audited moral lapses (<strong>As-Sayyi'āt</strong>). The crossbeam dynamically pivots in real-time on its fulcrum based on your <strong>Daily Net XP</strong> (Hasanāt XP &minus; Sayyi'āt XP).
+                    The <strong>Daily Balance Scale</strong> visually simulates the personal accountability balance between your completed positive habits & duties and your self-audited lapses. The crossbeam dynamically pivots in real-time on its fulcrum based on your <strong>Daily Net XP</strong> (Earned XP &minus; Lost XP).
                   </p>
 
                   {/* TWO PANS BREAKDOWN: WHAT AFFECTS EACH SIDE */}
@@ -1529,9 +1529,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="p-3.5 bg-zinc-950/90 border border-emerald-500/30 rounded-xl space-y-2">
                       <div className="flex items-center justify-between font-mono font-bold border-b border-emerald-500/20 pb-1.5">
                         <span className="text-emerald-300 flex items-center gap-1.5">
-                          ✨ LEFT PAN: AL-HASANĀT (+XP)
+                          ✨ LEFT PAN: POSITIVE DEEDS (+XP)
                         </span>
-                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">LIGHT OF OBEDIENCE</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">POSITIVE HABITS</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
                         Positive XP earned under today's system date adds physical downward weight to the emerald pan:
@@ -1560,9 +1560,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="p-3.5 bg-zinc-950/90 border border-rose-500/30 rounded-xl space-y-2">
                       <div className="flex items-center justify-between font-mono font-bold border-b border-rose-500/20 pb-1.5">
                         <span className="text-rose-300 flex items-center gap-1.5">
-                          🛑 RIGHT PAN: AS-SAYYI'ĀT (−XP)
+                          🛑 RIGHT PAN: AUDITED SLIPS (−XP)
                         </span>
-                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">DARKNESS OF NEGLECT</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">FRICTION & LAPSES</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
                         Any audited moral slip or behavioral relapse recorded in Muhāsabah adds weight to the ruby pan:
@@ -1927,10 +1927,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="space-y-1">
                     <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
                       <Scale className="h-4 w-4 text-[#e5c875]" />
-                      <span>DASHBOARD INTEGRATION & SACRED MĪZĀN ACCESS</span>
+                      <span>DASHBOARD INTEGRATION & DAILY BALANCE ACCESS</span>
                     </div>
                     <p className="text-xs text-zinc-300 font-sans">
-                      Access the Sacred Mīzān, rapid 1-tap realm triage, active Kaffārah restitution queue, and the chronological slip ledger anytime in the Muhāsabah chamber.
+                      Access the Daily Balance Scale, rapid 1-tap realm triage, active Kaffārah restitution queue, and the chronological slip ledger anytime in the Muhāsabah chamber.
                     </p>
                   </div>
 

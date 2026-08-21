@@ -3,7 +3,7 @@ import { usePOS } from '../POSContext';
 import { MuhasabahCategory, MuhasabahSeverity } from '../types';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 import { 
-  X, AlertTriangle, Shield, CheckCircle2, Flame, Heart, 
+  X, AlertTriangle, Shield, ShieldCheck, CheckCircle2, Flame, Heart, 
   MessageSquare, Sparkles, Scale, BookOpen, Clock, ArrowRight,
   Lock, Coins, Zap, ShieldAlert, HeartHandshake, EyeOff, Radio
 } from 'lucide-react';
@@ -171,6 +171,8 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
   const [cause, setCause] = useState('');
   const [kaffarahTitle, setKaffarahTitle] = useState('');
   const [selectedWeaknessId, setSelectedWeaknessId] = useState<string>(prefillWeaknessId || '');
+  const [isExempt, setIsExempt] = useState<boolean>(false);
+  const [exemptionReason, setExemptionReason] = useState<string>('Unintentional Sleep / Forgetfulness (نوم / نسيان)');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Synchronize preset selections
@@ -203,7 +205,8 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
 
   const stats = getTodayMuhasabahStats();
   const consequence = SEVERITY_CONSEQUENCES[severity];
-  const actualXpDeduction = Math.min(consequence.xpPenalty, stats.dailyCapRemaining);
+  const actualXpDeduction = isExempt ? 0 : Math.min(consequence.xpPenalty, stats.dailyCapRemaining);
+  const coinFine = isExempt ? 0 : consequence.coinFine;
 
   if (!isOpen) return null;
 
@@ -213,7 +216,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
       setFeedback({ type: 'error', message: 'Please specify the slip summary.' });
       return;
     }
-    if (!cause.trim()) {
+    if (!cause.trim() && !isExempt) {
       setFeedback({ type: 'error', message: 'Please identify the root cause trigger.' });
       return;
     }
@@ -222,10 +225,12 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
       title: title.trim(),
       category,
       severity,
-      cause: cause.trim(),
-      createCorrectiveQuest: true,
-      correctiveQuestName: kaffarahTitle.trim() || undefined,
-      weaknessId: selectedWeaknessId || undefined
+      cause: isExempt ? `[EXEMPTION] ${exemptionReason}` : cause.trim(),
+      isExempt,
+      exemptionReason: isExempt ? exemptionReason : undefined,
+      createCorrectiveQuest: !isExempt,
+      correctiveQuestName: isExempt ? undefined : (kaffarahTitle.trim() || undefined),
+      weaknessId: isExempt ? undefined : (selectedWeaknessId || undefined)
     });
 
     if (res.success) {
@@ -259,11 +264,11 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                   MUHĀSABAH AUDIT
                 </h3>
                 <span className="text-[10px] font-mono uppercase bg-[#1e1708] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded-full font-bold">
-                  3-Tap Zen Triage
+                  Self-Accountability
                 </span>
               </div>
               <p className="text-xs text-zinc-400 font-mono">
-                Select Slip → Weigh Consequence → Commit Sacred Kaffārah
+                Introspective Habit Review &amp; Friction Triage
               </p>
             </div>
           </div>
@@ -279,6 +284,60 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
 
         {/* MODAL BODY */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-3.5 pr-1">
+          {/* SAFEGUARD DISCLAIMER BANNER */}
+          <div className="p-3 bg-amber-950/30 border border-amber-500/40 rounded-xl flex items-start gap-2.5 text-xs text-amber-200">
+            <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-semibold text-amber-300">
+                &ldquo;XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.&rdquo;
+              </p>
+              <p className="text-[10.5px] text-zinc-400">
+                In-app penalties are secondary habit-friction tools for self-discipline, never divine punishment.
+              </p>
+            </div>
+          </div>
+
+          {/* EXEMPTION / UNAVOIDABLE EXCUSE TOGGLE */}
+          <div className="p-3 bg-zinc-950/80 border border-cyan-500/30 rounded-xl space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HeartHandshake className="h-4 w-4 text-cyan-400" />
+                <span className="text-xs font-mono font-bold text-cyan-300 uppercase">
+                  Lawful Exemption / Unavoidable Excuse (عذر شرعي)
+                </span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  checked={isExempt}
+                  onChange={e => setIsExempt(e.target.checked)}
+                  className="rounded border-white/20 bg-zinc-900 text-cyan-500 focus:ring-cyan-500 h-4 w-4"
+                />
+                <span className="text-xs font-mono text-zinc-300">
+                  {isExempt ? 'Exemption Active (0 Penalty)' : 'Standard Self-Audit'}
+                </span>
+              </label>
+            </div>
+
+            {isExempt && (
+              <div className="space-y-2 pt-1 border-t border-cyan-500/20 text-xs">
+                <p className="text-[11px] text-cyan-200 font-sans leading-relaxed">
+                  In Islamic guidance, unintentional omissions due to sleep, forgetfulness, illness, travel hardship, or lawful exemptions carry no sin and incur zero in-app penalty.
+                </p>
+                <select
+                  value={exemptionReason}
+                  onChange={e => setExemptionReason(e.target.value)}
+                  className="w-full bg-[#080b12] border border-cyan-500/40 rounded-lg px-2.5 py-1.5 text-xs text-cyan-200 outline-none"
+                >
+                  <option value="Unintentional Sleep / Forgetfulness (نوم / نسيان)">Unintentional Sleep or Forgetfulness (نوم / نسيان)</option>
+                  <option value="Sickness / Physical Inability (مرض / عجز)">Sickness / Physical Inability (مرض / عجز)</option>
+                  <option value="Lawful Travel / Hardship (سفر / مشقة)">Lawful Travel / Hardship (سفر / مشقة)</option>
+                  <option value="Menses / Postnatal Exemption (عذر شرعي للنساء)">Menses / Postnatal Exemption (عذر شرعي للنساء)</option>
+                  <option value="Unforeseen Urgent Emergency (ظرف طارئ)">Unforeseen Urgent Emergency (ظرف طارئ)</option>
+                </select>
+              </div>
+            )}
+          </div>
           {/* STEP 1: SELECT SLIP (1-TAP PRESETS OR CUSTOM) */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -509,7 +568,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
               id="confirm-muhasabah-audit-btn"
             >
               <Scale className="h-4 w-4" />
-              COMMIT AUDIT (−{actualXpDeduction} XP, −{consequence.coinFine} Coins)
+              {isExempt ? 'RECORD LAWFUL EXEMPTION (0 PENALTY)' : `COMMIT AUDIT (−${actualXpDeduction} XP, −${consequence.coinFine} Coins)`}
             </button>
           </div>
         </form>

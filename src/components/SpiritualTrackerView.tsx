@@ -183,6 +183,31 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn pb-12" id="spiritual-tracker-container">
       
+      {/* 0. SACRED DISCLAIMER & SINCERITY (IKHLĀṢ) SAFEGUARD */}
+      <div className="p-4 bg-gradient-to-r from-[#17130a] via-[#1f190d] to-[#120f08] border border-[#c5a059]/50 rounded-2xl shadow-md relative overflow-hidden">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-[#3a2e12] border border-[#c5a059]/60 rounded-xl text-[#fef08a] shrink-0 mt-0.5">
+            <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-[#fef08a] uppercase tracking-wider">
+                SACRED PROTOCOL SAFEGUARDS • الإِخْلَاصُ للهِ تَعَالَى
+              </span>
+              <span className="text-[10px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.2 rounded font-bold">
+                MANDATORY NOTICE
+              </span>
+            </div>
+            <p className="text-xs text-amber-200 font-sans font-medium leading-relaxed">
+              &ldquo;<strong>XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.</strong>&rdquo;
+            </p>
+            <p className="text-[11px] text-zinc-400 font-sans">
+              Worship, sincere devotion (Ikhlāṣ), and seeking Allah&apos;s pleasure come first. Gamification metrics (XP, streaks, and levels) are secondary personal habit tracking aids.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 1. HIJRI CALENDAR & SACRED HEADER BANNER */}
       <div className="p-4 sm:p-6 bg-gradient-to-r from-[#17130a] via-[#0d0f17] to-[#0a1215] border border-[#c5a059]/40 rounded-2xl relative overflow-hidden shadow-[0_4px_25px_rgba(197,160,89,0.12)]">
         {/* Subtle decorative background geometry */}
@@ -261,7 +286,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
               <button
                 onClick={() => onOpenGuide('muhasabah')}
                 className="px-2.5 py-1.5 bg-[#0b0d13] hover:bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5"
-                title="Spiritual & Mizan Guide"
+                title="Spiritual Protocols & Daily Balance Guide"
               >
                 <BookOpen className="h-3.5 w-3.5" />
                 <span>GUIDE</span>
@@ -295,7 +320,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </div>
 
           <div className="p-2.5 bg-[#07080c]/80 border border-emerald-500/30 rounded-xl">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase block">✨ Earned Hasanāt XP</span>
+            <span className="text-[10px] font-mono text-zinc-400 uppercase block">✨ In-App Practice XP</span>
             <span className="text-base font-display font-bold text-emerald-400 flex items-center gap-1">
               <span>+{spiritualXpTotal} XP</span>
               <span className="text-[10px] font-mono text-[#c5a059]">(+Left Pan)</span>
@@ -341,14 +366,14 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </button>
         </div>
 
-        {/* Quick link to Sacred Mizan */}
+        {/* Quick link to Daily Balance */}
         {onNavigateTab && (
           <button
             onClick={() => onNavigateTab('muhasabah')}
             className="px-3 py-1.5 bg-[#0b0d13] hover:bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5"
           >
             <Scale className="h-3.5 w-3.5" />
-            <span>Sacred Mīzān: Net {mizanStats.todayNetXP >= 0 ? `+${mizanStats.todayNetXP}` : mizanStats.todayNetXP} XP</span>
+            <span>Daily Balance: Net {mizanStats.todayNetXP >= 0 ? `+${mizanStats.todayNetXP}` : mizanStats.todayNetXP} XP</span>
           </button>
         )}
       </div>
@@ -728,7 +753,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                   <span>The Honor of the Believer (شرف المؤمن قيام الليل)</span>
                 </h4>
                 <p className="text-xs text-zinc-400 font-sans mt-0.5">
-                  Standing in the depths of the night. Minimum 2 Rak'ahs required; every additional pair adds extra Hasanāt XP and Faith attribute weight.
+                  Standing in the depths of the night. Minimum 2 Rak'ahs required; every additional pair adds extra practice XP and Faith attribute weight.
                 </p>
               </div>
 
@@ -823,7 +848,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         </div>
       )}
 
-      {/* 5. SYSTEM LINK: SACRED MĪZĀN & ATTRIBUTE INTEGRATION NOTICE */}
+      {/* 5. SYSTEM LINK: DAILY BALANCE & ATTRIBUTE INTEGRATION NOTICE */}
       <div className="p-4 bg-zinc-950/90 border border-white/10 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-[#3a2e12] border border-[#c5a059]/40 rounded-xl text-[#fef08a] shrink-0">
@@ -831,10 +856,10 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </div>
           <div>
             <h4 className="text-xs font-mono font-bold text-white uppercase">
-              Direct System Integration: The Sacred Mīzān & Attributes
+              Direct System Integration: In-App Habit Balance & Attributes
             </h4>
             <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
-              All prayer and dhikr points feed directly into today's <strong>Al-Hasanāt (Left Pan)</strong> of the Sacred Mīzān, elevate your <strong>Faith (الإيمان)</strong> & <strong>Discipline</strong> stats, and earn system coins.
+              Spiritual habits log positive motivational XP on the left pan of the in-app daily balance scale, elevate your <strong>Faith (الإيمان)</strong> & <strong>Discipline</strong> stats, and earn system coins. (Remember: true reward belongs to Allah alone).
             </p>
           </div>
         </div>
@@ -844,7 +869,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
             onClick={() => onNavigateTab('muhasabah')}
             className="px-3 py-2 bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059] text-[#fef08a] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shrink-0"
           >
-            <span>Open Sacred Mīzān</span>
+            <span>Open Daily Balance</span>
             <ArrowUpRight className="h-4 w-4" />
           </button>
         )}

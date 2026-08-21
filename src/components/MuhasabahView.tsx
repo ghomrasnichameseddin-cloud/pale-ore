@@ -169,7 +169,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const handleRecalibrate = () => {
     setIsRecalibrating(true);
     const res = recalibrateMizan();
-    setRecalibrateNotice(res.message || 'Sacred Mīzān Scale recalibrated and synchronized with the Sacred Ledger.');
+    setRecalibrateNotice(res.message || 'Daily Balance Scale recalibrated and synchronized with your ledger.');
     
     setTimeout(() => {
       setIsRecalibrating(false);
@@ -209,6 +209,19 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ISLAMIC GAMIFICATION SAFEGUARD DISCLAIMER */}
+      <div className="p-3.5 rounded-xl bg-[#120f08] border border-[#c5a059]/40 flex items-start gap-3 shadow-md">
+        <Shield className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
+        <div className="space-y-0.5 text-xs text-zinc-300">
+          <p className="font-semibold text-amber-300">
+            &ldquo;XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.&rdquo;
+          </p>
+          <p className="text-[11px] text-zinc-400 font-sans">
+            Self-audits and XP balance are secondary psychological tools for personal accountability (Muḥāsabah). Legitimate excuses (sleep, forgetfulness, illness, travel hardship) carry zero penalty in Islam and inside the app. Sincerity (Ikhlāṣ) to Allah comes first.
+          </p>
+        </div>
+      </div>
 
       {/* 1. THE SACRED MĪZĀN HERO SCALE */}
       <SacredMizanScale
@@ -751,14 +764,23 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
                                 {/* Consequence Pills */}
                                 <div className="flex flex-col items-end gap-1 shrink-0">
-                                  <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">
-                                    −{entry.xpDeducted || entry.rawPenalty} XP
-                                  </span>
-                                  {entry.coinsDeducted ? (
-                                    <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-500/20">
-                                      −{entry.coinsDeducted} Coins
+                                  {entry.isExempt ? (
+                                    <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30 flex items-center gap-1">
+                                      <ShieldCheck className="h-3 w-3 text-cyan-400" />
+                                      0 XP (Exempt)
                                     </span>
-                                  ) : null}
+                                  ) : (
+                                    <>
+                                      <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">
+                                        −{entry.xpDeducted || entry.rawPenalty} XP
+                                      </span>
+                                      {entry.coinsDeducted ? (
+                                        <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                          −{entry.coinsDeducted} Coins
+                                        </span>
+                                      ) : null}
+                                    </>
+                                  )}
                                 </div>
                               </div>
 
@@ -875,7 +897,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <span>IMPORTANT CONSEQUENCE NOTICE:</span>
                   </div>
                   <ul className="list-disc pl-4 space-y-1 text-[11px] text-zinc-300">
-                    <li>This will remove the entry from the <strong>Sacred Ledger</strong> and lighten the <strong>Sacred Mīzān Scale</strong>.</li>
+                    <li>This will remove the entry from the <strong>audit ledger</strong> and lighten the <strong>Daily Balance Scale</strong>.</li>
                     <li>Historical profile XP & coin deductions are <strong>not refunded</strong> to prevent balance inflation.</li>
                     <li>If a linked Kaffārah quest was created, it will remain in your Quests queue until completed or removed manually.</li>
                   </ul>

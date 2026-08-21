@@ -43,35 +43,35 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
       bg: 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 shadow-emerald-950/50',
       icon: Sparkles,
       title: 'Radiant Balance (نور الطاعة)',
-      desc: 'Hasanāt outweigh slips significantly. High spiritual radiance & maximum momentum multiplier active.'
+      desc: 'Positive deeds outweigh slips significantly. High focus & maximum momentum multiplier active.'
     },
     'Blessed Equilibrium': {
       color: 'text-amber-300',
       bg: 'bg-[#2a200e] border-[#c5a059]/60 text-[#fef08a] shadow-amber-950/50',
       icon: ShieldCheck,
       title: 'Blessed Equilibrium (ميزان مبارك)',
-      desc: 'Positive spiritual equilibrium maintained. Good deeds lead the day; maintain continuous vigilance.'
+      desc: 'Positive daily equilibrium maintained. Good habits lead the day; maintain continuous vigilance.'
     },
     'Neutral Ground': {
       color: 'text-zinc-300',
       bg: 'bg-zinc-900/80 border-white/15 text-zinc-300 shadow-black/40',
       icon: Scale,
       title: 'Neutral Ground (مستقر)',
-      desc: 'The scale is balanced or waiting for today\'s directives. Strive to tip the balance with righteous action.'
+      desc: 'The scale is balanced or waiting for today\'s directives. Strive to tip the balance with productive action.'
     },
     'Spiritual Deficit': {
       color: 'text-orange-400',
       bg: 'bg-orange-950/60 border-orange-500/50 text-orange-200 shadow-orange-950/50',
       icon: AlertTriangle,
-      title: 'Spiritual Deficit (عجز روحي)',
-      desc: 'Self-audited slips currently outweigh good deeds. Fulfill Kaffārah directives to restore equilibrium.'
+      title: 'Daily Deficit (عجز روحي)',
+      desc: 'Self-audited slips currently outweigh positive deeds. Fulfill restitution directives to restore equilibrium.'
     },
     'Severe Nafs Warning': {
       color: 'text-rose-400',
       bg: 'bg-rose-950/80 border-rose-500/70 text-rose-100 shadow-rose-950/60 animate-pulse',
       icon: Flame,
       title: 'Severe Deficit (تحذير النفس)',
-      desc: 'Heavy spiritual deficit detected. Immediate sincere repentance, restitution, and disciplined focus needed.'
+      desc: 'Heavy daily deficit detected. Immediate sincere renewal, restitution, and disciplined focus needed.'
     }
   };
 
@@ -79,14 +79,9 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
   const StatusIcon = currentStatus.icon;
 
   // PHYSICS EQUILIBRIUM MATH:
-  // In our Islamic balance scale:
-  // - Left Pan = Al-Hasanāt (Good Deeds / Earned XP)
-  // - Right Pan = As-Sayyi'āt (Slips / Lost XP)
-  // When Hasanāt > Sayyi'āt (mizanTilt > 0), the Hasanāt pan is heavier -> sinks DOWN on the Left.
-  // In 2D CSS / SVG transforms:
-  // - Center is at x=180, y=55.
-  // - Rotating counter-clockwise (-angle) lowers the left tip and raises the right tip.
-  // Therefore, rotation angle = -clampedTilt.
+  // - Left Pan = Positive Habits & Deeds (Earned XP)
+  // - Right Pan = Audited Slips & Lapses (Lost XP)
+  // When Earned XP > Lost XP (mizanTilt > 0), the left pan is heavier -> sinks DOWN on the Left.
   const clampedTilt = Math.max(-18, Math.min(18, mizanTilt));
   const beamRotation = -clampedTilt;
 
@@ -133,7 +128,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-display text-lg sm:text-xl font-bold tracking-wider text-zinc-100 flex items-center gap-2">
                 <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                THE SACRED MĪZĀN
+                DAILY BALANCE SCALE
               </h2>
               <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border shadow-sm ${currentStatus.bg} flex items-center gap-1.5`}>
                 <StatusIcon className="h-3.5 w-3.5 shrink-0" />
@@ -141,7 +136,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
               </span>
             </div>
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              Live physics balance of Al-Hasanāt (Righteous Deeds) vs. As-Sayyi'āt (Self-Audited Slips)
+              In-app self-accountability visualizer for daily positive habits vs. self-audited slips.
             </p>
           </div>
         </div>
@@ -152,7 +147,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
             <button
               onClick={onOpenGuide}
               className="px-2.5 py-2 rounded-xl bg-[#0f1219] hover:bg-[#181d28] border border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95"
-              title="Open System Manual & Sacred Mīzān Guide"
+              title="Open System Manual & Daily Balance Guide"
               id="sacred-mizan-guide-btn"
             >
               <BookOpen className="h-3.5 w-3.5 text-[#c5a059]" />
@@ -169,7 +164,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
                   ? 'bg-[#2a2210] border-[#c5a059] text-[#fef08a]'
                   : 'bg-[#0f1219] hover:bg-[#181d28] border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-zinc-100 active:scale-95'
               }`}
-              title="Recalibrate scale physics, sync deeds, and reconcile Sacred Ledger tally"
+              title="Recalibrate scale physics, sync deeds, and reconcile ledger tally"
               id="sacred-mizan-recalibrate-btn"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isRecalibrating ? 'animate-spin text-[#c5a059]' : 'text-zinc-400 group-hover:text-[#c5a059]'}`} />
@@ -196,9 +191,9 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
               <Lock className="h-4 w-4" />
             </div>
             <div>
-              <span className="font-bold text-rose-100 tracking-wide uppercase">Spiritual Audit Lock Engaged</span>
+              <span className="font-bold text-rose-100 tracking-wide uppercase">Audit Lock Engaged</span>
               <p className="text-[11px] text-rose-300/90 font-sans mt-0.5">
-                You have <strong>{pendingKaffarahCount}</strong> unfulfilled Kaffārah restitution quest{pendingKaffarahCount > 1 ? 's' : ''}. Reward Shop leisure privileges remain locked until debts are settled.
+                You have <strong>{pendingKaffarahCount}</strong> unfulfilled restitution quest{pendingKaffarahCount > 1 ? 's' : ''}. Reward Shop leisure privileges remain locked until debts are settled.
               </p>
             </div>
           </div>
@@ -216,7 +211,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
 
       {/* 3. THE SCALE VISUAL & STATS DOCK */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative z-10">
-        {/* Left Side: Hasanat Tray Card */}
+        {/* Left Side: Positive Deeds Tray Card */}
         <div className="lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#08150f] to-[#040a07] border border-emerald-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
           
@@ -224,7 +219,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">
-                Al-Hasanāt
+                Positive Deeds
               </span>
             </div>
             <span className="text-[11px] font-mono text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/40">
@@ -244,9 +239,9 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
 
           <div className="pt-2.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-300/80">
             <span className="flex items-center gap-1">
-              <ArrowDownRight className="h-3.5 w-3.5 text-emerald-400" /> Heavy Weight
+              <ArrowDownRight className="h-3.5 w-3.5 text-emerald-400" /> Positive Weight
             </span>
-            <span className="text-emerald-400 font-bold">Light of Obedience</span>
+            <span className="text-emerald-400 font-bold">Good Routines</span>
           </div>
         </div>
 
@@ -557,7 +552,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Sayyiat Tray Card */}
+        {/* Right Side: Audited Slips Tray Card */}
         <div className="lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#18090b] to-[#0d0405] border border-rose-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-xl pointer-events-none" />
 
@@ -565,7 +560,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-sm shadow-rose-400" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-rose-300">
-                As-Sayyi'āt
+                Audited Slips
               </span>
             </div>
             <span className="text-[11px] font-mono text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-md border border-rose-500/40">
@@ -584,12 +579,21 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
           </div>
 
           <div className="pt-2.5 border-t border-rose-500/20 flex items-center justify-between text-[11px] font-mono text-rose-300/80">
-            <span className="text-rose-400 font-bold">Darkness of Neglect</span>
+            <span className="text-rose-400 font-bold">Audited Slips</span>
             <span className="flex items-center gap-1">
               <ArrowUpRight className="h-3.5 w-3.5 text-rose-400" /> Deficit Weight
             </span>
           </div>
         </div>
+      </div>
+
+      {/* SAFEGUARD DISCLAIMER FOOTER */}
+      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2 text-[10.5px] font-mono text-zinc-400">
+        <span className="flex items-center gap-1.5 text-amber-300/90">
+          <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059] shrink-0" />
+          <span>XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.</span>
+        </span>
+        <span className="hidden md:inline text-zinc-400 font-sans">Sincerity (Ikhlāṣ) &gt; Gamification</span>
       </div>
     </div>
   );
