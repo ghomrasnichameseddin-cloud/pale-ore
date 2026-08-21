@@ -14,6 +14,7 @@ import { QuestDifficulty, QuestType } from '../types';
 import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 import { MuhasabahModal } from './MuhasabahModal';
+import { BossProgressionBanner } from './BossProgressionBanner';
 
 interface DashboardViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
@@ -384,6 +385,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </button>
         </div>
       </div>
+
+      {/* BOSS PROGRESSION GATE BANNER */}
+      <BossProgressionBanner onNavigateToQuests={() => onNavigate?.('quests')} />
 
       {/* TWO COLUMN MAIN TERMINAL GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

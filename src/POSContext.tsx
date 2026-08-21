@@ -3,9 +3,10 @@ import {
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal, QuestFolder, QuestList,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
-  MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity
+  MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity,
+  SpiritualDailyLog, PrayerCheck, PlayerLevelInfo
 } from './types';
-import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString } from './initialState';
+import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
   const dateStr = systemDateStr || getLocalDateString();
@@ -156,7 +157,7 @@ interface POSContextType {
   getMilestoneProgress: (milestoneId: string) => number;
   getSkillXpAndLevel: (skillId: string) => { xp: number; level: number; progress: number; mastery: number; xpIntoLevel: number; xpRequiredForNextLevel: number };
   getAttributes: () => Attribute[];
-  getPlayerLevelInfo: () => { level: number; totalXp: number; xpIntoLevel: number; xpUntilNextLevel: number; progress: number; rank: string; xpRequiredForNextLevel: number };
+  getPlayerLevelInfo: () => PlayerLevelInfo;
   getAnalytics: () => any;
   
   // Export/Import
@@ -229,6 +230,15 @@ interface POSContextType {
     sealedWeaknessesCount: number;
   };
   recalibrateMizan: () => { success: boolean; message: string; timestamp: string };
+
+  // Spiritual Daily Tracking & Sacred Protocol
+  getSpiritualLog: (dateStr?: string) => SpiritualDailyLog;
+  updateSpiritualLog: (dateStr: string, updates: Partial<SpiritualDailyLog>) => void;
+  togglePrayer: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter', dateStr?: string) => void;
+  toggleAdhkar: (type: 'sabah' | 'masa', dateStr?: string) => void;
+  incrementSalawat: (amount: number, dateStr?: string) => void;
+  setSalawatCount: (count: number, dateStr?: string) => void;
+  updateQiyam: (rakats: number, witr?: boolean, dateStr?: string) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -306,6 +316,62 @@ const calculatePlayerLevel = (totalXp: number): number => {
   // L^2 + L - (2 + totalXp / 250) <= 0
   // L = (-1 + sqrt(1 + 4 * (2 + totalXp / 250))) / 2 = (-1 + sqrt(9 + totalXp / 62.5)) / 2
   return Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2);
+};
+
+export const INTERMEDIATE_RANK_LEVEL_THRESHOLD = 10; // D-Rank and above
+
+export const getCompletedBossQuestsCount = (quests: Quest[] = [], xpHistory: XPHistoryEntry[] = []): number => {
+  const completedBossQuests = quests.filter(q => 
+    (q.difficulty === 'Boss' || q.type === 'Boss') && 
+    (q.status === 'Completed' || q.completedAt !== null)
+  );
+  // Also check distinct completed boss entries in history
+  const bossQuestIdsInQuests = new Set(completedBossQuests.map(q => q.id));
+  const bossHistoryEntries = xpHistory.filter(h => 
+    h.questId && 
+    !bossQuestIdsInQuests.has(h.questId) && 
+    (h.questName.toLowerCase().includes('boss') || h.questName.includes('👑') || h.questName.includes('⚔️'))
+  );
+  return completedBossQuests.length + bossHistoryEntries.length;
+};
+
+export const calculateGatedPlayerLevel = (
+  totalXp: number, 
+  completedBossCount: number
+): {
+  level: number;
+  rawLevel: number;
+  isLevelCappedByBoss: boolean;
+  bossQuestsCompletedCount: number;
+  bossQuestsRequiredCount: number;
+} => {
+  const rawLevel = calculatePlayerLevel(totalXp);
+  if (rawLevel <= INTERMEDIATE_RANK_LEVEL_THRESHOLD) {
+    return {
+      level: rawLevel,
+      rawLevel,
+      isLevelCappedByBoss: false,
+      bossQuestsCompletedCount: completedBossCount,
+      bossQuestsRequiredCount: 0
+    };
+  }
+
+  // From Intermediate Ranks (Level 10+) forward, each level advancement requires completing a Boss Quest!
+  // Level 10 is reached with 0 boss quests.
+  // Level 11 requires 1 boss quest.
+  // Level 12 requires 2 boss quests, etc.
+  const requiredBossCount = rawLevel - INTERMEDIATE_RANK_LEVEL_THRESHOLD;
+  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount;
+  const isCapped = rawLevel > maxAllowedLevel;
+  const effectiveLevel = Math.min(rawLevel, maxAllowedLevel);
+
+  return {
+    level: effectiveLevel,
+    rawLevel,
+    isLevelCappedByBoss: isCapped,
+    bossQuestsCompletedCount: completedBossCount,
+    bossQuestsRequiredCount: requiredBossCount
+  };
 };
 
 const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] => {
@@ -1364,17 +1430,25 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Player Level Information
-  const getPlayerLevelInfo = () => {
+  const getPlayerLevelInfo = (): PlayerLevelInfo => {
     // Use historical completions to get total earned XP
     const totalXp = state.xpHistory.reduce((sum, h) => sum + h.xp, 0);
+    const completedBossCount = getCompletedBossQuestsCount(state.quests, state.xpHistory);
+    const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+    const level = gated.level;
     
-    const level = calculatePlayerLevel(totalXp);
     const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
     const xpRequiredForNextLevel = 500 * level + 500; // XP required to level up from current level to next level
     
-    const xpIntoLevel = totalXp - xpNeededForCurrentLevel;
-    const xpUntilNextLevel = xpRequiredForNextLevel - xpIntoLevel;
-    const progress = Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100);
+    const xpIntoLevel = Math.max(0, totalXp - xpNeededForCurrentLevel);
+    let xpUntilNextLevel = Math.max(0, xpRequiredForNextLevel - xpIntoLevel);
+    let progress = Math.min(100, Math.max(0, Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100)));
+
+    // If level is capped by boss requirement, progression is stuck at 100% until the boss quest is slain!
+    if (gated.isLevelCappedByBoss) {
+      progress = 100;
+      xpUntilNextLevel = 0;
+    }
 
     // Rank evaluation (Hunter System progression scale)
     let rank = 'E-Rank';
@@ -1389,7 +1463,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     else if (level >= 25) rank = 'C-Rank';
     else if (level >= 10) rank = 'D-Rank';
 
-    return { level, totalXp, xpIntoLevel, xpUntilNextLevel, progress, rank, xpRequiredForNextLevel };
+    return { 
+      level, 
+      totalXp, 
+      xpIntoLevel, 
+      xpUntilNextLevel, 
+      progress, 
+      rank, 
+      xpRequiredForNextLevel,
+      isLevelCappedByBoss: gated.isLevelCappedByBoss,
+      bossQuestsCompletedCount: gated.bossQuestsCompletedCount,
+      bossQuestsRequiredCount: gated.bossQuestsRequiredCount,
+      effectiveLevel: level,
+      unlockedLevel: gated.rawLevel
+    };
   };
 
   // Dynamic Attribute Engine (grounded in completed quests evidence)
@@ -4280,6 +4367,381 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // -------------------------------------------------------------
+  // SPIRITUAL DAILY TRACKING & SACRED PROTOCOL
+  // -------------------------------------------------------------
+  const getSpiritualLog = (dateStr?: string): SpiritualDailyLog => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    if (state.spiritualLogs && state.spiritualLogs[targetDate]) {
+      return state.spiritualLogs[targetDate];
+    }
+    return createDefaultSpiritualLog(targetDate);
+  };
+
+  const updateSpiritualLog = (dateStr: string, updates: Partial<SpiritualDailyLog>) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setState(prev => {
+      const existing = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedLog: SpiritualDailyLog = {
+        ...existing,
+        ...updates
+      };
+      return {
+        ...prev,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        }
+      };
+    });
+  };
+
+  const togglePrayer = (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter',
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+    const currentPrayerState = existingLog[prayer];
+    const newValue = !currentPrayerState[field];
+
+    const prayerRewards = {
+      fajr: { name: 'Fajr (الفجر)', fardhXp: 150, fardhCoins: 15, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5 },
+      dhuhr: { name: 'Dhuhr (الظهر)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5, sunnahBeforeXp: 25, sunnahBeforeCoins: 3, sunnahAfterXp: 20, sunnahAfterCoins: 2 },
+      asr: { name: 'Asr (العصر)', fardhXp: 120, fardhCoins: 12, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      maghrib: { name: 'Maghrib (المغرب)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 }
+    };
+    const reward = prayerRewards[prayer];
+
+    let deltaXp = 0;
+    let deltaCoins = 0;
+    let actionLabel = '';
+
+    if (field === 'fardh') {
+      deltaXp = reward.fardhXp * (newValue ? 1 : -1);
+      deltaCoins = reward.fardhCoins * (newValue ? 1 : -1);
+      actionLabel = `Obligatory Fardh ${reward.name}`;
+    } else if (field === 'inMasjid') {
+      deltaXp = reward.masjidXp * (newValue ? 1 : -1);
+      deltaCoins = reward.masjidCoins * (newValue ? 1 : -1);
+      actionLabel = `Masjid / Jamā'ah bonus for ${reward.name}`;
+    } else if (field === 'sunnahBefore') {
+      const xp = (reward as any).sunnahBeforeXp || 25;
+      const coins = (reward as any).sunnahBeforeCoins || 3;
+      deltaXp = xp * (newValue ? 1 : -1);
+      deltaCoins = coins * (newValue ? 1 : -1);
+      actionLabel = `Sunnah Qabliyyah: 4 Rak'ahs Before Dhuhr (قبل الظهر)`;
+    } else if (field === 'sunnahAfter') {
+      const xp = (reward as any).sunnahAfterXp || 20;
+      const coins = (reward as any).sunnahAfterCoins || 2;
+      deltaXp = xp * (newValue ? 1 : -1);
+      deltaCoins = coins * (newValue ? 1 : -1);
+      actionLabel = `Sunnah Ba'diyyah: 2 Rak'ahs After Dhuhr (بعد الظهر)`;
+    } else if (field === 'sunnahRawatib') {
+      deltaXp = reward.sunnahXp * (newValue ? 1 : -1);
+      deltaCoins = reward.sunnahCoins * (newValue ? 1 : -1);
+      actionLabel = `Sunan Rawātib for ${reward.name}`;
+    }
+
+    const questIdentifier = `spiritual-prayer-${targetDate}-${prayer}-${field}`;
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedPrayerState: PrayerCheck = {
+        ...log[prayer],
+        [field]: newValue,
+        completedAt: newValue ? completedTimestamp : log[prayer].completedAt
+      };
+
+      // Keep sunnahRawatib in sync for Dhuhr
+      if (prayer === 'dhuhr') {
+        if (field === 'sunnahBefore') {
+          updatedPrayerState.sunnahRawatib = Boolean(newValue || log.dhuhr.sunnahAfter);
+        } else if (field === 'sunnahAfter') {
+          updatedPrayerState.sunnahRawatib = Boolean(log.dhuhr.sunnahBefore || newValue);
+        }
+      }
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        [prayer]: updatedPrayerState
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      if (newValue) {
+        // Add positive XP history entry
+        const entry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}`,
+          questId: questIdentifier,
+          questName: `🕌 PRAYER: ${actionLabel}`,
+          xp: Math.abs(deltaXp),
+          timestamp: completedTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+      } else {
+        // Remove matching history entry
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      if (newValue && field === 'fardh') {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `🕌 SALAAT FULFILLED: ${reward.name}`,
+          content: `Obligatory ${reward.name} completed (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Recorded on the Sacred Mīzān.`,
+          priority: 'medium'
+        });
+      } else if (newValue && (field === 'sunnahBefore' || field === 'sunnahAfter')) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `📿 DHUHR SUNNAH PERFORMED: ${field === 'sunnahBefore' ? '4 RAK\'AHS BEFORE' : '2 RAK\'AHS AFTER'}`,
+          content: `${actionLabel} logged (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Sunan Rawātib elevated on Sacred Mīzān.`,
+          priority: 'low'
+        });
+      }
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins),
+          momentum: Math.min(100, prev.profile.momentum + (newValue ? 4 : 0))
+        }
+      };
+    });
+  };
+
+  const toggleAdhkar = (type: 'sabah' | 'masa', dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+    const field = type === 'sabah' ? 'adhkarSabah' : 'adhkarMasa';
+    const newValue = !existingLog[field];
+    const xpReward = 75;
+    const coinsReward = 10;
+    const label = type === 'sabah' ? 'Morning Adhkār (أذكار الصباح)' : 'Evening Adhkār (أذكار المساء)';
+    const questIdentifier = `spiritual-adhkar-${targetDate}-${type}`;
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        [field]: newValue
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      if (newValue) {
+        const entry: XPHistoryEntry = {
+          id: `h-adhkar-${Date.now()}`,
+          questId: questIdentifier,
+          questName: `📿 ADHKĀR: ${label}`,
+          xp: xpReward,
+          timestamp: completedTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+      } else {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      if (newValue) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `📿 ADHKĀR COMPLETED: ${label}`,
+          content: `Fortress of daily remembrance complete (+${xpReward} XP, +${coinsReward} Coins). Faith shields active.`,
+          priority: 'medium'
+        });
+      }
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + (newValue ? coinsReward : -coinsReward)),
+          momentum: Math.min(100, prev.profile.momentum + (newValue ? 3 : 0))
+        }
+      };
+    });
+  };
+
+  const incrementSalawat = (amount: number, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const existingLog = getSpiritualLog(targetDate);
+    const newCount = existingLog.salawatCount + amount;
+    setSalawatCount(newCount, targetDate);
+  };
+
+  const setSalawatCount = (count: number, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+    const wasCompleted = existingLog.salawatCount >= 70;
+    const isNowCompleted = count >= 70;
+    const questIdentifier = `spiritual-salawat-${targetDate}`;
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        salawatCount: Math.max(0, count),
+        salawatCompleted: isNowCompleted
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      let coinsDelta = 0;
+
+      if (!wasCompleted && isNowCompleted) {
+        // Just achieved 70 target
+        const entry: XPHistoryEntry = {
+          id: `h-salawat-${Date.now()}`,
+          questId: questIdentifier,
+          questName: `📿 SALAWĀT: 70+ Salawāt upon Prophet Muhammad (ﷺ)`,
+          xp: 100,
+          timestamp: completedTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+        coinsDelta = 15;
+
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `🌹 70+ SALAWĀT UPON RASOULULLAH (ﷺ) COMPLETE`,
+          content: `Milestone of 70+ blessings sent upon the Prophet (ﷺ) reached (+100 XP, +15 Coins). Spiritual radiance elevated on Sacred Mīzān.`,
+          priority: 'high'
+        });
+      } else if (wasCompleted && !isNowCompleted) {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+        coinsDelta = -15;
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta)
+        }
+      };
+    });
+  };
+
+  const updateQiyam = (rakats: number, witr?: boolean, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+    const newRakats = Math.max(0, rakats);
+    const newWitr = witr !== undefined ? witr : existingLog.qiyamWitr;
+    const questIdentifier = `spiritual-qiyam-${targetDate}`;
+
+    // Calculate XP: 2 rakats mandatory base (+100 XP), plus 40 XP per extra pair
+    let qiyamXp = 0;
+    let coinsEarned = 0;
+    if (newRakats >= 2) {
+      qiyamXp += 100;
+      coinsEarned += 15;
+      const extraPairs = Math.floor((newRakats - 2) / 2);
+      if (extraPairs > 0) {
+        qiyamXp += extraPairs * 40;
+        coinsEarned += extraPairs * 5;
+      }
+    }
+    if (newWitr) {
+      qiyamXp += 50;
+      coinsEarned += 5;
+    }
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        qiyamRakats: newRakats,
+        qiyamWitr: newWitr,
+        qiyamCompleted: newRakats >= 2
+      };
+
+      // Remove existing qiyam entry and replace with updated XP
+      let updatedHistory = prev.xpHistory.filter(h => h.questId !== questIdentifier);
+      if (qiyamXp > 0) {
+        const entry: XPHistoryEntry = {
+          id: `h-qiyam-${Date.now()}`,
+          questId: questIdentifier,
+          questName: `🌙 QIYĀM AL-LAYL: ${newRakats} Rak'ahs${newWitr ? ' + Witr (الوتر)' : ''}`,
+          xp: qiyamXp,
+          timestamp: completedTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `🌙 QIYĀM AL-LAYL LOGGED: ${newRakats} RAK'AHS`,
+          content: `Night devotion recorded (+${qiyamXp} XP, +${coinsEarned} Coins). The honor of the believer shines on today's Sacred Mīzān.`,
+          priority: 'medium'
+        });
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsEarned),
+          momentum: Math.min(100, prev.profile.momentum + (newRakats >= 2 ? 5 : 0))
+        }
+      };
+    });
+  };
+
   return (
     <POSContext.Provider value={{
       state,
@@ -4429,7 +4891,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteWeakness,
       convertWeaknessToSeal,
       getTodayMuhasabahStats,
-      recalibrateMizan
+      recalibrateMizan,
+      getSpiritualLog,
+      updateSpiritualLog,
+      togglePrayer,
+      toggleAdhkar,
+      incrementSalawat,
+      setSalawatCount,
+      updateQiyam
     }}>
       {children}
     </POSContext.Provider>

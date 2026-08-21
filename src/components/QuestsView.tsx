@@ -5,6 +5,7 @@ import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
 import { QuestDirectory } from './QuestDirectory';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
+import { BossProgressionBanner } from './BossProgressionBanner';
 
 export const QuestsView: React.FC = () => {
   const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
@@ -65,6 +66,9 @@ export const QuestsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* BOSS PROGRESSION GATE BANNER */}
+      <BossProgressionBanner />
 
       {/* NEW QUEST FORM / PROMPT (TOP OF WINDOW) */}
       <div id="quests-form-container">

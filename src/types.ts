@@ -329,6 +329,48 @@ export interface Weakness {
   createdAt: string;
 }
 
+export interface PrayerCheck {
+  fardh: boolean;
+  inMasjid: boolean; // Masjid / Jama'ah bonus (+50 XP)
+  sunnahRawatib: boolean; // Sunan Rawatib bonus (+30-40 XP)
+  sunnahBefore?: boolean; // Specifically for Dhuhr (4 Rak'ahs before: 2+2) (+25 XP)
+  sunnahAfter?: boolean; // Specifically for Dhuhr (2 Rak'ahs after) (+20 XP)
+  completedAt?: string | null;
+}
+
+export interface SpiritualDailyLog {
+  date: string; // YYYY-MM-DD
+  fajr: PrayerCheck;
+  dhuhr: PrayerCheck;
+  asr: PrayerCheck;
+  maghrib: PrayerCheck;
+  isha: PrayerCheck;
+  adhkarSabah: boolean; // Morning Adhkar (+75 XP)
+  adhkarMasa: boolean; // Evening Adhkar (+75 XP)
+  salawatCount: number; // Target 70+ Salawat upon the Prophet (ﷺ) (+100 XP when >= 70)
+  salawatCompleted: boolean;
+  qiyamRakats: number; // 2 mandatory baseline (+100 XP) + bonus per additional pair (+40 XP per pair)
+  qiyamWitr: boolean; // Witr prayer (+50 XP)
+  qiyamCompleted: boolean;
+  totalEarnedXpToday?: number;
+  notes?: string;
+}
+
+export interface PlayerLevelInfo {
+  level: number;
+  totalXp: number;
+  xpIntoLevel: number;
+  xpUntilNextLevel: number;
+  progress: number;
+  rank: string;
+  xpRequiredForNextLevel: number;
+  isLevelCappedByBoss?: boolean;
+  bossQuestsCompletedCount?: number;
+  bossQuestsRequiredCount?: number;
+  effectiveLevel?: number;
+  unlockedLevel?: number;
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -353,4 +395,5 @@ export interface POSState {
   batterySettings?: BatterySettings;
   muhasabahEntries?: MuhasabahEntry[];
   weaknesses?: Weakness[];
+  spiritualLogs?: Record<string, SpiritualDailyLog>;
 }

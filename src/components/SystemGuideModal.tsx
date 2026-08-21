@@ -3,7 +3,7 @@ import {
   BookOpen, Activity, Swords, Target, Briefcase, Award, Sparkles, 
   ShoppingBag, Settings, Compass, X, HelpCircle, Cpu,
   Zap, Timer, Coins, ArrowRight, GitFork,
-  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll
+  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
@@ -77,22 +77,29 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
       color: 'text-pink-400',
     },
     {
+      id: 'spiritual-tracker',
+      title: '8. Sacred Protocol & Hijri Calendar',
+      icon: Moon,
+      badge: 'SACRED RITES',
+      color: 'text-[#e5c875]',
+    },
+    {
       id: 'muhasabah',
-      title: '8. Muhāsabah: Self-Accountability & Moral Friction',
+      title: '9. Muhāsabah: Self-Accountability & Moral Friction',
       icon: Scale,
       badge: 'ACCOUNTABILITY',
       color: 'text-amber-400',
     },
     {
       id: 'shop-rewards',
-      title: '9. Luminescent Ore Shop',
+      title: '10. Luminescent Ore Shop',
       icon: ShoppingBag,
       badge: 'REWARDS',
       color: 'text-amber-400',
     },
     {
       id: 'analytics-system',
-      title: '10. Analytics, Node Canvas & Override',
+      title: '11. Analytics, Node Canvas & Override',
       icon: Settings,
       badge: 'CONTROL',
       color: 'text-indigo-400',
@@ -268,6 +275,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <div>
                         <span className="font-bold text-white block">Projects & Sub-Projects</span>
                         <span className="text-[11px] text-zinc-400">Group tasks into project directories with sub-project components & deadlines.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('spiritual')} className="p-3 bg-zinc-900/60 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Moon className="h-4 w-4 text-[#e5c875] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-white block">Sacred Protocol & Hijri</span>
+                        <span className="text-[11px] text-zinc-400">Track 5 Daily Salaats (Masjid/Rawātib), Morning/Evening Adhkār, 70+ Salawāt & Qiyām al-Layl.</span>
                       </div>
                     </div>
 
@@ -451,6 +466,58 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <p className="text-[10px] text-zinc-400 font-sans">
                       (Level 1 requires 1,000 XP; Level 2 requires 1,500 XP; Level 3 requires 2,000 XP, scaling linearly).
                     </p>
+                  </div>
+
+                  {/* MANDATORY BOSS QUEST PROGRESSION GATE (INTERMEDIATE RANKS LEVEL 10+) */}
+                  <div className="p-4 bg-gradient-to-r from-amber-950/40 via-red-950/30 to-zinc-950 border-2 border-amber-500/50 rounded-xl space-y-3 shadow-[0_0_20px_rgba(245,158,11,0.12)]">
+                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                      <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-2 text-xs">
+                        <Swords className="h-4 w-4 text-amber-400" />
+                        <span>MANDATORY BOSS QUEST PROGRESSION GATE (LEVEL 10+ / D-RANK FORWARD)</span>
+                      </div>
+                      <span className="text-[9px] font-mono bg-red-950 text-red-300 border border-red-500/40 px-2 py-0.5 rounded font-bold uppercase animate-pulse">
+                        PROGRESSION_LOCK_RULE
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-zinc-200 font-sans leading-relaxed">
+                      Starting from the <strong>Intermediate System Ranks (Level 10 / D-Rank and above)</strong>, simply accumulating XP is no longer sufficient to advance in rank. The system enforces an ironclad progression gate:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                      <div className="p-3 bg-zinc-950/90 border border-amber-500/30 rounded-lg space-y-1">
+                        <span className="text-amber-400 font-bold block text-[11px]">1. BOSS QUEST MANDATE</span>
+                        <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
+                          To advance to Level 10 and each subsequent level, you <strong>MUST complete at least one Boss Quest</strong> (Difficulty: <em>Boss</em> or Type: <em>Boss</em>).
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/90 border border-red-500/30 rounded-lg space-y-1">
+                        <span className="text-red-400 font-bold block text-[11px]">2. STUCK LEVEL PROGRESSION</span>
+                        <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
+                          If your total XP qualifies you for a higher level but you haven't defeated the required number of Boss Quests, your level becomes <strong>CAPPED & STUCK</strong> at the gate.
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/90 border border-emerald-500/30 rounded-lg space-y-1">
+                        <span className="text-emerald-400 font-bold block text-[11px]">3. UNBROKEN XP ACCUMULATION</span>
+                        <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
+                          Your hard-earned XP is never discarded. Once the required Boss Quest is slain, your pending levels will immediately unlock and surge into effect!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-black/60 border border-amber-500/30 rounded-lg flex items-center justify-between text-xs font-mono">
+                      <div className="text-zinc-300 text-[11px]">
+                        <span className="text-amber-400 font-bold">Rule Formula:</span> Max Allowed Level = <code>9 + Completed Boss Quests Count</code> (When Raw Level ≥ 10).
+                      </div>
+                      <button 
+                        onClick={() => handleNavigate('quests')}
+                        className="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-1 rounded font-bold transition flex items-center gap-1"
+                      >
+                        VIEW BOSS DIRECTIVES →
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1200,14 +1267,236 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 8. MUHASABAH (SELF-ACCOUNTABILITY) */}
+            {/* 8. SACRED PROTOCOL & HIJRI CALENDAR */}
+            {activeSection === 'spiritual-tracker' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-white/10 pb-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                      <Moon className="h-5 w-5 text-[#e5c875]" />
+                      8. Sacred Protocol & Hijri Calendar Rites
+                    </h3>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
+                      DIVINE_FOUNDATION_OS
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-zinc-400 mt-1">
+                    <em>"The first deed for which a servant of Allah will be held accountable on the Day of Judgment is prayer."</em> — Sunan an-Nasa'i. Deeply integrated 5 Salaats, congregation & sunnah bonuses, morning/evening remembrance, Salawāt counter, Qiyām al-Layl, and mathematical Hijri calendar synchronization.
+                  </p>
+                </div>
+
+                {/* HIJRI CALENDAR BANNER */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#1b1509] via-[#0d0f17] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                      <span>MATHEMATICAL HIJRI CALENDAR (UMM AL-QURA ALIGNMENT)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
+                      SACRED_TIMING
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    The Sacred Protocol calculates the authentic Islamic lunar date in real-time alongside the Gregorian system clock, tracking sacred months (<strong>Muharram, Rajab, Dhu al-Qi'dah, Dhu al-Hijjah</strong>) and highlighting blessed fasting rhythms such as the White Days (<strong>Ayyām al-Bīḍ</strong>, 13th–15th), Mondays, and Thursdays.
+                  </p>
+                </div>
+
+                {/* THE 4 PILLARS OF SACRED PROTOCOL */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* PILLAR 1: 5 SALAATS */}
+                  <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
+                        🕌 1. The 5 Mandatory Salaats (الصَّلَوَاتُ الخَمْس)
+                      </span>
+                      <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        BEDROCK
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      The non-negotiable bedrock of daily discipline: <strong>Fajr, Dhuhr, Asr, Maghrib, and Isha</strong>.
+                    </p>
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-200 font-bold">Base Prayer Completion</span>
+                          <span className="text-emerald-400 font-bold">+50 to +100 XP / prayer</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Fulfilled on time; establishes daily divine anchoring.</p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-cyan-300 font-bold">🕌 Masjid Congregation Bonus</span>
+                          <span className="text-cyan-400 font-bold">+30 Bonus XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Prayed in congregation with the community at the masjid.</p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-purple-300 font-bold">📿 Sunan Rawātib (الرواتب)</span>
+                          <span className="text-purple-400 font-bold">+20 to +45 Bonus XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">
+                          Completed alongside confirmed prophetic sunnah prayers (12 confirmed raka'āt daily). For <strong>Dhuhr</strong>, the system tracks <strong>Sunnah Before (السُّنَّة القَبْلِيَّة - 4 Rak'ahs 2+2, +25 XP)</strong> and <strong>Sunnah After (السُّنَّة البَعْدِيَّة - 2 Rak'ahs, +20 XP)</strong> independently.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PILLAR 2: ADHKĀR SABAH & MASAH */}
+                  <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
+                        🌅 2. Adhkār al-Sabāh wal-Masā' (أَذْكَارُ الصَّبَاحِ وَالمَسَاءِ)
+                      </span>
+                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        DIVINE SHIELD
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Sacred prophetic morning and evening protective fortresses against heedlessness and spiritual decline.
+                    </p>
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="p-2.5 bg-zinc-950 rounded border border-amber-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-amber-300 font-bold">Morning Adhkār (Sabāh)</span>
+                          <span className="text-amber-400 font-bold">+60 XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Recited between Fajr dawn and Sunrise to guard the day's intent.</p>
+                      </div>
+
+                      <div className="p-2.5 bg-zinc-950 rounded border border-indigo-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-indigo-300 font-bold">Evening Adhkār (Masā')</span>
+                          <span className="text-indigo-400 font-bold">+60 XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Recited between Asr and Maghrib sunset to seal the night with serenity.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PILLAR 3: 70+ SALAWAT */}
+                  <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-[#fef08a] uppercase text-xs flex items-center gap-1.5">
+                        ✨ 3. Daily 70+ Salawāt upon Rasoulullah ﷺ
+                      </span>
+                      <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-1.5 py-0.5 rounded font-mono font-bold">
+                        70_TARGET
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      <em>"Whoever sends blessings upon me once, Allah will send blessings upon him tenfold."</em> (Muslim).
+                    </p>
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-200 font-bold">Daily 70 Target Unlocked</span>
+                          <span className="text-[#fef08a] font-bold">+75 XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Interactive 1-tap digital rosary with +1, +10, +33, and +100 fast increments.</p>
+                      </div>
+                      <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-emerald-300 font-bold">Spiritual Radiance Multiplier</span>
+                          <span className="text-emerald-400 font-bold">Tilts Mīzān</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Consistently fulfilling your daily 70 Salawāt infuses positive weight into the Mīzān scale.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PILLAR 4: QIYAM AL-LAYL */}
+                  <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-purple-300 uppercase text-xs flex items-center gap-1.5">
+                        🌙 4. Qiyām al-Layl & Tahajjud (قِيَامُ اللَّيْلِ)
+                      </span>
+                      <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        VIGIL
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Standing in the tranquil depths of the third portion of the night.
+                    </p>
+                    <div className="space-y-2 text-xs font-mono">
+                      <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/30 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-purple-300 font-bold">2 Mandatory Raka'āt (Base)</span>
+                          <span className="text-purple-400 font-bold">+100 XP</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">The foundational baseline vigil requirement for Qiyām.</p>
+                      </div>
+                      <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-cyan-300 font-bold">Scalable Pair Bonuses</span>
+                          <span className="text-cyan-400 font-bold">+30 XP / pair</span>
+                        </div>
+                        <p className="text-[10.5px] text-zinc-400 font-sans">Each additional pair of raka'āt (4, 6, 8, 10+) stacks +30 bonus XP and amplifies Hasanāt.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* LINKAGE TO SACRED MĪZĀN & FAITH ATTRIBUTE */}
+                <div className="p-4 bg-gradient-to-r from-[#141824] to-[#0b0d13] border border-[#c5a059]/40 rounded-xl space-y-3 font-mono text-xs">
+                  <div className="text-xs font-bold text-[#fef08a] flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Scale className="h-4 w-4 text-[#e5c875]" />
+                      HOW SACRED PROTOCOL LINKS TO THE REST OF THE PROGRESSION SYSTEM:
+                    </span>
+                    <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-2 py-0.5 rounded border border-[#c5a059]/40">
+                      CROSS_SYSTEM_SYNCHRONY
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
+                      <span className="text-emerald-400 font-bold block text-[11px]">1. MĪZĀN WEIGHT (HASANĀT)</span>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        Every checked prayer, bonus, dhikr, salat count, and qiyam raka'ah directly registers as positive <strong>Al-Hasanāt</strong> on the emerald scale pan.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
+                      <span className="text-purple-400 font-bold block text-[11px]">2. FAITH ATTRIBUTE GROWTH</span>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        Consistent daily spiritual completions directly drive the growth of your <strong>Faith (الإِيمَان)</strong> attribute stat and unlock spiritual seal milestones.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
+                      <span className="text-cyan-400 font-bold block text-[11px]">3. MORAL FRICTION DEFENSE</span>
+                      <p className="text-zinc-300 font-sans text-[11px]">
+                        Robust spiritual habits safeguard your momentum against unexpected slip penalties, preventing the Sacred Mīzān from tilting into severe deficit.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button 
+                      onClick={() => handleNavigate('spiritual')}
+                      className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524017] text-[#fef08a] border border-[#c5a059]/60 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>OPEN SACRED PROTOCOL & HIJRI TERMINAL</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 9. MUHASABAH (SELF-ACCOUNTABILITY) */}
             {activeSection === 'muhasabah' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                       <Scale className="h-5 w-5 text-amber-400" />
-                      8. Muhāsabah & The Sacred Mīzān: Self-Accountability & High-Stakes Restitution
+                      9. Muhāsabah & The Sacred Mīzān: Self-Accountability & High-Stakes Restitution
                     </h3>
                     <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold uppercase">
                       SPIRITUAL_OPERATING_SYSTEM
@@ -1231,7 +1520,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds (<strong>Al-Hasanāt</strong>) and your self-audited moral lapses (<strong>As-Sayyi'āt</strong>). The crossbeam dynamically pivots in real-time on its fulcrum based on your <strong>Daily Net XP</strong> (Hasanāt XP &minus; Sayyi'āt XP).
+                    The <strong>Sacred Mīzān</strong> visually simulates the cosmic balance between your completed virtuous deeds & sacred duties (<strong>Al-Hasanāt</strong>) and your self-audited moral lapses (<strong>As-Sayyi'āt</strong>). The crossbeam dynamically pivots in real-time on its fulcrum based on your <strong>Daily Net XP</strong> (Hasanāt XP &minus; Sayyi'āt XP).
                   </p>
 
                   {/* TWO PANS BREAKDOWN: WHAT AFFECTS EACH SIDE */}
@@ -1245,9 +1534,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">LIGHT OF OBEDIENCE</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Any positive XP earned under today's system date adds physical downward weight to the emerald pan:
+                        Positive XP earned under today's system date adds physical downward weight to the emerald pan:
                       </p>
                       <ul className="text-[10.5px] space-y-1 font-mono text-zinc-300">
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
+                          <span><strong>Sacred Protocol Rites:</strong> 5 Salaats (+50–100 XP), Masjid (+30 XP), Sunan Rawātib (+20 XP), Morning/Evening Adhkār (+60 XP), 70 Salawāt (+75 XP), and Qiyām (+100 XP + bonuses).</span>
+                        </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-emerald-400 font-bold shrink-0">✦</span>
                           <span><strong>Directive Completions:</strong> Main Quests (+100–200 XP), Habits (+50–100 XP), Side Quests & Boss Battles (+250–500 XP).</span>
@@ -1259,10 +1552,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <li className="flex items-start gap-1.5">
                           <span className="text-emerald-400 font-bold shrink-0">✦</span>
                           <span><strong>Kaffārah Restitution:</strong> Fulfilling a corrective penance returns +10% to +30% recovered XP.</span>
-                        </li>
-                        <li className="flex items-start gap-1.5">
-                          <span className="text-emerald-400 font-bold shrink-0">✦</span>
-                          <span><strong>Subquests & Milestones:</strong> Verified milestone progress and modular sub-deliverables.</span>
                         </li>
                       </ul>
                     </div>
@@ -1656,13 +1945,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 9. LUMINESCENT SHOP */}
+            {/* 10. LUMINESCENT SHOP */}
             {activeSection === 'shop-rewards' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5 text-amber-400" />
-                    9. Luminescent Ore Reward Shop & Vouchers
+                    10. Luminescent Ore Reward Shop & Vouchers
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Redeem Luminescent Coins earned through quest completions for custom real-life treats or system perks.
@@ -1690,13 +1979,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 10. ANALYTICS, NODE CANVAS & OVERRIDE */}
+            {/* 11. ANALYTICS, NODE CANVAS & OVERRIDE */}
             {activeSection === 'analytics-system' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Settings className="h-5 w-5 text-indigo-400" />
-                    10. Analytics, Spiderweb Node Canvas & System Override
+                    11. Analytics, Spiderweb Node Canvas & System Override
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
                     Performance telemetries, visual node connection canvas, and manual baseline stat overrides.

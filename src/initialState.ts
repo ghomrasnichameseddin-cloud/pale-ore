@@ -1,5 +1,22 @@
-import { POSState, PowerSeal, ShopItem } from './types';
+import { POSState, PowerSeal, ShopItem, SpiritualDailyLog } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
+
+export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
+  date,
+  fajr: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  dhuhr: { fardh: false, inMasjid: false, sunnahRawatib: false, sunnahBefore: false, sunnahAfter: false, completedAt: null },
+  asr: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  maghrib: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  isha: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  adhkarSabah: false,
+  adhkarMasa: false,
+  salawatCount: 0,
+  salawatCompleted: false,
+  qiyamRakats: 0,
+  qiyamWitr: false,
+  qiyamCompleted: false,
+  totalEarnedXpToday: 0
+});
 
 export const getLocalDateString = (d = new Date()): string => {
   const year = d.getFullYear();
@@ -277,5 +294,6 @@ export const INITIAL_STATE: POSState = {
       correctiveStrategy: 'Leave phone in another room after Isha and switch to physical book or dhikr.',
       createdAt: new Date().toISOString()
     }
-  ]
+  ],
+  spiritualLogs: {}
 };

@@ -14,6 +14,7 @@ import { FrameworksView } from './components/FrameworksView';
 import { SealingPowerView } from './components/SealingPowerView';
 import { RewardShopView } from './components/RewardShopView';
 import { MuhasabahView } from './components/MuhasabahView';
+import { SpiritualTrackerView } from './components/SpiritualTrackerView';
 import { SystemMessageBox } from './components/SystemMessageBox';
 import { NotificationToastSystem } from './components/NotificationToastSystem';
 import { FocusTimerOverlay } from './components/FocusTimerOverlay';
@@ -26,11 +27,11 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale
+  BookOpen, HelpCircle, Lock, Scale, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'muhasabah' | 'goals' | 'projects' | 'skills' | 'seals' | 'shop' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'goals' | 'projects' | 'skills' | 'seals' | 'shop' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -83,6 +84,7 @@ function AppContent() {
       items: [
         { id: 'dashboard', label: 'Sanctum Terminal', icon: Activity, desc: 'Central command & daily progress hub' },
         { id: 'quests', label: 'Directives & Rhythms', icon: Swords, desc: 'Active sacred decrees & recurring rhythms' },
+        { id: 'spiritual', label: 'Sacred Protocol & Hijri', icon: Moon, desc: '5 Salaats, Adhkār, Salawāt, Qiyām & Hijri calendar' },
         { id: 'muhasabah', label: 'Muhāsabah', icon: Scale, desc: 'Self-accountability audit, reflections & weaknesses' },
       ]
     },
@@ -596,6 +598,7 @@ function AppContent() {
               {activeTab === 'planning' && <PlanningView onNavigate={(tab) => setActiveTab(tab)} />}
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'quests' && <QuestsView />}
+              {activeTab === 'spiritual' && <SpiritualTrackerView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
               {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab)} onOpenGuide={openGuide} />}
               {activeTab === 'goals' && <GoalsView />}
               {activeTab === 'projects' && <ProjectsView />}
