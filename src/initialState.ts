@@ -3,11 +3,11 @@ import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
-  fajr: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
-  dhuhr: { fardh: false, inMasjid: false, sunnahRawatib: false, sunnahBefore: false, sunnahAfter: false, completedAt: null },
-  asr: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
-  maghrib: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
-  isha: { fardh: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  fajr: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  dhuhr: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, sunnahBefore: false, sunnahAfter: false, completedAt: null },
+  asr: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  maghrib: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
+  isha: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
   adhkarSabah: false,
   adhkarMasa: false,
   salawatCount: 0,

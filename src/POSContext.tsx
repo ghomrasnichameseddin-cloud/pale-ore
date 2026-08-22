@@ -4,7 +4,7 @@ import {
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
   MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity,
-  SpiritualDailyLog, PrayerCheck, PlayerLevelInfo
+  SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 
@@ -214,6 +214,8 @@ interface POSContextType {
   updateMuhasabahEntry: (id: string, updates: Partial<MuhasabahEntry>) => void;
   deleteMuhasabahEntry: (id: string) => void;
   clearAllMuhasabahEntries: () => void;
+  generateWeeklyMuhasabahSummary: (targetFridayDate?: string) => WeeklyMuhasabahSummary;
+  saveAndArchiveWeeklySummary: (summary: WeeklyMuhasabahSummary) => { success: boolean; message: string };
 
   // Weaknesses Management
   addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
@@ -234,7 +236,11 @@ interface POSContextType {
   // Spiritual Daily Tracking & Sacred Protocol
   getSpiritualLog: (dateStr?: string) => SpiritualDailyLog;
   updateSpiritualLog: (dateStr: string, updates: Partial<SpiritualDailyLog>) => void;
-  togglePrayer: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter', dateStr?: string) => void;
+  togglePrayer: (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed',
+    dateStr?: string
+  ) => void;
   toggleAdhkar: (type: 'sabah' | 'masa', dateStr?: string) => void;
   incrementSalawat: (amount: number, dateStr?: string) => void;
   setSalawatCount: (count: number, dateStr?: string) => void;
@@ -4214,6 +4220,253 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const generateWeeklyMuhasabahSummary = (targetFridayDate?: string): WeeklyMuhasabahSummary => {
+    const fridayStr = targetFridayDate || state.systemDate || getLocalDateString();
+    
+    // Calculate 7 days in the week ending on target Friday
+    let fridayDate = new Date();
+    try {
+      const [fYear, fMonth, fDay] = fridayStr.split('-').map(Number);
+      fridayDate = new Date(fYear, fMonth - 1, fDay);
+    } catch {
+      fridayDate = new Date();
+    }
+    
+    const daysInWeek: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(fridayDate);
+      d.setDate(d.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      daysInWeek.push(`${y}-${m}-${day}`);
+    }
+    const startDate = daysInWeek[0];
+    const endDate = daysInWeek[daysInWeek.length - 1];
+
+    const allEntries = state.muhasabahEntries || [];
+    const weekSlips = allEntries.filter(e => {
+      if (!e.date) return true;
+      return e.date >= startDate && e.date <= endDate;
+    });
+    const effectiveSlips = weekSlips.length > 0 ? weekSlips : allEntries;
+
+    let totalLostXP = 0;
+    let totalLostCoins = 0;
+    const categoryStats: Record<MuhasabahCategory, { count: number; lostXP: number }> = {
+      Obligations: { count: 0, lostXP: 0 },
+      Desires: { count: 0, lostXP: 0 },
+      Speech: { count: 0, lostXP: 0 },
+      Heart: { count: 0, lostXP: 0 },
+      Rights: { count: 0, lostXP: 0 },
+      'Wasted Potential': { count: 0, lostXP: 0 }
+    };
+
+    effectiveSlips.forEach(s => {
+      const xp = s.xpDeducted || s.rawPenalty || 0;
+      const coins = s.coinsDeducted || 0;
+      totalLostXP += xp;
+      totalLostCoins += coins;
+      if (categoryStats[s.category]) {
+        categoryStats[s.category].count += 1;
+        categoryStats[s.category].lostXP += xp;
+      }
+    });
+
+    const topWeaknessCategories = (Object.keys(categoryStats) as MuhasabahCategory[])
+      .map(cat => ({
+        category: cat,
+        count: categoryStats[cat].count,
+        lostXP: categoryStats[cat].lostXP
+      }))
+      .sort((a, b) => b.lostXP - a.lostXP || b.count - a.count);
+
+    let prayersCount = 0;
+    let prayersOnTimeCount = 0;
+    let prayersDelayedCount = 0;
+    let prayersMissedCount = 0;
+    let sunnahRawatibCount = 0;
+    let adhkarSabahCount = 0;
+    let adhkarMasaCount = 0;
+    let salawatTotal = 0;
+    let qiyamTotalRakats = 0;
+
+    const prayerKeys: ('fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha')[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+    daysInWeek.forEach(dateKey => {
+      const log = state.spiritualLogs?.[dateKey];
+      if (log) {
+        prayerKeys.forEach(p => {
+          const pState = log[p];
+          if (pState.fardh) {
+            prayersCount++;
+            if (pState.onTime) prayersOnTimeCount++;
+            if (pState.delayed) prayersDelayedCount++;
+          } else {
+            prayersMissedCount++;
+          }
+          if (pState.sunnahRawatib || pState.sunnahBefore || pState.sunnahAfter) {
+            sunnahRawatibCount++;
+          }
+        });
+        if (log.adhkarSabah) adhkarSabahCount++;
+        if (log.adhkarMasa) adhkarMasaCount++;
+        salawatTotal += log.salawatCount || 0;
+        qiyamTotalRakats += log.qiyamRakats || 0;
+      } else {
+        prayersMissedCount += 5;
+      }
+    });
+
+    const weekXpEntries = (state.xpHistory || []).filter(h => {
+      const dStr = h.timestamp ? h.timestamp.split('T')[0] : '';
+      return dStr >= startDate && dStr <= endDate && h.xp > 0;
+    });
+    const totalEarnedXP = weekXpEntries.reduce((sum, h) => sum + h.xp, 0);
+    const totalNetXP = totalEarnedXP - totalLostXP;
+
+    const questsCompletedInWeek = (state.quests || []).filter(q => {
+      if (q.status !== 'Completed' || !q.completedAt) return false;
+      const dStr = q.completedAt.split('T')[0];
+      return dStr >= startDate && dStr <= endDate;
+    }).length;
+
+    const focusMinutesTotal = state.profile.focusMinutesToday || 0;
+
+    const pendingKaffarah = (state.quests || []).filter(q => 
+      q.status === 'Active' && 
+      (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+    ).length;
+
+    const settledKaffarah = (state.quests || []).filter(q => 
+      q.status === 'Completed' && 
+      (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+    ).length;
+
+    let spiritualRating: WeeklyMuhasabahSummary['spiritualRating'] = 'Jayyid (Good)';
+    if (totalNetXP >= 1500 && prayersOnTimeCount >= 28 && effectiveSlips.length <= 2) {
+      spiritualRating = 'Mumtaz (Exceptional)';
+    } else if (totalNetXP >= 800 && prayersCount >= 28 && effectiveSlips.length <= 5) {
+      spiritualRating = 'Jayyid Jiddan (Very Good)';
+    } else if (totalNetXP >= 200 && prayersCount >= 20) {
+      spiritualRating = 'Jayyid (Good)';
+    } else if (totalNetXP >= -200) {
+      spiritualRating = 'Maqbool (Passing)';
+    } else {
+      spiritualRating = 'Needs Immediate Reform';
+    }
+
+    const recommendations: string[] = [];
+    if (prayersDelayedCount > 3 || prayersMissedCount > 7) {
+      recommendations.push('Establish a strict 5-minute pre-Adhan alarm to protect mandatory prayer timing and eliminate delay penalties.');
+    }
+    if (adhkarSabahCount < 4 || adhkarMasaCount < 4) {
+      recommendations.push('Fortify your spiritual shields: Commit to daily Morning & Evening Adhkar right after Fajr and Asr.');
+    }
+    if (topWeaknessCategories[0] && topWeaknessCategories[0].count > 0) {
+      const topCat = topWeaknessCategories[0];
+      recommendations.push(`Primary slip vulnerability detected in ${topCat.category} (${topCat.count} recorded lapses). Forge targeted Power Seals to construct behavioral boundaries.`);
+    }
+    if (qiyamTotalRakats < 4) {
+      recommendations.push('Integrate at least 2 Rak\'ahs of Qiyam al-Layl & Witr in the last third of the night for heightened clarity.');
+    }
+    if (recommendations.length === 0) {
+      recommendations.push('Maintain steadfast consistency (Istiqāmah) across all obligations and continue proactive voluntary deeds.');
+    }
+
+    const summaryReflection = `Weekly Muḥāsabah for the period ${startDate} to ${endDate}. Total Fardh prayers completed: ${prayersCount}/35 (${prayersOnTimeCount} on-time, ${prayersDelayedCount} delayed). Total positive XP earned: +${totalEarnedXP} XP vs. −${totalLostXP} XP in audited slips, culminating in Net Weekly XP of ${totalNetXP >= 0 ? '+' : ''}${totalNetXP} XP. Overall Standing: ${spiritualRating}.`;
+
+    const weekLabel = `Week Ending Friday, ${fridayStr}`;
+
+    return {
+      id: `weekly-summary-${fridayStr}-${Date.now()}`,
+      generatedDate: fridayStr,
+      weekLabel,
+      startDate,
+      endDate,
+      totalNetXP,
+      totalEarnedXP,
+      totalLostXP,
+      totalLostCoins,
+      totalSlipsCount: effectiveSlips.length,
+      prayersCount,
+      prayersOnTimeCount,
+      prayersDelayedCount,
+      prayersMissedCount,
+      sunnahRawatibCount,
+      adhkarSabahCount,
+      adhkarMasaCount,
+      salawatTotal,
+      qiyamTotalRakats,
+      questsCompletedCount: questsCompletedInWeek,
+      focusMinutesTotal,
+      kaffarahSettledCount: settledKaffarah,
+      kaffarahPendingCount: pendingKaffarah,
+      topWeaknessCategories,
+      spiritualRating,
+      summaryReflection,
+      recommendations,
+      archivedAt: new Date().toISOString()
+    };
+  };
+
+  const saveAndArchiveWeeklySummary = (summary: WeeklyMuhasabahSummary) => {
+    setState(prev => {
+      const existingSummaries = prev.savedWeeklySummaries || [];
+      const updatedSummaries = [
+        summary,
+        ...existingSummaries.filter(s => s.weekLabel !== summary.weekLabel && s.generatedDate !== summary.generatedDate)
+      ];
+
+      const docPath = `04 Operations/Weekly Muhasabah/Weekly Summary - ${summary.generatedDate}.md`;
+      const docName = `Weekly Summary - ${summary.generatedDate}`;
+      const docContent = `# 📜 Weekly Muḥāsabah Review (${summary.weekLabel})\n\n**Generated:** ${summary.generatedDate} (Jumu'ah Review)\n**Spiritual Rating:** ${summary.spiritualRating}\n**Net Weekly XP:** ${summary.totalNetXP >= 0 ? '+' : ''}${summary.totalNetXP} XP (Earned: +${summary.totalEarnedXP} XP, Lost: −${summary.totalLostXP} XP)\n\n## 🕌 Prayer & Worship Fulfillments (Out of 35 Fardh)\n- **Fardh Completed:** ${summary.prayersCount} / 35\n- **On-Time (في وقتها):** ${summary.prayersOnTimeCount} (+40 XP bonus per prayer)\n- **Delayed / Late:** ${summary.prayersDelayedCount} (−50 XP deduction)\n- **Sunan Rawātib:** ${summary.sunnahRawatibCount}\n- **Morning Adhkar:** ${summary.adhkarSabahCount} / 7\n- **Evening Adhkar:** ${summary.adhkarMasaCount} / 7\n- **Salawāt upon the Prophet (ﷺ):** ${summary.salawatTotal}\n- **Qiyām al-Layl Rak'ahs:** ${summary.qiyamTotalRakats}\n\n## ⚖️ Slip Ledger Summary\n- **Total Slips Audited:** ${summary.totalSlipsCount}\n- **Total Coin Fines:** −${summary.totalLostCoins} Coins\n- **Top Vulnerability Realm:** ${summary.topWeaknessCategories[0]?.category || 'None'} (${summary.topWeaknessCategories[0]?.count || 0} slips)\n\n## 🎯 Targeted Recommendations for the New Week\n${summary.recommendations.map(r => `- ${r}`).join('\n')}\n\n---\n*XP is an in-app motivational measure. The true reward of worship belongs to Allah alone.*`;
+
+      const existingDocs = prev.planningDocuments || [];
+      const docIndex = existingDocs.findIndex(d => d.path === docPath);
+      let updatedDocs = [...existingDocs];
+      if (docIndex >= 0) {
+        updatedDocs[docIndex] = {
+          ...updatedDocs[docIndex],
+          content: docContent,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        updatedDocs.push({
+          id: `pdoc-weekly-${Date.now()}`,
+          path: docPath,
+          name: docName,
+          content: docContent,
+          linkedGoals: [],
+          linkedProjects: [],
+          linkedQuests: [],
+          linkedSkills: [],
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: `📜 WEEKLY SUMMARY SAVED: ${summary.weekLabel}`,
+        content: `Weekly Muḥāsabah Review generated with ${summary.spiritualRating} standing. The ledger of slips has been reset clean for the new week!`,
+        priority: 'high'
+      });
+
+      return {
+        ...prev,
+        savedWeeklySummaries: updatedSummaries,
+        planningDocuments: updatedDocs,
+        muhasabahEntries: [] // Empty the ledger for the new week!
+      };
+    });
+
+    return {
+      success: true,
+      message: `Weekly summary saved and archived. The slip ledger has been emptied for the new week!`
+    };
+  };
+
   const addWeakness = (weakness: Omit<Weakness, 'id' | 'createdAt'>): string => {
     const id = `weakness-${Date.now()}`;
     const newWeakness: Weakness = {
@@ -4425,70 +4678,246 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const togglePrayer = (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter',
+    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed',
     dateStr?: string
   ) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const completedTimestamp = getSystemTimestamp(targetDate);
     const existingLog = getSpiritualLog(targetDate);
-    const currentPrayerState = existingLog[prayer];
-    const newValue = !currentPrayerState[field];
+    const currentPrayerState = existingLog[prayer] || { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null };
 
     const prayerRewards = {
-      fajr: { name: 'Fajr (الفجر)', fardhXp: 150, fardhCoins: 15, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5 },
-      dhuhr: { name: 'Dhuhr (الظهر)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5, sunnahBeforeXp: 25, sunnahBeforeCoins: 3, sunnahAfterXp: 20, sunnahAfterCoins: 2 },
-      asr: { name: 'Asr (العصر)', fardhXp: 120, fardhCoins: 12, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
-      maghrib: { name: 'Maghrib (المغرب)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
-      isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 }
+      fajr: { name: 'Fajr (الفجر)', fardhXp: 150, fardhCoins: 15, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5 },
+      dhuhr: { name: 'Dhuhr (الظهر)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5, sunnahBeforeXp: 25, sunnahBeforeCoins: 3, sunnahAfterXp: 20, sunnahAfterCoins: 2 },
+      asr: { name: 'Asr (العصر)', fardhXp: 120, fardhCoins: 12, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      maghrib: { name: 'Maghrib (المغرب)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 }
     };
     const reward = prayerRewards[prayer];
 
-    let deltaXp = 0;
-    let deltaCoins = 0;
-    let actionLabel = '';
-
-    if (field === 'fardh') {
-      deltaXp = reward.fardhXp * (newValue ? 1 : -1);
-      deltaCoins = reward.fardhCoins * (newValue ? 1 : -1);
-      actionLabel = `Obligatory Fardh ${reward.name}`;
-    } else if (field === 'inMasjid') {
-      deltaXp = reward.masjidXp * (newValue ? 1 : -1);
-      deltaCoins = reward.masjidCoins * (newValue ? 1 : -1);
-      actionLabel = `Masjid / Jamā'ah bonus for ${reward.name}`;
-    } else if (field === 'sunnahBefore') {
-      const xp = (reward as any).sunnahBeforeXp || 25;
-      const coins = (reward as any).sunnahBeforeCoins || 3;
-      deltaXp = xp * (newValue ? 1 : -1);
-      deltaCoins = coins * (newValue ? 1 : -1);
-      actionLabel = `Sunnah Qabliyyah: 4 Rak'ahs Before Dhuhr (قبل الظهر)`;
-    } else if (field === 'sunnahAfter') {
-      const xp = (reward as any).sunnahAfterXp || 20;
-      const coins = (reward as any).sunnahAfterCoins || 2;
-      deltaXp = xp * (newValue ? 1 : -1);
-      deltaCoins = coins * (newValue ? 1 : -1);
-      actionLabel = `Sunnah Ba'diyyah: 2 Rak'ahs After Dhuhr (بعد الظهر)`;
-    } else if (field === 'sunnahRawatib') {
-      deltaXp = reward.sunnahXp * (newValue ? 1 : -1);
-      deltaCoins = reward.sunnahCoins * (newValue ? 1 : -1);
-      actionLabel = `Sunan Rawātib for ${reward.name}`;
-    }
-
-    const questIdentifier = `spiritual-prayer-${targetDate}-${prayer}-${field}`;
-
     setState(prev => {
       const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
-      const updatedPrayerState: PrayerCheck = {
-        ...log[prayer],
-        [field]: newValue,
-        completedAt: newValue ? completedTimestamp : log[prayer].completedAt
-      };
+      const curr = log[prayer] || { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null };
+      
+      let updatedHistory = [...prev.xpHistory];
+      let deltaCoins = 0;
+      let updatedPrayerState: PrayerCheck = { ...curr };
 
-      // Keep sunnahRawatib in sync for Dhuhr
+      const prayerPrefix = `spiritual-prayer-${targetDate}-${prayer}`;
+
+      if (field === 'fardh') {
+        const newFardh = !curr.fardh;
+        if (newFardh) {
+          // Turning Fardh ON
+          const autoOnTime = !curr.delayed;
+          updatedPrayerState = {
+            ...curr,
+            fardh: true,
+            onTime: autoOnTime,
+            completedAt: completedTimestamp
+          };
+
+          // Add Fardh XP
+          const fardhEntry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-fardh`,
+            questId: `${prayerPrefix}-fardh`,
+            questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+            xp: reward.fardhXp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [fardhEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-fardh`)];
+          deltaCoins += reward.fardhCoins;
+
+          if (autoOnTime) {
+            const onTimeEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-ontime`,
+              questId: `${prayerPrefix}-onTime`,
+              questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
+              xp: reward.onTimeXp,
+              timestamp: completedTimestamp,
+              skillIds: []
+            };
+            updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`)];
+            deltaCoins += reward.onTimeCoins;
+          }
+
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'achievement',
+            title: `🕌 SALAAT FULFILLED: ${reward.name}`,
+            content: `Obligatory ${reward.name} performed (+${reward.fardhXp + (autoOnTime ? reward.onTimeXp : 0)} XP, +${reward.fardhCoins + (autoOnTime ? reward.onTimeCoins : 0)} Coins). Recorded on the Daily Balance Scale.`,
+            priority: 'medium'
+          });
+        } else {
+          // Turning Fardh OFF -> Reset the entire prayer for this date
+          updatedPrayerState = {
+            fardh: false,
+            onTime: false,
+            delayed: false,
+            inMasjid: false,
+            sunnahRawatib: false,
+            sunnahBefore: false,
+            sunnahAfter: false,
+            completedAt: null
+          };
+          // Remove all history entries for this prayer today
+          updatedHistory = updatedHistory.filter(h => !h.questId.startsWith(prayerPrefix));
+          deltaCoins -= (curr.fardh ? reward.fardhCoins : 0) + (curr.onTime ? reward.onTimeCoins : 0) + (curr.inMasjid ? reward.masjidCoins : 0);
+        }
+      } else if (field === 'onTime') {
+        const newOnTime = !curr.onTime;
+        updatedPrayerState.onTime = newOnTime;
+        if (newOnTime) {
+          // On-Time turned ON: add on-time bonus
+          const onTimeEntry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-ontime`,
+            questId: `${prayerPrefix}-onTime`,
+            questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
+            xp: reward.onTimeXp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`)];
+          deltaCoins += reward.onTimeCoins;
+
+          // If it was marked delayed, remove delayed penalty
+          if (curr.delayed) {
+            updatedPrayerState.delayed = false;
+            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`);
+          }
+
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'achievement',
+            title: `⏱️ ON-TIME PRAYER: ${reward.name}`,
+            content: `Performed in its proper time (+${reward.onTimeXp} XP, +${reward.onTimeCoins} Coins).`,
+            priority: 'low'
+          });
+        } else {
+          // On-Time turned OFF
+          updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`);
+          deltaCoins -= reward.onTimeCoins;
+        }
+      } else if (field === 'delayed') {
+        const newDelayed = !curr.delayed;
+        updatedPrayerState.delayed = newDelayed;
+        if (newDelayed) {
+          // Delayed turned ON: apply -50 XP penalty deduction
+          const delayedEntry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-delayed`,
+            questId: `${prayerPrefix}-delayed`,
+            questName: `⚠️ LATE / DELAYED PRAYER PENALTY: ${reward.name} (تأخير الصلاة)`,
+            xp: -reward.delayedPenaltyXp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [delayedEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`)];
+
+          // If it was marked on-time, remove on-time bonus
+          if (curr.onTime) {
+            updatedPrayerState.onTime = false;
+            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`);
+            deltaCoins -= reward.onTimeCoins;
+          }
+
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'warning',
+            title: `⚠️ DELAYED PRAYER DEDUCTION: ${reward.name}`,
+            content: `Prayer performed after its prescribed window (−${reward.delayedPenaltyXp} XP deducted). Accountability recorded on the Daily Balance Scale.`,
+            priority: 'high'
+          });
+        } else {
+          // Delayed turned OFF: reverse penalty
+          updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`);
+        }
+      } else if (field === 'inMasjid') {
+        const newMasjid = !curr.inMasjid;
+        updatedPrayerState.inMasjid = newMasjid;
+        const qId = `${prayerPrefix}-inMasjid`;
+        if (newMasjid) {
+          const entry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-masjid`,
+            questId: qId,
+            questName: `🕌 PRAYER: Masjid / Jamā'ah bonus for ${reward.name}`,
+            xp: reward.masjidXp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
+          deltaCoins += reward.masjidCoins;
+        } else {
+          updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+          deltaCoins -= reward.masjidCoins;
+        }
+      } else if (field === 'sunnahBefore') {
+        const newBefore = !curr.sunnahBefore;
+        updatedPrayerState.sunnahBefore = newBefore;
+        const qId = `${prayerPrefix}-sunnahBefore`;
+        const xp = (reward as any).sunnahBeforeXp || 25;
+        const coins = (reward as any).sunnahBeforeCoins || 3;
+        if (newBefore) {
+          const entry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-sunnahBefore`,
+            questId: qId,
+            questName: `📿 PRAYER: Sunnah Qabliyyah: 4 Rak'ahs Before Dhuhr (قبل الظهر)`,
+            xp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
+          deltaCoins += coins;
+        } else {
+          updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+          deltaCoins -= coins;
+        }
+      } else if (field === 'sunnahAfter') {
+        const newAfter = !curr.sunnahAfter;
+        updatedPrayerState.sunnahAfter = newAfter;
+        const qId = `${prayerPrefix}-sunnahAfter`;
+        const xp = (reward as any).sunnahAfterXp || 20;
+        const coins = (reward as any).sunnahAfterCoins || 2;
+        if (newAfter) {
+          const entry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-sunnahAfter`,
+            questId: qId,
+            questName: `📿 PRAYER: Sunnah Ba'diyyah: 2 Rak'ahs After Dhuhr (بعد الظهر)`,
+            xp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
+          deltaCoins += coins;
+        } else {
+          updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+          deltaCoins -= coins;
+        }
+      } else if (field === 'sunnahRawatib') {
+        const newRawatib = !curr.sunnahRawatib;
+        updatedPrayerState.sunnahRawatib = newRawatib;
+        const qId = `${prayerPrefix}-sunnahRawatib`;
+        if (newRawatib) {
+          const entry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-sunnahRawatib`,
+            questId: qId,
+            questName: `📿 PRAYER: Sunan Rawātib for ${reward.name}`,
+            xp: reward.sunnahXp,
+            timestamp: completedTimestamp,
+            skillIds: []
+          };
+          updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
+          deltaCoins += reward.sunnahCoins;
+        } else {
+          updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+          deltaCoins -= reward.sunnahCoins;
+        }
+      }
+
+      // Sync Dhuhr sunnahRawatib state
       if (prayer === 'dhuhr') {
-        if (field === 'sunnahBefore') {
-          updatedPrayerState.sunnahRawatib = Boolean(newValue || log.dhuhr.sunnahAfter);
-        } else if (field === 'sunnahAfter') {
-          updatedPrayerState.sunnahRawatib = Boolean(log.dhuhr.sunnahBefore || newValue);
+        if (field === 'sunnahBefore' || field === 'sunnahAfter') {
+          updatedPrayerState.sunnahRawatib = Boolean(updatedPrayerState.sunnahBefore || updatedPrayerState.sunnahAfter);
         }
       }
 
@@ -4497,44 +4926,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         [prayer]: updatedPrayerState
       };
 
-      let updatedHistory = [...prev.xpHistory];
-      if (newValue) {
-        // Add positive XP history entry
-        const entry: XPHistoryEntry = {
-          id: `h-pray-${Date.now()}`,
-          questId: questIdentifier,
-          questName: `🕌 PRAYER: ${actionLabel}`,
-          xp: Math.abs(deltaXp),
-          timestamp: completedTimestamp,
-          skillIds: []
-        };
-        updatedHistory = [entry, ...updatedHistory];
-      } else {
-        // Remove matching history entry
-        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
-      }
-
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
-
-      if (newValue && field === 'fardh') {
-        addSystemMessage({
-          sender: 'SYSTEM',
-          category: 'achievement',
-          title: `🕌 SALAAT FULFILLED: ${reward.name}`,
-          content: `Obligatory ${reward.name} completed (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Recorded on the Daily Balance Scale.`,
-          priority: 'medium'
-        });
-      } else if (newValue && (field === 'sunnahBefore' || field === 'sunnahAfter')) {
-        addSystemMessage({
-          sender: 'SYSTEM',
-          category: 'achievement',
-          title: `📿 DHUHR SUNNAH PERFORMED: ${field === 'sunnahBefore' ? '4 RAK\'AHS BEFORE' : '2 RAK\'AHS AFTER'}`,
-          content: `${actionLabel} logged (+${Math.abs(deltaXp)} XP, +${Math.abs(deltaCoins)} Coins). Sunan Rawātib elevated on Daily Balance Scale.`,
-          priority: 'low'
-        });
-      }
 
       return {
         ...prev,
@@ -4548,7 +4942,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xp: totalXp,
           level: gated.level,
           coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins),
-          momentum: Math.min(100, prev.profile.momentum + (newValue ? 4 : 0))
+          momentum: Math.min(100, Math.max(0, prev.profile.momentum + (field === 'fardh' && updatedPrayerState.fardh ? 4 : field === 'delayed' ? -5 : 0)))
         }
       };
     });
@@ -4913,6 +5307,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateMuhasabahEntry,
       deleteMuhasabahEntry,
       clearAllMuhasabahEntries,
+      generateWeeklyMuhasabahSummary,
+      saveAndArchiveWeeklySummary,
       addWeakness,
       updateWeakness,
       deleteWeakness,

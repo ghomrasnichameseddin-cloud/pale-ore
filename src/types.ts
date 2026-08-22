@@ -333,11 +333,44 @@ export interface Weakness {
 
 export interface PrayerCheck {
   fardh: boolean;
+  onTime?: boolean; // Prayed on time (+40 XP bonus)
+  delayed?: boolean; // Prayed late / missed window (-50 XP penalty deduction)
   inMasjid: boolean; // Masjid / Jama'ah bonus (+50 XP)
   sunnahRawatib: boolean; // Sunan Rawatib bonus (+30-40 XP)
   sunnahBefore?: boolean; // Specifically for Dhuhr (4 Rak'ahs before: 2+2) (+25 XP)
   sunnahAfter?: boolean; // Specifically for Dhuhr (2 Rak'ahs after) (+20 XP)
   completedAt?: string | null;
+}
+
+export interface WeeklyMuhasabahSummary {
+  id: string;
+  generatedDate: string; // YYYY-MM-DD
+  weekLabel: string; // e.g. "Week ending Friday, August 21, 2026"
+  startDate: string;
+  endDate: string;
+  totalNetXP: number;
+  totalEarnedXP: number;
+  totalLostXP: number;
+  totalLostCoins: number;
+  totalSlipsCount: number;
+  prayersCount: number; // completed fardh (out of 35)
+  prayersOnTimeCount: number;
+  prayersDelayedCount: number;
+  prayersMissedCount: number;
+  sunnahRawatibCount: number;
+  adhkarSabahCount: number;
+  adhkarMasaCount: number;
+  salawatTotal: number;
+  qiyamTotalRakats: number;
+  questsCompletedCount: number;
+  focusMinutesTotal: number;
+  kaffarahSettledCount: number;
+  kaffarahPendingCount: number;
+  topWeaknessCategories: { category: MuhasabahCategory; count: number; lostXP: number }[];
+  spiritualRating: 'Mumtaz (Exceptional)' | 'Jayyid Jiddan (Very Good)' | 'Jayyid (Good)' | 'Maqbool (Passing)' | 'Needs Immediate Reform';
+  summaryReflection: string;
+  recommendations: string[];
+  archivedAt: string; // ISO string
 }
 
 export interface SpiritualDailyLog {
@@ -398,4 +431,5 @@ export interface POSState {
   muhasabahEntries?: MuhasabahEntry[];
   weaknesses?: Weakness[];
   spiritualLogs?: Record<string, SpiritualDailyLog>;
+  savedWeeklySummaries?: WeeklyMuhasabahSummary[];
 }

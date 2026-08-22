@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
-interface SacredMizanScaleProps {
+interface DailyBalanceScaleProps {
   todayEarnedXP: number;
   todayLostXP: number;
   todayNetXP: number;
@@ -15,12 +15,10 @@ interface SacredMizanScaleProps {
   pendingKaffarahCount: number;
   onOpenAuditModal: () => void;
   onViewRemedies?: () => void;
-  onRecalibrate?: () => void;
-  isRecalibrating?: boolean;
   onOpenGuide?: () => void;
 }
 
-export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
+export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
   todayEarnedXP,
   todayLostXP,
   todayNetXP,
@@ -32,8 +30,6 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
   pendingKaffarahCount,
   onOpenAuditModal,
   onViewRemedies,
-  onRecalibrate,
-  isRecalibrating,
   onOpenGuide
 }) => {
   // Status configurations
@@ -111,7 +107,7 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
   return (
     <div 
       className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#10131c] via-[#090b10] to-[#040508] border border-[#c5a059]/30 p-5 sm:p-7 shadow-2xl"
-      id="sacred-mizan-scale-card"
+      id="daily-balance-scale-card"
     >
       {/* Background Sacred Geometric Pattern Accent */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#c5a059]/10 via-transparent to-transparent pointer-events-none" />
@@ -148,34 +144,17 @@ export const SacredMizanScale: React.FC<SacredMizanScaleProps> = ({
               onClick={onOpenGuide}
               className="px-2.5 py-2 rounded-xl bg-[#0f1219] hover:bg-[#181d28] border border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95"
               title="Open System Manual & Daily Balance Guide"
-              id="sacred-mizan-guide-btn"
+              id="daily-balance-guide-btn"
             >
               <BookOpen className="h-3.5 w-3.5 text-[#c5a059]" />
               <span className="hidden sm:inline">GUIDE</span>
             </button>
           )}
 
-          {onRecalibrate && (
-            <button
-              onClick={onRecalibrate}
-              disabled={isRecalibrating}
-              className={`px-3 py-2 rounded-xl border text-xs font-mono font-bold tracking-wide transition flex items-center gap-1.5 shadow-md ${
-                isRecalibrating
-                  ? 'bg-[#2a2210] border-[#c5a059] text-[#fef08a]'
-                  : 'bg-[#0f1219] hover:bg-[#181d28] border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-zinc-100 active:scale-95'
-              }`}
-              title="Recalibrate scale physics, sync deeds, and reconcile ledger tally"
-              id="sacred-mizan-recalibrate-btn"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isRecalibrating ? 'animate-spin text-[#c5a059]' : 'text-zinc-400 group-hover:text-[#c5a059]'}`} />
-              <span>{isRecalibrating ? 'RECALIBRATING...' : 'RECALIBRATE'}</span>
-            </button>
-          )}
-
           <button
             onClick={onOpenAuditModal}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50"
-            id="sacred-mizan-triage-btn"
+            id="daily-balance-triage-btn"
           >
             <Flame className="h-4 w-4" />
             3-TAP AUDIT SLIP

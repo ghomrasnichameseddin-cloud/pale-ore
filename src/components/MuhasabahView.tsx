@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { usePOS } from '../POSContext';
-import { MuhasabahCategory, MuhasabahSeverity, Weakness, MuhasabahEntry } from '../types';
+import { MuhasabahCategory, MuhasabahSeverity, Weakness, MuhasabahEntry, WeeklyMuhasabahSummary } from '../types';
 import { MuhasabahModal } from './MuhasabahModal';
-import { SacredMizanScale } from './SacredMizanScale';
+import { DailyBalanceScale } from './DailyBalanceScale';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { 
   Scale, Shield, Flame, Heart, MessageSquare, Clock, AlertTriangle, 
-  Sparkles, Plus, Search, Filter, Pickaxe, CheckCircle2, RefreshCw, 
+  Sparkles, Plus, Search, Filter, Pickaxe, CheckCircle2, 
   ChevronRight, Lock, Trash2, Eye, EyeOff, HeartHandshake, Coins, Zap, ShieldAlert,
-  ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info
+  ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info,
+  FileText, BookOpen, CalendarDays, History, Check, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -42,7 +43,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     convertWeaknessToSeal, deleteWeakness, updateWeakness,
-    completeQuest, recalibrateMizan
+    completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
   } = usePOS();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,8 +54,14 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [groupMode, setGroupMode] = useState<GroupMode>('none');
   const [entryToDelete, setEntryToDelete] = useState<MuhasabahEntry | null>(null);
-  const [isRecalibrating, setIsRecalibrating] = useState(false);
-  const [recalibrateNotice, setRecalibrateNotice] = useState<string | null>(null);
+
+  // Weekly Summary states
+  const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
+  const [generatedSummary, setGeneratedSummary] = useState<WeeklyMuhasabahSummary | null>(null);
+  const [weeklyReflectionInput, setWeeklyReflectionInput] = useState('');
+  const [savedSummarySuccess, setSavedSummarySuccess] = useState<string | null>(null);
+  const [showSavedArchivesModal, setShowSavedArchivesModal] = useState(false);
+  const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<WeeklyMuhasabahSummary | null>(null);
 
   const [selectedEntryDetail, setSelectedEntryDetail] = useState<MuhasabahEntry | null>(null);
   const [prefillWeaknessId, setPrefillWeaknessId] = useState<string | undefined>(undefined);
@@ -64,6 +71,17 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const stats = getTodayMuhasabahStats();
   const entries = state.muhasabahEntries || [];
   const weaknesses = state.weaknesses || [];
+  const savedSummaries = state.savedWeeklySummaries || [];
+
+  // Check if current systemDate is Friday
+  const isFriday = useMemo(() => {
+    try {
+      const dt = new Date(`${state.systemDate || '2026-08-22'}T12:00:00`);
+      return dt.getDay() === 5;
+    } catch {
+      return false;
+    }
+  }, [state.systemDate]);
   
   // Filtered and Sorted entries
   const processedEntries = useMemo(() => {
@@ -166,42 +184,50 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
   };
 
-  const handleRecalibrate = () => {
-    setIsRecalibrating(true);
-    const res = recalibrateMizan();
-    setRecalibrateNotice(res.message || 'Daily Balance Scale recalibrated and synchronized with your ledger.');
-    
-    setTimeout(() => {
-      setIsRecalibrating(false);
-    }, 700);
+  const handleOpenWeeklySummaryGenerator = () => {
+    const sum = generateWeeklyMuhasabahSummary();
+    setGeneratedSummary(sum);
+    setWeeklyReflectionInput(sum.weeklyReflection || '');
+    setIsWeeklySummaryOpen(true);
+  };
 
-    setTimeout(() => {
-      setRecalibrateNotice(null);
-    }, 4500);
+  const handleSaveAndArchiveWeeklySummary = () => {
+    if (!generatedSummary) return;
+    const finalSummary: WeeklyMuhasabahSummary = {
+      ...generatedSummary,
+      weeklyReflection: weeklyReflectionInput.trim() || 'Sincere intention renewed for the new week.'
+    };
+    const res = saveAndArchiveWeeklySummary(finalSummary);
+    setSavedSummarySuccess(res.message);
+    setIsWeeklySummaryOpen(false);
+    setTimeout(() => setSavedSummarySuccess(null), 6000);
   };
 
   return (
     <div className="space-y-6 pb-12" id="muhasabah-main-view">
-      {/* RECALIBRATION TOAST / NOTICE BANNER */}
+      {/* WEEKLY SUMMARY SAVED SUCCESS BANNER */}
       <AnimatePresence>
-        {recalibrateNotice && (
+        {savedSummarySuccess && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
-            className="p-3.5 rounded-xl bg-gradient-to-r from-[#2a220e] via-[#1a1508] to-[#0c0f17] border border-[#c5a059]/60 shadow-lg flex items-center justify-between gap-3 text-xs font-mono text-[#fef08a]"
+            className="p-4 rounded-xl bg-gradient-to-r from-emerald-950 via-[#101b13] to-[#0c0f17] border border-emerald-500/60 shadow-xl flex items-center justify-between gap-3 text-xs font-mono text-emerald-200"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a]">
-                <RefreshCw className="h-4 w-4 text-[#c5a059]" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-900/80 border border-emerald-500/50 text-emerald-100">
+                <Check className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
-                <span className="font-bold uppercase tracking-wider text-amber-200">Scale Equilibrium Recalibrated</span>
-                <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{recalibrateNotice}</p>
+                <span className="font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-emerald-400" />
+                  Weekly Summary Archived & Ledger Reset
+                </span>
+                <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{savedSummarySuccess}</p>
               </div>
             </div>
             <button
-              onClick={() => setRecalibrateNotice(null)}
+              onClick={() => setSavedSummarySuccess(null)}
               className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-white/5"
             >
               <X className="h-4 w-4" />
@@ -223,8 +249,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         </div>
       </div>
 
-      {/* 1. THE SACRED MĪZĀN HERO SCALE */}
-      <SacredMizanScale
+      {/* 1. THE DAILY BALANCE SCALE HERO */}
+      <DailyBalanceScale
         todayEarnedXP={stats.todayEarnedXP}
         todayLostXP={stats.todayLostXP}
         todayNetXP={stats.todayNetXP}
@@ -239,10 +265,65 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
           const el = document.getElementById('active-kaffarah-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
-        onRecalibrate={handleRecalibrate}
-        isRecalibrating={isRecalibrating}
         onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
+
+      {/* 2. FRIDAY & WEEKLY MUHĀSABAH CODEX SUMMARY ACTION CARD */}
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 shadow-xl ${
+        isFriday 
+          ? 'bg-gradient-to-r from-[#1c160a] via-[#10141f] to-[#0a1215] border-[#c5a059]/70 ring-1 ring-[#c5a059]/30' 
+          : 'bg-[#0a0d14] border-white/10'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
+                isFriday 
+                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-sm' 
+                  : 'bg-zinc-900 border-white/15 text-zinc-300'
+              }`}>
+                <CalendarDays className="h-3.5 w-3.5 text-[#c5a059]" />
+                <span>{isFriday ? '✨ FRIDAY JUMU\'AH MUHĀSABAH PROTOCOL (المحاسبة الأسبوعية)' : 'WEEKLY MUHĀSABAH CODEX'}</span>
+              </span>
+              {savedSummaries.length > 0 && (
+                <span className="text-[10px] font-mono bg-black/40 border border-white/10 text-zinc-400 px-2 py-0.5 rounded">
+                  {savedSummaries.length} Past Archived {savedSummaries.length === 1 ? 'Week' : 'Weeks'}
+                </span>
+              )}
+            </div>
+            <h3 className="font-display text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
+              <span>Weekly Accountability & Ledger Reset</span>
+            </h3>
+            <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
+              Generate an end-of-week review summarizing slips, on-time prayer discipline, and spiritual balance across the entire week. Saving archives the summary to your Codex and empties the ledger for a fresh start in the new week.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {savedSummaries.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowSavedArchivesModal(true)}
+                className="px-3 py-2 rounded-xl bg-[#0e121a] hover:bg-[#161c28] border border-white/15 hover:border-[#c5a059]/50 text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-2 shadow-md active:scale-95"
+                title="View previously saved weekly summaries"
+              >
+                <History className="h-3.5 w-3.5 text-[#c5a059]" />
+                <span>SAVED ARCHIVES ({savedSummaries.length})</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleOpenWeeklySummaryGenerator}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50"
+              id="generate-weekly-summary-btn"
+            >
+              <FileText className="h-4 w-4" />
+              <span>GENERATE {isFriday ? 'FRIDAY' : 'WEEKLY'} SUMMARY</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
       <div className="p-4 rounded-xl bg-[#0c0e14] border border-[#c5a059]/20 shadow-md">
@@ -525,16 +606,15 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </div>
               </div>
 
-              {/* SEARCH & RECALIBRATE INPUT */}
+              {/* SEARCH & WEEKLY SUMMARY INPUT */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleRecalibrate}
-                  disabled={isRecalibrating}
-                  className="px-2.5 py-1.5 rounded-lg bg-black/40 hover:bg-black/70 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono shrink-0 shadow-sm active:scale-95"
-                  title="Recalibrate scale physics & sync ledger"
+                  onClick={handleOpenWeeklySummaryGenerator}
+                  className="px-2.5 py-1.5 rounded-lg bg-black/40 hover:bg-[#3a2e12]/60 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono shrink-0 shadow-sm active:scale-95"
+                  title="Generate weekly summary & archive ledger"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRecalibrating ? 'animate-spin text-[#c5a059]' : 'text-zinc-400'}`} />
-                  <span className="hidden sm:inline text-[11px] font-bold">Recalibrate</span>
+                  <FileText className="h-3.5 w-3.5 text-[#c5a059]" />
+                  <span className="hidden sm:inline text-[11px] font-bold">Weekly Summary</span>
                 </button>
 
                 <div className="relative">
@@ -931,6 +1011,347 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         prefillWeaknessId={prefillWeaknessId}
         prefillCategory={prefillCategory}
       />
+
+      {/* FRIDAY / WEEKLY SUMMARY GENERATOR & ARCHIVE MODAL */}
+      <AnimatePresence>
+        {isWeeklySummaryOpen && generatedSummary && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0b0e15] border border-[#c5a059]/50 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden font-mono text-zinc-200 my-8 max-h-[90vh] flex flex-col"
+            >
+              {/* MODAL HEADER */}
+              <div className="p-5 bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#090b10] border-b border-[#c5a059]/30 flex items-start justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a] shadow-inner">
+                    <CalendarDays className="h-5 w-5 text-[#c5a059]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-[#c5a059] bg-black/40 px-2 py-0.5 rounded border border-[#c5a059]/30">
+                        FRIDAY JUMU'AH CODEX ARCHIVE
+                      </span>
+                      <span className="text-[10px] text-zinc-400">
+                        {generatedSummary.startDate} → {generatedSummary.endDate}
+                      </span>
+                    </div>
+                    <h2 className="text-base sm:text-lg font-bold font-display text-white mt-1 flex items-center gap-1.5">
+                      <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                      Weekly Muhāsabah Summary & Balance Review
+                    </h2>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsWeeklySummaryOpen(false)}
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* MODAL SCROLLABLE CONTENT */}
+              <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+                {/* THEOLOGICAL SAFEGUARD DISCLAIMER */}
+                <div className="p-3 rounded-xl bg-[#120f08] border border-[#c5a059]/40 flex items-start gap-2.5 text-zinc-300">
+                  <Shield className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-amber-300 text-[11px]">
+                      &ldquo;XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.&rdquo;
+                    </p>
+                    <p className="text-[10px] text-zinc-400 font-sans">
+                      This weekly audit is a personal accountability tool for your self-reflection and spiritual renewal.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 1. KEY METRICS GRID */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-zinc-400 block font-bold">RECORDED SLIPS</span>
+                    <span className="text-lg font-bold text-white flex items-center gap-1">
+                      <AlertTriangle className="h-4 w-4 text-rose-400" />
+                      {generatedSummary.totalSlips}
+                    </span>
+                    <span className="text-[10px] text-rose-400 block">
+                      −{generatedSummary.totalXpLost} XP Audited
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-zinc-400 block font-bold">NET SPIRITUAL BALANCE</span>
+                    <span className={`text-lg font-bold flex items-center gap-1 ${
+                      generatedSummary.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      <Scale className="h-4 w-4 text-[#c5a059]" />
+                      {generatedSummary.netSpiritualXp >= 0 ? `+${generatedSummary.netSpiritualXp}` : generatedSummary.netSpiritualXp} XP
+                    </span>
+                    <span className="text-[10px] text-zinc-400 block">
+                      +{generatedSummary.totalHasanatEarnedXp} XP Good Deeds
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-zinc-400 block font-bold">ON-TIME PRAYERS</span>
+                    <span className="text-lg font-bold text-emerald-300 flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-[#c5a059]" />
+                      {generatedSummary.onTimePrayersCount}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 block">
+                      {generatedSummary.delayedPrayersCount} Delayed • {generatedSummary.totalPrayersCompleted}/{generatedSummary.totalPrayersTracked} Tracked
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-zinc-400 block font-bold">ACTIVE CHAINS</span>
+                    <span className="text-lg font-bold text-amber-300 flex items-center gap-1">
+                      <Pickaxe className="h-4 w-4 text-amber-400" />
+                      {generatedSummary.activeWeaknessesCount}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 block">
+                      Behavioral Triggers
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. REALM CATEGORY DISTRIBUTION */}
+                <div className="p-3.5 rounded-xl bg-[#07090e] border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-zinc-300">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span>SLIPS BREAKDOWN BY REALM</span>
+                    </span>
+                    <span className="text-zinc-500 text-[10px]">7-Day Cumulative</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {(Object.entries(generatedSummary.slipsByCategory) as [MuhasabahCategory, number][]).map(([cat, count]) => {
+                      const colorInfo = CATEGORY_COLORS[cat] || { text: 'text-zinc-400', bg: 'bg-zinc-900', border: 'border-white/5' };
+                      return (
+                        <div key={cat} className={`p-2 rounded-lg border ${colorInfo.bg} ${colorInfo.border} flex items-center justify-between`}>
+                          <span className={`text-[11px] font-semibold ${colorInfo.text}`}>{cat}</span>
+                          <span className="text-xs font-bold text-white bg-black/40 px-1.5 py-0.5 rounded">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. RECURRING TRIGGERS & WEAKNESSES */}
+                {generatedSummary.topWeaknesses && generatedSummary.topWeaknesses.length > 0 && (
+                  <div className="p-3.5 rounded-xl bg-[#07090e] border border-white/10 space-y-2">
+                    <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                      <Pickaxe className="h-3.5 w-3.5 text-amber-400" />
+                      <span>PRIMARY WEAKNESS CHAINS AUDITED</span>
+                    </span>
+                    <div className="space-y-1.5">
+                      {generatedSummary.topWeaknesses.map(w => (
+                        <div key={w.id} className="p-2 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
+                          <span className="text-zinc-200 font-semibold">{w.name} ({w.category})</span>
+                          <span className="text-amber-400 text-[10px]">Tier {w.tier} • {w.occurrences} Slips</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. WEEKLY SPIRITUAL RESOLUTION & INTENTION */}
+                <div className="space-y-2 pt-1">
+                  <label className="block text-[11px] font-bold text-zinc-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5 text-rose-400" />
+                      <span>UPCOMING WEEK SPIRITUAL INTENTION & STRATEGY (نية وتعهد الأسبوع الجديد)</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-normal">Editable</span>
+                  </label>
+                  <textarea
+                    value={weeklyReflectionInput}
+                    onChange={e => setWeeklyReflectionInput(e.target.value)}
+                    placeholder="Write your personal reflections, commitments, and areas of focus for the upcoming week..."
+                    rows={3}
+                    className="w-full bg-[#07090e] border border-white/15 focus:border-[#c5a059] rounded-xl p-3 text-xs text-zinc-200 outline-none font-sans leading-relaxed"
+                  />
+                </div>
+
+                {/* 5. NOTICE REGARDING ARCHIVE & RESET */}
+                <div className="p-3 rounded-xl bg-[#1c160a] border border-[#c5a059]/40 space-y-1 text-[11px] text-amber-200/90 font-sans">
+                  <div className="flex items-center gap-1.5 font-bold font-mono text-amber-300 text-xs">
+                    <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>WHAT HAPPENS UPON ARCHIVING:</span>
+                  </div>
+                  <ul className="list-disc pl-4 space-y-0.5 text-zinc-300">
+                    <li>This summary document is permanently saved into your <strong>Planning Documents & Codex</strong>.</li>
+                    <li>The <strong>Muhāsabah Slip Ledger is emptied</strong>, giving you a fresh, clean slate for the new week.</li>
+                    <li>The <strong>Daily Balance Scale</strong> resets to pure equilibrium for day 1 of the new cycle.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* MODAL FOOTER ACTIONS */}
+              <div className="p-4 bg-[#07090e] border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsWeeklySummaryOpen(false)}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAndArchiveWeeklySummary}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-[#c5a059] to-emerald-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60"
+                  id="save-archive-weekly-summary-btn"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>SAVE TO CODEX & RESET LEDGER FOR NEW WEEK</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SAVED WEEKLY ARCHIVES BROWSER MODAL */}
+      <AnimatePresence>
+        {showSavedArchivesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0b0e15] border border-[#c5a059]/40 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden font-mono text-zinc-200 my-8 max-h-[85vh] flex flex-col"
+            >
+              {/* HEADER */}
+              <div className="p-5 bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#090b10] border-b border-[#c5a059]/30 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a]">
+                    <History className="h-5 w-5 text-[#c5a059]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-display text-white">
+                      SAVED WEEKLY MUHĀSABAH ARCHIVES
+                    </h3>
+                    <span className="text-[10px] text-zinc-400">
+                      {savedSummaries.length} Historical Weekly Reviews Recorded
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSavedArchivesModal(false);
+                    setSelectedArchiveDetail(null);
+                  }}
+                  className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* LIST / DETAIL */}
+              <div className="p-5 overflow-y-auto space-y-3 flex-1 text-xs">
+                {selectedArchiveDetail ? (
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => setSelectedArchiveDetail(null)}
+                      className="text-[11px] font-mono text-[#c5a059] hover:underline flex items-center gap-1"
+                    >
+                      ← Back to All Saved Archives
+                    </button>
+
+                    <div className="p-4 rounded-xl bg-[#07090e] border border-[#c5a059]/30 space-y-3">
+                      <div className="flex items-start justify-between pb-3 border-b border-white/10">
+                        <div>
+                          <span className="text-[10px] text-amber-400 font-bold uppercase">Week Review</span>
+                          <h4 className="text-sm font-bold text-white font-display">
+                            {selectedArchiveDetail.startDate} to {selectedArchiveDetail.endDate}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] text-zinc-400">
+                          Generated: {new Date(selectedArchiveDetail.generatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        <div className="p-2 rounded bg-black/40 border border-white/5">
+                          <span className="text-[10px] text-zinc-400 block">Slips</span>
+                          <span className="text-sm font-bold text-rose-400">{selectedArchiveDetail.totalSlips}</span>
+                        </div>
+                        <div className="p-2 rounded bg-black/40 border border-white/5">
+                          <span className="text-[10px] text-zinc-400 block">XP Lost</span>
+                          <span className="text-sm font-bold text-rose-400">−{selectedArchiveDetail.totalXpLost}</span>
+                        </div>
+                        <div className="p-2 rounded bg-black/40 border border-white/5">
+                          <span className="text-[10px] text-zinc-400 block">Net Spiritual XP</span>
+                          <span className={`text-sm font-bold ${selectedArchiveDetail.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {selectedArchiveDetail.netSpiritualXp >= 0 ? `+${selectedArchiveDetail.netSpiritualXp}` : selectedArchiveDetail.netSpiritualXp}
+                          </span>
+                        </div>
+                        <div className="p-2 rounded bg-black/40 border border-white/5">
+                          <span className="text-[10px] text-zinc-400 block">On-Time Prayers</span>
+                          <span className="text-sm font-bold text-emerald-300">{selectedArchiveDetail.onTimePrayersCount}</span>
+                        </div>
+                      </div>
+
+                      {selectedArchiveDetail.weeklyReflection && (
+                        <div className="pt-2 border-t border-white/10 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-300 block uppercase">Weekly Intention / Reflection:</span>
+                          <p className="text-xs text-zinc-300 font-sans leading-relaxed italic bg-black/30 p-2.5 rounded-lg border border-white/5">
+                            &ldquo;{selectedArchiveDetail.weeklyReflection}&rdquo;
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : savedSummaries.length > 0 ? (
+                  savedSummaries.map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedArchiveDetail(item)}
+                      className="p-3.5 rounded-xl bg-[#07090e] hover:bg-[#121622] border border-white/10 hover:border-[#c5a059]/40 cursor-pointer transition flex items-center justify-between group shadow-sm"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-zinc-100">{item.startDate} → {item.endDate}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-zinc-400 border border-white/5">
+                            {item.totalSlips} Slips
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-zinc-400">
+                          <span>Net: <strong className={item.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{item.netSpiritualXp >= 0 ? `+${item.netSpiritualXp}` : item.netSpiritualXp} XP</strong></span>
+                          <span>•</span>
+                          <span>On-Time: <strong className="text-emerald-300">{item.onTimePrayersCount}</strong></span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition" />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-zinc-500">
+                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No archived weekly summaries found yet.</p>
+                    <p className="text-[10px] text-zinc-600 mt-1">Generate your first weekly summary on Friday or at the end of the week.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* FOOTER */}
+              <div className="p-4 bg-[#07090e] border-t border-white/10 flex items-center justify-end shrink-0">
+                <button
+                  onClick={() => {
+                    setShowSavedArchivesModal(false);
+                    setSelectedArchiveDetail(null);
+                  }}
+                  className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

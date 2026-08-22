@@ -530,7 +530,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* FOCUS HUD & PERFORMANCE METRICS */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[#c5a059]/20 relative z-10">
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#c5a059]/20 relative z-10">
               <div className="bg-[#07080c]/80 border border-[#c5a059]/20 rounded-xl p-2.5">
                 <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold block">FOCUS MINUTES TODAY</span>
                 <span className="text-sm font-mono font-bold text-white mt-1 flex items-center gap-1.5">
@@ -541,24 +541,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold block">FOCUS STREAK</span>
                 <span className="text-sm font-mono font-bold text-[#e5c875] mt-1 flex items-center gap-1.5">
                   🔥 {state.profile.focusStreak || 0} Days
-                </span>
-              </div>
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/20 rounded-xl p-2.5">
-                <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold block">EAT_FROG BOOST</span>
-                <span className="text-sm font-mono font-bold text-[#fef08a] mt-1 flex items-center gap-1">
-                  ⚡ 1.2x XP ACTIVE
-                </span>
-              </div>
-              <div 
-                className="bg-[#0b1a13]/80 border border-emerald-500/40 rounded-xl p-2.5 flex flex-col justify-between"
-                title="Hardware Eco & Battery Defense Mode is permanently active"
-              >
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-mono text-emerald-400 uppercase font-bold">ECO MODE</span>
-                  <Zap className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-                </div>
-                <span className="text-xs font-mono font-bold mt-1 uppercase text-emerald-300">
-                  ⚡ PERMANENT ECO
                 </span>
               </div>
             </div>
