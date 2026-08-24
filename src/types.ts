@@ -342,6 +342,81 @@ export interface PrayerCheck {
   completedAt?: string | null;
 }
 
+export type FastingType = 
+  | 'Ramadan'           // Fardh Ramadan Fast (صيام رمضان)
+  | 'Monday_Thursday'   // Sunnah Monday/Thursday (صيام الإثنين والخميس)
+  | 'Ayyam_al_Beed'     // White Days 13, 14, 15 (صيام الأيام البيض)
+  | 'Ashura_Tasua'      // 9th/10th Muharram (عاشوراء وتاسوعاء)
+  | 'Arafah'            // 9th Dhul-Hijjah (يوم عرفة)
+  | 'Shawwal_Six'       // 6 Days of Shawwal (ستة من شوال)
+  | 'Dawud'             // Fast of Prophet Dawud (صيام داود - alternate days)
+  | 'Qada'              // Make-up Fast (قضاء)
+  | 'Kaffarah'          // Penance / expiation fast (كفارة)
+  | 'Nawafil_General';  // General Voluntary Sunnah Fast (تطوع مطلق)
+
+export interface FastingLog {
+  isFasting: boolean;
+  fastingType?: FastingType;
+  suhurTaken?: boolean; // Sunnah of Suhur (Barakah in Suhur +25 XP)
+  iftarCompleted?: boolean; // Iftar with Dua (+125 XP)
+  duaMadeAtIftar?: boolean; // Supplication at breaking fast (+25 XP)
+  notes?: string;
+}
+
+export interface SunnahPrayersLog {
+  duhaRakats: number; // 0, 2, 4, 6, 8 (Salat ad-Duha / Awabeen) (+40 XP per 2 rak'ahs, +5 coins)
+  tahiyyatAlMasjid: boolean; // Entering Masjid prayer (2 Rak'ahs) (+35 XP)
+  sunnatAlWudu: boolean; // 2 Rak'ahs after Wudu (+30 XP)
+  istikhara: boolean; // Salat al-Istikhara (+50 XP)
+  tawbah: boolean; // Salat at-Tawbah (Repentance prayer) (+50 XP)
+  hajah: boolean; // Salat al-Hajah (Prayer of need) (+40 XP)
+  sujudShukrOrTilawah: boolean; // Prostration of gratitude or Quran recitation (+20 XP)
+}
+
+export interface QuranLog {
+  pagesRead: number; // Pages read today (+5 XP per page, up to 100 XP)
+  juzRead?: number; // Juz number 1-30 (+100 XP per Juz)
+  surahName?: string; // Current Surah name
+  surahNumber?: number;
+  ayahNumber?: number;
+  tadabburNotes?: string; // Reflection on Ayah (+40 XP)
+  memorizationReviewed?: boolean; // Hifdh / revision (+50 XP)
+}
+
+export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';
+
+export interface PostSalahAdhkarMap {
+  fajr?: PostSalahDhikrMode;
+  dhuhr?: PostSalahDhikrMode;
+  asr?: PostSalahDhikrMode;
+  maghrib?: PostSalahDhikrMode;
+  isha?: PostSalahDhikrMode;
+}
+
+export interface DhikrTasbeehLog {
+  tasbeehAfterSalah: boolean; // 33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar + 1 La ilaha illallah (+60 XP)
+  postSalahAdhkar?: PostSalahAdhkarMap; // 5 prayers post-adhkar tracking (Standard 33x vs Mini 10x)
+  tasbeehCount?: number; // SubhanAllah count (سُبْحَانَ الله)
+  hamdCount?: number; // Alhamdulillah count (الحَمْدُ لله)
+  tahlilCount: number; // La ilaha illallah count (لَا إِلَهَ إِلَّا الله) (+75 XP when >= 100)
+  takbirCount?: number; // Allahu Akbar count (اللهُ أَكْبَر)
+  istighfarCount?: number; // 100+ Istighfar target (Astaghfirullah)
+  hawqalaCount?: number; // La hawla wa la quwwata illa billah
+}
+
+export interface WeeklyScoreBreakdown {
+  fardhPrayersScore: number; // max 2.5 pts (out of 35 fardh, weighting on-time vs delayed)
+  slipsRestraintScore: number; // max 2.0 pts (penalty deductions & slip count)
+  adhkarFortressScore: number; // max 1.5 pts (morning + evening adhkar consistency)
+  sunnahQiyamScore: number; // max 1.5 pts (12 sunan rawatib + qiyam + witr)
+  salawatScore: number; // max 1.0 pt (meeting 70+/day or 490+/week)
+  kaffarahTawbahScore: number; // max 1.5 pts (settled kaffarahs & prompt repentance)
+  totalScore: number; // sum out of 10.0
+  gradeAr: string; // e.g. "مرتبة الإحسان والمراقبة" / "النفس المطمئنة" / "النفس اللوامة"
+  gradeEn: string; // e.g. "Ihsanic Excellence (10/10)" / "Steadfast Tranquility" / "Reproaching Nafs (Active Struggle)"
+  actionPlan10OutOf10: string[]; // concrete actionable steps to refine score to 10/10
+}
+
 export interface WeeklyMuhasabahSummary {
   id: string;
   generatedDate: string; // YYYY-MM-DD
@@ -368,7 +443,10 @@ export interface WeeklyMuhasabahSummary {
   kaffarahPendingCount: number;
   topWeaknessCategories: { category: MuhasabahCategory; count: number; lostXP: number }[];
   spiritualRating: 'Mumtaz (Exceptional)' | 'Jayyid Jiddan (Very Good)' | 'Jayyid (Good)' | 'Maqbool (Passing)' | 'Needs Immediate Reform';
+  scoreOutOf10?: number;
+  weeklyScoreBreakdown?: WeeklyScoreBreakdown;
   summaryReflection: string;
+  weeklyReflection?: string;
   recommendations: string[];
   archivedAt: string; // ISO string
 }
@@ -387,6 +465,12 @@ export interface SpiritualDailyLog {
   qiyamRakats: number; // 2 mandatory baseline (+100 XP) + bonus per additional pair (+40 XP per pair)
   qiyamWitr: boolean; // Witr prayer (+50 XP)
   qiyamCompleted: boolean;
+  // ENHANCEMENTS FOR 10/10 SACRED PROTOCOL:
+  fasting?: FastingLog;
+  sunnahPrayers?: SunnahPrayersLog;
+  quran?: QuranLog;
+  dhikr?: DhikrTasbeehLog;
+  khushuRating?: number; // 1-10 Khushu' / Heart Presence rating
   totalEarnedXpToday?: number;
   notes?: string;
 }

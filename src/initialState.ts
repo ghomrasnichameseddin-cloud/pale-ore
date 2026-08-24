@@ -15,6 +15,39 @@ export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   qiyamRakats: 0,
   qiyamWitr: false,
   qiyamCompleted: false,
+  fasting: {
+    isFasting: false,
+    fastingType: undefined,
+    suhurTaken: false,
+    iftarCompleted: false,
+    duaMadeAtIftar: false,
+    notes: ''
+  },
+  sunnahPrayers: {
+    duhaRakats: 0,
+    tahiyyatAlMasjid: false,
+    sunnatAlWudu: false,
+    istikhara: false,
+    tawbah: false,
+    hajah: false,
+    sujudShukrOrTilawah: false
+  },
+  quran: {
+    pagesRead: 0,
+    juzRead: undefined,
+    surahName: '',
+    surahNumber: undefined,
+    ayahNumber: undefined,
+    tadabburNotes: '',
+    memorizationReviewed: false
+  },
+  dhikr: {
+    tasbeehAfterSalah: false,
+    istighfarCount: 0,
+    tahlilCount: 0,
+    hawqalaCount: 0
+  },
+  khushuRating: 8,
   totalEarnedXpToday: 0
 });
 

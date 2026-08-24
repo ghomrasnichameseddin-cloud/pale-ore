@@ -2705,13 +2705,15 @@ export const ActiveDirectives: React.FC = () => {
                 );
               }
 
-              // Grouping Logic
+              // Grouping Logic with enriched terminal styling
               let groupSections: Array<{
                 key: string;
                 title: string;
+                subtitle?: string;
                 icon: string;
                 headerClass: string;
                 badgeClass: string;
+                accentColor?: string;
                 quests: Quest[];
               }> = [];
 
@@ -2720,12 +2722,15 @@ export const ActiveDirectives: React.FC = () => {
                 lists.forEach(l => {
                   const lQuests = activeQuests.filter(q => q.listId === l.id);
                   if (lQuests.length > 0) {
+                    const matchedFolder = l.folderId ? (state.folders || []).find(f => f.id === l.folderId) : null;
                     groupSections.push({
                       key: `list-${l.id}`,
-                      title: `LIST: ${l.name}`,
+                      title: l.name,
+                      subtitle: matchedFolder ? `Folder: ${matchedFolder.name}` : undefined,
                       icon: '📋',
-                      headerClass: 'bg-cyan-950/40 border-cyan-500/30 text-cyan-300',
-                      badgeClass: 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40',
+                      headerClass: 'bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#080b11] border-[#c5a059]/40 text-[#fef08a] shadow-[0_0_12px_rgba(197,160,89,0.08)]',
+                      badgeClass: 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059]/50 font-bold',
+                      accentColor: l.color || '#c5a059',
                       quests: lQuests,
                     });
                   }
@@ -2734,10 +2739,11 @@ export const ActiveDirectives: React.FC = () => {
                 if (unassignedQuests.length > 0) {
                   groupSections.push({
                     key: 'list-unassigned',
-                    title: 'UNASSIGNED / STANDALONE DIRECTIVES',
+                    title: 'STANDALONE / UNASSIGNED DIRECTIVES',
+                    subtitle: 'No specific list assigned',
                     icon: '📌',
-                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
-                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    headerClass: 'bg-gradient-to-r from-[#0c0f17] to-[#080a0f] border-white/10 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-400 border-white/10',
                     quests: unassignedQuests,
                   });
                 }
@@ -2751,10 +2757,12 @@ export const ActiveDirectives: React.FC = () => {
                   if (fQuests.length > 0) {
                     groupSections.push({
                       key: `folder-${f.id}`,
-                      title: `FOLDER: ${f.name}`,
+                      title: f.name,
+                      subtitle: `${folderListIds.length} lists contained`,
                       icon: '📁',
-                      headerClass: 'bg-purple-950/40 border-purple-500/30 text-purple-300',
-                      badgeClass: 'bg-purple-950/60 text-purple-300 border-purple-500/40',
+                      headerClass: 'bg-gradient-to-r from-[#1c1229] via-[#120f20] to-[#080b11] border-purple-500/40 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.08)]',
+                      badgeClass: 'bg-purple-950/80 text-purple-200 border-purple-500/50 font-bold',
+                      accentColor: f.color || '#a855f7',
                       quests: fQuests,
                     });
                   }
@@ -2769,10 +2777,11 @@ export const ActiveDirectives: React.FC = () => {
                 if (unassignedFolderQuests.length > 0) {
                   groupSections.push({
                     key: 'folder-unassigned',
-                    title: 'UNASSIGNED / ROOT DIRECTIVES',
-                    icon: '📌',
-                    headerClass: 'bg-zinc-900 border-zinc-700 text-zinc-300',
-                    badgeClass: 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+                    title: 'ROOT DIRECTIVES (NO FOLDER)',
+                    subtitle: 'Directives at root workspace level',
+                    icon: '📂',
+                    headerClass: 'bg-gradient-to-r from-[#0c0f17] to-[#080a0f] border-white/10 text-zinc-300',
+                    badgeClass: 'bg-zinc-800 text-zinc-400 border-white/10',
                     quests: unassignedFolderQuests,
                   });
                 }
@@ -2801,8 +2810,9 @@ export const ActiveDirectives: React.FC = () => {
                     groupSections.push({
                       key: `cat-${catKey}`,
                       title: catDetails.label,
+                      subtitle: `Category Classification`,
                       icon: catDetails.icon,
-                      headerClass: catDetails.bgHeader,
+                      headerClass: `${catDetails.bgHeader} border shadow-sm`,
                       badgeClass: catDetails.badgeClass,
                       quests: catQuests,
                     });
@@ -2816,9 +2826,22 @@ export const ActiveDirectives: React.FC = () => {
                     groupSections.push({
                       key: `diff-${diff}`,
                       title: `DIFFICULTY: ${diff.toUpperCase()}`,
+                      subtitle: `Estimated challenge level`,
                       icon: diff === 'Boss' ? '🔥' : diff === 'Hard' ? '⚔️' : diff === 'Easy' ? '🌱' : '⚡',
-                      headerClass: diff === 'Boss' ? 'bg-rose-950/40 border-rose-500/30 text-rose-300' : 'bg-amber-950/40 border-amber-500/30 text-amber-300',
-                      badgeClass: diff === 'Boss' ? 'bg-rose-950/60 text-rose-300 border-rose-500/40' : 'bg-amber-950/60 text-amber-300 border-amber-500/40',
+                      headerClass: diff === 'Boss' 
+                        ? 'bg-gradient-to-r from-[#290e14] via-[#1a080c] to-[#0a0507] border-rose-500/50 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.12)]' 
+                        : diff === 'Hard'
+                        ? 'bg-gradient-to-r from-[#241505] via-[#170e03] to-[#0a0507] border-orange-500/40 text-orange-200'
+                        : diff === 'Easy'
+                        ? 'bg-gradient-to-r from-[#072118] via-[#051710] to-[#020d09] border-emerald-500/40 text-emerald-200'
+                        : 'bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#080b11] border-[#c5a059]/40 text-[#fef08a]',
+                      badgeClass: diff === 'Boss' 
+                        ? 'bg-rose-950 text-rose-300 border-rose-500/50' 
+                        : diff === 'Hard'
+                        ? 'bg-orange-950 text-orange-300 border-orange-500/40'
+                        : diff === 'Easy'
+                        ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                        : 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059]/50',
                       quests: dQuests,
                     });
                   }
@@ -2829,16 +2852,25 @@ export const ActiveDirectives: React.FC = () => {
                 <div className="space-y-4">
                   {groupSections.map(sec => (
                     <div key={sec.key} className="space-y-2">
-                      <div className={`px-3 py-1.5 rounded-lg border flex items-center justify-between text-xs font-mono font-bold ${sec.headerClass}`}>
-                        <div className="flex items-center gap-2">
-                          <span>{sec.icon}</span>
-                          <span className="uppercase tracking-wider">{sec.title}</span>
+                      <div className={`px-3 py-2 rounded-xl border flex items-center justify-between text-xs font-mono font-bold transition-all ${sec.headerClass}`}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base shrink-0">{sec.icon}</span>
+                          <div className="min-w-0">
+                            <span className="uppercase tracking-wider block truncate text-zinc-100 font-display text-[11px] sm:text-xs">
+                              {sec.title}
+                            </span>
+                            {sec.subtitle && (
+                              <span className="text-[9px] text-zinc-400 font-mono block truncate font-normal">
+                                {sec.subtitle}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className={`text-[9px] px-2 py-0.5 rounded border font-mono ${sec.badgeClass}`}>
+                        <span className={`text-[9px] px-2.5 py-0.5 rounded-full border font-mono shrink-0 ml-2 shadow-sm ${sec.badgeClass}`}>
                           {sec.quests.length} {sec.quests.length === 1 ? 'DIRECTIVE' : 'DIRECTIVES'}
                         </span>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 pl-1">
                         <AnimatePresence mode="popLayout">
                           {sortQuests(sec.quests).map(q => renderQuestCard(q, isDeferredTab))}
                         </AnimatePresence>

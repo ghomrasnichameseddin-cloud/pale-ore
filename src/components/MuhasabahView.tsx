@@ -43,7 +43,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     convertWeaknessToSeal, deleteWeakness, updateWeakness,
-    completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
+    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
   } = usePOS();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,6 +62,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [savedSummarySuccess, setSavedSummarySuccess] = useState<string | null>(null);
   const [showSavedArchivesModal, setShowSavedArchivesModal] = useState(false);
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<WeeklyMuhasabahSummary | null>(null);
+  const [injectedActionSuccess, setInjectedActionSuccess] = useState<string | null>(null);
+  const [showRefineDrawer, setShowRefineDrawer] = useState(false);
 
   const [selectedEntryDetail, setSelectedEntryDetail] = useState<MuhasabahEntry | null>(null);
   const [prefillWeaknessId, setPrefillWeaknessId] = useState<string | undefined>(undefined);
@@ -72,6 +74,11 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const entries = state.muhasabahEntries || [];
   const weaknesses = state.weaknesses || [];
   const savedSummaries = state.savedWeeklySummaries || [];
+
+  // Real-time live weekly evaluation out of 10.0
+  const liveWeeklySummary = useMemo(() => {
+    return generateWeeklyMuhasabahSummary();
+  }, [state.systemDate, state.spiritualLogs, state.muhasabahEntries, state.xpHistory, state.quests]);
 
   // Check if current systemDate is Friday
   const isFriday = useMemo(() => {
@@ -195,12 +202,125 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     if (!generatedSummary) return;
     const finalSummary: WeeklyMuhasabahSummary = {
       ...generatedSummary,
+      summaryReflection: weeklyReflectionInput.trim() || generatedSummary.summaryReflection,
       weeklyReflection: weeklyReflectionInput.trim() || 'Sincere intention renewed for the new week.'
     };
     const res = saveAndArchiveWeeklySummary(finalSummary);
     setSavedSummarySuccess(res.message);
     setIsWeeklySummaryOpen(false);
     setTimeout(() => setSavedSummarySuccess(null), 6000);
+  };
+
+  const handleInstantFridaySealAndReset = () => {
+    const sum = generateWeeklyMuhasabahSummary();
+    const finalSummary: WeeklyMuhasabahSummary = {
+      ...sum,
+      summaryReflection: sum.summaryReflection,
+      weeklyReflection: 'Sealed via Friday Jumu\'ah 1-Click Protocol. Sincere repentance renewed & clean slate activated.'
+    };
+    const res = saveAndArchiveWeeklySummary(finalSummary);
+    setSavedSummarySuccess(`Jumu'ah Seal Completed! Week judged ${sum.scoreOutOf10 !== undefined ? sum.scoreOutOf10.toFixed(1) : '10.0'}/10.0 [${sum.spiritualRating}]. Summary saved to Planning Documents & slip ledger purged for the fresh week.`);
+    setTimeout(() => setSavedSummarySuccess(null), 7000);
+  };
+
+  const handleInject10OutOf10Directives = () => {
+    const b = liveWeeklySummary.weeklyScoreBreakdown;
+    if (!b) return;
+
+    let addedCount = 0;
+    const dateStr = state.systemDate || '2026-08-24';
+
+    if (b.fardhPrayersScore < 2.45) {
+      addQuest({
+        name: `[10/10 MUHĀSABAH] 5 Fardh Prayers Strictly On-Time at Adhan`,
+        description: `Protect the 5 daily obligatory prayers at the first call to prayer to secure full 2.5/2.5 marks in the weekly audit.`,
+        difficulty: 'Normal',
+        type: 'Main',
+        xp: 150,
+        estimatedTime: 25,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        targetDate: dateStr,
+        recurrence: 'Daily'
+      });
+      addedCount++;
+    }
+
+    if (b.adhkarFortressScore < 1.45) {
+      addQuest({
+        name: `[10/10 MUHĀSABAH] Morning & Evening Adhkār Soul Fortress`,
+        description: `Complete the authentic Morning Adhkār after Fajr and Evening Adhkār after Asr/Maghrib to fortify spiritual armor (+1.5/1.5 pts).`,
+        difficulty: 'Easy',
+        type: 'Habit',
+        xp: 120,
+        estimatedTime: 15,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        targetDate: dateStr,
+        recurrence: 'Daily'
+      });
+      addedCount++;
+    }
+
+    if (b.salawatScore < 0.95) {
+      addQuest({
+        name: `[10/10 MUHĀSABAH] 70+ Daily Salawāt upon Prophet Muhammad ﷺ`,
+        description: `Fulfill the daily prophetic covenant of blessings upon the Messenger ﷺ to maximize Salawat pillar marks (+1.0/1.0 pt).`,
+        difficulty: 'Easy',
+        type: 'Habit',
+        xp: 100,
+        estimatedTime: 10,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        targetDate: dateStr,
+        recurrence: 'Daily'
+      });
+      addedCount++;
+    }
+
+    if (b.sunnahQiyamScore < 1.45) {
+      addQuest({
+        name: `[10/10 MUHĀSABAH] 2 Rak'ahs Qiyām al-Layl & Witr Vigil`,
+        description: `Revive the nightly vigil with 2 rak'ahs before Fajr and conclude with Witr for spiritual elevation (+1.5/1.5 pts).`,
+        difficulty: 'Normal',
+        type: 'Side',
+        xp: 140,
+        estimatedTime: 20,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        targetDate: dateStr,
+        recurrence: 'Daily'
+      });
+      addedCount++;
+    }
+
+    if (b.slipsRestraintScore < 1.95) {
+      addQuest({
+        name: `[10/10 MUHĀSABAH] Sacred Boundary: Restraint from Mindless Speech & Desires`,
+        description: `Observe conscious self-restraint and mindfulness of speech, gaze, and time to protect the slip ledger and prevent penalties.`,
+        difficulty: 'Hard',
+        type: 'Recovery',
+        xp: 160,
+        estimatedTime: 30,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        targetDate: dateStr
+      });
+      addedCount++;
+    }
+
+    setInjectedActionSuccess(`Successfully injected ${addedCount} targeted 10/10 spiritual directives into your Active Directives terminal!`);
+    setTimeout(() => setInjectedActionSuccess(null), 5000);
   };
 
   return (
@@ -228,6 +348,37 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             </div>
             <button
               onClick={() => setSavedSummarySuccess(null)}
+              className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-white/5"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 10/10 INJECTED DIRECTIVES BANNER */}
+      <AnimatePresence>
+        {injectedActionSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            className="p-4 rounded-xl bg-gradient-to-r from-amber-950 via-[#1e170c] to-[#0c0f17] border border-[#c5a059]/60 shadow-xl flex items-center justify-between gap-3 text-xs font-mono text-[#fef08a]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a]">
+                <Sparkles className="h-4 w-4 text-[#c5a059]" />
+              </div>
+              <div>
+                <span className="font-bold uppercase tracking-wider text-[#e5c875] flex items-center gap-1.5">
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                  10/10 Action Directives Synchronized
+                </span>
+                <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{injectedActionSuccess}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setInjectedActionSuccess(null)}
               className="text-zinc-400 hover:text-zinc-200 p-1 rounded-lg hover:bg-white/5"
             >
               <X className="h-4 w-4" />
@@ -268,62 +419,276 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
 
-      {/* 2. FRIDAY & WEEKLY MUHĀSABAH CODEX SUMMARY ACTION CARD */}
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 shadow-xl ${
-        isFriday 
-          ? 'bg-gradient-to-r from-[#1c160a] via-[#10141f] to-[#0a1215] border-[#c5a059]/70 ring-1 ring-[#c5a059]/30' 
-          : 'bg-[#0a0d14] border-white/10'
-      }`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 ${
-                isFriday 
-                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-sm' 
-                  : 'bg-zinc-900 border-white/15 text-zinc-300'
-              }`}>
-                <CalendarDays className="h-3.5 w-3.5 text-[#c5a059]" />
-                <span>{isFriday ? '✨ FRIDAY JUMU\'AH MUHĀSABAH PROTOCOL (المحاسبة الأسبوعية)' : 'WEEKLY MUHĀSABAH CODEX'}</span>
-              </span>
-              {savedSummaries.length > 0 && (
-                <span className="text-[10px] font-mono bg-black/40 border border-white/10 text-zinc-400 px-2 py-0.5 rounded">
-                  {savedSummaries.length} Past Archived {savedSummaries.length === 1 ? 'Week' : 'Weeks'}
-                </span>
-              )}
-            </div>
-            <h3 className="font-display text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
-              <span>Weekly Accountability & Ledger Reset</span>
-            </h3>
-            <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
-              Generate an end-of-week review summarizing slips, on-time prayer discipline, and spiritual balance across the entire week. Saving archives the summary to your Codex and empties the ledger for a fresh start in the new week.
-            </p>
-          </div>
+      {/* 2. WEEKLY 10/10 SACRED AUDIT & REFINEMENT SCORECARD */}
+      {(() => {
+        const b = liveWeeklySummary.weeklyScoreBreakdown;
+        const currentScore = liveWeeklySummary.scoreOutOf10 ?? 10.0;
+        const isNearTen = currentScore >= 9.5;
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {savedSummaries.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowSavedArchivesModal(true)}
-                className="px-3 py-2 rounded-xl bg-[#0e121a] hover:bg-[#161c28] border border-white/15 hover:border-[#c5a059]/50 text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-2 shadow-md active:scale-95"
-                title="View previously saved weekly summaries"
-              >
-                <History className="h-3.5 w-3.5 text-[#c5a059]" />
-                <span>SAVED ARCHIVES ({savedSummaries.length})</span>
-              </button>
+        return (
+          <div className="p-4 sm:p-5 rounded-2xl border border-[#c5a059]/40 bg-[#090c12] relative overflow-hidden shadow-2xl space-y-4">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,rgba(197,160,89,0.08),transparent_65%)] pointer-events-none" />
+
+            {/* TOP HEADER ROW */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10 pb-3 border-b border-white/10">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+                    <Scale className="h-3 w-3 text-[#c5a059]" />
+                    <span>تقييم ومحاسبة الأسبوع • WEEKLY SACRED AUDIT / 10</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                    {liveWeeklySummary.startDate} → {liveWeeklySummary.endDate}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-baseline gap-3 pt-1">
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                    <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                    <span>Weekly Spiritual Standing:</span>
+                  </h3>
+                  <span className="text-sm font-bold text-[#e5c875] font-mono">
+                    {b?.gradeAr} — <span className="text-zinc-300">{b?.gradeEn}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* 10/10 GAUGE BADGE */}
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[#1c160a] to-[#07090e] border border-[#c5a059]/50 shadow-inner">
+                  <div className="text-right">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">WEEKLY JUDGMENT</span>
+                    <span className="text-[10px] font-mono text-amber-400/80">{isNearTen ? 'Full Mark (10/10)' : 'Refinement Target'}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 font-mono">
+                    <span className={`text-2xl sm:text-3xl font-black ${
+                      currentScore >= 9.5 ? 'text-emerald-300' :
+                      currentScore >= 8.5 ? 'text-[#fef08a]' :
+                      currentScore >= 7.0 ? 'text-amber-400' :
+                      'text-rose-400'
+                    }`}>
+                      {currentScore.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-bold">/10.0</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowRefineDrawer(!showRefineDrawer)}
+                    className="px-3 py-1.5 rounded-lg bg-[#3a2e12] hover:bg-[#4d3c16] border border-[#c5a059]/60 text-[#fef08a] text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>{showRefineDrawer ? 'HIDE PLAN' : '⚡ REFINE 10/10'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleInstantFridaySealAndReset}
+                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[#c5a059] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                    title="Snapshot weekly 10/10 audit to Codex & reset slips ledger clean for the new week"
+                    id="one-click-friday-seal-btn"
+                  >
+                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
+                    <span>⚡ 1-CLICK JUMU'AH SEAL</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenWeeklySummaryGenerator}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[#c5a059]/40 text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95"
+                    id="full-friday-audit-modal-btn"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>FULL AUDIT</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSavedArchivesModal(true)}
+                    className="px-3 py-1.5 rounded-lg bg-black/60 hover:bg-zinc-800 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 text-xs font-mono transition flex items-center gap-1.5 active:scale-95"
+                    id="view-saved-archives-btn"
+                  >
+                    <History className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>ARCHIVES ({savedSummaries.length})</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 6 SUB-PILLARS PROGRESS METERS (TOTAL 10.0 PTS) */}
+            {b && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                {/* 1. Fardh Prayers (2.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-amber-400" />
+                      <span>1. Farā'iḍ Prayers (أركان الصلاة)</span>
+                    </span>
+                    <span className="font-bold text-amber-300">{b.fardhPrayersScore.toFixed(1)} / 2.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-amber-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.fardhPrayersScore / 2.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.prayersOnTimeCount} on-time (+40 XP) • {liveWeeklySummary.prayersDelayedCount} delayed (−50 XP) out of 35
+                  </span>
+                </div>
+
+                {/* 2. Slips & Restraint (2.0 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Scale className="h-3.5 w-3.5 text-rose-400" />
+                      <span>2. Restraint & Slips (حفظ الجوارح)</span>
+                    </span>
+                    <span className="font-bold text-rose-300">{b.slipsRestraintScore.toFixed(1)} / 2.0 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-rose-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.slipsRestraintScore / 2.0) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.totalSlipsCount} slip(s) recorded • −{liveWeeklySummary.totalLostXP} XP penalty
+                  </span>
+                </div>
+
+                {/* 3. Adhkar Fortress (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                      <span>3. Adhkār Fortress (حصن الأذكار)</span>
+                    </span>
+                    <span className="font-bold text-cyan-300">{b.adhkarFortressScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-cyan-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.adhkarFortressScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.adhkarSabahCount}/7 Morning • {liveWeeklySummary.adhkarMasaCount}/7 Evening
+                  </span>
+                </div>
+
+                {/* 4. Sunan & Qiyam (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-purple-400" />
+                      <span>4. Sunan & Qiyām (السنن والقيام)</span>
+                    </span>
+                    <span className="font-bold text-purple-300">{b.sunnahQiyamScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-purple-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.sunnahQiyamScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.sunnahRawatibCount} Sunan Rawātib • {liveWeeklySummary.qiyamTotalRakats} Qiyām Rak'ahs
+                  </span>
+                </div>
+
+                {/* 5. Salawat upon Prophet ﷺ (1.0 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>5. Salawāt upon ﷺ (الصلاة على النبي)</span>
+                    </span>
+                    <span className="font-bold text-emerald-300">{b.salawatScore.toFixed(1)} / 1.0 pt</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.salawatScore / 1.0) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.salawatTotal} / 490 weekly covenant target
+                  </span>
+                </div>
+
+                {/* 6. Tawbah & Kaffarah (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>6. Tawbah & Kaffārah (تصفية الكفارات)</span>
+                    </span>
+                    <span className="font-bold text-indigo-300">{b.kaffarahTawbahScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-indigo-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.kaffarahTawbahScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.kaffarahPendingCount} pending • {liveWeeklySummary.kaffarahSettledCount} settled remedies
+                  </span>
+                </div>
+              </div>
             )}
 
-            <button
-              type="button"
-              onClick={handleOpenWeeklySummaryGenerator}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50"
-              id="generate-weekly-summary-btn"
-            >
-              <FileText className="h-4 w-4" />
-              <span>GENERATE {isFriday ? 'FRIDAY' : 'WEEKLY'} SUMMARY</span>
-            </button>
+            {/* EXPANDABLE "REFINE TO 10/10" ACTION ROADMAP */}
+            <AnimatePresence>
+              {showRefineDrawer && b && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="pt-3 border-t border-[#c5a059]/20 space-y-3"
+                >
+                  <div className="p-3.5 rounded-xl bg-[#16120b] border border-[#c5a059]/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                        <span>خطة الارتقاء للدرجة الكاملة 10/10 • ACTION PLAN TO REFINE TO 10/10</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {isNearTen ? '10/10 Ihsanic Equilibrium Achieved' : `${(10.0 - currentScore).toFixed(1)} pts required for 10/10`}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-1.5 text-xs text-zinc-200">
+                      {b.actionPlan10OutOf10.map((step, idx) => (
+                        <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-black/40 border border-white/5 font-sans leading-relaxed">
+                          <span className="text-[#c5a059] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
+                          <span className="text-zinc-200">{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleInject10OutOf10Directives}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-mono text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-amber-950/60"
+                        id="inject-10-out-of-10-directives-btn"
+                      >
+                        <Zap className="h-3.5 w-3.5" />
+                        <span>⚡ INJECT 10/10 ACTION DIRECTIVES INTO TERMINAL</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
       <div className="p-4 rounded-xl bg-[#0c0e14] border border-[#c5a059]/20 shadow-md">
@@ -1039,7 +1404,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     </div>
                     <h2 className="text-base sm:text-lg font-bold font-display text-white mt-1 flex items-center gap-1.5">
                       <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
-                      Weekly Muhāsabah Summary & Balance Review
+                      Weekly Sacred Muhāsabah & 10/10 Judgment
                     </h2>
                   </div>
                 </div>
@@ -1053,6 +1418,36 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
               {/* MODAL SCROLLABLE CONTENT */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+                {/* 10/10 SACRED AUDIT VERDICT CARD */}
+                {(() => {
+                  const b = generatedSummary.weeklyScoreBreakdown;
+                  const score = generatedSummary.scoreOutOf10 ?? 10.0;
+                  return (
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-[#1d160b] via-[#121622] to-[#080b11] border border-[#c5a059]/60 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="space-y-1 text-center sm:text-left">
+                        <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono font-bold block">
+                          SACRED WEEKLY VERDICT (حكم المحاسبة الأسبوعية)
+                        </span>
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <span className="text-base sm:text-lg font-bold text-[#fef08a] font-display">
+                            {b?.gradeAr || generatedSummary.spiritualRating}
+                          </span>
+                          <span className="text-xs text-zinc-300 font-mono">
+                            • {b?.gradeEn || generatedSummary.spiritualRating}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-black/60 border border-[#c5a059]/50 flex items-baseline gap-1 font-mono shrink-0 shadow-inner">
+                        <span className="text-2xl sm:text-3xl font-black text-[#fef08a]">
+                          {score.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-zinc-400 font-bold">/10.0</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* THEOLOGICAL SAFEGUARD DISCLAIMER */}
                 <div className="p-3 rounded-xl bg-[#120f08] border border-[#c5a059]/40 flex items-start gap-2.5 text-zinc-300">
                   <Shield className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
@@ -1072,23 +1467,23 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <span className="text-[10px] text-zinc-400 block font-bold">RECORDED SLIPS</span>
                     <span className="text-lg font-bold text-white flex items-center gap-1">
                       <AlertTriangle className="h-4 w-4 text-rose-400" />
-                      {generatedSummary.totalSlips}
+                      {generatedSummary.totalSlipsCount}
                     </span>
                     <span className="text-[10px] text-rose-400 block">
-                      −{generatedSummary.totalXpLost} XP Audited
+                      −{generatedSummary.totalLostXP} XP Audited
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
-                    <span className="text-[10px] text-zinc-400 block font-bold">NET SPIRITUAL BALANCE</span>
+                    <span className="text-[10px] text-zinc-400 block font-bold">NET SPIRITUAL XP</span>
                     <span className={`text-lg font-bold flex items-center gap-1 ${
-                      generatedSummary.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      generatedSummary.totalNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'
                     }`}>
                       <Scale className="h-4 w-4 text-[#c5a059]" />
-                      {generatedSummary.netSpiritualXp >= 0 ? `+${generatedSummary.netSpiritualXp}` : generatedSummary.netSpiritualXp} XP
+                      {generatedSummary.totalNetXP >= 0 ? `+${generatedSummary.totalNetXP}` : generatedSummary.totalNetXP} XP
                     </span>
                     <span className="text-[10px] text-zinc-400 block">
-                      +{generatedSummary.totalHasanatEarnedXp} XP Good Deeds
+                      +{generatedSummary.totalEarnedXP} XP Earned
                     </span>
                   </div>
 
@@ -1096,67 +1491,102 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <span className="text-[10px] text-zinc-400 block font-bold">ON-TIME PRAYERS</span>
                     <span className="text-lg font-bold text-emerald-300 flex items-center gap-1">
                       <Clock className="h-4 w-4 text-[#c5a059]" />
-                      {generatedSummary.onTimePrayersCount}
+                      {generatedSummary.prayersOnTimeCount}
                     </span>
                     <span className="text-[10px] text-zinc-400 block">
-                      {generatedSummary.delayedPrayersCount} Delayed • {generatedSummary.totalPrayersCompleted}/{generatedSummary.totalPrayersTracked} Tracked
+                      {generatedSummary.prayersDelayedCount} Delayed • {generatedSummary.prayersCount}/35 Fardh
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#07090e] border border-white/5 space-y-1">
-                    <span className="text-[10px] text-zinc-400 block font-bold">ACTIVE CHAINS</span>
-                    <span className="text-lg font-bold text-amber-300 flex items-center gap-1">
-                      <Pickaxe className="h-4 w-4 text-amber-400" />
-                      {generatedSummary.activeWeaknessesCount}
+                    <span className="text-[10px] text-zinc-400 block font-bold">SUNAN & ADHKĀR</span>
+                    <span className="text-lg font-bold text-cyan-300 flex items-center gap-1">
+                      <Sparkles className="h-4 w-4 text-cyan-400" />
+                      {generatedSummary.adhkarSabahCount + generatedSummary.adhkarMasaCount}/14
                     </span>
                     <span className="text-[10px] text-zinc-400 block">
-                      Behavioral Triggers
+                      {generatedSummary.sunnahRawatibCount} Sunan • {generatedSummary.qiyamTotalRakats} Qiyām
                     </span>
                   </div>
                 </div>
 
-                {/* 2. REALM CATEGORY DISTRIBUTION */}
-                <div className="p-3.5 rounded-xl bg-[#07090e] border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-zinc-300">
-                    <span className="flex items-center gap-1.5">
-                      <Layers className="h-3.5 w-3.5 text-[#c5a059]" />
-                      <span>SLIPS BREAKDOWN BY REALM</span>
+                {/* 2. 6-PILLAR 10/10 BREAKDOWN IN MODAL */}
+                {generatedSummary.weeklyScoreBreakdown && (
+                  <div className="p-3.5 rounded-xl bg-[#07090e] border border-[#c5a059]/30 space-y-2.5">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[#fef08a]">
+                      <span className="flex items-center gap-1.5">
+                        <Scale className="h-3.5 w-3.5 text-[#c5a059]" />
+                        <span>10.0-POINT SACRED PILLARS BREAKDOWN</span>
+                      </span>
+                      <span className="font-mono text-zinc-400">Total: {generatedSummary.scoreOutOf10?.toFixed(1)} / 10.0</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">1. Farā'iḍ Prayers</span>
+                        <span className="text-xs font-bold text-amber-300">{generatedSummary.weeklyScoreBreakdown.fardhPrayersScore.toFixed(1)} / 2.5 pts</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">2. Slips & Restraint</span>
+                        <span className="text-xs font-bold text-rose-300">{generatedSummary.weeklyScoreBreakdown.slipsRestraintScore.toFixed(1)} / 2.0 pts</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">3. Adhkār Fortress</span>
+                        <span className="text-xs font-bold text-cyan-300">{generatedSummary.weeklyScoreBreakdown.adhkarFortressScore.toFixed(1)} / 1.5 pts</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">4. Sunan & Qiyām</span>
+                        <span className="text-xs font-bold text-purple-300">{generatedSummary.weeklyScoreBreakdown.sunnahQiyamScore.toFixed(1)} / 1.5 pts</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">5. Salawāt ﷺ</span>
+                        <span className="text-xs font-bold text-emerald-300">{generatedSummary.weeklyScoreBreakdown.salawatScore.toFixed(1)} / 1.0 pt</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-black/40 border border-white/5 space-y-1">
+                        <span className="text-[10px] text-zinc-400 block">6. Tawbah & Remedies</span>
+                        <span className="text-xs font-bold text-indigo-300">{generatedSummary.weeklyScoreBreakdown.kaffarahTawbahScore.toFixed(1)} / 1.5 pts</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. REFINE TO 10/10 ACTION PLAN */}
+                {generatedSummary.weeklyScoreBreakdown && (
+                  <div className="p-3.5 rounded-xl bg-[#16120b] border border-[#c5a059]/40 space-y-2">
+                    <span className="text-[11px] font-bold text-[#fef08a] flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span>خطة الارتقاء للعلامة الكاملة 10/10 • REFINE TO 10/10 ACTION PLAN</span>
                     </span>
-                    <span className="text-zinc-500 text-[10px]">7-Day Cumulative</span>
+                    <ul className="space-y-1.5 text-xs text-zinc-200">
+                      {generatedSummary.weeklyScoreBreakdown.actionPlan10OutOf10.map((action, idx) => (
+                        <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-black/40 border border-white/5 font-sans leading-relaxed">
+                          <span className="text-[#c5a059] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
+                          <span>{action}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {(Object.entries(generatedSummary.slipsByCategory) as [MuhasabahCategory, number][]).map(([cat, count]) => {
-                      const colorInfo = CATEGORY_COLORS[cat] || { text: 'text-zinc-400', bg: 'bg-zinc-900', border: 'border-white/5' };
-                      return (
-                        <div key={cat} className={`p-2 rounded-lg border ${colorInfo.bg} ${colorInfo.border} flex items-center justify-between`}>
-                          <span className={`text-[11px] font-semibold ${colorInfo.text}`}>{cat}</span>
-                          <span className="text-xs font-bold text-white bg-black/40 px-1.5 py-0.5 rounded">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 3. RECURRING TRIGGERS & WEAKNESSES */}
-                {generatedSummary.topWeaknesses && generatedSummary.topWeaknesses.length > 0 && (
+                {/* 4. RECURRING TRIGGERS & WEAKNESSES */}
+                {generatedSummary.topWeaknessCategories && generatedSummary.topWeaknessCategories.length > 0 && (
                   <div className="p-3.5 rounded-xl bg-[#07090e] border border-white/10 space-y-2">
                     <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
                       <Pickaxe className="h-3.5 w-3.5 text-amber-400" />
-                      <span>PRIMARY WEAKNESS CHAINS AUDITED</span>
+                      <span>PRIMARY WEAKNESS VULNERABILITY REALMS</span>
                     </span>
-                    <div className="space-y-1.5">
-                      {generatedSummary.topWeaknesses.map(w => (
-                        <div key={w.id} className="p-2 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
-                          <span className="text-zinc-200 font-semibold">{w.name} ({w.category})</span>
-                          <span className="text-amber-400 text-[10px]">Tier {w.tier} • {w.occurrences} Slips</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {generatedSummary.topWeaknessCategories.map(w => (
+                        <div key={w.category} className="p-2 rounded-lg bg-black/40 border border-white/5 flex items-center justify-between">
+                          <span className="text-zinc-200 font-semibold">{w.category}</span>
+                          <span className="text-amber-400 text-[10px] font-bold">{w.count} Slips</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* 4. WEEKLY SPIRITUAL RESOLUTION & INTENTION */}
+                {/* 5. WEEKLY SPIRITUAL RESOLUTION & INTENTION */}
                 <div className="space-y-2 pt-1">
                   <label className="block text-[11px] font-bold text-zinc-300 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
@@ -1174,7 +1604,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   />
                 </div>
 
-                {/* 5. NOTICE REGARDING ARCHIVE & RESET */}
+                {/* 6. NOTICE REGARDING ARCHIVE & RESET */}
                 <div className="p-3 rounded-xl bg-[#1c160a] border border-[#c5a059]/40 space-y-1 text-[11px] text-amber-200/90 font-sans">
                   <div className="flex items-center gap-1.5 font-bold font-mono text-amber-300 text-xs">
                     <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
@@ -1255,53 +1685,135 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   <div className="space-y-4">
                     <button
                       onClick={() => setSelectedArchiveDetail(null)}
-                      className="text-[11px] font-mono text-[#c5a059] hover:underline flex items-center gap-1"
+                      className="text-[11px] font-mono text-[#c5a059] hover:underline flex items-center gap-1 font-bold"
                     >
                       ← Back to All Saved Archives
                     </button>
 
-                    <div className="p-4 rounded-xl bg-[#07090e] border border-[#c5a059]/30 space-y-3">
-                      <div className="flex items-start justify-between pb-3 border-b border-white/10">
+                    <div className="p-4 rounded-xl bg-[#07090e] border border-[#c5a059]/40 space-y-4 shadow-xl">
+                      {/* HEADER CARD */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-white/10 gap-3">
                         <div>
-                          <span className="text-[10px] text-amber-400 font-bold uppercase">Week Review</span>
-                          <h4 className="text-sm font-bold text-white font-display">
-                            {selectedArchiveDetail.startDate} to {selectedArchiveDetail.endDate}
+                          <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block font-mono">
+                            SACRED WEEKLY ARCHIVE ({selectedArchiveDetail.weekLabel || selectedArchiveDetail.generatedDate})
+                          </span>
+                          <h4 className="text-base font-bold text-white font-display">
+                            {selectedArchiveDetail.startDate} → {selectedArchiveDetail.endDate}
                           </h4>
-                        </div>
-                        <span className="text-[10px] text-zinc-400">
-                          Generated: {new Date(selectedArchiveDetail.generatedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                        <div className="p-2 rounded bg-black/40 border border-white/5">
-                          <span className="text-[10px] text-zinc-400 block">Slips</span>
-                          <span className="text-sm font-bold text-rose-400">{selectedArchiveDetail.totalSlips}</span>
-                        </div>
-                        <div className="p-2 rounded bg-black/40 border border-white/5">
-                          <span className="text-[10px] text-zinc-400 block">XP Lost</span>
-                          <span className="text-sm font-bold text-rose-400">−{selectedArchiveDetail.totalXpLost}</span>
-                        </div>
-                        <div className="p-2 rounded bg-black/40 border border-white/5">
-                          <span className="text-[10px] text-zinc-400 block">Net Spiritual XP</span>
-                          <span className={`text-sm font-bold ${selectedArchiveDetail.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {selectedArchiveDetail.netSpiritualXp >= 0 ? `+${selectedArchiveDetail.netSpiritualXp}` : selectedArchiveDetail.netSpiritualXp}
+                          <span className="text-[10px] text-zinc-400 font-mono block mt-0.5">
+                            Archived: {new Date(selectedArchiveDetail.archivedAt || Date.now()).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="p-2 rounded bg-black/40 border border-white/5">
-                          <span className="text-[10px] text-zinc-400 block">On-Time Prayers</span>
-                          <span className="text-sm font-bold text-emerald-300">{selectedArchiveDetail.onTimePrayersCount}</span>
+
+                        <div className="p-2.5 px-3.5 rounded-xl bg-black/60 border border-[#c5a059]/50 flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <span className="text-[9px] uppercase font-mono text-zinc-400 block font-bold">SACRED SCORE</span>
+                            <span className="text-xs font-bold text-[#fef08a] font-display">
+                              {selectedArchiveDetail.weeklyScoreBreakdown?.gradeAr || selectedArchiveDetail.spiritualRating}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1 font-mono">
+                            <span className="text-2xl font-black text-[#fef08a]">
+                              {(selectedArchiveDetail.scoreOutOf10 ?? 10.0).toFixed(1)}
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-bold">/10.0</span>
+                          </div>
                         </div>
                       </div>
 
-                      {selectedArchiveDetail.weeklyReflection && (
+                      {/* 6 PILLARS BREAKDOWN */}
+                      {selectedArchiveDetail.weeklyScoreBreakdown && (
+                        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
+                          <span className="text-[10px] font-bold text-[#fef08a] font-mono uppercase tracking-wider block">
+                            6-Pillar Audit Breakdown
+                          </span>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Farā'iḍ Prayers</span>
+                              <span className="text-xs font-bold text-amber-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.fardhPrayersScore.toFixed(1)} / 2.5 pts
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Slips & Restraint</span>
+                              <span className="text-xs font-bold text-rose-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.slipsRestraintScore.toFixed(1)} / 2.0 pts
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Adhkār Fortress</span>
+                              <span className="text-xs font-bold text-cyan-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.adhkarFortressScore.toFixed(1)} / 1.5 pts
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Sunan & Qiyām</span>
+                              <span className="text-xs font-bold text-purple-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.sunnahQiyamScore.toFixed(1)} / 1.5 pts
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Salawāt upon ﷺ</span>
+                              <span className="text-xs font-bold text-emerald-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.salawatScore.toFixed(1)} / 1.0 pt
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-zinc-900/60 border border-white/5 space-y-0.5">
+                              <span className="text-[9px] text-zinc-400 block">Tawbah & Kaffārah</span>
+                              <span className="text-xs font-bold text-indigo-300 font-mono">
+                                {selectedArchiveDetail.weeklyScoreBreakdown.kaffarahTawbahScore.toFixed(1)} / 1.5 pts
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STATS MATRIX */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        <div className="p-2.5 rounded-lg bg-black/50 border border-white/5 space-y-0.5">
+                          <span className="text-[9px] text-zinc-400 block font-mono">Audited Slips</span>
+                          <span className="text-sm font-bold text-rose-400 font-mono">{selectedArchiveDetail.totalSlipsCount}</span>
+                          <span className="text-[9px] text-zinc-500 block">−{selectedArchiveDetail.totalLostXP} XP</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-black/50 border border-white/5 space-y-0.5">
+                          <span className="text-[9px] text-zinc-400 block font-mono">Net Spiritual XP</span>
+                          <span className={`text-sm font-bold font-mono ${selectedArchiveDetail.totalNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {selectedArchiveDetail.totalNetXP >= 0 ? `+${selectedArchiveDetail.totalNetXP}` : selectedArchiveDetail.totalNetXP}
+                          </span>
+                          <span className="text-[9px] text-zinc-500 block">+{selectedArchiveDetail.totalEarnedXP} XP earned</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-black/50 border border-white/5 space-y-0.5">
+                          <span className="text-[9px] text-zinc-400 block font-mono">On-Time Fardh</span>
+                          <span className="text-sm font-bold text-emerald-300 font-mono">{selectedArchiveDetail.prayersOnTimeCount}</span>
+                          <span className="text-[9px] text-zinc-500 block">{selectedArchiveDetail.prayersDelayedCount} delayed / {selectedArchiveDetail.prayersCount}</span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-black/50 border border-white/5 space-y-0.5">
+                          <span className="text-[9px] text-zinc-400 block font-mono">Adhkār & Sunan</span>
+                          <span className="text-sm font-bold text-cyan-300 font-mono">
+                            {selectedArchiveDetail.adhkarSabahCount + selectedArchiveDetail.adhkarMasaCount}
+                          </span>
+                          <span className="text-[9px] text-zinc-500 block">{selectedArchiveDetail.sunnahRawatibCount} Sunan • {selectedArchiveDetail.qiyamTotalRakats} Qiyām</span>
+                        </div>
+                      </div>
+
+                      {/* REFLECTION & CODEX LOCATION */}
+                      {(selectedArchiveDetail.weeklyReflection || selectedArchiveDetail.summaryReflection) && (
                         <div className="pt-2 border-t border-white/10 space-y-1">
-                          <span className="text-[10px] font-bold text-amber-300 block uppercase">Weekly Intention / Reflection:</span>
-                          <p className="text-xs text-zinc-300 font-sans leading-relaxed italic bg-black/30 p-2.5 rounded-lg border border-white/5">
-                            &ldquo;{selectedArchiveDetail.weeklyReflection}&rdquo;
+                          <span className="text-[10px] font-bold text-amber-300 block uppercase font-mono">
+                            Weekly Resolution & Spiritual Intention:
+                          </span>
+                          <p className="text-xs text-zinc-300 font-sans leading-relaxed italic bg-black/40 p-3 rounded-lg border border-white/5">
+                            &ldquo;{selectedArchiveDetail.weeklyReflection || selectedArchiveDetail.summaryReflection}&rdquo;
                           </p>
                         </div>
                       )}
+
+                      <div className="p-2 rounded bg-zinc-950/60 border border-white/5 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
+                        <span>Codex Document Path:</span>
+                        <span className="text-[#c5a059] font-bold">
+                          04 Operations/Weekly Muhasabah/Weekly Summary - {selectedArchiveDetail.generatedDate}.md
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ) : savedSummaries.length > 0 ? (
@@ -1314,14 +1826,19 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-zinc-100">{item.startDate} → {item.endDate}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-zinc-400 border border-white/5">
-                            {item.totalSlips} Slips
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-mono font-bold">
+                            {(item.scoreOutOf10 ?? 10.0).toFixed(1)} / 10.0
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-zinc-400 border border-white/5 font-mono">
+                            {item.totalSlipsCount} Slips
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-zinc-400">
-                          <span>Net: <strong className={item.netSpiritualXp >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{item.netSpiritualXp >= 0 ? `+${item.netSpiritualXp}` : item.netSpiritualXp} XP</strong></span>
+                        <div className="flex items-center gap-3 text-[10px] text-zinc-400 font-mono">
+                          <span>Net: <strong className={item.totalNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{item.totalNetXP >= 0 ? `+${item.totalNetXP}` : item.totalNetXP} XP</strong></span>
                           <span>•</span>
-                          <span>On-Time: <strong className="text-emerald-300">{item.onTimePrayersCount}</strong></span>
+                          <span>On-Time: <strong className="text-emerald-300">{item.prayersOnTimeCount}</strong></span>
+                          <span>•</span>
+                          <span className="text-zinc-500">{item.spiritualRating}</span>
                         </div>
                       </div>
                       <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition" />
@@ -1330,8 +1847,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 ) : (
                   <div className="text-center py-10 text-zinc-500">
                     <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-xs">No archived weekly summaries found yet.</p>
-                    <p className="text-[10px] text-zinc-600 mt-1">Generate your first weekly summary on Friday or at the end of the week.</p>
+                    <p className="text-xs font-bold text-zinc-300">No archived weekly summaries found yet.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1">Use "1-CLICK JUMU'AH SEAL" or "FULL AUDIT" on Friday to snapshot your week and clear the slips ledger for a clean slate.</p>
                   </div>
                 )}
               </div>
