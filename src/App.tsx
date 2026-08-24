@@ -3,14 +3,10 @@ import { POSProvider, usePOS } from './POSContext';
 import { getLocalDateString } from './initialState';
 import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
+import { StrategyCodexView, StrategySubTab } from './components/StrategyCodexView';
+import { OracleSystemView, OracleSystemSubTab } from './components/OracleSystemView';
 import { QuestsView } from './components/QuestsView';
-import { GoalsView } from './components/GoalsView';
-import { ProjectsView } from './components/ProjectsView';
 import { SkillsView } from './components/SkillsView';
-import { AnalyticsView } from './components/AnalyticsView';
-import { SystemView } from './components/SystemView';
-import { PlanningView } from './components/PlanningView';
-import { FrameworksView } from './components/FrameworksView';
 import { SealingPowerView } from './components/SealingPowerView';
 import { RewardShopView } from './components/RewardShopView';
 import { MuhasabahView } from './components/MuhasabahView';
@@ -31,7 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'goals' | 'projects' | 'skills' | 'seals' | 'shop' | 'analytics' | 'spiderweb' | 'system' | 'planning' | 'frameworks';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'seals' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -91,10 +87,7 @@ function AppContent() {
     {
       title: 'STRATEGY & CODEX',
       items: [
-        { id: 'goals', label: 'Grand Destinies', icon: Target, desc: 'Long-term strategic horizons' },
-        { id: 'projects', label: 'Campaigns', icon: Briefcase, desc: 'Operational execution blocks' },
-        { id: 'planning', label: 'Codex & SOPs', icon: FolderOpen, desc: 'Vision, protocols, & doctrine' },
-        { id: 'frameworks', label: 'Strategic Models', icon: Compass, desc: 'Interactive decision frameworks' },
+        { id: 'strategy_codex', label: 'Strategy & Codex', icon: Compass, desc: 'Unified Grand Destinies, Campaigns, SOPs & Strategic Models' },
       ]
     },
     {
@@ -108,9 +101,8 @@ function AppContent() {
     {
       title: 'SANCTUM INSIGHTS',
       items: [
-        { id: 'analytics', label: 'Oracle Analytics', icon: BarChart3, desc: 'Resonance & empirical logs' },
+        { id: 'oracle_system', label: 'Oracle & System Control', icon: BarChart3, desc: 'Resonance analytics, empirical metrics & sanctum overrides' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
-        { id: 'system', label: 'System Control', icon: Settings, desc: 'Direct core overrides & architecture' }
       ]
     }
   ];
@@ -594,20 +586,31 @@ function AppContent() {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
-              {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab)} />}
-              {activeTab === 'planning' && <PlanningView onNavigate={(tab) => setActiveTab(tab)} />}
-              {activeTab === 'frameworks' && <FrameworksView />}
+              {activeTab === 'dashboard' && <DashboardView onNavigate={(tab) => setActiveTab(tab as TabId)} />}
               {activeTab === 'quests' && <QuestsView />}
               {activeTab === 'spiritual' && <SpiritualTrackerView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
-              {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab)} onOpenGuide={openGuide} />}
-              {activeTab === 'goals' && <GoalsView />}
-              {activeTab === 'projects' && <ProjectsView />}
+              {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
+              {(activeTab === 'strategy_codex' || activeTab === 'goals' || activeTab === 'projects' || activeTab === 'planning' || activeTab === 'frameworks') && (
+                <StrategyCodexView 
+                  initialSubTab={
+                    activeTab === 'goals' ? 'goals' :
+                    activeTab === 'projects' ? 'projects' :
+                    activeTab === 'planning' ? 'planning' :
+                    activeTab === 'frameworks' ? 'frameworks' : 'overview'
+                  }
+                  onNavigate={(tab) => setActiveTab(tab as TabId)}
+                />
+              )}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'seals' && <SealingPowerView />}
               {activeTab === 'shop' && <RewardShopView />}
-              {activeTab === 'analytics' && <AnalyticsView />}
+              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system') && (
+                <OracleSystemView 
+                  initialSubTab={activeTab === 'system' ? 'system' : 'analytics'}
+                  onNavigate={(tab) => setActiveTab(tab as TabId)}
+                />
+              )}
               {activeTab === 'spiderweb' && <SpiderwebGraph />}
-              {activeTab === 'system' && <SystemView />}
             </motion.div>
           </AnimatePresence>
         </main>
