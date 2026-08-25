@@ -801,6 +801,61 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             })()}
           </div>
 
+          {/* STRATEGIC COMMAND & CODEX PORTAL */}
+          <div className="glass-panel rounded-2xl p-4 border border-[#c5a059]/40 bg-gradient-to-r from-[#141824] via-[#0b0d13] to-[#1a170e] relative overflow-hidden shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] shrink-0 shadow-[0_0_12px_rgba(197,160,89,0.25)]">
+                <Compass className="h-5 w-5 text-[#c5a059]" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                    STRATEGIC MATRIX & CODEX LAB
+                  </h4>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-black">
+                    11 ENGINES ACTIVE
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 font-sans">
+                  Grand Destinies, operational campaigns, 10-Folder Codex doctrine, and tactical decision frameworks.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto shrink-0 flex-wrap">
+              {onNavigate && (
+                <>
+                  <button
+                    onClick={() => onNavigate('goals')}
+                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>DESTINIES</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('projects')}
+                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>CAMPAIGNS</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('frameworks')}
+                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>ENGINES</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigate('strategy_codex')}
+                    className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[11px] font-mono font-bold hover:brightness-110 active:scale-95 transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <span>MATRIX HUB</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Strategy 1: Eat the Frog Priority Target */}
           {frogOfTheDay && (
             <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/40 bg-[#3a2e12]/30 relative overflow-hidden shadow-[0_0_20px_rgba(197,160,89,0.12)]" id="frog-of-the-day-card">
@@ -847,8 +902,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#c5a059]/20 pb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  OPERATIONAL DECREES BOARD ({filteredDirectives.length})
+                <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span>OPERATIONAL DECREES BOARD ({filteredDirectives.length})</span>
+                  <span className="inline-block w-2 h-3.5 bg-[#c5a059] animate-pulse shadow-[0_0_8px_rgba(197,160,89,0.85)] rounded-[1px] ml-0.5" title="Terminal Live Cursor" />
                 </h3>
                 {selectedAttributeName && (
                   <span className="text-[10px] font-mono bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold">
