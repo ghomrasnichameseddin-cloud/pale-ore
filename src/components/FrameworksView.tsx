@@ -5,12 +5,23 @@ import {
   Plus, Trash2, CheckSquare, Sparkles, TrendingUp, Compass, 
   Layers, ShieldAlert, Check, RotateCcw, Info, Calendar, 
   Play, Swords, Target, Award, ArrowRight, HelpCircle,
-  GripVertical, Zap, Edit3, ChevronDown, ChevronUp, Clock, Filter, AlertTriangle
+  GripVertical, Zap, Edit3, ChevronDown, ChevronUp, Clock, Filter, AlertTriangle,
+  Lightbulb, FlaskConical, GitBranch, GitCommit, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
+import { OperationalHeuristicsEngine } from './frameworks/DecisionEngines';
+import { RootCauseAnalysisEngine, WorkBackwardsEngine } from './frameworks/ProblemSolvingEngines';
+import { BrainstormingSandbox, LateralThinkingLab, MindMappingGraph } from './frameworks/CreativeThinkingEngines';
+import { TrialAndErrorLaboratory } from './frameworks/ExperimentationEngine';
 
-type FrameworkTab = 'eisenhower' | 'swot' | 'smart' | 'pareto' | 'ooda';
+export type FrameworkCategory = 'all' | 'decision' | 'problem_solving' | 'creative' | 'experimentation';
+
+export type FrameworkTab = 
+  | 'eisenhower' | 'pareto' | 'heuristics' | 'ooda'
+  | 'root_cause' | 'work_backwards' | 'swot' | 'smart'
+  | 'brainstorm' | 'lateral' | 'mindmap'
+  | 'experiments';
 
 export const FrameworksView: React.FC = () => {
   const { 
@@ -18,6 +29,7 @@ export const FrameworksView: React.FC = () => {
     startFocusSession, activeFocusSession, toggleSubQuest, addSubQuest, addSystemMessage,
     isQuestScheduledForDate
   } = usePOS();
+  const [activeCategory, setActiveCategory] = useState<FrameworkCategory>('all');
   const [activeTab, setActiveTab] = useState<FrameworkTab>('eisenhower');
 
   // --- PERSISTED STATE FOR FRAMEWORKS ---
@@ -556,50 +568,94 @@ export const FrameworksView: React.FC = () => {
     <div className="space-y-6" id="frameworks-hub-view">
       
       {/* Header Banner */}
-      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden shadow-xl">
+      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-5 rounded-2xl flex flex-col justify-between gap-4 relative overflow-hidden shadow-xl">
         <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-        <div className="space-y-1 relative z-10">
-          <div className="flex items-center gap-2">
-            <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
-            <h2 className="font-display text-base font-black tracking-widest text-white uppercase">INTERACTIVE STRATEGIC FRAMEWORKS</h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+              <h2 className="font-display text-base font-black tracking-widest text-white uppercase">
+                STRATEGIC THINKING LAB & INTERACTIVE ENGINES
+              </h2>
+            </div>
+            <p className="text-xs text-zinc-300 font-mono">
+              11 tactical engines across 4 cognitive disciplines • Calibrate operational friction into bulletproof execution tracks.
+            </p>
           </div>
-          <p className="text-xs text-zinc-400 font-mono">
-            Execute tactical models & calibrate operational friction into bulletproof execution tracks.
-          </p>
+
+          {/* Category Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            {[
+              { id: 'all' as const, label: 'All Engines (11)' },
+              { id: 'decision' as const, label: '1. Decision (4)' },
+              { id: 'problem_solving' as const, label: '2. Problem Solving (4)' },
+              { id: 'creative' as const, label: '3. Creative (3)' },
+              { id: 'experimentation' as const, label: '4. Experiment (1)' },
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  if (cat.id === 'decision' && !['eisenhower', 'pareto', 'heuristics', 'ooda'].includes(activeTab)) {
+                    setActiveTab('eisenhower');
+                  } else if (cat.id === 'problem_solving' && !['root_cause', 'work_backwards', 'swot', 'smart'].includes(activeTab)) {
+                    setActiveTab('root_cause');
+                  } else if (cat.id === 'creative' && !['brainstorm', 'lateral', 'mindmap'].includes(activeTab)) {
+                    setActiveTab('brainstorm');
+                  } else if (cat.id === 'experimentation' && activeTab !== 'experiments') {
+                    setActiveTab('experiments');
+                  }
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition border cursor-pointer whitespace-nowrap ${
+                  activeCategory === cat.id
+                    ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-md'
+                    : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-white'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Framework Tabs Selectors */}
-        <div className="flex flex-wrap gap-1 bg-[#07080c] border border-[#c5a059]/30 p-1.5 rounded-lg font-mono text-[10px]">
-          <button
-            onClick={() => setActiveTab('eisenhower')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'eisenhower' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
-          >
-            🔲 EISENHOWER
-          </button>
-          <button
-            onClick={() => setActiveTab('swot')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'swot' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
-          >
-            📊 SWOT MATRIX
-          </button>
-          <button
-            onClick={() => setActiveTab('smart')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'smart' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
-          >
-            🎯 SMART AUDIT
-          </button>
-          <button
-            onClick={() => setActiveTab('pareto')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'pareto' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
-          >
-            ⚡ Pareto (80/20)
-          </button>
-          <button
-            onClick={() => setActiveTab('ooda')}
-            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${activeTab === 'ooda' ? 'bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] font-bold' : 'text-zinc-400 hover:text-white'}`}
-          >
-            🔄 OODA LOOP
-          </button>
+        {/* Framework Tabs Selectors (11 Engines) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-3 border-t border-white/5 scrollbar-thin">
+          {[
+            // 1. Decision
+            { id: 'eisenhower' as const, cat: 'decision', label: '🔲 Eisenhower Matrix', icon: Layers },
+            { id: 'pareto' as const, cat: 'decision', label: '⚡ Pareto 80/20', icon: TrendingUp },
+            { id: 'heuristics' as const, cat: 'decision', label: '🧠 Operational Heuristics', icon: Compass },
+            { id: 'ooda' as const, cat: 'decision', label: '🔄 OODA Loop', icon: RotateCcw },
+
+            // 2. Problem Solving
+            { id: 'root_cause' as const, cat: 'problem_solving', label: '🔍 Root Cause (5 Whys)', icon: GitCommit },
+            { id: 'work_backwards' as const, cat: 'problem_solving', label: '⏪ Working Backwards', icon: Target },
+            { id: 'swot' as const, cat: 'problem_solving', label: '📊 SWOT Matrix', icon: Sparkles },
+            { id: 'smart' as const, cat: 'problem_solving', label: '🎯 SMART Validator', icon: CheckSquare },
+
+            // 3. Creative Thinking
+            { id: 'brainstorm' as const, cat: 'creative', label: '💡 Brainstorm Sandbox', icon: Lightbulb },
+            { id: 'lateral' as const, cat: 'creative', label: '🔀 Lateral Lab (SCAMPER)', icon: Compass },
+            { id: 'mindmap' as const, cat: 'creative', label: '🕸️ Mind Map Graph', icon: GitBranch },
+
+            // 4. Experimentation
+            { id: 'experiments' as const, cat: 'experimentation', label: '🔬 Trial & Error Lab', icon: FlaskConical },
+          ].filter(t => activeCategory === 'all' || t.cat === activeCategory).map(tab => {
+            const isTabActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
+                  isTabActive
+                    ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_12px_rgba(197,160,89,0.2)]'
+                    : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-[#c5a059]/30'
+                }`}
+              >
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1643,6 +1699,41 @@ export const FrameworksView: React.FC = () => {
 
               </div>
             </div>
+          )}
+
+          {/* --- 1.3 OPERATIONAL HEURISTICS ANALYZER --- */}
+          {activeTab === 'heuristics' && (
+            <OperationalHeuristicsEngine />
+          )}
+
+          {/* --- 2.1 ROOT CAUSE ANALYSIS (5 WHYS) --- */}
+          {activeTab === 'root_cause' && (
+            <RootCauseAnalysisEngine />
+          )}
+
+          {/* --- 2.2 WORKING BACKWARDS MECHANISM --- */}
+          {activeTab === 'work_backwards' && (
+            <WorkBackwardsEngine />
+          )}
+
+          {/* --- 3.1 BRAINSTORMING SANDBOX --- */}
+          {activeTab === 'brainstorm' && (
+            <BrainstormingSandbox />
+          )}
+
+          {/* --- 3.2 LATERAL THINKING LAB --- */}
+          {activeTab === 'lateral' && (
+            <LateralThinkingLab />
+          )}
+
+          {/* --- 3.3 MIND MAPPING GRAPH --- */}
+          {activeTab === 'mindmap' && (
+            <MindMappingGraph />
+          )}
+
+          {/* --- 4.1 TRIAL & ERROR LABORATORY --- */}
+          {activeTab === 'experiments' && (
+            <TrialAndErrorLaboratory />
           )}
 
         </motion.div>

@@ -31,7 +31,9 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     '04 Operations': false,
     '05 SOPs': false,
     '06 Frameworks': false,
-    '07 Reviews': false,
+    '07 Experiments': false,
+    '08 Lessons Learned': false,
+    '09 Reviews & Archive': false,
     'Archive': false,
   });
 

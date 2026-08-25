@@ -468,12 +468,12 @@ export const DEFAULT_PLANNING_DOCS: PlanningDocument[] = [
     updatedAt: new Date().toISOString()
   },
 
-  // 07 Reviews
+  // 07 Experiments
   {
     id: 'pdoc-07-1',
-    path: '07 Reviews/Weekly Reviews.md',
-    name: 'Weekly Reviews.md',
-    content: `# 📊 Weekly Reviews Archive\n\nUse this document to log historical weekly reviews and track longitudinal momentum:\n\n## Template\n- **Week Index**: [e.g., Week 29 - July 2026]\n- **Total XP Earned**: [Value]\n- **Frog Success Rate**: [e.g., 6/7 frogs eaten]\n- **Core Growth Wins**: [Describe brief wins]\n- **Operational Friction / Bottlenecks**: [Identify obstacles]\n- **SOP Calibrations**: [Changes made to routines]`,
+    path: '07 Experiments/Hydration & Focus Baseline.md',
+    name: 'Hydration & Focus Baseline.md',
+    content: `# 🧪 Experiment: Morning Hydration & Cognitive Focus\n\n## 1. Hypothesis\nDrinking 750ml of cold water with trace electrolytes within 10 minutes of waking increases first-sprint focus duration by 30% and delays morning caffeine craving.\n\n## 2. Variables\n- **Independent**: 750ml electrolyte water immediately post-wake.\n- **Controlled**: Sleep duration (7.5h), wake time (06:00), morning light exposure (15m).\n- **Dependent Metrics**: Deep work minutes before distraction, self-reported cognitive alertness (1-10).\n\n## 3. Results Log\n- Day 1-7 (Baseline without electrolytes): Average first distraction at 32 mins. Alertness 6.2/10.\n- Day 8-14 (Intervention with 750ml + trace minerals): Average first distraction at 58 mins. Alertness 8.7/10.\n\n## 4. Empirical Verdict\n- **Status**: Validated (Promoted to 05 SOPs/Morning Routine.md).`,
     linkedGoals: [],
     linkedProjects: [],
     linkedQuests: [],
@@ -482,9 +482,9 @@ export const DEFAULT_PLANNING_DOCS: PlanningDocument[] = [
   },
   {
     id: 'pdoc-07-2',
-    path: '07 Reviews/Monthly Reviews.md',
-    name: 'Monthly Reviews.md',
-    content: `# 📊 Monthly Reviews Archive\n\n## July 2026 Monthly Summary\n- **Target Achieved**: Completed main system integration.\n- **XP Compounded**: 1,250 XP accumulated.\n- **Friction Solved**: Standardized sleep schedule, resolving early-morning cognitive lulls.\n- **Next Focus**: Launch next portfolio SaaS project and test under heavy loads.`,
+    path: '07 Experiments/Time-Blocking 90m Sprints.md',
+    name: 'Time-Blocking 90m Sprints.md',
+    content: `# 🧪 Experiment: 90-Minute Ultradian Sprints vs Continuous Work\n\n## 1. Hypothesis\nExecuting two distinct 90-minute isolated deep work blocks with complete screen disengagement during 20m rest yields higher output than 4 hours of continuous shallow multitasking.\n\n## 2. Protocol\n- **Sprint 1**: 08:30 - 10:00 (Eat the Frog / Critical Quest).\n- **Rest Buffer**: 10:00 - 10:20 (Walking, outdoor light, zero inputs).\n- **Sprint 2**: 10:20 - 11:50 (Secondary Architecture / Code Build).\n\n## 3. Empirical Verdict\n- Output volume increased 42% with zero afternoon cognitive slump. Confirmed standard operational protocol.`,
     linkedGoals: [],
     linkedProjects: [],
     linkedQuests: [],
@@ -493,9 +493,22 @@ export const DEFAULT_PLANNING_DOCS: PlanningDocument[] = [
   },
   {
     id: 'pdoc-07-3',
-    path: '07 Reviews/Quarterly Reviews.md',
-    name: 'Quarterly Reviews.md',
-    content: `# 📊 Quarterly Reviews Portfolio\n\n## 2026 Q2 Strategic Retrospective\n- **Status**: Completed successfully.\n- **Key Accomplishments**: Refined Systems programming fundamentals; automated standard devops deployment loops; maintained solid strength habits.\n- **Lessons**: Over-scheduling quests causes mental fatigue. Keep estimated durations accurate and prioritize Zone 2 cardio base.`,
+    path: '07 Experiments/Zone 2 Cardio Protocols.md',
+    name: 'Zone 2 Cardio Protocols.md',
+    content: `# 🧪 Experiment: Zone 2 Aerobic Base & Resting Heart Rate\n\n## 1. Objective\nAssess impact of 3x 45-minute nasal-breathing Zone 2 sessions weekly on resting heart rate (RHR) and recovery score over 6 weeks.\n\n## 2. Metrics Tracked\n- Baseline RHR: 62 bpm.\n- Week 3 RHR: 58 bpm.\n- Week 6 RHR: 53 bpm.\n\n## 3. Conclusion\nZone 2 training provides immense cognitive recovery and stamina benefits for long programming sprints.`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+
+  // 08 Lessons Learned
+  {
+    id: 'pdoc-08-1',
+    path: '08 Lessons Learned/Scope Creep in Systems Architecture.md',
+    name: 'Scope Creep in Systems Architecture.md',
+    content: `# 💡 Lessons Learned: Mitigating Scope Creep in System Architecture\n\n## 1. Incident Retrospective\n- **Context**: During the initial build of a multi-module platform, feature specifications expanded from core storage into unrequested background workers and complex notification buses.\n- **Root Cause**: Failure to freeze the MVP boundary before writing code. Chasing hypothetical future features.\n\n## 2. Core Lessons\n- Build the simplest workable vertical slice first.\n- Code that is not written has zero bugs and zero maintenance cost.\n- Always validate the core user loop before building secondary abstraction layers.\n\n## 3. Preventative Rule (SOP Link)\n- Every new feature requires a 1-page RFC answering: "What immediate problem does this solve today?"`,
     linkedGoals: [],
     linkedProjects: [],
     linkedQuests: [],
@@ -503,10 +516,67 @@ export const DEFAULT_PLANNING_DOCS: PlanningDocument[] = [
     updatedAt: new Date().toISOString()
   },
   {
-    id: 'pdoc-07-4',
-    path: '07 Reviews/Annual Reviews.md',
+    id: 'pdoc-08-2',
+    path: '08 Lessons Learned/Recovery & Preventing Burnout.md',
+    name: 'Recovery & Preventing Burnout.md',
+    content: `# 💡 Lessons Learned: Sustainable Momentum & Burnout Prevention\n\n## 1. Retrospective Analysis\n- Sustained 14-hour days without physical recovery or mental detachment cause rapid cognitive degradation by day 10.\n- Strategic deceleration produces higher long-term velocity than erratic over-exertion.\n\n## 2. The 3 Laws of High Velocity\n- **Law 1**: Rest is a strategic requirement, not a reward for survival.\n- **Law 2**: Consistency beats intensity. 4 hours of deep focus daily for 365 days beats 14 hours daily for 2 weeks followed by collapse.\n- **Law 3**: High contrast living—full immersion when on, complete presence when off.`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'pdoc-08-3',
+    path: '08 Lessons Learned/High Energy Mornings & Light Exposure.md',
+    name: 'High Energy Mornings & Light Exposure.md',
+    content: `# 💡 Lessons Learned: Circadian Alignment & Peak Energy\n\n## 1. Key Finding\n- Morning outdoor sunlight within 20 minutes of waking triggers cortisol peak at the right biological window, improving nighttime melatonin production 14 hours later.\n\n## 2. Behavioral Checklist\n- Step outside before looking at any laptop or monitor screen.\n- No caffeine within the first 60 minutes of waking (allows adenosine clearance).`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+
+  // 09 Reviews & Archive
+  {
+    id: 'pdoc-09-1',
+    path: '09 Reviews & Archive/Weekly Reviews.md',
+    name: 'Weekly Reviews.md',
+    content: `# 📊 Weekly Reviews Archive\n\nUse this document to log historical weekly reviews and track longitudinal momentum:\n\n## Review Template\n- **Week Index**: [e.g., Week 34 - August 2026]\n- **Total XP Earned**: [Value]\n- **Frog Success Rate**: [e.g., 6/7 frogs eaten]\n- **Sacred Score & Muḥāsabah**: [Net Mizan XP & reflection]\n- **Core Strategic Wins**: [Describe milestone outcomes]\n- **Operational Friction / Bottlenecks**: [Identify obstacles]\n- **SOP Calibrations**: [Changes made to standard routines]`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'pdoc-09-2',
+    path: '09 Reviews & Archive/Monthly Reviews.md',
+    name: 'Monthly Reviews.md',
+    content: `# 📊 Monthly Reviews Archive\n\n## August 2026 Monthly Summary\n- **Target Achieved**: Unified Strategy & Codex system architecture fully operational.\n- **XP Compounded**: 2,850 XP accumulated across primary skill trees.\n- **Friction Solved**: Standardized time-blocking rhythms, resolving midday cognitive fatigue.\n- **Next Strategic Focus**: Expand Thinking Lab automations and execute next campaign milestones.`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'pdoc-09-3',
+    path: '09 Reviews & Archive/Quarterly Reviews.md',
+    name: 'Quarterly Reviews.md',
+    content: `# 📊 Quarterly Reviews Portfolio\n\n## 2026 Q3 Strategic Retrospective\n- **Status**: On Track & Thriving.\n- **Key Accomplishments**: Refined Systems engineering mastery, deployed production-ready personal operating system, sustained peak physical conditioning.\n- **Lessons**: Keep quest definitions atomic (<90m) to maintain steady momentum and avoid execution paralysis.`,
+    linkedGoals: [],
+    linkedProjects: [],
+    linkedQuests: [],
+    linkedSkills: [],
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'pdoc-09-4',
+    path: '09 Reviews & Archive/Annual Reviews.md',
     name: 'Annual Reviews.md',
-    content: `# 📊 Annual Retrospective Archive\n\n- **Historical 2025 Review**: Transitioned into systems architecture. Mastered terminal workflows. Established solid habit systems. Built foundation for the Pale Ore OS.\n- **Current 2026 Review**: Pending Q4 culmination.`,
+    content: `# 📊 Annual Retrospective Archive\n\n- **Historical 2025 Review**: Transitioned into systems architecture. Mastered terminal workflows. Established solid habit systems. Built foundation for the Pale Ore OS.\n- **Current 2026 Review**: In active progression across 4 Grand Destinies and 8 core campaigns.`,
     linkedGoals: [],
     linkedProjects: [],
     linkedQuests: [],

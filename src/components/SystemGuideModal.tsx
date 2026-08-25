@@ -6,7 +6,7 @@ import {
   Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 interface SystemGuideModalProps {
   isOpen: boolean;
@@ -32,7 +32,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
       title: '1. Architecture & RPG Loop',
       icon: BookOpen,
       badge: 'ESSENTIAL',
-      color: 'text-cyan-400',
+      color: 'text-[#e5c875]',
     },
     {
       id: 'ranks-levels',
@@ -60,28 +60,28 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
       title: '5. Goals, Projects & Mini-Breakdowns',
       icon: Target,
       badge: 'PLANNING',
-      color: 'text-amber-400',
+      color: 'text-[#c5a059]',
     },
     {
       id: 'strategic-models',
       title: '6. Decision Models & SOP Docs',
       icon: Compass,
       badge: 'MODELS',
-      color: 'text-blue-400',
+      color: 'text-cyan-400',
     },
     {
       id: 'mastery',
       title: '7. Skills, Seals & Ores Classification',
       icon: Award,
       badge: 'PROGRESSION',
-      color: 'text-pink-400',
+      color: 'text-amber-300',
     },
     {
       id: 'spiritual-tracker',
       title: '8. Sacred Protocol & Hijri Calendar',
       icon: Moon,
       badge: 'SACRED RITES',
-      color: 'text-[#e5c875]',
+      color: 'text-[#fef08a]',
     },
     {
       id: 'muhasabah',
@@ -95,7 +95,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
       title: '10. Luminescent Ore Shop',
       icon: ShoppingBag,
       badge: 'REWARDS',
-      color: 'text-amber-400',
+      color: 'text-[#e5c875]',
     },
     {
       id: 'analytics-system',
@@ -120,19 +120,25 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
         dir="ltr"
-        className="glass-panel border border-cyan-500/30 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.18)] bg-zinc-950/95"
+        className="relative border border-[#c5a059]/50 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(197,160,89,0.2)] bg-gradient-to-b from-[#0e111a] via-[#090b10] to-[#07080c]"
       >
+        <ArabesqueCorner position="top-left" className="text-[#c5a059]/40 z-10 pointer-events-none" />
+        <ArabesqueCorner position="top-right" className="text-[#c5a059]/40 z-10 pointer-events-none" />
+        <ArabesqueCorner position="bottom-left" className="text-[#c5a059]/40 z-10 pointer-events-none" />
+        <ArabesqueCorner position="bottom-right" className="text-[#c5a059]/40 z-10 pointer-events-none" />
+
         {/* MODAL HEADER */}
-        <div className="p-4 sm:p-5 border-b border-white/10 flex flex-wrap items-center justify-between gap-4 bg-zinc-900/90 shrink-0">
+        <div className="p-4 sm:p-5 border-b border-[#c5a059]/30 flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-[#1c160a] via-[#0b0d13] to-[#1c160a] shrink-0 relative">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-cyan-950/80 border border-cyan-500/40 rounded-xl text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
-              <BookOpen className="h-6 w-6" />
+            <div className="p-2.5 bg-[#3a2e12]/80 border border-[#c5a059]/50 rounded-xl text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.25)]">
+              <BookOpen className="h-6 w-6 text-[#c5a059]" />
             </div>
             <div>
-              <h2 className="font-display text-base sm:text-lg font-bold tracking-wider text-white flex items-center gap-2">
-                PALE ORE PROGRESSION OS — MASTER SYSTEM MANUAL
+              <h2 className="font-display text-base sm:text-lg font-bold tracking-wider text-[#fef08a] flex items-center gap-2">
+                <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                <span>PALE ORE PROGRESSION OS — MASTER SYSTEM MANUAL</span>
               </h2>
-              <p className="text-xs font-mono text-cyan-400/80">
+              <p className="text-xs font-mono text-[#c5a059]/80">
                 Comprehensive Operational Manual, Mathematical Equations & Execution Frameworks
               </p>
             </div>
@@ -141,7 +147,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition"
+              className="p-2 text-zinc-400 hover:text-[#fef08a] hover:bg-[#3a2e12]/40 rounded-lg transition border border-transparent hover:border-[#c5a059]/30"
               title="Close Manual"
             >
               <X className="h-5 w-5" />
@@ -153,9 +159,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-[480px]">
           
           {/* GUIDE NAVIGATION SIDEBAR */}
-          <div className="w-full md:w-64 bg-zinc-950/80 border-b md:border-b-0 md:border-r border-white/10 p-3 space-y-1 shrink-0 overflow-y-auto">
-            <div className="text-[10px] font-mono text-zinc-500 font-bold uppercase tracking-wider px-2 py-1">
-              MANUAL SECTIONS
+          <div className="w-full md:w-64 bg-[#07080c]/95 border-b md:border-b-0 md:border-r border-[#c5a059]/20 p-3 space-y-1 shrink-0 overflow-y-auto">
+            <div className="text-[10px] font-mono text-[#c5a059]/70 font-bold uppercase tracking-wider px-2 py-1 flex items-center gap-1.5">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              <span>MANUAL SECTIONS</span>
             </div>
 
             {sections.map(sec => {
@@ -167,8 +174,8 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   onClick={() => setActiveSection(sec.id)}
                   className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-mono transition-all text-left ${
                     isActive 
-                      ? 'bg-cyan-950/60 border border-cyan-500/40 text-white font-bold shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                      ? 'bg-gradient-to-r from-[#3a2e12] via-[#241c09] to-[#12141f] border border-[#c5a059] text-[#fef08a] font-bold shadow-[0_0_12px_rgba(197,160,89,0.2)]' 
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#181d29]/40 border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
@@ -176,7 +183,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <span className="truncate">{sec.title}</span>
                   </div>
                   <span className={`text-[8px] px-1.5 py-0.5 rounded uppercase font-mono shrink-0 ${
-                    isActive ? 'bg-cyan-500/20 text-cyan-300' : 'bg-zinc-800 text-zinc-500'
+                    isActive ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40' : 'bg-[#0d1017] text-zinc-500 border border-white/5'
                   }`}>
                     {sec.badge}
                   </span>
@@ -184,9 +191,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               );
             })}
 
-            <div className="pt-4 border-t border-white/5 mt-4 p-3 bg-zinc-900/50 rounded-xl space-y-2">
-              <div className="text-[10px] font-mono text-zinc-400 font-bold flex items-center gap-1.5">
-                <HelpCircle className="h-3.5 w-3.5 text-amber-400" />
+            <div className="pt-4 border-t border-[#c5a059]/10 mt-4 p-3 bg-gradient-to-br from-[#1b1509] to-[#0d0f17] border border-[#c5a059]/30 rounded-xl space-y-2">
+              <div className="text-[10px] font-mono text-[#fef08a] font-bold flex items-center gap-1.5">
+                <HelpCircle className="h-3.5 w-3.5 text-[#c5a059]" />
                 <span>SYS DATE CONTROLLER</span>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">
@@ -196,43 +203,46 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
           </div>
 
           {/* CONTENT DISPLAY AREA */}
-          <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-6 text-zinc-300 font-sans leading-relaxed bg-zinc-950/50">
+          <div className="flex-1 p-5 sm:p-6 overflow-y-auto space-y-6 text-zinc-300 font-sans leading-relaxed bg-[#0b0d13]/80">
             
             {/* 1. ARCHITECTURE & RPG LOOP */}
             {activeSection === 'getting-started' && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-cyan-400" />
+                <div className="border-b border-[#c5a059]/30 pb-3">
+                  <h3 className="text-lg sm:text-xl font-display font-bold text-[#fef08a] flex items-center gap-2">
+                    <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
                     1. System Architecture & The RPG Progression Loop
                   </h3>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">
-                    PALE ORE is a personal Progression Operating System turning real-world goals, habits, and skill mastery into an RPG execution loop.
+                  <p className="text-xs font-mono text-[#c5a059]/80 mt-1">
+                    PALE ORE is an Islamic RPG Progression Operating System turning real-world goals, habits, and skill mastery into an imperial spiritual execution loop.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
-                  <div className="p-3.5 bg-zinc-900/80 border border-cyan-500/20 rounded-xl space-y-1.5">
-                    <span className="text-cyan-400 font-bold text-[11px] block flex items-center gap-1">
-                      ⚡ DIRECTIVES
+                  <div className="p-3.5 bg-gradient-to-br from-[#1b1509] to-[#0d0f17] border border-[#c5a059]/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(197,160,89,0.1)]">
+                    <span className="text-[#fef08a] font-bold text-[11px] block flex items-center gap-1.5">
+                      <Swords className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span>⚡ DIRECTIVES</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
                       Execute Quests, Boss Battles & Daily Habits to earn XP, Luminescent Coins, and Attribute points.
                     </p>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-purple-500/20 rounded-xl space-y-1.5">
-                    <span className="text-purple-400 font-bold text-[11px] block flex items-center gap-1">
-                      🧬 ATTRIBUTES
+                  <div className="p-3.5 bg-gradient-to-br from-[#181324] to-[#0d0f17] border border-purple-500/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                    <span className="text-purple-300 font-bold text-[11px] block flex items-center gap-1.5">
+                      <Cpu className="h-3.5 w-3.5 text-purple-400" />
+                      <span>🧬 ATTRIBUTES</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
                       8 core stats (Strength, Focus, Knowledge, Discipline, Agility, Wisdom, Social, Faith) grow dynamically through proven quest completions.
                     </p>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-emerald-500/20 rounded-xl space-y-1.5">
-                    <span className="text-emerald-400 font-bold text-[11px] block flex items-center gap-1">
-                      🏆 MASTERY
+                  <div className="p-3.5 bg-gradient-to-br from-[#0e1f18] to-[#0d0f17] border border-emerald-500/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <span className="text-emerald-300 font-bold text-[11px] block flex items-center gap-1.5">
+                      <Award className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>🏆 MASTERY</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
                       Level up skills, unseal latent Power Seals for passive multipliers, and spend earned coins in the Reward Shop.
@@ -241,71 +251,72 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                 </div>
 
                 {/* NAVIGATION MAP */}
-                <div className="space-y-3 pt-2 border-t border-white/5">
-                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    Primary System Navigation Map:
+                <div className="space-y-3 pt-2 border-t border-[#c5a059]/20">
+                  <h4 className="text-xs font-mono font-bold text-[#fef08a] uppercase tracking-wider flex items-center gap-2">
+                    <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>Primary Sanctum Navigation Map:</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                    <div onClick={() => handleNavigate('dashboard')} className="p-3 bg-zinc-900/60 hover:bg-cyan-950/30 border border-white/5 hover:border-cyan-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <Activity className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                    <div onClick={() => handleNavigate('dashboard')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Activity className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Dashboard</span>
+                        <span className="font-bold text-[#fef08a] block">Dashboard Sanctuary</span>
                         <span className="text-[11px] text-zinc-400">Daily summary, priority target, and 8-stat attribute capability matrix.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('quests')} className="p-3 bg-zinc-900/60 hover:bg-emerald-950/30 border border-white/5 hover:border-emerald-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                    <div onClick={() => handleNavigate('quests')} className="p-3 bg-[#0d1017]/80 hover:bg-emerald-950/40 border border-white/5 hover:border-emerald-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <Swords className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Quests & Directives</span>
+                        <span className="font-bold text-emerald-200 block">Quests & Directives</span>
                         <span className="text-[11px] text-zinc-400">Manage main/side quests, daily habits, boss fights, split/merge/move tools.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('goals')} className="p-3 bg-zinc-900/60 hover:bg-amber-950/30 border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <Target className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div onClick={() => handleNavigate('goals')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Target className="h-4 w-4 text-[#e5c875] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Goals & Mini-Goals</span>
+                        <span className="font-bold text-[#fef08a] block">Goals & Mini-Goals</span>
                         <span className="text-[11px] text-zinc-400">Breakdown macro strategic vision into actionable mini-goals and milestones.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('projects')} className="p-3 bg-zinc-900/60 hover:bg-blue-950/30 border border-white/5 hover:border-blue-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <Briefcase className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                    <div onClick={() => handleNavigate('projects')} className="p-3 bg-[#0d1017]/80 hover:bg-blue-950/40 border border-white/5 hover:border-blue-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Briefcase className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Projects & Sub-Projects</span>
+                        <span className="font-bold text-cyan-200 block">Projects & Sub-Projects</span>
                         <span className="text-[11px] text-zinc-400">Group tasks into project directories with sub-project components & deadlines.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('spiritual')} className="p-3 bg-zinc-900/60 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <Moon className="h-4 w-4 text-[#e5c875] shrink-0 mt-0.5" />
+                    <div onClick={() => handleNavigate('spiritual')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/60 border border-white/5 hover:border-[#c5a059]/60 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Moon className="h-4 w-4 text-[#fef08a] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Sacred Protocol & Hijri</span>
+                        <span className="font-bold text-[#fef08a] block">Sacred Protocol & Hijri</span>
                         <span className="text-[11px] text-zinc-400">Track 5 Daily Salaats (Masjid/Rawātib), Morning/Evening Adhkār, 70+ Salawāt & Qiyām al-Layl.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('muhasabah')} className="p-3 bg-zinc-900/60 hover:bg-amber-950/30 border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                    <div onClick={() => handleNavigate('muhasabah')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/60 border border-white/5 hover:border-[#c5a059]/60 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <Scale className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Muhāsabah Chamber</span>
+                        <span className="font-bold text-amber-300 block">Muhāsabah Chamber</span>
                         <span className="text-[11px] text-zinc-400">Self-accountability ledger, bounded XP friction (−500 cap), restitution quests & weakness seals.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('seals')} className="p-3 bg-zinc-900/60 hover:bg-purple-950/30 border border-white/5 hover:border-purple-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                    <div onClick={() => handleNavigate('seals')} className="p-3 bg-[#0d1017]/80 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <Award className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Skills, Seals & Ores</span>
+                        <span className="font-bold text-purple-300 block">Skills, Seals & Ores</span>
                         <span className="text-[11px] text-zinc-400">Level skill trees, shatter ancient Pale Ore chains, equip custom career job perks.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('shop')} className="p-3 bg-zinc-900/60 hover:bg-amber-950/30 border border-white/5 hover:border-amber-500/30 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <ShoppingBag className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div onClick={() => handleNavigate('shop')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <ShoppingBag className="h-4 w-4 text-[#e5c875] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-white block">Luminescent Shop</span>
+                        <span className="font-bold text-[#fef08a] block">Luminescent Shop</span>
                         <span className="text-[11px] text-zinc-400">Exchange quest coins for real-world rewards and custom productivity vouchers.</span>
                       </div>
                     </div>
@@ -2015,24 +2026,24 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
         </div>
 
         {/* FOOTER ACTIONS */}
-        <div className="p-4 border-t border-white/10 bg-zinc-900/90 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-            <Sparkles className="h-4 w-4 text-cyan-400" />
-            <span>Click any action button below to navigate directly to that section.</span>
+        <div className="p-4 border-t border-[#c5a059]/30 bg-gradient-to-r from-[#07080c] via-[#0e111a] to-[#07080c] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#c5a059]/80">
+            <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+            <span>Select any domain directive to teleport directly to that sanctuary chamber.</span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleNavigate('dashboard')}
-              className="px-3.5 py-1.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524017] text-[#fef08a] border border-[#c5a059]/60 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shadow-[0_0_12px_rgba(197,160,89,0.2)]"
             >
-              <span>GO TO DASHBOARD</span>
+              <span>SANCTUM DASHBOARD</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
 
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg font-mono text-xs font-bold transition"
+              className="px-3.5 py-1.5 bg-[#141824] hover:bg-[#1e2333] text-zinc-300 border border-white/10 hover:border-zinc-500 rounded-lg font-mono text-xs font-bold transition"
             >
               CLOSE MANUAL
             </button>

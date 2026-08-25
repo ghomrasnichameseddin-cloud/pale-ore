@@ -23,7 +23,7 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -87,22 +87,27 @@ function AppContent() {
     {
       title: 'STRATEGY & CODEX',
       items: [
-        { id: 'strategy_codex', label: 'Strategy & Codex', icon: Compass, desc: 'Unified Grand Destinies, Campaigns, SOPs & Strategic Models' },
+        { id: 'strategy_codex', label: 'Strategic Matrix Hub', icon: Compass, desc: 'Unified Grand Destinies, Campaigns, SOPs & Strategic Models' },
+        { id: 'goals', label: 'Grand Destinies', icon: Target, desc: '30-Day, Quarterly & Long-term Visions' },
+        { id: 'projects', label: 'Campaigns & Milestones', icon: Briefcase, desc: 'Execution sprints, deliverables & risk registers' },
+        { id: 'planning', label: '10-Folder Codex Vault', icon: FolderOpen, desc: 'Foundational doctrine, SOPs, specs & architecture' },
+        { id: 'frameworks', label: 'Strategic Thinking Lab', icon: Layers, desc: '11 Interactive Decision & Optimization Engines' },
       ]
     },
     {
-      title: 'MASTERY & POWER',
+      title: 'MASTERY & PROGRESSION',
       items: [
-        { id: 'skills', label: 'Skills', icon: Award, desc: 'Core mastery & competency tracks' },
+        { id: 'skills', label: 'Skills & Competencies', icon: Award, desc: 'Core mastery & competency tracks' },
         { id: 'seals', label: 'Ores & Chains', icon: Pickaxe, desc: 'Shatter chains on luminescent ores for passive multipliers' },
         { id: 'shop', label: 'Imperial Vault', icon: ShoppingBag, desc: 'Channel gold dinars into bounties & perks' }
       ]
     },
     {
-      title: 'SANCTUM INSIGHTS',
+      title: 'SANCTUM OBSERVATORY',
       items: [
-        { id: 'oracle_system', label: 'Oracle & System Control', icon: BarChart3, desc: 'Resonance analytics, empirical metrics & sanctum overrides' },
+        { id: 'analytics', label: 'Resonance Analytics', icon: BarChart3, desc: 'Empirical analytics, XP trends & consistency' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
+        { id: 'system', label: 'Sanctum Engine & Backups', icon: Settings, desc: 'Data export, JSON restore & system maintenance' },
       ]
     }
   ];

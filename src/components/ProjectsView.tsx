@@ -24,13 +24,21 @@ export const ProjectsView: React.FC = () => {
   const [newProjName, setNewProjName] = useState('');
   const [newProjGoalId, setNewProjGoalId] = useState('');
   const [newProjEstTime, setNewProjEstTime] = useState('20 hours');
+  const [newProjTimeBudget, setNewProjTimeBudget] = useState<number>(20);
+  const [newProjHealth, setNewProjHealth] = useState<'Healthy' | 'At Risk' | 'Blocked' | 'Completed'>('Healthy');
   const [newProjDesc, setNewProjDesc] = useState('');
+  const [newProjDeliverables, setNewProjDeliverables] = useState('');
+  const [newProjRisks, setNewProjRisks] = useState('');
 
   // Edit Project States
   const [isEditingProj, setIsEditingProj] = useState(false);
   const [editProjName, setEditProjName] = useState('');
   const [editProjEstTime, setEditProjEstTime] = useState('');
+  const [editProjTimeBudget, setEditProjTimeBudget] = useState<number>(20);
+  const [editProjHealth, setEditProjHealth] = useState<'Healthy' | 'At Risk' | 'Blocked' | 'Completed'>('Healthy');
   const [editProjDesc, setEditProjDesc] = useState('');
+  const [editProjDeliverables, setEditProjDeliverables] = useState('');
+  const [editProjRisks, setEditProjRisks] = useState('');
 
   // SubProject / Mini-Project States
   const [newSubProjName, setNewSubProjName] = useState('');
@@ -57,18 +65,33 @@ export const ProjectsView: React.FC = () => {
     e.preventDefault();
     if (!newProjName.trim() || !newProjGoalId) return;
 
+    const deliverablesList = newProjDeliverables
+      ? newProjDeliverables.split('\n').map(d => d.trim()).filter(Boolean)
+      : [];
+    const risksList = newProjRisks
+      ? newProjRisks.split('\n').map(r => r.trim()).filter(Boolean)
+      : [];
+
     const id = addProject({
       goalId: newProjGoalId,
       name: newProjName,
       status: 'Active',
-      estimatedTime: newProjEstTime,
-      description: newProjDesc
+      campaignHealth: newProjHealth,
+      timeBudgetHours: newProjTimeBudget || 20,
+      estimatedTime: newProjEstTime || `${newProjTimeBudget || 20} hours`,
+      description: newProjDesc,
+      deliverables: deliverablesList,
+      risks: risksList
     });
 
     setNewProjName('');
     setNewProjGoalId('');
     setNewProjEstTime('20 hours');
+    setNewProjTimeBudget(20);
+    setNewProjHealth('Healthy');
     setNewProjDesc('');
+    setNewProjDeliverables('');
+    setNewProjRisks('');
     setShowCreateProj(false);
     setSelectedProjId(id);
   };
@@ -77,8 +100,12 @@ export const ProjectsView: React.FC = () => {
   const startEditing = () => {
     if (!selectedProj) return;
     setEditProjName(selectedProj.name);
-    setEditProjEstTime(selectedProj.estimatedTime);
+    setEditProjEstTime(selectedProj.estimatedTime || '');
+    setEditProjTimeBudget(selectedProj.timeBudgetHours || 20);
+    setEditProjHealth(selectedProj.campaignHealth || 'Healthy');
     setEditProjDesc(selectedProj.description || '');
+    setEditProjDeliverables((selectedProj.deliverables || []).join('\n'));
+    setEditProjRisks((selectedProj.risks || []).join('\n'));
     setIsEditingProj(true);
   };
 
@@ -87,10 +114,21 @@ export const ProjectsView: React.FC = () => {
     e.preventDefault();
     if (!selectedProjId || !editProjName.trim()) return;
 
+    const deliverablesList = editProjDeliverables
+      ? editProjDeliverables.split('\n').map(d => d.trim()).filter(Boolean)
+      : [];
+    const risksList = editProjRisks
+      ? editProjRisks.split('\n').map(r => r.trim()).filter(Boolean)
+      : [];
+
     updateProject(selectedProjId, {
       name: editProjName,
       estimatedTime: editProjEstTime,
-      description: editProjDesc
+      timeBudgetHours: editProjTimeBudget,
+      campaignHealth: editProjHealth,
+      description: editProjDesc,
+      deliverables: deliverablesList,
+      risks: risksList
     });
     setIsEditingProj(false);
   };
@@ -191,7 +229,7 @@ export const ProjectsView: React.FC = () => {
             </h4>
             
             <div>
-              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Project Title</label>
+              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Campaign Title</label>
               <input 
                 type="text" 
                 placeholder="e.g. Celestial Astrolabe App..."
@@ -203,7 +241,7 @@ export const ProjectsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Project Description</label>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Campaign Description</label>
               <textarea 
                 placeholder="Core objectives & roadmap..."
                 value={newProjDesc}
@@ -213,29 +251,81 @@ export const ProjectsView: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Parent Destiny / Goal</label>
-              <select 
-                value={newProjGoalId}
-                onChange={(e) => setNewProjGoalId(e.target.value)}
-                className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
-                required
-              >
-                <option value="">Select Target Destiny</option>
-                {state.goals.map(g => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Parent Destiny</label>
+                <select 
+                  value={newProjGoalId}
+                  onChange={(e) => setNewProjGoalId(e.target.value)}
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                  required
+                >
+                  <option value="">Select Target Destiny</option>
+                  {state.goals.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Campaign Health</label>
+                <select 
+                  value={newProjHealth}
+                  onChange={(e) => setNewProjHealth(e.target.value as any)}
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-zinc-300 focus:outline-none font-mono"
+                >
+                  <option value="Healthy">Healthy (On Track)</option>
+                  <option value="At Risk">At Risk (Slipping)</option>
+                  <option value="Blocked">Blocked (Impediments)</option>
+                  <option value="Completed">Completed (Victory)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Time Budget (Hours)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  placeholder="20"
+                  value={newProjTimeBudget}
+                  onChange={(e) => setNewProjTimeBudget(Number(e.target.value))}
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Duration Label</label>
+                <input 
+                  type="text" 
+                  placeholder="20 hours / 4 weeks..."
+                  value={newProjEstTime}
+                  onChange={(e) => setNewProjEstTime(e.target.value)}
+                  className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none font-mono"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Est. Duration</label>
-              <input 
-                type="text" 
-                placeholder="20 hours / 4 weeks..."
-                value={newProjEstTime}
-                onChange={(e) => setNewProjEstTime(e.target.value)}
-                className="w-full bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none font-mono"
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Key Deliverables (one per line)</label>
+              <textarea 
+                placeholder="Core Engine Module&#10;Tactical UI Suite&#10;End-to-End Tests"
+                value={newProjDeliverables}
+                onChange={(e) => setNewProjDeliverables(e.target.value)}
+                rows={2}
+                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Risks & Dependencies (one per line)</label>
+              <textarea 
+                placeholder="External API quota limit&#10;Design token approvals"
+                value={newProjRisks}
+                onChange={(e) => setNewProjRisks(e.target.value)}
+                rows={2}
+                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none font-mono"
               />
             </div>
 
@@ -251,7 +341,7 @@ export const ProjectsView: React.FC = () => {
                 type="submit" 
                 className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[10px] font-mono font-black px-3.5 py-1 rounded cursor-pointer"
               >
-                INITIATE
+                ENACT CAMPAIGN
               </button>
             </div>
           </form>
@@ -355,21 +445,69 @@ export const ProjectsView: React.FC = () => {
                       required
                     />
 
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[9px] font-mono text-[#c5a059] uppercase mb-0.5">Campaign Health</label>
+                        <select 
+                          value={editProjHealth}
+                          onChange={(e) => setEditProjHealth(e.target.value as any)}
+                          className="w-full bg-[#07080c] border border-white/10 rounded px-2 py-1.5 text-xs text-zinc-200 font-mono"
+                        >
+                          <option value="Healthy">Healthy (On Track)</option>
+                          <option value="At Risk">At Risk (Slipping)</option>
+                          <option value="Blocked">Blocked (Impediments)</option>
+                          <option value="Completed">Completed (Victory)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-0.5">Time Budget (Hours)</label>
+                        <input 
+                          type="number" 
+                          value={editProjTimeBudget}
+                          onChange={(e) => setEditProjTimeBudget(Number(e.target.value))}
+                          className="w-full bg-[#07080c] border border-white/10 rounded px-2 py-1.5 text-xs text-white font-mono"
+                        />
+                      </div>
+                    </div>
+
                     <input 
                       type="text" 
                       value={editProjEstTime}
                       onChange={(e) => setEditProjEstTime(e.target.value)}
                       className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-white font-mono"
-                      placeholder="Estimated hours (e.g. 20 hours)"
+                      placeholder="Estimated duration label (e.g. 20 hours / 4 weeks)"
                     />
 
                     <textarea 
                       value={editProjDesc}
                       onChange={(e) => setEditProjDesc(e.target.value)}
                       rows={2}
-                      placeholder="Project description..."
+                      placeholder="Campaign description..."
                       className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-sans focus:outline-none"
                     />
+
+                    <div>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-0.5">Deliverables (one per line)</label>
+                      <textarea 
+                        value={editProjDeliverables}
+                        onChange={(e) => setEditProjDeliverables(e.target.value)}
+                        rows={2}
+                        placeholder="Deliverables list..."
+                        className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-0.5">Risks & Dependencies (one per line)</label>
+                      <textarea 
+                        value={editProjRisks}
+                        onChange={(e) => setEditProjRisks(e.target.value)}
+                        rows={2}
+                        placeholder="Risks list..."
+                        className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none"
+                      />
+                    </div>
 
                     <div className="flex gap-2 justify-end">
                       <button 
@@ -383,15 +521,27 @@ export const ProjectsView: React.FC = () => {
                         type="submit" 
                         className="bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer"
                       >
-                        UPDATE
+                        SAVE CAMPAIGN
                       </button>
                     </div>
                   </form>
                 ) : (
                   <>
-                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1 tracking-wide">
-                      {selectedProj.name}
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <h3 className="font-display text-xl font-bold text-white uppercase tracking-wide">
+                        {selectedProj.name}
+                      </h3>
+                      {selectedProj.campaignHealth && (
+                        <span className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase font-black tracking-wider ${
+                          selectedProj.campaignHealth === 'Healthy' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' :
+                          selectedProj.campaignHealth === 'At Risk' ? 'bg-amber-950 text-amber-300 border border-amber-500/40 animate-pulse' :
+                          selectedProj.campaignHealth === 'Blocked' ? 'bg-rose-950 text-rose-300 border border-rose-500/40 animate-pulse' :
+                          'bg-blue-950 text-blue-300 border border-blue-500/40'
+                        }`}>
+                          {selectedProj.campaignHealth}
+                        </span>
+                      )}
+                    </div>
 
                     {selectedProj.description && (
                       <p className="text-xs text-zinc-300 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed">
@@ -455,13 +605,58 @@ export const ProjectsView: React.FC = () => {
                 <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ESTIMATED BUDGET</span>
                 <p className="text-base font-mono font-bold text-white mt-2 flex items-center gap-1.5">
                   <Clock className="h-4 w-4 text-[#c5a059]" />
-                  {selectedProj.estimatedTime || 'Undefined budget'}
+                  {selectedProj.timeBudgetHours ? `${selectedProj.timeBudgetHours} Hours Allocated` : (selectedProj.estimatedTime || 'Undefined budget')}
                 </p>
                 <p className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
                   Active directives: {remainingQuests.length}
                 </p>
               </div>
             </div>
+
+            {/* STRATEGIC DELIVERABLES & RISK REGISTER */}
+            {((selectedProj.deliverables && selectedProj.deliverables.length > 0) || (selectedProj.risks && selectedProj.risks.length > 0)) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Deliverables */}
+                {selectedProj.deliverables && selectedProj.deliverables.length > 0 && (
+                  <div className="p-4 bg-[#07080c] border border-cyan-500/25 rounded-xl space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-cyan-300 font-bold uppercase flex items-center gap-1.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-cyan-400" />
+                        KEY CAMPAIGN DELIVERABLES ({selectedProj.deliverables.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {selectedProj.deliverables.map((item, idx) => (
+                        <div key={idx} className="p-2 rounded-lg bg-[#0b0d13] border border-cyan-500/15 text-xs font-mono text-zinc-300 flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-cyan-400">0{idx + 1}.</span>
+                          <span className="truncate">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Risks & Dependencies */}
+                {selectedProj.risks && selectedProj.risks.length > 0 && (
+                  <div className="p-4 bg-[#07080c] border border-rose-500/25 rounded-xl space-y-2.5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-rose-300 font-bold uppercase flex items-center gap-1.5">
+                        <CircleAlert className="h-3.5 w-3.5 text-rose-400" />
+                        RISKS & BOTTLENECK REGISTER ({selectedProj.risks.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {selectedProj.risks.map((risk, idx) => (
+                        <div key={idx} className="p-2 rounded-lg bg-[#0b0d13] border border-rose-500/15 text-xs font-mono text-rose-200 flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-rose-400">⚠</span>
+                          <span className="truncate">{risk}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* MINI-PROJECTS & SUB-PROJECTS BREAKDOWN */}
             <div className="p-4 bg-[#07080c] border border-[#c5a059]/30 rounded-xl space-y-4 shadow-sm">

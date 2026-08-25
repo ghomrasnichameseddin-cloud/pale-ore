@@ -2,6 +2,7 @@ import type { JobSpec, TitleSpec } from './jobsAndTitles';
 
 export type GoalStatus = 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
 export type GoalPriority = 'Low' | 'Medium' | 'High';
+export type CampaignHealth = 'Healthy' | 'At Risk' | 'Blocked' | 'Completed';
 
 export interface SubGoal {
   id: string;
@@ -22,12 +23,15 @@ export interface Goal {
   id: string;
   name: string;
   description: string;
+  desiredOutcome?: string;
   status: GoalStatus;
   priority: GoalPriority;
-  horizon?: '30-Day Sprint' | 'Quarterly (Q1-Q4)' | 'Annual Vision' | 'Life Vision';
+  horizon?: '30-Day Sprint' | 'Quarterly (Q1-Q4)' | 'Annual Vision' | 'Life Vision' | '30-Day' | 'Quarterly' | 'Annual' | 'Lifetime';
   quarter?: 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Annual';
   relatedSkills: string[]; // skill IDs
+  relevantAttributes?: string[]; // attribute IDs or names
   estimatedCompletion: string;
+  deadline?: string;
   createdAt: string;
   subGoals?: SubGoal[];
 }
@@ -38,7 +42,13 @@ export interface Project {
   name: string;
   description?: string;
   status: 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
+  campaignHealth?: CampaignHealth;
   estimatedTime: string;
+  timeBudgetHours?: number;
+  deadline?: string;
+  deliverables?: string[];
+  dependencies?: string[];
+  risks?: string[];
   createdAt: string;
   subProjects?: SubProject[];
   archived?: boolean;
@@ -207,6 +217,9 @@ export interface PlanningDocument {
   linkedProjects: string[]; // Project IDs
   linkedQuests: string[]; // Quest IDs
   linkedSkills: string[]; // Skill IDs
+  linkedExperiments?: string[]; // Experiment IDs
+  linkedReviews?: string[]; // Review IDs
+  linkedAttributes?: string[]; // Attribute IDs
   updatedAt: string;
 }
 

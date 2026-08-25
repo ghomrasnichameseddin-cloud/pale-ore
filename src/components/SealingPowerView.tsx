@@ -4,9 +4,10 @@ import { PowerSeal, SealRarity } from '../types';
 import { 
   Sparkles, Lock, Unlock, ShieldAlert, Award, Plus, Trash2, Edit3, 
   AlertCircle, Zap, Search, X, Pickaxe, Link as LinkIcon, Flame, Hammer,
-  Shield
+  Shield, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { RubElHizbIcon, ArabesqueCorner, GeometricDivider, ChainBadge } from './IslamicRpgDecorations';
 
 const SUGGESTED_RUNES = [
   // Arabic Alphabet Calligraphy Runes
@@ -25,60 +26,67 @@ const RARITY_COLORS: Record<SealRarity, {
   glow: string;
   runeSymbol: string;
   ringGradient: string;
+  accent: string;
 }> = {
   Common: {
-    border: 'border-cyan-500/40 hover:border-cyan-400',
-    bg: 'bg-gradient-to-b from-slate-900/90 via-zinc-950 to-zinc-950',
-    text: 'text-cyan-300',
-    badge: 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]',
-    glow: 'shadow-[0_0_20px_rgba(6,182,212,0.15)]',
+    border: 'border-[#c5a059]/30 hover:border-[#c5a059]/60',
+    bg: 'bg-gradient-to-b from-[#0e1118]/90 via-[#07080c] to-[#040508]',
+    text: 'text-zinc-200',
+    badge: 'bg-[#1a1d24] text-zinc-300 border-[#71717a]/50 shadow-[0_0_10px_rgba(113,113,122,0.2)]',
+    glow: 'shadow-[0_0_20px_rgba(197,160,89,0.08)]',
     runeSymbol: '⛓️',
-    ringGradient: 'from-cyan-500 to-blue-600'
+    ringGradient: 'from-zinc-500 to-[#c5a059]',
+    accent: '#71717a'
   },
   Rare: {
-    border: 'border-purple-500/50 hover:border-purple-400',
-    bg: 'bg-gradient-to-b from-purple-950/60 via-zinc-950 to-zinc-950',
-    text: 'text-purple-300',
-    badge: 'bg-purple-950/80 text-purple-300 border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.25)]',
-    glow: 'shadow-[0_0_22px_rgba(168,85,247,0.2)]',
+    border: 'border-blue-500/40 hover:border-blue-400',
+    bg: 'bg-gradient-to-b from-[#0b1528]/80 via-[#07080c] to-[#040508]',
+    text: 'text-blue-300',
+    badge: 'bg-blue-950/80 text-blue-300 border-blue-500/50 shadow-[0_0_12px_rgba(59,130,246,0.25)]',
+    glow: 'shadow-[0_0_22px_rgba(59,130,246,0.15)]',
     runeSymbol: '🪨',
-    ringGradient: 'from-purple-500 to-indigo-600'
+    ringGradient: 'from-blue-500 to-[#c5a059]',
+    accent: '#3b82f6'
   },
   Epic: {
-    border: 'border-emerald-500/50 hover:border-emerald-400',
-    bg: 'bg-gradient-to-b from-emerald-950/60 via-zinc-950 to-zinc-950',
+    border: 'border-emerald-500/40 hover:border-emerald-400',
+    bg: 'bg-gradient-to-b from-[#081f17]/80 via-[#07080c] to-[#040508]',
     text: 'text-emerald-300',
     badge: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.25)]',
-    glow: 'shadow-[0_0_22px_rgba(16,185,129,0.2)]',
+    glow: 'shadow-[0_0_22px_rgba(16,185,129,0.15)]',
     runeSymbol: '💎',
-    ringGradient: 'from-emerald-500 to-teal-600'
+    ringGradient: 'from-emerald-500 to-[#c5a059]',
+    accent: '#10b981'
   },
   Legendary: {
-    border: 'border-amber-500/60 hover:border-amber-400',
-    bg: 'bg-gradient-to-b from-amber-950/60 via-zinc-950 to-zinc-950',
-    text: 'text-amber-300',
-    badge: 'bg-amber-950/80 text-amber-300 border-amber-500/60 font-bold shadow-[0_0_15px_rgba(245,158,11,0.3)]',
-    glow: 'shadow-[0_0_28px_rgba(245,158,11,0.25)]',
+    border: 'border-[#c5a059]/70 hover:border-[#fef08a]',
+    bg: 'bg-gradient-to-b from-[#221808]/90 via-[#0b0d13] to-[#07080c]',
+    text: 'text-[#fef08a]',
+    badge: 'bg-[#3a2e12]/90 text-[#fef08a] border-[#c5a059]/80 font-bold shadow-[0_0_16px_rgba(197,160,89,0.4)]',
+    glow: 'shadow-[0_0_28px_rgba(197,160,89,0.3)]',
     runeSymbol: '🪙',
-    ringGradient: 'from-amber-400 to-orange-600'
+    ringGradient: 'from-[#c5a059] to-[#fef08a]',
+    accent: '#c5a059'
   },
   Divine: {
-    border: 'border-rose-500/70 hover:border-rose-400',
-    bg: 'bg-gradient-to-b from-rose-950/60 via-zinc-950 to-zinc-950',
+    border: 'border-rose-500/60 hover:border-rose-400',
+    bg: 'bg-gradient-to-b from-[#250912]/90 via-[#0b0d13] to-[#07080c]',
     text: 'text-rose-300',
     badge: 'bg-rose-950/80 text-rose-300 border-rose-500/70 font-bold shadow-[0_0_18px_rgba(244,63,94,0.35)]',
-    glow: 'shadow-[0_0_32px_rgba(244,63,94,0.3)]',
+    glow: 'shadow-[0_0_32px_rgba(244,63,94,0.25)]',
     runeSymbol: '🔥',
-    ringGradient: 'from-rose-500 to-red-600'
+    ringGradient: 'from-rose-500 to-[#c5a059]',
+    accent: '#f43f5e'
   },
   Forbidden: {
-    border: 'border-violet-500/80 hover:border-violet-400',
-    bg: 'bg-gradient-to-b from-violet-950/80 via-zinc-950 to-zinc-950',
-    text: 'text-violet-300',
-    badge: 'bg-violet-950/90 text-violet-300 border-violet-500/80 font-bold shadow-[0_0_20px_rgba(139,92,246,0.4)]',
-    glow: 'shadow-[0_0_35px_rgba(139,92,246,0.35)]',
+    border: 'border-purple-500/70 hover:border-purple-400',
+    bg: 'bg-gradient-to-b from-[#1b0a2c]/90 via-[#0b0d13] to-[#07080c]',
+    text: 'text-purple-300',
+    badge: 'bg-purple-950/90 text-purple-300 border-purple-500/80 font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)]',
+    glow: 'shadow-[0_0_35px_rgba(168,85,247,0.3)]',
     runeSymbol: '🌋',
-    ringGradient: 'from-violet-600 to-fuchsia-700'
+    ringGradient: 'from-purple-600 to-[#c5a059]',
+    accent: '#a855f7'
   }
 };
 
@@ -104,52 +112,52 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
   veinColor: string;
 }> = {
   Common: {
-    stroke: '#06b6d4',
+    stroke: '#c5a059',
     glow: '',
-    oreGrad1: '#1e293b',
-    oreGrad2: '#0e7490',
-    oreGrad3: '#0891b2',
-    coreGradient: 'from-cyan-400 via-blue-500 to-indigo-700',
-    sparkBg: 'bg-cyan-300',
-    chainColor: '#475569',
-    chainStroke: '#94a3b8',
-    veinColor: '#22d3ee'
+    oreGrad1: '#27272a',
+    oreGrad2: '#3f3f46',
+    oreGrad3: '#52525b',
+    coreGradient: 'from-zinc-300 via-zinc-500 to-[#3a2e12]',
+    sparkBg: 'bg-zinc-300',
+    chainColor: '#3f3f46',
+    chainStroke: '#a1a1aa',
+    veinColor: '#c5a059'
   },
   Rare: {
-    stroke: '#a855f7',
+    stroke: '#3b82f6',
     glow: '',
-    oreGrad1: '#311042',
-    oreGrad2: '#6b21a8',
-    oreGrad3: '#9333ea',
-    coreGradient: 'from-purple-300 via-purple-500 to-indigo-900',
-    sparkBg: 'bg-purple-300',
-    chainColor: '#3b2063',
-    chainStroke: '#c084fc',
-    veinColor: '#c084fc'
+    oreGrad1: '#0f172a',
+    oreGrad2: '#1d4ed8',
+    oreGrad3: '#3b82f6',
+    coreGradient: 'from-blue-300 via-blue-500 to-[#3a2e12]',
+    sparkBg: 'bg-blue-300',
+    chainColor: '#1e3a8a',
+    chainStroke: '#93c5fd',
+    veinColor: '#60a5fa'
   },
   Epic: {
     stroke: '#10b981',
     glow: '',
-    oreGrad1: '#022c22',
+    oreGrad1: '#064e3b',
     oreGrad2: '#047857',
     oreGrad3: '#10b981',
-    coreGradient: 'from-emerald-300 via-teal-500 to-emerald-900',
+    coreGradient: 'from-emerald-300 via-teal-500 to-[#3a2e12]',
     sparkBg: 'bg-emerald-300',
-    chainColor: '#1e3a2b',
-    chainStroke: '#34d399',
+    chainColor: '#064e3b',
+    chainStroke: '#6ee7b7',
     veinColor: '#34d399'
   },
   Legendary: {
-    stroke: '#f59e0b',
+    stroke: '#c5a059',
     glow: '',
     oreGrad1: '#451a03',
-    oreGrad2: '#b45309',
-    oreGrad3: '#f59e0b',
-    coreGradient: 'from-amber-200 via-amber-500 to-orange-800',
-    sparkBg: 'bg-amber-300',
-    chainColor: '#78350f',
-    chainStroke: '#fbbf24',
-    veinColor: '#fbbf24'
+    oreGrad2: '#8a6d2b',
+    oreGrad3: '#c5a059',
+    coreGradient: 'from-[#fef08a] via-[#c5a059] to-[#3a2e12]',
+    sparkBg: 'bg-[#fef08a]',
+    chainColor: '#5c4515',
+    chainStroke: '#fef08a',
+    veinColor: '#fef08a'
   },
   Divine: {
     stroke: '#f43f5e',
@@ -157,22 +165,22 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
     oreGrad1: '#4c0519',
     oreGrad2: '#be123c',
     oreGrad3: '#f43f5e',
-    coreGradient: 'from-rose-200 via-pink-500 to-rose-900',
+    coreGradient: 'from-rose-200 via-pink-500 to-[#3a2e12]',
     sparkBg: 'bg-rose-300',
     chainColor: '#4c0519',
-    chainStroke: '#fb7185',
+    chainStroke: '#fca5a5',
     veinColor: '#fb7185'
   },
   Forbidden: {
-    stroke: '#8b5cf6',
+    stroke: '#a855f7',
     glow: '',
-    oreGrad1: '#17072b',
-    oreGrad2: '#4c1d95',
-    oreGrad3: '#7c3aed',
-    coreGradient: 'from-violet-300 via-purple-600 to-black',
-    sparkBg: 'bg-violet-300',
-    chainColor: '#2e1065',
-    chainStroke: '#a78bfa',
+    oreGrad1: '#2e1065',
+    oreGrad2: '#6b21a8',
+    oreGrad3: '#a855f7',
+    coreGradient: 'from-purple-300 via-purple-600 to-[#3a2e12]',
+    sparkBg: 'bg-purple-300',
+    chainColor: '#3b0764',
+    chainStroke: '#d8b4fe',
     veinColor: '#c084fc'
   }
 };
@@ -182,7 +190,7 @@ const Render3DChainPath: React.FC<{
   x1: number; y1: number; x2: number; y2: number;
   curveY?: number; count?: number;
   chainColor?: string; chainStroke?: string;
-}> = ({ x1, y1, x2, y2, curveY = 0, count = 10, chainColor = '#475569', chainStroke = '#cbd5e1' }) => {
+}> = ({ x1, y1, x2, y2, curveY = 0, count = 10, chainColor = '#5c4515', chainStroke = '#c5a059' }) => {
   const links = [];
   for (let i = 0; i < count; i++) {
     const t = i / Math.max(1, count - 1);
@@ -220,8 +228,8 @@ const Render3DChainPath: React.FC<{
           {isFaceOn ? (
             /* Wide Face-On Link Loop */
             <g>
-              <rect x="-10" y="-6" width="20" height="12" rx="5" fill={chainColor} stroke="#09090b" strokeWidth="1.8" />
-              <rect x="-5" y="-2.5" width="10" height="5" rx="2.5" fill="#09090b" />
+              <rect x="-10" y="-6" width="20" height="12" rx="5" fill={chainColor} stroke="#07080c" strokeWidth="1.8" />
+              <rect x="-5" y="-2.5" width="10" height="5" rx="2.5" fill="#07080c" />
               {/* Top Specular Edge Highlight */}
               <path d="M -8 -4.5 L 8 -4.5" stroke={chainStroke} strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
               {/* Bottom Shadow Edge */}
@@ -230,7 +238,7 @@ const Render3DChainPath: React.FC<{
           ) : (
             /* Narrow Side-On Interlocking Twisted Link */
             <g>
-              <rect x="-5" y="-8.5" width="10" height="17" rx="4.5" fill="#18181b" stroke={chainColor} strokeWidth="2.2" />
+              <rect x="-5" y="-8.5" width="10" height="17" rx="4.5" fill="#0b0d13" stroke={chainColor} strokeWidth="2.2" />
               <line x1="0" y1="-6.5" x2="0" y2="6.5" stroke={chainStroke} strokeWidth="1.5" strokeLinecap="round" opacity="0.95" />
               <line x1="-3" y1="-6.5" x2="-3" y2="6.5" stroke="#000000" strokeWidth="1" opacity="0.8" />
             </g>
@@ -246,22 +254,24 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
   const strokeColor = isBroken ? theme.stroke : '#52525b';
 
   return (
-    <div className="relative w-full h-64 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center my-3 group/ore select-none shadow-[inset_0_4px_20px_rgba(0,0,0,0.95),_0_10px_30px_rgba(0,0,0,0.8)]">
+    <div className="relative w-full h-64 bg-gradient-to-b from-[#0b0d13] via-[#07080c] to-[#040508] rounded-2xl border border-[#c5a059]/25 overflow-hidden flex items-center justify-center my-3 group/ore select-none shadow-[inset_0_4px_20px_rgba(0,0,0,0.95),_0_10px_30px_rgba(0,0,0,0.8)]">
+      <ArabesqueCorner position="top-left" className="top-2 left-2 h-4 w-4" color="#c5a059" />
+      <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
       
       {/* MINE CHAMBER & STONE MASONRY WALLS */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,_var(--tw-gradient-stops))] from-zinc-900/90 via-zinc-950 to-black pointer-events-none" />
-      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#71717a_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,_var(--tw-gradient-stops))] from-[#181d29]/80 via-[#07080c] to-black pointer-events-none" />
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
       
       {/* FORGE PEDESTAL ALIVE GROUND AMBIENCE */}
-      <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-black via-zinc-950/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-black via-[#07080c]/90 to-transparent pointer-events-none" />
 
       {/* MAIN ORE & CHAINS DISPLAY CANVAS */}
       <div className={`relative w-60 h-60 flex items-center justify-center transition-all duration-700 ${isBroken ? theme.glow : ''}`}>
         
-        {/* BACKGROUND METALLIC FORGE SHIELD RING */}
+        {/* BACKGROUND ISLAMIC CELESTIAL RING */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 200 200" fill="none">
-          <circle cx="100" cy="100" r="92" stroke={strokeColor} strokeWidth="1.5" strokeDasharray="6 3" opacity="0.35" />
-          <circle cx="100" cy="100" r="86" stroke={strokeColor} strokeWidth="2" opacity="0.5" />
+          <circle cx="100" cy="100" r="92" stroke={strokeColor} strokeWidth="1.2" strokeDasharray="6 3" opacity="0.35" />
+          <circle cx="100" cy="100" r="86" stroke={strokeColor} strokeWidth="1.8" opacity="0.5" />
           {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
             <circle
               key={deg}
@@ -271,7 +281,7 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
               fill={strokeColor}
               stroke="#000"
               strokeWidth="1"
-              opacity="0.8"
+              opacity="0.85"
             />
           ))}
           <circle cx="100" cy="100" r="74" stroke={strokeColor} strokeWidth="1" strokeDasharray="12 4" opacity="0.25" />
@@ -282,14 +292,14 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
           <svg viewBox="0 0 200 200" className="w-full h-full filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.9)]">
             <defs>
               <linearGradient id={`ore-top-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#3f3f46" />
+                <stop offset="0%" stopColor="#3a2e12" />
                 <stop offset="50%" stopColor={theme.oreGrad1} />
                 <stop offset="100%" stopColor={theme.oreGrad2} />
               </linearGradient>
 
               <linearGradient id={`ore-left-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor={theme.oreGrad1} />
-                <stop offset="100%" stopColor="#09090b" />
+                <stop offset="100%" stopColor="#07080c" />
               </linearGradient>
 
               <linearGradient id={`ore-right-${seal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -304,41 +314,41 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
               </linearGradient>
 
               <linearGradient id={`pedestal-grad-${seal.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#27272a" />
-                <stop offset="50%" stopColor="#18181b" />
-                <stop offset="100%" stopColor="#09090b" />
+                <stop offset="0%" stopColor="#3a2e12" />
+                <stop offset="50%" stopColor="#181d29" />
+                <stop offset="100%" stopColor="#07080c" />
               </linearGradient>
             </defs>
 
             {/* 1. STONE FORGE PEDESTAL */}
             <ellipse cx="100" cy="165" rx="65" ry="16" fill="#000000" opacity="0.85" filter="blur(3px)" />
-            <path d="M 40,160 L 160,160 L 145,175 L 55,175 Z" fill={`url(#pedestal-grad-${seal.id})`} stroke="#3f3f46" strokeWidth="1" />
-            <line x1="40" y1="160" x2="160" y2="160" stroke="#71717a" strokeWidth="1" />
+            <path d="M 40,160 L 160,160 L 145,175 L 55,175 Z" fill={`url(#pedestal-grad-${seal.id})`} stroke="#c5a059" strokeWidth="1" />
+            <line x1="40" y1="160" x2="160" y2="160" stroke="#fef08a" strokeWidth="1" opacity="0.5" />
 
             {/* 2. ORE MONOLITH 3D CAST SHADOW */}
             <path d="M 100,25 L 155,60 L 140,145 L 60,155 L 30,85 Z" fill="#000000" opacity="0.7" transform="translate(5, 7)" />
 
             {/* 3. MAIN CHISELED FACETS */}
             {/* Top Roof Bevel Facet */}
-            <path d="M 100,25 L 155,60 L 100,95 L 40,65 Z" fill={`url(#ore-top-${seal.id})`} stroke="#18181b" strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M 100,25 L 40,65" stroke="#ffffff" strokeWidth="1.5" opacity="0.45" />
+            <path d="M 100,25 L 155,60 L 100,95 L 40,65 Z" fill={`url(#ore-top-${seal.id})`} stroke="#0b0d13" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M 100,25 L 40,65" stroke="#fef08a" strokeWidth="1.5" opacity="0.45" />
 
             {/* Left Vertical Chiseled Wall */}
-            <path d="M 40,65 L 100,95 L 60,155 L 30,85 Z" fill={`url(#ore-left-${seal.id})`} stroke="#09090b" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M 40,65 L 30,85 L 60,155" stroke="#71717a" strokeWidth="1" opacity="0.5" />
+            <path d="M 40,65 L 100,95 L 60,155 L 30,85 Z" fill={`url(#ore-left-${seal.id})`} stroke="#07080c" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M 40,65 L 30,85 L 60,155" stroke="#c5a059" strokeWidth="1" opacity="0.4" />
 
             {/* Right Front Facet */}
-            <path d="M 100,95 L 155,60 L 140,145 L 60,155 Z" fill={`url(#ore-right-${seal.id})`} stroke="#09090b" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M 100,95 L 155,60 L 140,145 L 60,155 Z" fill={`url(#ore-right-${seal.id})`} stroke="#07080c" strokeWidth="1.5" strokeLinejoin="round" />
             <path d="M 155,60 L 140,145 L 60,155" stroke="#000000" strokeWidth="2" opacity="0.8" />
 
             {/* 4. INNER CRYSTALLINE CORE / FISSURE VEIN */}
-            <path d="M 100,40 L 120,80 L 100,135 L 80,85 Z" fill={isBroken ? `url(#ore-core-${seal.id})` : '#27272a'} stroke={isBroken ? '#ffffff' : '#52525b'} strokeWidth="1.2" opacity={isBroken ? 0.95 : 0.75} />
+            <path d="M 100,40 L 120,80 L 100,135 L 80,85 Z" fill={isBroken ? `url(#ore-core-${seal.id})` : '#181d29'} stroke={isBroken ? '#ffffff' : '#52525b'} strokeWidth="1.2" opacity={isBroken ? 0.95 : 0.75} />
 
             {/* 5. DEEP STONE FISSURES / CRACK LINES WITH OCCLUSION */}
-            <path d="M 100,25 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2.5" : "1.5"} />
-            <path d="M 40,65 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2" : "1.2"} />
-            <path d="M 155,60 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2" : "1.2"} />
-            <path d="M 60,155 L 100,95" stroke={isBroken ? theme.veinColor : '#3f3f46'} strokeWidth={isBroken ? "2.5" : "1.5"} />
+            <path d="M 100,25 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2.5" : "1.5"} />
+            <path d="M 40,65 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2" : "1.2"} />
+            <path d="M 155,60 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2" : "1.2"} />
+            <path d="M 60,155 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2.5" : "1.5"} />
           </svg>
 
           {/* ORE CENTER CARVED INSCRIPTION / ARABIC GLYPH */}
@@ -349,13 +359,13 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
                 {seal.runeSymbol || '🪨'}
               </span>
               {/* Carved Specular Light Bevel */}
-              <span className="absolute text-3xl font-serif text-amber-100/40 font-black -translate-x-[1px] -translate-y-[1px]">
+              <span className="absolute text-3xl font-serif text-[#fef08a]/50 font-black -translate-x-[1px] -translate-y-[1px]">
                 {seal.runeSymbol || '🪨'}
               </span>
               {/* Main Carved Rune Symbol */}
               <span className={`relative text-3xl font-serif font-black transition-transform duration-500 ${
                 isBroken
-                  ? 'scale-125 text-amber-200 [text-shadow:_0_0_12px_rgba(251,191,36,0.85),_0_2px_4px_rgba(0,0,0,0.95)]'
+                  ? 'scale-125 text-[#fef08a] [text-shadow:_0_0_15px_rgba(197,160,89,0.9),_0_2px_4px_rgba(0,0,0,0.95)]'
                   : 'text-zinc-300/85 [text-shadow:_0_2px_4px_rgba(0,0,0,0.95)]'
               }`}>
                 {seal.runeSymbol || '🪨'}
@@ -399,13 +409,13 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
             </svg>
 
             {/* HEAVY CENTRAL FORGED IRON SHACKLE & PADLOCK BADGE */}
-            <div className="relative z-30 px-3.5 py-1.5 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black border-2 border-amber-500/80 rounded-xl shadow-[0_8px_25px_rgba(0,0,0,0.95),_0_0_20px_rgba(245,158,11,0.35),_inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 backdrop-blur-md">
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 border border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
-              <Lock className="h-4 w-4 text-amber-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
-              <span className="text-[10px] font-mono font-bold text-amber-200 tracking-widest uppercase flex items-center gap-1 [text-shadow:_0_1px_2px_rgba(0,0,0,0.9)]">
+            <div className="relative z-30 px-3.5 py-1.5 bg-gradient-to-b from-[#181d29] via-[#0b0d13] to-black border-2 border-[#c5a059] rounded-xl shadow-[0_8px_25px_rgba(0,0,0,0.95),_0_0_20px_rgba(197,160,89,0.35),_inset_0_1px_1px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 backdrop-blur-md">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              <Lock className="h-4 w-4 text-[#e5c875] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+              <span className="text-[10px] font-mono font-bold text-[#fef08a] tracking-widest uppercase flex items-center gap-1 [text-shadow:_0_1px_2px_rgba(0,0,0,0.9)]">
                 CHAIN-BOUND
               </span>
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-700 border border-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" />
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
             </div>
 
           </div>
@@ -416,20 +426,20 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
           <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
             {/* Top Left Broken Chain End */}
             <div className="absolute top-4 left-5 rotate-45 flex items-center gap-1 opacity-90 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]">
-              <div className="w-5 h-3 border-2 border-amber-400 bg-zinc-900 rounded-lg shadow-inner" />
-              <div className="w-3 h-5 border-2 border-zinc-500 bg-zinc-950 rounded-lg" />
+              <div className="w-5 h-3 border-2 border-[#c5a059] bg-[#07080c] rounded-lg shadow-inner" />
+              <div className="w-3 h-5 border-2 border-zinc-600 bg-zinc-950 rounded-lg" />
             </div>
 
             {/* Top Right Broken Chain End */}
             <div className="absolute top-4 right-5 -rotate-45 flex items-center gap-1 opacity-90 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]">
-              <div className="w-3 h-5 border-2 border-zinc-500 bg-zinc-950 rounded-lg" />
-              <div className="w-5 h-3 border-2 border-amber-400 bg-zinc-900 rounded-lg shadow-inner" />
+              <div className="w-3 h-5 border-2 border-zinc-600 bg-zinc-950 rounded-lg" />
+              <div className="w-5 h-3 border-2 border-[#c5a059] bg-[#07080c] rounded-lg shadow-inner" />
             </div>
 
             {/* Bottom Fallen Fragment on Pedestal */}
             <div className="absolute bottom-4 left-10 rotate-12 flex items-center gap-1 opacity-75">
-              <div className="w-4 h-2.5 border border-zinc-400 bg-black rounded" />
-              <div className="w-2.5 h-4 border border-zinc-600 bg-zinc-900 rounded" />
+              <div className="w-4 h-2.5 border border-[#c5a059]/60 bg-black rounded" />
+              <div className="w-2.5 h-4 border border-zinc-700 bg-[#07080c] rounded" />
             </div>
           </div>
         )}
@@ -611,11 +621,13 @@ export const SealingPowerView: React.FC = () => {
     <div className="space-y-6 pb-12 font-sans" id="sealing-power-system-container">
       
       {/* FORGED ORES & HEAVY CHAINS ALTAR BANNER */}
-      <div className="p-6 bg-gradient-to-r from-slate-950 via-zinc-950 to-cyan-950/90 border border-cyan-500/40 rounded-2xl relative overflow-hidden shadow-[0_0_35px_rgba(6,182,212,0.15)]">
+      <div className="p-6 bg-gradient-to-r from-[#0e1118] via-[#0b0d13] to-[#1c160a] border border-[#c5a059]/40 rounded-2xl relative overflow-hidden shadow-[0_0_35px_rgba(197,160,89,0.12)]">
+        <ArabesqueCorner position="top-left" className="top-2 left-2 h-5 w-5" color="#c5a059" />
+        <ArabesqueCorner position="top-right" className="top-2 right-2 h-5 w-5" color="#c5a059" />
         
         {/* BACKGROUND METALLIC CHAIN LINKS PATTERN */}
-        <div className="absolute -right-16 -bottom-16 w-96 h-96 opacity-15 pointer-events-none flex items-center justify-center">
-          <svg className="w-full h-full text-cyan-400" viewBox="0 0 200 200" fill="none">
+        <div className="absolute -right-16 -bottom-16 w-96 h-96 opacity-10 pointer-events-none flex items-center justify-center">
+          <svg className="w-full h-full text-[#c5a059]" viewBox="0 0 200 200" fill="none">
             <path d="M 20 20 L 180 180" stroke="currentColor" strokeWidth="12" strokeDasharray="16 8" />
             <path d="M 180 20 L 20 180" stroke="currentColor" strokeWidth="12" strokeDasharray="16 8" />
             <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="4" />
@@ -624,16 +636,16 @@ export const SealingPowerView: React.FC = () => {
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="p-2 bg-cyan-950/90 border border-cyan-500/60 rounded-xl text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                <Pickaxe className="h-6 w-6 text-cyan-400 animate-pulse" />
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="p-2.5 bg-[#3a2e12]/80 border border-[#c5a059]/60 rounded-xl text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.25)]">
+                <RubElHizbIcon className="h-6 w-6 text-[#c5a059] animate-pulse" />
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono tracking-widest text-amber-400/90 uppercase font-bold flex items-center gap-1">
-                    <span>⛓️</span> FORGED ORE & CHAINS VAULT <span>⛓️</span>
+                  <span className="text-[10px] font-mono tracking-widest text-[#fef08a] uppercase font-bold flex items-center gap-1">
+                    <span>⛓️</span> FORGED ORE & CHAINS SANCTUM <span>⛓️</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 font-bold uppercase">
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-[#3a2e12]/80 text-[#fef08a] border border-[#c5a059]/50 font-bold uppercase">
                     CHAIN MATRIX v4.0
                   </span>
                 </div>
@@ -642,7 +654,7 @@ export const SealingPowerView: React.FC = () => {
                 </h2>
               </div>
             </div>
-            <p className="text-xs text-cyan-200/70 max-w-2xl font-sans leading-relaxed">
+            <p className="text-xs text-zinc-300 max-w-2xl font-sans leading-relaxed">
               Shatter heavy forged iron chains binding raw luminescent elemental ores. Unchaining an ore bursts its shackles, releasing permanent passive multipliers, attribute surges, and operator perks into your system.
             </p>
           </div>
@@ -650,7 +662,7 @@ export const SealingPowerView: React.FC = () => {
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={handleOpenCreateModal}
-              className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 hover:from-cyan-500 hover:to-teal-500 text-white rounded-xl text-xs font-mono font-bold tracking-wider transition shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 border border-cyan-400/50"
+              className="px-5 py-2.5 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] font-bold rounded-xl text-xs font-mono tracking-wider transition shadow-[0_0_20px_rgba(197,160,89,0.3)] flex items-center gap-2 border border-[#c5a059]/60 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>FORGE NEW ELEMENTAL ORE</span>
@@ -659,21 +671,21 @@ export const SealingPowerView: React.FC = () => {
         </div>
 
         {/* ACTIVE BUFF MATRIX HUD */}
-        <div className="mt-6 pt-5 border-t border-cyan-500/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="mt-6 pt-5 border-t border-[#c5a059]/20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           
-          <div className="bg-zinc-950/90 border border-cyan-500/40 p-3.5 rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+          <div className="bg-[#07080c]/90 border border-[#c5a059]/30 p-3.5 rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(197,160,89,0.08)]">
             <div>
               <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">CHAINS SHATTERED</span>
-              <span className="text-lg font-mono font-bold text-cyan-300 flex items-baseline gap-1 mt-0.5">
+              <span className="text-lg font-mono font-bold text-[#fef08a] flex items-baseline gap-1 mt-0.5">
                 {brokenSeals.length} <span className="text-xs text-zinc-500 font-normal">/ {seals.length} UNCHAINED</span>
               </span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+            <div className="h-10 w-10 rounded-xl bg-[#3a2e12]/60 border border-[#c5a059]/40 flex items-center justify-center text-[#c5a059]">
               <Unlock className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="bg-zinc-950/90 border border-emerald-500/40 p-3.5 rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+          <div className="bg-[#07080c]/90 border border-emerald-500/40 p-3.5 rounded-xl flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.08)]">
             <div>
               <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">PASSIVE XP MULTIPLIER</span>
               <span className="text-lg font-mono font-bold text-emerald-300 flex items-baseline gap-1 mt-0.5">
@@ -685,7 +697,7 @@ export const SealingPowerView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-zinc-950/90 border border-amber-500/40 p-3.5 rounded-xl flex items-center justify-between col-span-1 sm:col-span-2 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+          <div className="bg-[#07080c]/90 border border-[#c5a059]/40 p-3.5 rounded-xl flex items-center justify-between col-span-1 sm:col-span-2 shadow-[0_0_15px_rgba(197,160,89,0.08)]">
             <div>
               <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider block">AWAKENED ATTRIBUTE SURGES</span>
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -695,7 +707,7 @@ export const SealingPowerView: React.FC = () => {
                   Object.entries(totalAttributeBoosts).map(([attrId, boost]) => {
                     const attr = state.attributes.find(a => a.id === attrId);
                     return (
-                      <span key={attrId} className="px-2 py-0.5 text-[9.5px] font-mono bg-amber-950/80 text-amber-300 border border-amber-500/50 rounded-lg font-bold shadow-sm">
+                      <span key={attrId} className="px-2 py-0.5 text-[9.5px] font-mono bg-[#3a2e12]/80 text-[#fef08a] border border-[#c5a059]/50 rounded-lg font-bold shadow-sm">
                         +{boost} {attr?.name || 'ATTRIBUTE'}
                       </span>
                     );
@@ -703,7 +715,7 @@ export const SealingPowerView: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-amber-950/80 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0 ml-2">
+            <div className="h-10 w-10 rounded-xl bg-[#3a2e12]/80 border border-[#c5a059]/40 flex items-center justify-center text-[#c5a059] shrink-0 ml-2">
               <Award className="h-5 w-5" />
             </div>
           </div>
@@ -711,15 +723,15 @@ export const SealingPowerView: React.FC = () => {
         </div>
 
         {/* ARCANE RESONANCE SET BONUSES */}
-        <div className="mt-4 p-3.5 bg-zinc-950/90 border border-cyan-500/30 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="mt-4 p-3.5 bg-[#07080c]/90 border border-[#c5a059]/30 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-            <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider">ELEMENTAL RESONANCE SYNERGY SETS:</span>
+            <RubElHizbIcon className="h-4 w-4 text-[#c5a059] animate-pulse" />
+            <span className="text-[10px] font-bold text-[#fef08a] uppercase tracking-wider">ELEMENTAL RESONANCE SYNERGY SETS:</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`px-2.5 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 ${
               brokenSeals.length >= 2 
-                ? 'bg-cyan-900/80 text-cyan-200 border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                ? 'bg-[#3a2e12]/80 text-[#fef08a] border-[#c5a059]/60 shadow-[0_0_10px_rgba(197,160,89,0.3)]'
                 : 'bg-zinc-900/80 text-zinc-500 border-white/5 opacity-60'
             }`}>
               {brokenSeals.length >= 2 ? '⛏️' : '⛓️'} DUAL VEIN (2+ Ores: Active)
@@ -733,7 +745,7 @@ export const SealingPowerView: React.FC = () => {
             </span>
             <span className={`px-2.5 py-1 rounded-lg border text-[9.5px] font-bold flex items-center gap-1 ${
               brokenSeals.length >= 5 
-                ? 'bg-amber-900/80 text-amber-200 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                ? 'bg-[#4a3a16]/90 text-[#fef08a] border-[#c5a059]/80 shadow-[0_0_10px_rgba(197,160,89,0.4)]'
                 : 'bg-zinc-900/80 text-zinc-500 border-white/5 opacity-60'
             }`}>
               {brokenSeals.length >= 5 ? '🌋' : '⛓️'} PRIMORDIAL OVERLORD (5+ Ores: Active)
@@ -752,18 +764,18 @@ export const SealingPowerView: React.FC = () => {
             className={`p-4 rounded-xl border text-xs font-mono flex items-center justify-between gap-3 shadow-xl ${
               unsealMessage.isError
                 ? 'bg-rose-950/90 border-rose-500/60 text-rose-200'
-                : 'bg-cyan-950/90 border-cyan-500/60 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+                : 'bg-[#0b0d13]/95 border-[#c5a059]/60 text-[#fef08a] shadow-[0_0_20px_rgba(197,160,89,0.3)]'
             }`}
           >
             <div className="flex items-center gap-3">
               {unsealMessage.isError ? (
                 <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
               ) : (
-                <Pickaxe className="h-5 w-5 shrink-0 text-cyan-400 animate-pulse" />
+                <RubElHizbIcon className="h-5 w-5 shrink-0 text-[#c5a059] animate-pulse" />
               )}
               <span className="font-semibold">{unsealMessage.text}</span>
             </div>
-            <button onClick={() => setUnsealMessage(null)} className="text-zinc-400 hover:text-white">
+            <button onClick={() => setUnsealMessage(null)} className="text-zinc-400 hover:text-white cursor-pointer">
               <X className="h-4 w-4" />
             </button>
           </motion.div>
@@ -771,17 +783,17 @@ export const SealingPowerView: React.FC = () => {
       </AnimatePresence>
 
       {/* FILTER & CONTROL BAR */}
-      <div className="p-4 bg-zinc-950/80 border border-cyan-500/20 rounded-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md">
+      <div className="p-4 bg-[#0b0d13]/90 border border-[#c5a059]/25 rounded-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md">
         
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-cyan-400/60" />
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#c5a059]/70" />
           <input
             type="text"
             placeholder="Search elemental ores, chain-bound minerals, or buff perks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-900/90 border border-white/10 rounded-xl pl-10 pr-3 py-2 text-xs font-mono text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/60"
+            className="w-full bg-[#07080c] border border-[#c5a059]/20 rounded-xl pl-10 pr-3 py-2 text-xs font-mono text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#c5a059]/60"
           />
         </div>
 
@@ -789,14 +801,14 @@ export const SealingPowerView: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           
           {/* Status filter */}
-          <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-white/10">
+          <div className="flex items-center gap-1 bg-[#07080c] p-1 rounded-xl border border-[#c5a059]/20">
             {(['All', 'Locked', 'Broken'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 text-[10px] font-mono rounded-lg transition uppercase font-bold ${
+                className={`px-3 py-1 text-[10px] font-mono rounded-lg transition uppercase font-bold cursor-pointer ${
                   statusFilter === st
-                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50 shadow-sm'
+                    ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/60 shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -809,7 +821,7 @@ export const SealingPowerView: React.FC = () => {
           <select
             value={rarityFilter}
             onChange={(e) => setRarityFilter(e.target.value)}
-            className="bg-zinc-900/90 border border-white/10 text-zinc-300 rounded-xl px-3 py-2 text-[10px] font-mono focus:outline-none focus:border-cyan-500/60 cursor-pointer"
+            className="bg-[#07080c] border border-[#c5a059]/20 text-zinc-300 rounded-xl px-3 py-2 text-[10px] font-mono focus:outline-none focus:border-[#c5a059]/60 cursor-pointer"
           >
             <option value="All">ALL RARITIES</option>
             <option value="Common">COMMON (IRON)</option>
@@ -826,9 +838,9 @@ export const SealingPowerView: React.FC = () => {
 
       {/* SEALS GRID */}
       {filteredSeals.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-cyan-500/30 bg-zinc-950/60 rounded-2xl space-y-3">
-          <ShieldAlert className="h-12 w-12 text-cyan-400 mx-auto animate-pulse" />
-          <p className="text-xs font-mono text-zinc-400 font-bold uppercase tracking-wider">
+        <div className="text-center py-16 border border-dashed border-[#c5a059]/30 bg-[#07080c]/60 rounded-2xl space-y-3">
+          <ShieldAlert className="h-12 w-12 text-[#c5a059] mx-auto animate-pulse" />
+          <p className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">
             NO ELEMENTAL ORES FOUND MATCHING CRITERIA
           </p>
           <p className="text-[10px] font-mono text-zinc-500">
@@ -836,7 +848,7 @@ export const SealingPowerView: React.FC = () => {
           </p>
           <button
             onClick={handleOpenCreateModal}
-            className="px-4 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 rounded-xl text-xs font-mono font-bold transition inline-flex items-center gap-1.5"
+            className="px-4 py-2 bg-[#3a2e12] hover:bg-[#4d3d18] border border-[#c5a059]/50 text-[#fef08a] rounded-xl text-xs font-mono font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>FORGE ELEMENTAL ORE</span>
@@ -871,15 +883,17 @@ export const SealingPowerView: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className={`p-5 rounded-2xl border flex flex-col justify-between transition-all duration-300 relative overflow-hidden group ${
                   isBroken
-                    ? 'bg-gradient-to-b from-cyan-950/60 via-zinc-950 to-zinc-950 border-cyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.25)]'
+                    ? 'bg-gradient-to-b from-[#1c160a]/90 via-[#0b0d13] to-[#07080c] border-[#c5a059]/70 shadow-[0_0_25px_rgba(197,160,89,0.25)]'
                     : `${rarityStyle.bg} ${rarityStyle.border} ${rarityStyle.glow}`
                 }`}
               >
+                <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+
                 {/* RUNIC WATERMARK & CORNER BRACKETS */}
-                <div className="absolute top-2 left-3 text-[9px] font-mono text-white/10 font-bold select-none pointer-events-none">
+                <div className="absolute top-2 left-3 text-[9px] font-mono text-[#c5a059]/30 font-bold select-none pointer-events-none">
                   [ ⛓️ {rarityStyle.runeSymbol} ⛓️ ]
                 </div>
-                <div className="absolute top-2 right-3 text-[9px] font-mono text-white/10 font-bold select-none pointer-events-none">
+                <div className="absolute top-2 right-8 text-[9px] font-mono text-zinc-500 font-bold select-none pointer-events-none">
                   #ORE-{seal.id.slice(-4).toUpperCase()}
                 </div>
 
@@ -900,10 +914,10 @@ export const SealingPowerView: React.FC = () => {
 
                     <span className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold uppercase border flex items-center gap-1.5 shrink-0 ${
                       isBroken 
-                        ? 'bg-cyan-950/90 text-cyan-300 border-cyan-500/70 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
-                        : 'bg-zinc-950 text-zinc-400 border-white/10'
+                        ? 'bg-[#3a2e12]/90 text-[#fef08a] border-[#c5a059]/70 shadow-[0_0_12px_rgba(197,160,89,0.3)]'
+                        : 'bg-[#07080c] text-zinc-400 border-white/10'
                     }`}>
-                      {isBroken ? <Unlock className="h-3 w-3 text-cyan-400" /> : <Lock className="h-3 w-3 text-amber-500/80" />}
+                      {isBroken ? <Unlock className="h-3 w-3 text-[#c5a059]" /> : <Lock className="h-3 w-3 text-amber-500/80" />}
                       <span>{isBroken ? 'UNCHAINED' : 'CHAIN-BOUND'}</span>
                     </span>
                   </div>
@@ -918,12 +932,12 @@ export const SealingPowerView: React.FC = () => {
                   {/* UNLOCKED BUFF PERK DISPLAY */}
                   <div className={`p-3 rounded-xl border ${
                     isBroken 
-                      ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-100 shadow-inner' 
-                      : 'bg-zinc-950/80 border-white/10 text-zinc-300'
+                      ? 'bg-[#18150c]/90 border-[#c5a059]/50 text-amber-100 shadow-inner' 
+                      : 'bg-[#07080c]/90 border-white/10 text-zinc-300'
                   }`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[8.5px] font-mono uppercase font-bold text-cyan-400 tracking-wider flex items-center gap-1">
-                        <Pickaxe className="h-3 w-3 text-amber-400" />
+                      <span className="text-[8.5px] font-mono uppercase font-bold text-[#c5a059] tracking-wider flex items-center gap-1">
+                        <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
                         PERMANENT ORE PERK
                       </span>
                       {seal.xpBonusMultiplier && seal.xpBonusMultiplier > 1.0 && (
@@ -938,20 +952,20 @@ export const SealingPowerView: React.FC = () => {
 
                   {/* UNSEALING REQUIREMENTS CHECKLIST */}
                   {!isBroken && (
-                    <div className="space-y-1.5 pt-2 border-t border-white/10 text-[10.5px] font-mono">
-                      <div className="text-[8.5px] font-mono text-zinc-400 uppercase tracking-wider mb-1 font-bold">
+                    <div className="space-y-1.5 pt-2 border-t border-[#c5a059]/20 text-[10.5px] font-mono">
+                      <div className="text-[8.5px] font-mono text-[#c5a059] uppercase tracking-wider mb-1 font-bold">
                         ✦ UNCHAINING REQUIREMENTS:
                       </div>
                       
                       {/* Level req */}
-                      <div className={`flex items-center justify-between p-1 rounded bg-zinc-950/50 ${meetsLevel ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                      <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsLevel ? 'text-emerald-400' : 'text-zinc-400'}`}>
                         <span>Player Level {seal.requiredLevel}+</span>
                         <span className="font-bold">{meetsLevel ? '✓ MET' : `LVL ${playerInfo.level}`}</span>
                       </div>
 
                       {/* XP cost */}
                       {seal.costXP > 0 && (
-                        <div className={`flex items-center justify-between p-1 rounded bg-zinc-950/50 ${meetsXp ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsXp ? 'text-emerald-400' : 'text-zinc-400'}`}>
                           <span>XP Sacrifice: {seal.costXP} XP</span>
                           <span className="font-bold">{meetsXp ? '✓ READY' : `${playerInfo.totalXp} XP`}</span>
                         </div>
@@ -959,7 +973,7 @@ export const SealingPowerView: React.FC = () => {
 
                       {/* Required quest */}
                       {reqQuest && (
-                        <div className={`flex items-center justify-between p-1 rounded bg-zinc-950/50 ${meetsQuest ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsQuest ? 'text-emerald-400' : 'text-zinc-400'}`}>
                           <span className="truncate max-w-[170px]">Req Quest: "{reqQuest.name}"</span>
                           <span className="font-bold">{meetsQuest ? '✓ DONE' : 'INCOMPLETE'}</span>
                         </div>
@@ -967,7 +981,7 @@ export const SealingPowerView: React.FC = () => {
 
                       {/* Required skill */}
                       {reqSkill && (
-                        <div className={`flex items-center justify-between p-1 rounded bg-zinc-950/50 ${meetsSkill ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsSkill ? 'text-emerald-400' : 'text-zinc-400'}`}>
                           <span>Skill "{reqSkill.name}" LVL {seal.requiredSkillLevel}+</span>
                           <span className="font-bold">{meetsSkill ? '✓ MET' : `LVL ${skillInfo?.level || 0}`}</span>
                         </div>
@@ -975,7 +989,7 @@ export const SealingPowerView: React.FC = () => {
 
                       {/* Required streak */}
                       {seal.requiredStreakDays && seal.requiredStreakDays > 0 && (
-                        <div className={`flex items-center justify-between p-1 rounded bg-zinc-950/50 ${meetsStreak ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsStreak ? 'text-emerald-400' : 'text-zinc-400'}`}>
                           <span>Streak: {seal.requiredStreakDays}+ Days</span>
                           <span className="font-bold">{meetsStreak ? '✓ MET' : `${maxStreakInSystem} DAYS`}</span>
                         </div>
@@ -985,7 +999,7 @@ export const SealingPowerView: React.FC = () => {
 
                   {/* Broken At Timestamp */}
                   {isBroken && seal.brokenAt && (
-                    <div className="text-[9.5px] font-mono text-cyan-300/80 flex items-center justify-between pt-1 border-t border-cyan-500/20">
+                    <div className="text-[9.5px] font-mono text-[#fef08a]/80 flex items-center justify-between pt-1 border-t border-[#c5a059]/20">
                       <span>UNCHAINED DATE:</span>
                       <span className="font-bold">{new Date(seal.brokenAt).toLocaleDateString()}</span>
                     </div>
@@ -994,18 +1008,18 @@ export const SealingPowerView: React.FC = () => {
                 </div>
 
                 {/* CARD ACTION BUTTONS */}
-                <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between gap-2 relative z-10">
+                <div className="mt-5 pt-3 border-t border-[#c5a059]/20 flex items-center justify-between gap-2 relative z-10">
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleOpenEditModal(seal)}
-                      className="p-1.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white rounded-lg transition"
+                      className="p-1.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-zinc-400 hover:text-[#fef08a] rounded-lg transition cursor-pointer"
                       title="Edit Elemental Ore"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => deleteSeal(seal.id)}
-                      className="p-1.5 bg-zinc-900 hover:bg-rose-950 border border-white/10 text-zinc-400 hover:text-rose-300 rounded-lg transition"
+                      className="p-1.5 bg-[#0b0d13] hover:bg-rose-950 border border-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-lg transition cursor-pointer"
                       title="Delete Elemental Ore"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -1013,10 +1027,10 @@ export const SealingPowerView: React.FC = () => {
                     {isBroken && (
                       <button
                         onClick={() => relockSeal(seal.id)}
-                        className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[9.5px] font-mono text-zinc-400 hover:text-zinc-200 rounded-lg transition"
+                        className="px-2 py-1 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-[9.5px] font-mono text-zinc-400 hover:text-zinc-200 rounded-lg transition cursor-pointer"
                         title="Re-bind Chains"
                       >
-                        RE-BIND CHAINS
+                        RE-BIND
                       </button>
                     )}
                   </div>
@@ -1024,9 +1038,9 @@ export const SealingPowerView: React.FC = () => {
                   {!isBroken ? (
                     <button
                       onClick={() => setSelectedSealForBreak(seal)}
-                      className={`px-3.5 py-2 text-xs font-mono font-bold rounded-xl border transition flex items-center gap-1.5 ${
+                      className={`px-3.5 py-2 text-xs font-mono font-bold rounded-xl border transition flex items-center gap-1.5 cursor-pointer ${
                         canBreak
-                          ? 'bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 hover:from-cyan-500 hover:to-teal-500 text-white border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.4)] animate-pulse'
+                          ? 'bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] border-[#c5a059]/80 shadow-[0_0_20px_rgba(197,160,89,0.4)] animate-pulse'
                           : 'bg-zinc-900 text-zinc-500 border-white/5 cursor-not-allowed'
                       }`}
                     >
@@ -1040,14 +1054,14 @@ export const SealingPowerView: React.FC = () => {
                           addXp(25);
                           setUnsealMessage({ text: `✨ Elemental Ore Pulse Channeled from "${seal.name}"! +25 System XP Granted!`, isError: false });
                         }}
-                        className="px-2.5 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/60 text-[10px] font-mono font-bold text-cyan-200 rounded-lg transition shadow-sm flex items-center gap-1"
+                        className="px-2.5 py-1.5 bg-[#3a2e12]/80 hover:bg-[#4d3d18] border border-[#c5a059]/60 text-[10px] font-mono font-bold text-[#fef08a] rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer"
                         title="Channel localized energy surge from this unchained ore"
                       >
-                        <Zap className="h-3 w-3 text-amber-400 animate-pulse" />
+                        <Zap className="h-3 w-3 text-[#c5a059] animate-pulse" />
                         <span>CHANNEL PULSE</span>
                       </button>
-                      <span className="text-[10.5px] font-mono text-cyan-300 font-bold flex items-center gap-1 bg-cyan-950/80 border border-cyan-500/40 px-2.5 py-1.5 rounded-lg shadow-sm">
-                        <Pickaxe className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                      <span className="text-[10.5px] font-mono text-[#fef08a] font-bold flex items-center gap-1 bg-[#3a2e12]/90 border border-[#c5a059]/50 px-2.5 py-1.5 rounded-lg shadow-sm">
+                        <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059] animate-pulse" />
                         UNCHAINED
                       </span>
                     </div>
@@ -1068,18 +1082,18 @@ export const SealingPowerView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="max-w-md w-full bg-zinc-950 border border-cyan-500/60 rounded-2xl p-6 space-y-5 shadow-[0_0_40px_rgba(6,182,212,0.3)] text-left relative overflow-hidden"
+              className="max-w-md w-full bg-[#0b0d13] border border-[#c5a059]/60 rounded-2xl p-6 space-y-5 shadow-[0_0_40px_rgba(197,160,89,0.3)] text-left relative overflow-hidden"
             >
-              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-                <Pickaxe className="h-36 w-36 text-cyan-400 animate-pulse" />
-              </div>
+              <ArabesqueCorner position="top-left" className="top-2 left-2 h-4 w-4" color="#c5a059" />
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
 
-              <div className="flex items-start justify-between border-b border-white/10 pb-3">
+              <div className="flex items-start justify-between border-b border-[#c5a059]/20 pb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl p-2 bg-cyan-950/80 border border-cyan-500/50 rounded-xl">{selectedSealForBreak.runeSymbol || '🪨'}</span>
+                  <span className="text-3xl p-2 bg-[#3a2e12]/80 border border-[#c5a059]/50 rounded-xl">{selectedSealForBreak.runeSymbol || '🪨'}</span>
                   <div>
-                    <span className="text-[9.5px] font-mono text-cyan-400 uppercase font-bold tracking-wider">
-                      ✦ CHAIN-SHATTERING CEREMONY ✦
+                    <span className="text-[9.5px] font-mono text-[#fef08a] uppercase font-bold tracking-wider flex items-center gap-1">
+                      <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                      <span>CHAIN-SHATTERING CEREMONY</span>
                     </span>
                     <h3 className="font-display text-lg font-bold text-white tracking-wide">
                       {selectedSealForBreak.name}
@@ -1088,7 +1102,7 @@ export const SealingPowerView: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setSelectedSealForBreak(null)}
-                  className="text-zinc-500 hover:text-white"
+                  className="text-zinc-400 hover:text-white cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1097,12 +1111,12 @@ export const SealingPowerView: React.FC = () => {
               {/* MODAL ORE STAGE PREVIEW */}
               <OreChainsStage seal={selectedSealForBreak} isBroken={false} />
 
-              <p className="text-xs font-sans text-zinc-300 leading-relaxed bg-cyan-950/40 border border-cyan-500/30 p-3.5 rounded-xl">
+              <p className="text-xs font-sans text-zinc-300 leading-relaxed bg-[#1c160a]/60 border border-[#c5a059]/30 p-3.5 rounded-xl">
                 "{selectedSealForBreak.description}"
               </p>
 
               {/* BUFF TO BE UNLOCKED */}
-              <div className="p-3.5 bg-zinc-900 border border-emerald-500/40 rounded-xl space-y-1">
+              <div className="p-3.5 bg-[#07080c] border border-emerald-500/40 rounded-xl space-y-1">
                 <span className="text-[9px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
                   <Zap className="h-3.5 w-3.5" />
                   PERMANENT PASSIVE BUFF TO UNLOCK
@@ -1113,24 +1127,24 @@ export const SealingPowerView: React.FC = () => {
 
               {/* COST SACRIFICE NOTICE */}
               {selectedSealForBreak.costXP > 0 && (
-                <div className="p-3 bg-amber-950/50 border border-amber-500/40 rounded-xl text-xs font-mono text-amber-300 flex items-center gap-2.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
+                <div className="p-3 bg-[#3a2e12]/50 border border-[#c5a059]/40 rounded-xl text-xs font-mono text-[#fef08a] flex items-center gap-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-[#c5a059]" />
                   <span>Shattering these chains sacrifices {selectedSealForBreak.costXP} XP from system reserves.</span>
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#c5a059]/20">
                 <button
                   type="button"
                   onClick={() => setSelectedSealForBreak(null)}
-                  className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-mono transition"
+                  className="px-4 py-2 bg-[#07080c] hover:bg-[#181d29] border border-[#c5a059]/20 text-zinc-400 hover:text-white rounded-xl text-xs font-mono transition cursor-pointer"
                 >
                   ABORT
                 </button>
                 <button
                   type="button"
                   onClick={() => handleTriggerBreakSeal(selectedSealForBreak)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 via-teal-600 to-cyan-600 hover:from-cyan-500 hover:to-teal-500 text-white rounded-xl text-xs font-mono font-bold tracking-wider transition shadow-[0_0_25px_rgba(6,182,212,0.5)] flex items-center gap-2 border border-cyan-400/60"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] rounded-xl text-xs font-mono font-bold tracking-wider transition shadow-[0_0_25px_rgba(197,160,89,0.4)] flex items-center gap-2 border border-[#c5a059]/80 cursor-pointer"
                 >
                   <Zap className="h-4 w-4" />
                   <span>SHATTER CHAINS NOW</span>
@@ -1149,16 +1163,19 @@ export const SealingPowerView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-xl w-full bg-zinc-950 border border-cyan-500/50 rounded-2xl p-6 space-y-4 shadow-[0_0_35px_rgba(6,182,212,0.2)] text-left"
+              className="max-w-xl w-full bg-[#0b0d13] border border-[#c5a059]/50 rounded-2xl p-6 space-y-4 shadow-[0_0_35px_rgba(197,160,89,0.2)] text-left relative"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <ArabesqueCorner position="top-left" className="top-2 left-2 h-4 w-4" color="#c5a059" />
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+
+              <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-3">
                 <div className="flex items-center gap-2">
-                  <Pickaxe className="h-5 w-5 text-cyan-400" />
+                  <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
                   <h3 className="font-display text-base font-bold text-white tracking-wide">
                     {editingSeal ? 'MODIFY ELEMENTAL ORE & CHAINS' : 'FORGE NEW ELEMENTAL ORE & CHAINS'}
                   </h3>
                 </div>
-                <button onClick={() => setIsFormOpen(false)} className="text-zinc-500 hover:text-white">
+                <button onClick={() => setIsFormOpen(false)} className="text-zinc-400 hover:text-white cursor-pointer">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -1174,15 +1191,16 @@ export const SealingPowerView: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Titanium Core & Heavy Chains"
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
 
                 {/* CARVED ORE TABLET: CUSTOM INPUT & ARABIC RUNES PALETTE */}
-                <div className="p-3 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 border-2 border-zinc-800/80 rounded-2xl space-y-2 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95),_inset_0_1px_1px_rgba(255,255,255,0.06)] relative overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-1.5">
-                    <span className="text-[9px] font-mono uppercase text-amber-300 font-bold flex items-center gap-1.5 tracking-wider [text-shadow:_0_1px_2px_rgba(0,0,0,0.9)]">
-                      <span>⛏️</span> CARVED ORE RUNES & ARABIC CALLIGRAPHY PALETTE
+                <div className="p-3 bg-gradient-to-b from-[#07080c] via-[#11141c] to-[#07080c] border-2 border-[#c5a059]/30 rounded-2xl space-y-2 shadow-[inset_0_4px_12px_rgba(0,0,0,0.95),_inset_0_1px_1px_rgba(255,255,255,0.06)] relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-1.5">
+                    <span className="text-[9px] font-mono uppercase text-[#fef08a] font-bold flex items-center gap-1.5 tracking-wider">
+                      <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                      CARVED ORE RUNES & ARABIC CALLIGRAPHY PALETTE
                     </span>
                     <span className="text-[9px] font-mono text-zinc-500">Click rune to insert or edit custom symbol</span>
                   </div>
@@ -1190,20 +1208,20 @@ export const SealingPowerView: React.FC = () => {
                   <div className="grid grid-cols-4 gap-2 items-center">
                     {/* Carved Custom Input Slot */}
                     <div className="col-span-1">
-                      <label className="text-[9px] font-mono text-amber-400/90 uppercase block mb-1 font-bold">Carved Symbol</label>
+                      <label className="text-[9px] font-mono text-[#c5a059] uppercase block mb-1 font-bold">Carved Symbol</label>
                       <input
                         type="text"
                         value={formData.runeSymbol}
                         onChange={(e) => setFormData({ ...formData, runeSymbol: e.target.value })}
                         placeholder="🪨"
-                        className="w-full bg-black/90 border-2 border-zinc-800 rounded-xl py-2 px-1 text-center text-xl text-amber-200 font-serif font-bold tracking-widest shadow-[inset_0_3px_8px_rgba(0,0,0,0.95),_0_1px_0_rgba(255,255,255,0.05)] focus:outline-none focus:border-amber-500/80 [text-shadow:_1px_1px_3px_rgba(0,0,0,0.95),_-1px_-1px_1px_rgba(255,255,255,0.1)] transition"
+                        className="w-full bg-black/90 border-2 border-[#c5a059]/40 rounded-xl py-2 px-1 text-center text-xl text-[#fef08a] font-serif font-bold tracking-widest shadow-[inset_0_3px_8px_rgba(0,0,0,0.95)] focus:outline-none focus:border-[#c5a059] transition"
                       />
                     </div>
 
                     {/* Carved Runes Palette */}
                     <div className="col-span-3">
                       <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Arabic Calligraphy Runes</label>
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-black/60 border border-zinc-800/90 rounded-xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]">
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-black/60 border border-[#c5a059]/20 rounded-xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]">
                         {SUGGESTED_RUNES.map((rune, idx) => {
                           const isSelected = formData.runeSymbol === rune;
                           return (
@@ -1211,10 +1229,10 @@ export const SealingPowerView: React.FC = () => {
                               key={`${rune}-${idx}`}
                               type="button"
                               onClick={() => setFormData({ ...formData, runeSymbol: rune })}
-                              className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition border font-serif font-bold select-none ${
+                              className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition border font-serif font-bold select-none cursor-pointer ${
                                 isSelected
-                                  ? 'bg-amber-950/80 border-amber-500/90 text-amber-300 font-black shadow-[inset_0_2px_6px_rgba(0,0,0,0.9),0_0_10px_rgba(245,158,11,0.35)] scale-105 [text-shadow:_1px_1px_3px_rgba(0,0,0,0.9),_0_0_8px_rgba(245,158,11,0.7)]'
-                                  : 'bg-zinc-950/90 border-zinc-800/80 text-amber-200/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9),_0_1px_0_rgba(255,255,255,0.05)] hover:bg-zinc-900 hover:text-amber-100 hover:border-amber-500/40 [text-shadow:_1px_1px_2px_rgba(0,0,0,0.9),_-1px_-1px_0.5px_rgba(255,255,255,0.1)]'
+                                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-black shadow-[0_0_10px_rgba(197,160,89,0.4)] scale-105'
+                                  : 'bg-[#07080c] border-[#c5a059]/20 text-zinc-400 hover:bg-[#181d29] hover:text-[#fef08a] hover:border-[#c5a059]/50'
                               }`}
                               title={`Select carved rune ${rune}`}
                             >
@@ -1235,7 +1253,7 @@ export const SealingPowerView: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Describe the raw mineral properties and the heavy chains binding it..."
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]"
                   />
                 </div>
 
@@ -1246,7 +1264,7 @@ export const SealingPowerView: React.FC = () => {
                     <select
                       value={formData.rarity}
                       onChange={(e) => setFormData({ ...formData, rarity: e.target.value as SealRarity })}
-                      className="w-full bg-zinc-900 border border-white/10 text-white rounded-xl p-2 focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-[#07080c] border border-[#c5a059]/30 text-white rounded-xl p-2 focus:outline-none focus:border-[#c5a059] cursor-pointer"
                     >
                       <option value="Common">Common (Iron)</option>
                       <option value="Rare">Rare (Cobalt)</option>
@@ -1263,7 +1281,7 @@ export const SealingPowerView: React.FC = () => {
                       min={1}
                       value={formData.requiredLevel}
                       onChange={(e) => setFormData({ ...formData, requiredLevel: Number(e.target.value) })}
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-white focus:outline-none focus:border-[#c5a059]"
                     />
                   </div>
                   <div>
@@ -1274,21 +1292,21 @@ export const SealingPowerView: React.FC = () => {
                       step={50}
                       value={formData.costXP}
                       onChange={(e) => setFormData({ ...formData, costXP: Number(e.target.value) })}
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl p-2 text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-white focus:outline-none focus:border-[#c5a059]"
                     />
                   </div>
                 </div>
 
                 {/* Linked Requirements */}
-                <div className="p-3 bg-zinc-900/80 border border-white/10 rounded-xl space-y-2">
-                  <span className="text-[9px] font-mono uppercase text-zinc-400 font-bold">OPTIONAL LINKED REQUIREMENTS</span>
+                <div className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl space-y-2">
+                  <span className="text-[9px] font-mono uppercase text-[#c5a059] font-bold">OPTIONAL LINKED REQUIREMENTS</span>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[8.5px] font-mono text-zinc-500 uppercase block mb-0.5">Required Directive</label>
                       <select
                         value={formData.requiredQuestId}
                         onChange={(e) => setFormData({ ...formData, requiredQuestId: e.target.value })}
-                        className="w-full bg-zinc-900 border border-white/10 text-zinc-300 rounded-lg p-1.5 focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 text-zinc-300 rounded-lg p-1.5 focus:outline-none focus:border-[#c5a059] cursor-pointer"
                       >
                         <option value="">None (No quest requirement)</option>
                         {state.quests.map(q => (
@@ -1301,7 +1319,7 @@ export const SealingPowerView: React.FC = () => {
                       <select
                         value={formData.requiredSkillId}
                         onChange={(e) => setFormData({ ...formData, requiredSkillId: e.target.value })}
-                        className="w-full bg-zinc-900 border border-white/10 text-zinc-300 rounded-lg p-1.5 focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 text-zinc-300 rounded-lg p-1.5 focus:outline-none focus:border-[#c5a059] cursor-pointer"
                       >
                         <option value="">None (No skill requirement)</option>
                         {state.skills.map(s => (
@@ -1313,8 +1331,8 @@ export const SealingPowerView: React.FC = () => {
                 </div>
 
                 {/* BUFF SETTINGS */}
-                <div className="p-3 bg-cyan-950/40 border border-cyan-500/40 rounded-xl space-y-2">
-                  <span className="text-[9px] font-mono uppercase text-cyan-300 font-bold">UNCHAINED ORE PERK CONFIGURATION</span>
+                <div className="p-3 bg-[#1c160a]/60 border border-[#c5a059]/40 rounded-xl space-y-2">
+                  <span className="text-[9px] font-mono uppercase text-[#fef08a] font-bold">UNCHAINED ORE PERK CONFIGURATION</span>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -1325,7 +1343,7 @@ export const SealingPowerView: React.FC = () => {
                         value={formData.buffName}
                         onChange={(e) => setFormData({ ...formData, buffName: e.target.value })}
                         placeholder="e.g. Ironclad Focus Surge"
-                        className="w-full bg-zinc-900 border border-white/10 rounded-lg p-1.5 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-1.5 text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                     <div>
@@ -1336,7 +1354,7 @@ export const SealingPowerView: React.FC = () => {
                         max={100}
                         value={formData.xpBonusPercent}
                         onChange={(e) => setFormData({ ...formData, xpBonusPercent: Number(e.target.value) })}
-                        className="w-full bg-zinc-900 border border-white/10 rounded-lg p-1.5 text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-1.5 text-emerald-300 font-bold focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                   </div>
@@ -1348,7 +1366,7 @@ export const SealingPowerView: React.FC = () => {
                       value={formData.buffDescription}
                       onChange={(e) => setFormData({ ...formData, buffDescription: e.target.value })}
                       placeholder="e.g. +20% XP boost on all main directives and +2 Focus level."
-                      className="w-full bg-zinc-900 border border-white/10 rounded-lg p-1.5 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-1.5 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]"
                     />
                   </div>
 
@@ -1358,7 +1376,7 @@ export const SealingPowerView: React.FC = () => {
                       <select
                         value={formData.selectedAttributeId}
                         onChange={(e) => setFormData({ ...formData, selectedAttributeId: e.target.value })}
-                        className="w-full bg-zinc-900 border border-white/10 text-amber-300 font-bold rounded-lg p-1.5 focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 text-amber-300 font-bold rounded-lg p-1.5 focus:outline-none focus:border-[#c5a059] cursor-pointer"
                       >
                         {state.attributes.map(a => (
                           <option key={a.id} value={a.id}>{a.name}</option>
@@ -1373,23 +1391,23 @@ export const SealingPowerView: React.FC = () => {
                         max={10}
                         value={formData.attributeBoostAmount}
                         onChange={(e) => setFormData({ ...formData, attributeBoostAmount: Number(e.target.value) })}
-                        className="w-full bg-zinc-900 border border-white/10 rounded-lg p-1.5 text-amber-300 font-bold focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-1.5 text-amber-300 font-bold focus:outline-none focus:border-[#c5a059]"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#c5a059]/20">
                   <button
                     type="button"
                     onClick={() => setIsFormOpen(false)}
-                    className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition"
+                    className="px-4 py-2 bg-[#07080c] hover:bg-[#181d29] border border-[#c5a059]/20 text-zinc-400 hover:text-white rounded-xl transition cursor-pointer"
                   >
                     CANCEL
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white rounded-xl font-bold transition shadow-lg"
+                    className="px-5 py-2 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] rounded-xl font-bold transition shadow-lg cursor-pointer"
                   >
                     {editingSeal ? 'SAVE CHANGES' : 'FORGE ELEMENTAL ORE'}
                   </button>

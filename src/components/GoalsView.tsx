@@ -46,6 +46,7 @@ export const GoalsView: React.FC = () => {
   const [editGoalName, setEditGoalName] = useState('');
   const [editGoalDesc, setEditGoalDesc] = useState('');
   const [editGoalPriority, setEditGoalPriority] = useState<GoalPriority>('Medium');
+  const [editGoalHorizon, setEditGoalHorizon] = useState<'30-Day Sprint' | 'Quarterly (Q1-Q4)' | 'Annual Vision' | 'Life Vision'>('Quarterly (Q1-Q4)');
   const [editGoalEstDate, setEditGoalEstDate] = useState('');
 
   // Sub-tabs in Goal Detail Pane
@@ -191,6 +192,7 @@ export const GoalsView: React.FC = () => {
     setEditGoalName(selectedGoal.name);
     setEditGoalDesc(selectedGoal.description);
     setEditGoalPriority(selectedGoal.priority);
+    setEditGoalHorizon((selectedGoal.horizon as any) || 'Quarterly (Q1-Q4)');
     setEditGoalEstDate(selectedGoal.estimatedCompletion);
     setIsEditingGoal(true);
   };
@@ -204,6 +206,7 @@ export const GoalsView: React.FC = () => {
       name: editGoalName,
       description: editGoalDesc,
       priority: editGoalPriority,
+      horizon: editGoalHorizon,
       estimatedCompletion: editGoalEstDate
     });
     setIsEditingGoal(false);
@@ -644,7 +647,7 @@ export const GoalsView: React.FC = () => {
                       className="w-full bg-[#07080c] border border-white/10 rounded px-3 py-1.5 text-xs text-zinc-300 font-sans"
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       <select 
                         value={editGoalPriority}
                         onChange={(e) => setEditGoalPriority(e.target.value as GoalPriority)}
@@ -653,6 +656,17 @@ export const GoalsView: React.FC = () => {
                         <option value="Low">Low Priority</option>
                         <option value="Medium">Medium Priority</option>
                         <option value="High">High Priority</option>
+                      </select>
+
+                      <select 
+                        value={editGoalHorizon}
+                        onChange={(e) => setEditGoalHorizon(e.target.value as any)}
+                        className="bg-[#07080c] border border-white/10 rounded p-1.5 text-xs text-purple-300 font-mono"
+                      >
+                        <option value="30-Day Sprint">30-Day Sprint</option>
+                        <option value="Quarterly (Q1-Q4)">Quarterly</option>
+                        <option value="Annual Vision">Annual</option>
+                        <option value="Life Vision">Life Vision</option>
                       </select>
 
                       <input 
@@ -682,10 +696,17 @@ export const GoalsView: React.FC = () => {
                   </form>
                 ) : (
                   <>
-                    <h3 className="font-display text-xl font-bold text-white uppercase mt-1 tracking-wide">
-                      {selectedGoal.name}
-                    </h3>
-                    <p className="text-xs text-zinc-300 font-sans max-w-2xl leading-relaxed">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <h3 className="font-display text-xl font-bold text-white uppercase tracking-wide">
+                        {selectedGoal.name}
+                      </h3>
+                      {selectedGoal.horizon && (
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40">
+                          {selectedGoal.horizon}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans max-w-2xl leading-relaxed mt-1">
                       {selectedGoal.description || 'No direct description specified. Provide detailed vision logs for deeper alignment.'}
                     </p>
                   </>

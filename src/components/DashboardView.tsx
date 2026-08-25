@@ -162,6 +162,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     xpIntoLevel: number;
     xpRequiredForNextLevel: number;
     directives: number;
+    linkedSubSkills: string[];
   }>();
 
   activeQuests.forEach(quest => {
@@ -170,28 +171,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       const existingSkill = (state.skills || []).find((s: any) => s.id === skillId);
       if (!existingSkill) return;
 
-      const existingEntry = activeDirectiveSkillMap.get(skillId);
-      const skillStats = getSkillXpAndLevel(skillId);
+      // Identify primary skill (either self or parent)
+      let primarySkill = existingSkill;
+      let isSubSkill = false;
+      if ((existingSkill.tier === 'Secondary' || existingSkill.parentId) && existingSkill.parentId) {
+        const parent = (state.skills || []).find((s: any) => s.id === existingSkill.parentId);
+        if (parent) {
+          primarySkill = parent;
+          isSubSkill = true;
+        }
+      }
 
-      activeDirectiveSkillMap.set(skillId, {
-        id: existingSkill.id,
-        name: existingSkill.name,
-        iconName: existingSkill.iconName || 'Sparkles',
-        tier: (existingSkill.tier || 'Primary') as 'Primary' | 'Secondary',
-        parentId: existingSkill.parentId || null,
+      const pId = primarySkill.id;
+      const existingEntry = activeDirectiveSkillMap.get(pId);
+      const skillStats = getSkillXpAndLevel(pId);
+
+      const subSkillsList = existingEntry?.linkedSubSkills ? [...existingEntry.linkedSubSkills] : [];
+      if (isSubSkill && !subSkillsList.includes(existingSkill.name)) {
+        subSkillsList.push(existingSkill.name);
+      }
+
+      activeDirectiveSkillMap.set(pId, {
+        id: primarySkill.id,
+        name: primarySkill.name,
+        iconName: primarySkill.iconName || 'Sparkles',
+        tier: 'Primary',
+        parentId: null,
         level: skillStats.level,
         xp: skillStats.xp,
         progress: skillStats.progress,
         xpIntoLevel: skillStats.xpIntoLevel,
         xpRequiredForNextLevel: skillStats.xpRequiredForNextLevel,
-        directives: (existingEntry?.directives ?? 0) + 1
+        directives: (existingEntry?.directives ?? 0) + 1,
+        linkedSubSkills: subSkillsList
       });
     });
   });
 
   const activeDirectiveSkills = Array.from(activeDirectiveSkillMap.values())
-    .sort((a, b) => b.level - a.level || b.xp - a.xp)
-    .slice(0, 3);
+    .sort((a, b) => b.level - a.level || b.xp - a.xp);
 
   const handleSaveFocus = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1126,64 +1144,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             })()}
           </div>
 
-          {/* Strategy 3: End of Day Review Terminal */}
-          {overdueQuests.length > 0 && (
-            <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/40 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="eod-debrief-terminal">
-              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-              <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                  <h3 className="text-xs font-mono font-bold text-[#e5c875] uppercase tracking-wider">
-                    EOD_SACRED_DEBRIEF // WORKLOAD_MITIGATION
-                  </h3>
-                </div>
-                <span className="text-[9px] font-mono text-[#c5a059]">BACKLOG SANCTUARY</span>
-              </div>
-              
-              <p className="text-xs text-zinc-300 font-sans leading-relaxed mb-3">
-                Review unresolved trials to eliminate rollover cognitive debt:
-              </p>
-              
-              <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                {overdueQuests.map(q => (
-                  <div key={q.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div className="min-w-0">
-                      <span className="text-xs font-sans font-semibold text-white block">{q.name}</span>
-                      <span className="text-[9px] font-mono text-[#c5a059] uppercase">{q.type} • {q.difficulty} • {q.xp} XP</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                      <button
-                        onClick={() => processQuestReview(q.id, 'rollover')}
-                        className="flex-1 sm:flex-none px-2.5 py-1 bg-[#3a2e12]/80 hover:bg-[#3a2e12] border border-[#c5a059]/50 text-[#fef08a] text-[10px] font-mono rounded-lg transition uppercase font-bold cursor-pointer"
-                        title="Move deadline to Tomorrow"
-                      >
-                        Rollover
-                      </button>
-                      <button
-                        onClick={() => processQuestReview(q.id, 'postpone')}
-                        className="flex-1 sm:flex-none px-2.5 py-1 bg-[#0b0d13] hover:bg-[#141824] border border-[#c5a059]/30 text-zinc-300 text-[10px] font-mono rounded-lg transition uppercase font-bold cursor-pointer"
-                        title="Remove Deadline (Move to Queue)"
-                      >
-                        Defer
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (window.confirm("Forgive this objective for today? No penalty will be activated.")) {
-                            processQuestReview(q.id, 'forgive');
-                          }
-                        }}
-                        className="flex-1 sm:flex-none px-2.5 py-1 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono rounded-lg transition uppercase font-bold cursor-pointer"
-                        title="Forgive & Clear for today"
-                      >
-                        Forgive
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Active Directives Groupings */}
+          {/* Note: Backlog Sanctuary removed per request */}
 
         </div>
 
@@ -1361,55 +1323,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="glass-panel rounded-2xl p-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="active-directive-skills-preview">
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#c5a059]/20">
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+              <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#c5a059]/20">
                 <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-[#c5a059]">
-                  <Sparkles className="h-3 w-3" /> Skills
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                  <span>PRIMARY SKILLS // DIRECTIVES IMPACT</span>
                 </div>
-                <span className="text-[9px] font-mono text-zinc-400">{activeDirectiveSkills.length} affected</span>
+                <span className="text-[9px] font-mono text-[#fef08a] bg-[#3a2e12]/60 px-2 py-0.5 rounded border border-[#c5a059]/30 font-bold">
+                  {activeDirectiveSkills.length} PRIMARY TRACK{activeDirectiveSkills.length === 1 ? '' : 'S'}
+                </span>
               </div>
               {activeDirectiveSkills.length === 0 ? (
-                <p className="text-[10px] font-mono text-zinc-500">No skill links in today’s active directives.</p>
+                <p className="text-[10px] font-mono text-zinc-500 py-2">No primary skill links in today’s active directives.</p>
               ) : (
-                <div className="space-y-2">
-                  {activeDirectiveSkills.map(skill => {
-                    const parentSkill = skill.parentId ? state.skills.find(s => s.id === skill.parentId) : null;
-
-                    return (
-                      <div key={skill.id} className="rounded-lg border border-[#c5a059]/15 bg-[#07080c] p-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            {renderTopicIcon(skill.iconName || 'Sparkles', 'h-3.5 w-3.5')}
-                            <span className="text-[11px] font-sans font-semibold text-white truncate">{skill.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${
-                              skill.tier === 'Secondary' ? 'border-violet-500/40 bg-violet-950/40 text-violet-300' : 'border-[#c5a059]/40 bg-[#3a2e12]/60 text-[#fef08a]'
-                            }`}>
-                              {skill.tier}
-                            </span>
-                            <span className="text-[9px] font-mono text-[#fef08a]">LVL {skill.level}</span>
-                          </div>
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                  {activeDirectiveSkills.map(skill => (
+                    <div key={skill.id} className="rounded-xl border border-[#c5a059]/20 bg-[#07080c] p-2.5 hover:border-[#c5a059]/40 transition">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {renderTopicIcon(skill.iconName || 'Sparkles', 'h-3.5 w-3.5 text-[#c5a059]')}
+                          <span className="text-[11px] font-sans font-semibold text-white truncate">{skill.name}</span>
                         </div>
-
-                        {parentSkill && (
-                          <div className="mt-1 text-[8px] font-mono text-zinc-400">
-                            Linked primary: <span className="text-[#c5a059]">{parentSkill.name}</span>
-                          </div>
-                        )}
-
-                        <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-zinc-400">
-                          <span>XP {skill.xp}</span>
-                          <span>{skill.progress}%</span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#10131a] border border-white/5">
-                          <div className="h-full rounded-full bg-gradient-to-r from-[#8a6d2b] to-[#c5a059]" style={{ width: `${skill.progress}%` }} />
-                        </div>
-                        <div className="mt-2 text-[9px] font-mono text-zinc-400">
-                          {skill.directives} active directive{skill.directives === 1 ? '' : 's'}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-[#c5a059]/40 bg-[#3a2e12]/60 text-[#fef08a] font-bold">
+                            PRIMARY
+                          </span>
+                          <span className="text-[9px] font-mono text-[#fef08a] font-bold">LVL {skill.level}</span>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      {skill.linkedSubSkills && skill.linkedSubSkills.length > 0 && (
+                        <div className="mt-1 text-[8px] font-mono text-purple-300/90 flex items-center gap-1 flex-wrap">
+                          <span className="text-zinc-500">Sub-tracks:</span>
+                          {skill.linkedSubSkills.map(st => (
+                            <span key={st} className="px-1 py-0.2 bg-purple-950/60 border border-purple-500/30 rounded text-[7.5px] text-purple-200">
+                              {st}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                        <span className="text-amber-300/90">XP {skill.xp}</span>
+                        <span className="text-[#fef08a] font-bold">{skill.progress}%</span>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#10131a] border border-white/5">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[#8a6d2b] to-[#c5a059]" style={{ width: `${skill.progress}%` }} />
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between text-[8.5px] font-mono text-zinc-400">
+                        <span className="text-emerald-400 font-bold">{skill.directives} active directive{skill.directives === 1 ? '' : 's'}</span>
+                        <span className="text-zinc-500">{skill.xpRequiredForNextLevel - skill.xpIntoLevel} XP to next level</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

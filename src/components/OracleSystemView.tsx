@@ -28,6 +28,19 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
 
   const [activeSubTab, setActiveSubTab] = useState<OracleSystemSubTab>(initialSubTab);
 
+  React.useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
+  const handleTabChange = (newTab: OracleSystemSubTab) => {
+    setActiveSubTab(newTab);
+    if (onNavigate) {
+      onNavigate(newTab === 'messages' ? 'oracle_system' : newTab);
+    }
+  };
+
   // System Overrides State
   const [importJson, setImportJson] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -114,7 +127,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
         {/* SUB-NAVIGATION BAR */}
         <div className="flex items-center gap-2 pt-2 border-t border-white/5 overflow-x-auto pb-1">
           <button
-            onClick={() => setActiveSubTab('analytics')}
+            onClick={() => handleTabChange('analytics')}
             className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
               activeSubTab === 'analytics'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
@@ -127,7 +140,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveSubTab('system')}
+            onClick={() => handleTabChange('system')}
             className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
               activeSubTab === 'system'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
@@ -140,7 +153,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveSubTab('messages')}
+            onClick={() => handleTabChange('messages')}
             className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
               activeSubTab === 'messages'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
