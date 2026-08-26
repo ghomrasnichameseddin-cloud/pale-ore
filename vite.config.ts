@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/pale-ore/',
+  base: process.env.VERCEL ? '/' : '/pale-ore/',
 
   plugins: [
     react(),
@@ -14,6 +14,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: [],
+
       manifest: {
         name: 'Pale Ore - Operator System',
         short_name: 'Pale Ore',
@@ -22,16 +23,20 @@ export default defineConfig({
         background_color: '#09090b',
         display: 'standalone',
         orientation: 'any',
-        scope: '/pale-ore/',
-        start_url: '/pale-ore/',
+
+        scope: process.env.VERCEL ? '/' : '/pale-ore/',
+        start_url: process.env.VERCEL ? '/' : '/pale-ore/',
+
         icons: [],
       },
+
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
       },
+
       devOptions: {
         enabled: true,
       },
