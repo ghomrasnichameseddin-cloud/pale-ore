@@ -1374,7 +1374,17 @@ export const QuestDirectory: React.FC = () => {
                               <span>{quest.name}</span>
                             </div>
                             <div className="text-[9px] text-zinc-500 font-mono flex items-center gap-2 mt-0.5">
-                              <span className="text-amber-400/80">+{quest.xp} XP</span>
+                              {(() => {
+                                const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
+                                const penaltyVal = isPenalty 
+                                  ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
+                                  : quest.xp;
+                                return (
+                                  <span className={isPenalty ? 'text-rose-400 font-bold' : 'text-amber-400/80'}>
+                                    {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                                  </span>
+                                );
+                              })()}
                               <span>{quest.type}</span>
                               <span>{quest.difficulty}</span>
                               {quest.deadline && <span>Due: {quest.deadline}</span>}

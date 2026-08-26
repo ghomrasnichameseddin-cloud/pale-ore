@@ -3,7 +3,7 @@ import { usePOS, isQuestArchived } from '../POSContext';
 import { getActiveJob, getActiveTitle } from '../jobsAndTitles';
 import { JobTitleModal } from './JobTitleModal';
 import { 
-  Shield, Flame, Clock, Swords, CheckSquare, Square,
+  Shield, Flame, Clock, CheckSquare, Square,
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
   Sliders, Timer, Zap, Star, Coins, ShoppingBag, Plus, Search,
   Filter, Target, FolderKanban, Sparkles, TrendingUp, BarChart2,
@@ -358,34 +358,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </button>
 
           {onNavigate && (
-            <>
-              <button
-                onClick={() => onNavigate('quests')}
-                className="px-3 py-2 bg-[#0b0d13] hover:bg-[#141824] text-zinc-200 hover:text-white border border-[#c5a059]/30 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
-                title="View Directives Board"
-              >
-                <Swords className="h-3.5 w-3.5 text-[#c5a059]" />
-                DIRECTIVES
-              </button>
-
-              <button
-                onClick={() => onNavigate('goals')}
-                className="px-3 py-2 bg-[#0b0d13] hover:bg-[#141824] text-zinc-200 hover:text-white border border-[#c5a059]/30 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
-                title="View Grand Destinies"
-              >
-                <Target className="h-3.5 w-3.5 text-[#e5c875]" />
-                DESTINIES
-              </button>
-
-              <button
-                onClick={() => onNavigate('shop')}
-                className="px-3 py-2 bg-[#3a2e12]/60 hover:bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
-                title="Open Imperial Vault"
-              >
-                <ShoppingBag className="h-3.5 w-3.5 text-[#c5a059]" />
-                VAULT ({state.profile.coins ?? 150} 🪙)
-              </button>
-            </>
+            <button
+              onClick={() => onNavigate('shop')}
+              className="px-3 py-2 bg-[#3a2e12]/60 hover:bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="Open Imperial Vault"
+            >
+              <ShoppingBag className="h-3.5 w-3.5 text-[#c5a059]" />
+              VAULT ({state.profile.coins ?? 150} 🪙)
+            </button>
           )}
 
           <button
@@ -586,7 +566,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-400 mt-0.5">
                     <span>Net: <strong className={muhasabahStats.todayNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{muhasabahStats.todayNetXP >= 0 ? `+${muhasabahStats.todayNetXP}` : muhasabahStats.todayNetXP} XP</strong></span>
                     <span>•</span>
-                    <span>Cap: <strong className="text-amber-300">{muhasabahStats.dailyCapRemaining} XP</strong> left</span>
+                    <span>Total Lost: <strong className="text-rose-400">−{muhasabahStats.todayLostXP} XP</strong></span>
                     {muhasabahStats.activeWeaknessesCount > 0 && (
                       <>
                         <span>•</span>
@@ -1046,9 +1026,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
                     
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs font-mono font-bold text-[#fef08a] bg-[#3a2e12]/60 border border-[#c5a059]/40 px-2.5 py-1 rounded-lg shadow-sm">
-                        +{quest.xp} XP
-                      </span>
+                      {(() => {
+                        const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
+                        const penaltyVal = isPenalty 
+                          ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
+                          : quest.xp;
+                        return (
+                          <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg shadow-sm border ${
+                            isPenalty 
+                              ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
+                              : 'text-[#fef08a] bg-[#3a2e12]/60 border-[#c5a059]/40'
+                          }`}>
+                            {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -1467,7 +1459,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
                 {state.quests.filter(q => !isQuestArchived(q, state.lists, state.folders) && (q.type?.toLowerCase() === 'habit' || q.recurrence === 'Daily') && isQuestScheduledForDate(q, systemDate)).map(habit => {
                   const isFinished = isQuestFinishedForToday(habit);
-                  const streakDays = habit.streakDays || 0;
+                  const streakDays = habit.streakCount || (habit as any).streakDays || 0;
 
                   return (
                     <div 

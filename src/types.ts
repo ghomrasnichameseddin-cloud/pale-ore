@@ -503,6 +503,39 @@ export interface PlayerLevelInfo {
   unlockedLevel?: number;
 }
 
+export interface Masjid40DayCovenant {
+  startDate?: string; // YYYY-MM-DD
+  targetDays: number; // 40
+  completedDates?: string[]; // array of YYYY-MM-DD
+  currentStreak: number;
+  bestStreak: number;
+  totalCompletedDays: number;
+  isUnlockedBaraatan?: boolean;
+  unlockedAt?: string;
+  notes?: string;
+}
+
+export interface Masjid40Stats {
+  targetDays: number;
+  currentStreak: number;
+  bestStreak: number;
+  totalCompletedDays: number;
+  completedDates: string[];
+  todayMasjidCount: number;
+  isTodayFullyCompleted: boolean;
+  daysRemaining: number;
+  progressPercent: number;
+  isBaraatanAchieved: boolean;
+  milestoneTitle: string;
+  currentStage: {
+    stageNumber: number;
+    stageNameAr: string;
+    stageNameEn: string;
+    stageDesc: string;
+    dayRange: string;
+  };
+}
+
 export interface POSState {
   goals: Goal[];
   projects: Project[];
@@ -529,4 +562,5 @@ export interface POSState {
   weaknesses?: Weakness[];
   spiritualLogs?: Record<string, SpiritualDailyLog>;
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
+  masjid40Covenant?: Masjid40DayCovenant;
 }

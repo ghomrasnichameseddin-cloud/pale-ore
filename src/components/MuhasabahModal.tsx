@@ -205,7 +205,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
 
   const stats = getTodayMuhasabahStats();
   const consequence = SEVERITY_CONSEQUENCES[severity];
-  const actualXpDeduction = isExempt ? 0 : Math.min(consequence.xpPenalty, stats.dailyCapRemaining);
+  const actualXpDeduction = isExempt ? 0 : consequence.xpPenalty;
   const coinFine = isExempt ? 0 : consequence.coinFine;
 
   if (!isOpen) return null;

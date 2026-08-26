@@ -867,7 +867,17 @@ export const ProjectsView: React.FC = () => {
                         </div>
                         
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono font-bold text-emerald-400 shrink-0">+{quest.xp} XP</span>
+                          {(() => {
+                            const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
+                            const penaltyVal = isPenalty 
+                              ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
+                              : quest.xp;
+                            return (
+                              <span className={`text-xs font-mono font-bold shrink-0 ${isPenalty ? 'text-rose-400 font-bold' : 'text-emerald-400'}`}>
+                                {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                              </span>
+                            );
+                          })()}
                           <button 
                             onClick={() => completeQuest(quest.id)}
                             className="bg-[#3a2e12] hover:bg-[#524119] text-[#fef08a] border border-[#c5a059] px-2.5 py-1 rounded font-mono text-[9px] font-bold cursor-pointer"

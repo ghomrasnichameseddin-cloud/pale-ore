@@ -5,7 +5,8 @@ import {
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
   MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity,
   SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
-  FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode
+  FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
+  Masjid40Stats, Masjid40DayCovenant
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 
@@ -205,6 +206,8 @@ interface POSContextType {
     category: MuhasabahCategory;
     severity: MuhasabahSeverity;
     cause: string;
+    isExempt?: boolean;
+    exemptionReason?: string;
     reflection?: string;
     createCorrectiveQuest?: boolean;
     correctiveQuestName?: string;
@@ -227,10 +230,18 @@ interface POSContextType {
     todayEarnedXP: number;
     todayLostXP: number;
     todayNetXP: number;
+    todayLostCoins: number;
     dailyCapRemaining: number;
     totalEntriesCount: number;
+    todaySlipsCount: number;
+    todayHasanatCount: number;
     activeWeaknessesCount: number;
     sealedWeaknessesCount: number;
+    pendingKaffarahCount: number;
+    pendingKaffarahQuests: Quest[];
+    mizanTilt: number;
+    equilibriumStatus: 'Radiant Balance' | 'Blessed Equilibrium' | 'Neutral Ground' | 'Spiritual Deficit' | 'Severe Nafs Warning';
+    isSpiritualLocked: boolean;
   };
   recalibrateMizan: () => { success: boolean; message: string; timestamp: string };
 
@@ -255,6 +266,10 @@ interface POSContextType {
   updateQuranLog: (updates: Partial<QuranLog>, dateStr?: string) => void;
   updateDhikrLog: (updates: Partial<DhikrTasbeehLog>, dateStr?: string) => void;
   setKhushuRating: (rating: number, dateStr?: string) => void;
+  getMasjid40Stats: (dateStr?: string) => Masjid40Stats;
+  toggleAllPrayersInMasjid: (dateStr?: string, forceState?: boolean) => void;
+  resetMasjid40Streak: (dateStr?: string) => void;
+  setMasjid40Override: (streak: number) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -582,6 +597,30 @@ const resetRecurringQuestsForNewDate = (
   });
 };
 
+export const SEVERITY_XP_PENALTIES: Record<MuhasabahSeverity, number> = {
+  Minor: 100,
+  Moderate: 200,
+  Major: 300,
+  Severe: 400,
+  Critical: 500
+};
+
+export const SEVERITY_COIN_FINES: Record<MuhasabahSeverity, number> = {
+  Minor: 10,
+  Moderate: 25,
+  Major: 50,
+  Severe: 100,
+  Critical: 200
+};
+
+export const SEVERITY_MOMENTUM_PENALTIES: Record<MuhasabahSeverity, number> = {
+  Minor: 15,
+  Moderate: 35,
+  Major: 100, // Complete momentum wipe
+  Severe: 100,
+  Critical: 100
+};
+
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<POSState>(() => {
     try {
@@ -589,6 +628,59 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
+          // Reconcile and fix any missing Muhasabah deductions in xpHistory
+          let reconciledXpHistory: XPHistoryEntry[] = [...(parsed.xpHistory || [])];
+          const savedMuhasabahEntries = (parsed.muhasabahEntries || []) as MuhasabahEntry[];
+          
+          const reconciledMuhasabahEntries = savedMuhasabahEntries.map(entry => {
+            const isExempt = Boolean(entry.isExempt);
+            if (isExempt) return entry;
+
+            const expectedPenalty = entry.rawPenalty || (
+              entry.severity === 'Critical' ? 500 :
+              entry.severity === 'Severe' ? 400 :
+              entry.severity === 'Major' ? 300 :
+              entry.severity === 'Moderate' ? 200 : 100
+            );
+
+            // Check if this specific entry is already logged in xpHistory
+            const hasHistoryEntry = reconciledXpHistory.some(h => 
+              (h.id && (h.id.includes(entry.id) || (entry.id && h.id.endsWith(entry.id)))) ||
+              (h.xp === -expectedPenalty && h.questName && h.questName.includes(entry.title))
+            );
+
+            if (!hasHistoryEntry) {
+              const historyEntry: XPHistoryEntry = {
+                id: `xph-muhasabah-${entry.id || Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                questId: null,
+                questName: `[MUHĀSABAH AUDIT] ${entry.category || 'Slip'}: ${entry.title}`,
+                xp: -expectedPenalty,
+                timestamp: entry.timestamp || entry.date || new Date().toISOString(),
+                skillIds: []
+              };
+              reconciledXpHistory = [historyEntry, ...reconciledXpHistory];
+            }
+
+            return {
+              ...entry,
+              rawPenalty: expectedPenalty,
+              xpDeducted: expectedPenalty
+            };
+          });
+
+          // Reconcile penalty quests that had 0 or positive XP so they show their negative loss
+          const reconciledQuests = (parsed.quests || []).map((q: any) => {
+            if (q.type === 'Penalty' && (q.xp === 0 || !q.xp || q.xp > 0)) {
+              const pVal = q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50;
+              return { ...q, xp: -pVal };
+            }
+            return q;
+          });
+
+          const totalXp = Math.max(0, reconciledXpHistory.reduce((sum, h) => sum + (h.xp || 0), 0));
+          const completedBossCount = getCompletedBossQuestsCount(reconciledQuests, reconciledXpHistory);
+          const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
           // Robustly merge to guarantee all schema properties are defined
           return {
             ...INITIAL_STATE,
@@ -596,6 +688,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             profile: {
               ...INITIAL_STATE.profile,
               ...(parsed.profile || {}),
+              xp: totalXp,
+              level: gatedLevel.level,
               coins: parsed.profile?.coins ?? 150,
               focusShields: parsed.profile?.focusShields ?? 0
             },
@@ -604,12 +698,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             goals: parsed.goals || [],
             projects: parsed.projects || [],
             milestones: parsed.milestones || [],
-            quests: parsed.quests || [],
+            quests: reconciledQuests,
             folders: parsed.folders || [],
             lists: parsed.lists || [],
             skills: parsed.skills || [],
             attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
-            xpHistory: parsed.xpHistory || [],
+            xpHistory: reconciledXpHistory,
+            muhasabahEntries: reconciledMuhasabahEntries,
             systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
             planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
             messages: parsed.messages || INITIAL_STATE.messages || []
@@ -1207,79 +1302,118 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const penaltyReduction = getFailPenaltyMultiplier(activeJobForMidnight);
 
       uncheckedQuests.forEach(q => {
-        let penaltyXp = 50;
-        if (q.difficulty === 'Easy') penaltyXp = 25;
-        else if (q.difficulty === 'Normal') penaltyXp = 50;
-        else if (q.difficulty === 'Hard') penaltyXp = 100;
-        else if (q.difficulty === 'Boss') penaltyXp = 250;
-
-        const isCritical = q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
-        const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
-        const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
-
-        const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
-        const penaltyEntry: XPHistoryEntry = {
-          id: xpHistoryId,
-          questId: q.id,
-          questName: `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
-          xp: -Math.round(finalPenaltyXp),
-          timestamp: new Date().toISOString(),
-          skillIds: q.relatedSkills || []
-        };
-
-        updatedHistory.unshift(penaltyEntry);
-        const momentumLoss = isCritical ? 25 : 10;
-        updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
-
-        // If one-off, mark as Failed
-        if (!q.recurrence || q.recurrence === 'None') {
-          updatedQuests = updatedQuests.map(uq => {
-            if (uq.id === q.id) {
-              return {
-                ...uq,
-                status: 'Failed' as const,
-                completedAt: new Date().toISOString()
-              };
-            }
-            return uq;
-          });
-        }
-
-        // Generate the recovery/penalty quest (estimated time divided by 2 compared to original quest)
+        const isDailyOrHabit = q.type.toUpperCase() === 'HABIT' || q.recurrence === 'Daily' || (q.recurrence && q.recurrence !== 'None');
         const origEstTime = typeof q.estimatedTime === 'number' && q.estimatedTime > 0 ? q.estimatedTime : 30;
         const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
 
-        const pQuest: Quest = {
-          id: `q-penalty-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: `⚠️ RECOVERY: Resolve failed/unchecked "${q.name}"`,
-          description: `System-generated recovery directive due to unchecked/failed objective "${q.name}". Resolve this to restore operations.`,
-          status: 'Active' as const,
-          difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
-          type: 'Penalty',
-          estimatedTime: recoveryEstTime,
-          recurrence: 'None',
-          energyLevel: 'Medium',
-          deadline: q.deadline || new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
-          completedAt: null,
-          xp: 0,
-          goalId: q.goalId || null,
-          projectId: q.projectId || null,
-          milestoneId: q.milestoneId || null,
-          subquests: [
-            {
-              id: `sq-penalty-${q.id}-1`,
-              name: `Resolve the underlying issue or complete the remaining actions of "${q.name}"`,
-              completed: false
-            }
-          ],
-          relatedSkills: q.relatedSkills || []
-        };
+        if (isDailyOrHabit) {
+          // Lapsed Daily Directive / Habit: Generate Recovery Quest with half XP and half Time (no penalty quest)
+          const origXp = (typeof q.xp === 'number' && q.xp > 0) 
+            ? q.xp 
+            : (q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50);
+          const recoveryXp = Math.max(5, Math.round(origXp / 2));
 
-        updatedQuests.push(pQuest);
-        const typeUpper = q.type.toUpperCase();
-        if (typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT') {
+          const recoveryQuest: Quest = {
+            id: `q-recovery-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: `🛡️ RECOVERY: Lapsed "${q.name}"`,
+            description: `Recovery directive generated for lapsed daily directive "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore momentum.`,
+            status: 'Active' as const,
+            difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
+            type: 'Recovery',
+            estimatedTime: recoveryEstTime,
+            recurrence: 'None',
+            energyLevel: 'Medium',
+            deadline: newDateStr || q.deadline || new Date().toISOString().split('T')[0],
+            createdAt: new Date().toISOString(),
+            completedAt: null,
+            xp: recoveryXp,
+            goalId: q.goalId || null,
+            projectId: q.projectId || null,
+            milestoneId: q.milestoneId || null,
+            subquests: [
+              {
+                id: `sq-rec-${q.id}-1`,
+                name: `Execute condensed ${recoveryEstTime}-min recovery session for "${q.name}"`,
+                completed: false
+              }
+            ],
+            relatedSkills: q.relatedSkills || []
+          };
+
+          updatedQuests.push(recoveryQuest);
           recoveryModeActivated = true;
+        } else {
+          // Non-habit one-off / Main / Boss quests: apply midnight penalty and generate penalty directive
+          let penaltyXp = 50;
+          if (q.difficulty === 'Easy') penaltyXp = 25;
+          else if (q.difficulty === 'Normal') penaltyXp = 50;
+          else if (q.difficulty === 'Hard') penaltyXp = 100;
+          else if (q.difficulty === 'Boss') penaltyXp = 250;
+
+          const isCritical = q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
+          const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
+          const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
+
+          const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
+          const penaltyEntry: XPHistoryEntry = {
+            id: xpHistoryId,
+            questId: q.id,
+            questName: `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
+            xp: -Math.round(finalPenaltyXp),
+            timestamp: new Date().toISOString(),
+            skillIds: q.relatedSkills || []
+          };
+
+          updatedHistory.unshift(penaltyEntry);
+          const momentumLoss = isCritical ? 25 : 10;
+          updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
+
+          // Mark one-off as Failed
+          if (!q.recurrence || q.recurrence === 'None') {
+            updatedQuests = updatedQuests.map(uq => {
+              if (uq.id === q.id) {
+                return {
+                  ...uq,
+                  status: 'Failed' as const,
+                  completedAt: new Date().toISOString()
+                };
+              }
+              return uq;
+            });
+          }
+
+          const pQuest: Quest = {
+            id: `q-penalty-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: `⚠️ RECOVERY: Resolve failed/unchecked "${q.name}"`,
+            description: `System-generated recovery directive due to unchecked/failed objective "${q.name}". Resolve this to restore operations.`,
+            status: 'Active' as const,
+            difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
+            type: 'Penalty',
+            estimatedTime: recoveryEstTime,
+            recurrence: 'None',
+            energyLevel: 'Medium',
+            deadline: q.deadline || new Date().toISOString().split('T')[0],
+            createdAt: new Date().toISOString(),
+            completedAt: null,
+            xp: -Math.round(penaltyXp),
+            goalId: q.goalId || null,
+            projectId: q.projectId || null,
+            milestoneId: q.milestoneId || null,
+            subquests: [
+              {
+                id: `sq-penalty-${q.id}-1`,
+                name: `Resolve the underlying issue or complete the remaining actions of "${q.name}"`,
+                completed: false
+              }
+            ],
+            relatedSkills: q.relatedSkills || []
+          };
+
+          updatedQuests.push(pQuest);
+          const typeUpper = q.type.toUpperCase();
+          if (typeUpper === 'MAIN' || typeUpper === 'BOSS') {
+            recoveryModeActivated = true;
+          }
         }
       });
     }
@@ -2162,7 +2296,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       habitXpMultiplier = 1 + Math.min(0.50, currentStreak * 0.05);
     }
 
-    let earnedXp = Math.round(questToComplete.xp * habitXpMultiplier * questPerkXpMultiplier);
+    const isPenaltyQuest = questToComplete.type === 'Penalty' || questToComplete.xp < 0;
+    const baseQuestXp = isPenaltyQuest 
+      ? (questToComplete.xp !== 0 ? Math.abs(questToComplete.xp) : (questToComplete.difficulty === 'Boss' ? 250 : questToComplete.difficulty === 'Hard' ? 100 : questToComplete.difficulty === 'Easy' ? 25 : 50))
+      : Math.max(0, questToComplete.xp);
+
+    let earnedXp = Math.round(baseQuestXp * habitXpMultiplier * questPerkXpMultiplier);
 
     // Calculate Power Seal XP Bonus Multiplier
     const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
@@ -2361,7 +2500,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (questToFail.status !== 'Active') return;
 
     const failedTimestamp = new Date().toISOString();
-    
+    const isDailyOrHabit = questToFail.type.toUpperCase() === 'HABIT' || questToFail.recurrence === 'Daily' || (questToFail.recurrence && questToFail.recurrence !== 'None');
+
+    const origEstTime = typeof questToFail.estimatedTime === 'number' && questToFail.estimatedTime > 0 ? questToFail.estimatedTime : 30;
+    const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
+
+    const origXp = (typeof questToFail.xp === 'number' && questToFail.xp > 0)
+      ? questToFail.xp
+      : (questToFail.difficulty === 'Boss' ? 250 : questToFail.difficulty === 'Hard' ? 100 : questToFail.difficulty === 'Easy' ? 25 : 50);
+    const recoveryXp = Math.max(5, Math.round(origXp / 2));
+
     let penaltyXp = 50;
     if (questToFail.difficulty === 'Easy') penaltyXp = 25;
     else if (questToFail.difficulty === 'Normal') penaltyXp = 50;
@@ -2376,7 +2524,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
 
     const xpHistoryId = `h-fail-${Date.now()}`;
-    const penaltyEntry: XPHistoryEntry = {
+    const penaltyEntry: XPHistoryEntry | null = isDailyOrHabit ? null : {
       id: xpHistoryId,
       questId: questToFail.id,
       questName: `💀 PENALTY: Failed "${questToFail.name}"`,
@@ -2385,7 +2533,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       skillIds: questToFail.relatedSkills
     };
 
-    const momentumLoss = isImportant ? 25 : 10;
+    const momentumLoss = isDailyOrHabit ? 5 : (isImportant ? 25 : 10);
     const newMomentum = Math.max(0, state.profile.momentum - momentumLoss);
 
     setState(prev => {
@@ -2400,42 +2548,71 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
-      // Generate the recovery/penalty quest (estimated time divided by 2 compared to original quest)
-      const origEstTime = typeof questToFail.estimatedTime === 'number' && questToFail.estimatedTime > 0 ? questToFail.estimatedTime : 30;
-      const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
+      // Generate the recovery quest (for habits) or penalty quest (for non-habits)
+      let spawnedQuest: Quest;
+      if (isDailyOrHabit) {
+        spawnedQuest = {
+          id: `q-recovery-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: `🛡️ RECOVERY: Lapsed "${questToFail.name}"`,
+          description: `Recovery directive generated for lapsed daily directive "${questToFail.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore momentum.`,
+          status: 'Active' as const,
+          difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
+          type: 'Recovery',
+          estimatedTime: recoveryEstTime,
+          recurrence: 'None',
+          energyLevel: 'Medium',
+          deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          xp: recoveryXp,
+          goalId: questToFail.goalId || null,
+          projectId: questToFail.projectId || null,
+          milestoneId: questToFail.milestoneId || null,
+          subquests: [
+            {
+              id: `sq-rec-${questToFail.id}-1`,
+              name: `Execute condensed ${recoveryEstTime}-min recovery session for "${questToFail.name}"`,
+              completed: false
+            }
+          ],
+          relatedSkills: questToFail.relatedSkills || []
+        };
+      } else {
+        spawnedQuest = {
+          id: `q-penalty-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: `⚠️ RECOVERY: Resolve failed/unchecked "${questToFail.name}"`,
+          description: `System-generated recovery directive due to unchecked/failed objective "${questToFail.name}". Resolve this to restore operations.`,
+          status: 'Active' as const,
+          difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
+          type: 'Penalty',
+          estimatedTime: recoveryEstTime,
+          recurrence: 'None',
+          energyLevel: 'Medium',
+          deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          xp: -Math.round(finalPenaltyXp),
+          goalId: questToFail.goalId || null,
+          projectId: questToFail.projectId || null,
+          milestoneId: questToFail.milestoneId || null,
+          subquests: [
+            {
+              id: `sq-penalty-${questToFail.id}-1`,
+              name: `Resolve the underlying issue or complete the remaining actions of "${questToFail.name}"`,
+              completed: false
+            }
+          ],
+          relatedSkills: questToFail.relatedSkills || []
+        };
+      }
 
-      const pQuest: Quest = {
-        id: `q-penalty-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        name: `⚠️ RECOVERY: Resolve failed/unchecked "${questToFail.name}"`,
-        description: `System-generated recovery directive due to unchecked/failed objective "${questToFail.name}". Resolve this to restore operations.`,
-        status: 'Active' as const,
-        difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
-        type: 'Penalty',
-        estimatedTime: recoveryEstTime,
-        recurrence: 'None',
-        energyLevel: 'Medium',
-        deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
-        completedAt: null,
-        xp: 0,
-        goalId: questToFail.goalId || null,
-        projectId: questToFail.projectId || null,
-        milestoneId: questToFail.milestoneId || null,
-        subquests: [
-          {
-            id: `sq-penalty-${questToFail.id}-1`,
-            name: `Resolve the underlying issue or complete the remaining actions of "${questToFail.name}"`,
-            completed: false
-          }
-        ],
-        relatedSkills: questToFail.relatedSkills || []
-      };
+      const finalQuestsList = [...updatedQuests, spawnedQuest];
 
-      const finalQuestsList = [...updatedQuests, pQuest];
-
-      const updatedHistory = resolveRecoveredPenalties([penaltyEntry, ...prev.xpHistory]);
+      const rawHistory = penaltyEntry ? [penaltyEntry, ...prev.xpHistory] : prev.xpHistory;
+      const updatedHistory = resolveRecoveredPenalties(rawHistory);
       const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
-      const level = calculatePlayerLevel(totalXp);
+      const completedBossCount = getCompletedBossQuestsCount(finalQuestsList, updatedHistory);
+      const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
       const updatedSkills = prev.skills.map(skill => {
         const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
@@ -2450,7 +2627,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       const typeUpper = questToFail.type.toUpperCase();
-      const activatesRecovery = typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT';
+      const activatesRecovery = typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT' || isDailyOrHabit;
       const newRecoveryMode = activatesRecovery ? true : prev.profile.recoveryMode;
 
       return {
@@ -2461,7 +2638,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile: {
           ...prev.profile,
           xp: totalXp,
-          level,
+          level: gatedLevel.level,
           momentum: newMomentum,
           recoveryMode: newRecoveryMode
         }
@@ -3839,7 +4016,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           maxFpsCap: 60
         }),
         batterySaverMode: next,
-        animationThrottle: next ? 'Off' : 'Reduced'
+        animationThrottle: (next ? 'Off' : 'Reduced') as 'Off' | 'Reduced' | 'Full'
       };
 
       if (typeof document !== 'undefined') {
@@ -3966,14 +4143,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const momentumLoss = isExempt ? 0 : (SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35);
     const currentSysDate = state.systemDate || getLocalDateString();
     
-    // Calculate today's existing Muhasabah deductions to enforce daily 500 XP penalty cap
-    const todayMuhasabahLoss = (state.muhasabahEntries || [])
-      .filter(e => e.date === currentSysDate)
-      .reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
-    
-    const availableCap = Math.max(0, 500 - todayMuhasabahLoss);
-    const xpToDeduct = isExempt ? 0 : Math.min(rawPenalty, availableCap);
-    const capReached = !isExempt && (availableCap <= 0 || xpToDeduct < rawPenalty);
+    const xpToDeduct = rawPenalty;
+    const capReached = false;
 
     const defaultTemplate = DEFAULT_KAFFARAH_TEMPLATES[entry.category];
     const kaffarahType = entry.kaffarahType || defaultTemplate.type;
@@ -3996,14 +4167,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newEntryId = `muhasabah-${Date.now()}`;
 
     setState(prev => {
-      // 1. Calculate new XP ensuring it never drops below 0
-      const currentProfileXp = prev.profile.xp || 0;
-      const actualDeducted = isExempt ? 0 : Math.min(currentProfileXp, xpToDeduct);
+      // 1. Calculate new XP and history entry (total XP is floored at 0)
+      const actualDeducted = rawPenalty;
       
       let updatedXpHistory = [...prev.xpHistory];
       if (actualDeducted > 0) {
         const historyEntry: XPHistoryEntry = {
-          id: `xph-muhasabah-${Date.now()}`,
+          id: `xph-muhasabah-${newEntryId}`,
           questId: null,
           questName: `[MUHĀSABAH AUDIT] ${entry.category}: ${entry.title}`,
           xp: -actualDeducted,
@@ -4014,7 +4184,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = Math.max(0, updatedXpHistory.reduce((sum, h) => sum + h.xp, 0));
-      const level = calculatePlayerLevel(totalXp);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedXpHistory);
+      const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
       // 2. Deduct Coins & Slash Momentum
       const currentCoins = prev.profile.coins ?? 150;
@@ -4177,7 +4348,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile: {
           ...prev.profile,
           xp: totalXp,
-          level,
+          level: gatedLevel.level,
           coins: nextCoins,
           momentum: nextMomentum
         }
@@ -4202,10 +4373,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       xpDeducted: xpToDeduct,
       coinsDeducted: coinFine,
       rawPenalty,
-      capReached,
-      message: capReached 
-        ? `Daily XP loss capped at −500 XP. −${coinFine} Coins fine applied. Kaffārah restitution quest pinned.` 
-        : `Muhāsabah recorded: −${xpToDeduct} XP & −${coinFine} Coins fine. Kaffārah quest issued.`
+      capReached: false,
+      message: `Muhāsabah audit committed: −${xpToDeduct} XP & −${coinFine} Coins fine deducted. Kaffārah restitution quest issued.`
     };
   };
 
@@ -5700,6 +5869,343 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const getMasjid40Stats = (dateStr?: string): Masjid40Stats => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const spiritualLogs = state.spiritualLogs || {};
+    
+    const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+    const isDateFullyMasjid = (d: string): boolean => {
+      const log = spiritualLogs[d];
+      if (!log) return false;
+      return prayers.every(p => {
+        const pray = log[p];
+        return pray && pray.inMasjid && pray.fardh !== false;
+      });
+    };
+
+    // Calculate today's status
+    const todayLog = spiritualLogs[targetDate];
+    let todayMasjidCount = 0;
+    if (todayLog) {
+      prayers.forEach(p => {
+        if (todayLog[p]?.inMasjid) {
+          todayMasjidCount++;
+        }
+      });
+    }
+    const isTodayFullyCompleted = todayMasjidCount === 5;
+
+    // Collect all historical qualified dates
+    const allLogDates = Object.keys(spiritualLogs);
+    const qualifiedDatesSet = new Set<string>();
+    allLogDates.forEach(d => {
+      if (isDateFullyMasjid(d)) {
+        qualifiedDatesSet.add(d);
+      }
+    });
+
+    if (state.masjid40Covenant?.completedDates) {
+      state.masjid40Covenant.completedDates.forEach(d => qualifiedDatesSet.add(d));
+    }
+
+    const completedDates = Array.from(qualifiedDatesSet).sort();
+    const totalCompletedDays = completedDates.length;
+
+    // Helper for stepping back one day
+    const getPrevDate = (currentStr: string): string => {
+      try {
+        const [y, m, d] = currentStr.split('-').map(Number);
+        const dt = new Date(Date.UTC(y, m - 1, d));
+        dt.setUTCDate(dt.getUTCDate() - 1);
+        const year = dt.getUTCFullYear();
+        const month = String(dt.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(dt.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch {
+        return '';
+      }
+    };
+
+    let streak = 0;
+    // If today is completed, start from today
+    if (qualifiedDatesSet.has(targetDate)) {
+      streak = 1;
+      let checkDate = getPrevDate(targetDate);
+      while (checkDate && qualifiedDatesSet.has(checkDate)) {
+        streak++;
+        checkDate = getPrevDate(checkDate);
+      }
+    } else {
+      // If not completed yet today, check if yesterday was qualified
+      const yesterday = getPrevDate(targetDate);
+      if (yesterday && qualifiedDatesSet.has(yesterday)) {
+        streak = 1;
+        let prevDate = getPrevDate(yesterday);
+        while (prevDate && qualifiedDatesSet.has(prevDate)) {
+          streak++;
+          prevDate = getPrevDate(prevDate);
+        }
+      }
+    }
+
+    // Calculate best streak in history
+    let bestStreak = 0;
+    if (completedDates.length > 0) {
+      let currentChain = 0;
+      let lastDate: string | null = null;
+      for (const d of completedDates) {
+        if (!lastDate) {
+          currentChain = 1;
+        } else {
+          const expectedNext = (() => {
+            const [y, m, day] = lastDate.split('-').map(Number);
+            const dt = new Date(Date.UTC(y, m - 1, day));
+            dt.setUTCDate(dt.getUTCDate() + 1);
+            const year = dt.getUTCFullYear();
+            const month = String(dt.getUTCMonth() + 1).padStart(2, '0');
+            const dayNum = String(dt.getUTCDate()).padStart(2, '0');
+            return `${year}-${month}-${dayNum}`;
+          })();
+          if (d === expectedNext) {
+            currentChain++;
+          } else {
+            currentChain = 1;
+          }
+        }
+        lastDate = d;
+        if (currentChain > bestStreak) {
+          bestStreak = currentChain;
+        }
+      }
+    }
+    if (streak > bestStreak) bestStreak = streak;
+
+    if (state.masjid40Covenant?.bestStreak && state.masjid40Covenant.bestStreak > bestStreak) {
+      bestStreak = state.masjid40Covenant.bestStreak;
+    }
+
+    const currentStreak = streak;
+    const daysRemaining = Math.max(0, 40 - currentStreak);
+    const progressPercent = Math.min(100, Math.round((currentStreak / 40) * 100));
+    const isBaraatanAchieved = currentStreak >= 40 || totalCompletedDays >= 40 || !!state.masjid40Covenant?.isUnlockedBaraatan;
+
+    // Milestone Stages (4 Quadrants of 10 Days)
+    let stageNumber = 1;
+    let stageNameAr = 'البداية واليقظة • إدراك تكبيرة الإحرام';
+    let stageNameEn = 'Foundations of Steadfastness (Takbīrat al-Iḥrām)';
+    let stageDesc = 'Cultivating absolute vigilance to arrive at the Masjid before the opening Takbeer of the Imam.';
+    let dayRange = 'Days 1 – 10';
+
+    if (currentStreak >= 31 || isBaraatanAchieved) {
+      stageNumber = 4;
+      stageNameAr = 'بشارة البراءتين • الحرية من النار والنفاق';
+      stageNameEn = 'Sanctuary of the Two Divine Freedoms (Al-Barā\'atān)';
+      stageDesc = 'Attaining the sublime promise of the Prophet ﷺ: Freedom from the Fire and Freedom from Hypocrisy.';
+      dayRange = 'Days 31 – 40';
+    } else if (currentStreak >= 21) {
+      stageNumber = 3;
+      stageNameAr = 'نور الاستقامة • سكينة الصف الأول';
+      stageNameEn = 'Radiance of Steadfastness (First Row Stillness)';
+      stageDesc = 'The friction of habit is broken; praying in the Masjid becomes the primary sanctuary of your day.';
+      dayRange = 'Days 21 – 30';
+    } else if (currentStreak >= 11) {
+      stageNumber = 2;
+      stageNameAr = 'طهارة القلب • محاربة الرياء';
+      stageNameEn = 'Purification of the Heart (Dissolving Ostentation)';
+      stageDesc = 'Deepening sincerity (Ikhlāṣ) and purifying the inner intention purely for the pleasure of Allah ﷻ.';
+      dayRange = 'Days 11 – 20';
+    }
+
+    let milestoneTitle = `Day ${currentStreak} of 40 • ${stageNameEn}`;
+    if (isBaraatanAchieved) {
+      milestoneTitle = 'حَامِلُ البَرَاءَتَيْنِ • Bearer of the Two Divine Freedoms (40 Days Fulfilled)';
+    }
+
+    return {
+      targetDays: 40,
+      currentStreak,
+      bestStreak,
+      totalCompletedDays,
+      completedDates,
+      todayMasjidCount,
+      isTodayFullyCompleted,
+      daysRemaining,
+      progressPercent,
+      isBaraatanAchieved,
+      milestoneTitle,
+      currentStage: {
+        stageNumber,
+        stageNameAr,
+        stageNameEn,
+        stageDesc,
+        dayRange
+      }
+    };
+  };
+
+  const toggleAllPrayersInMasjid = (dateStr?: string, forceState?: boolean) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+    const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+
+    const currentlyAll = prayers.every(p => existingLog[p]?.inMasjid && existingLog[p]?.fardh);
+    const targetState = forceState !== undefined ? forceState : !currentlyAll;
+
+    const prayerRewards = {
+      fajr: { name: 'Fajr (الفجر)', fardhXp: 150, fardhCoins: 15, onTimeXp: 40, onTimeCoins: 5, masjidXp: 50, masjidCoins: 5 },
+      dhuhr: { name: 'Dhuhr (الظهر)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, masjidXp: 50, masjidCoins: 5 },
+      asr: { name: 'Asr (العصر)', fardhXp: 120, fardhCoins: 12, onTimeXp: 40, onTimeCoins: 5, masjidXp: 50, masjidCoins: 5 },
+      maghrib: { name: 'Maghrib (المغرب)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, masjidXp: 50, masjidCoins: 5 },
+      isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, masjidXp: 50, masjidCoins: 5 }
+    };
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      let updatedHistory = [...prev.xpHistory];
+      let deltaCoins = 0;
+      const updatedLog: SpiritualDailyLog = { ...log };
+
+      prayers.forEach(p => {
+        const curr = log[p] || { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null };
+        const reward = prayerRewards[p];
+        const prayerPrefix = `spiritual-prayer-${targetDate}-${p}`;
+        const fardhQId = `${prayerPrefix}-fardh`;
+        const onTimeQId = `${prayerPrefix}-onTime`;
+        const masjidQId = `${prayerPrefix}-inMasjid`;
+
+        if (targetState) {
+          updatedLog[p] = {
+            ...curr,
+            fardh: true,
+            onTime: true,
+            inMasjid: true,
+            completedAt: curr.completedAt || completedTimestamp
+          };
+
+          if (!curr.fardh) {
+            const fardhEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-${p}-fardh`,
+              questId: fardhQId,
+              questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+              xp: reward.fardhXp,
+              timestamp: completedTimestamp,
+              skillIds: []
+            };
+            updatedHistory = [fardhEntry, ...updatedHistory.filter(h => h.questId !== fardhQId)];
+            deltaCoins += reward.fardhCoins;
+          }
+
+          if (!curr.onTime) {
+            const onTimeEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-${p}-ontime`,
+              questId: onTimeQId,
+              questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
+              xp: reward.onTimeXp,
+              timestamp: completedTimestamp,
+              skillIds: []
+            };
+            updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== onTimeQId)];
+            deltaCoins += reward.onTimeCoins;
+          }
+
+          if (!curr.inMasjid) {
+            const masjidEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-${p}-masjid`,
+              questId: masjidQId,
+              questName: `🕌 PRAYER: Masjid / Jamā'ah bonus for ${reward.name}`,
+              xp: reward.masjidXp,
+              timestamp: completedTimestamp,
+              skillIds: []
+            };
+            updatedHistory = [masjidEntry, ...updatedHistory.filter(h => h.questId !== masjidQId)];
+            deltaCoins += reward.masjidCoins;
+          }
+        } else {
+          updatedLog[p] = {
+            ...curr,
+            inMasjid: false
+          };
+          if (curr.inMasjid) {
+            updatedHistory = updatedHistory.filter(h => h.questId !== masjidQId);
+            deltaCoins -= reward.masjidCoins;
+          }
+        }
+      });
+
+      const covenantQId = `spiritual-masjid40-day-${targetDate}`;
+      if (targetState) {
+        const bonusEntry: XPHistoryEntry = {
+          id: `h-masjid40-${Date.now()}`,
+          questId: covenantQId,
+          questName: `🕌 40-DAY SANCTUARY: All 5 Prayers in Masjid Today (أربعون يوماً في جماعة)`,
+          xp: 150,
+          timestamp: completedTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [bonusEntry, ...updatedHistory.filter(h => h.questId !== covenantQId)];
+        deltaCoins += 15;
+
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `🕌 40-DAY COVENANT: ALL 5 PRAYERS IN MASJID!`,
+          content: `All 5 daily prayers fulfilled in the Masjid in congregation for ${targetDate}! You advanced on the path toward Al-Barā'atān (+400 XP total, +40 Coins). «مَنْ صَلَّى لِلَّهِ أَرْبَعِينَ يَوْمًا فِي جَمَاعَةٍ يُدْرِكُ التَّكْبِيرَةَ الأُولَى كُتِبَتْ لَهُ بَرَاءَتَانِ»`,
+          priority: 'high'
+        });
+      } else {
+        updatedHistory = updatedHistory.filter(h => h.questId !== covenantQId);
+        deltaCoins -= 15;
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins)
+        }
+      };
+    });
+  };
+
+  const resetMasjid40Streak = (dateStr?: string) => {
+    setState(prev => ({
+      ...prev,
+      masjid40Covenant: {
+        startDate: dateStr || prev.systemDate || getLocalDateString(),
+        targetDays: 40,
+        completedDates: [],
+        currentStreak: 0,
+        bestStreak: prev.masjid40Covenant?.bestStreak || 0,
+        totalCompletedDays: prev.masjid40Covenant?.totalCompletedDays || 0,
+        isUnlockedBaraatan: false
+      }
+    }));
+  };
+
+  const setMasjid40Override = (streak: number) => {
+    setState(prev => ({
+      ...prev,
+      masjid40Covenant: {
+        ...(prev.masjid40Covenant || { targetDays: 40, totalCompletedDays: 0, currentStreak: 0, bestStreak: 0 }),
+        currentStreak: Math.max(0, streak),
+        bestStreak: Math.max(prev.masjid40Covenant?.bestStreak || 0, streak),
+        isUnlockedBaraatan: streak >= 40
+      }
+    }));
+  };
+
   return (
     <POSContext.Provider value={{
       state,
@@ -5863,7 +6369,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateSunnahPrayers,
       updateQuranLog,
       updateDhikrLog,
-      setKhushuRating
+      setKhushuRating,
+      getMasjid40Stats,
+      toggleAllPrayersInMasjid,
+      resetMasjid40Streak,
+      setMasjid40Override
     }}>
       {children}
     </POSContext.Provider>

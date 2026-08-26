@@ -1507,9 +1507,11 @@ export const ActiveDirectives: React.FC = () => {
         transition={{ duration: 0.15 }}
         onClick={() => setSelectedQuestId(quest.id)}
         draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'QUEST', questId: quest.id }));
-          e.dataTransfer.effectAllowed = 'move';
+        onDragStart={(e: any) => {
+          if (e.dataTransfer) {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'QUEST', questId: quest.id }));
+            e.dataTransfer.effectAllowed = 'move';
+          }
         }}
         className={`p-2.5 bg-[#0b0d13]/80 hover:bg-[#11151b] border rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
           isSelected 
@@ -1666,9 +1668,17 @@ export const ActiveDirectives: React.FC = () => {
             </button>
           </div>
 
-          <span className="text-[10px] font-mono font-bold text-emerald-400/90 ml-1">
-            +{quest.xp} XP
-          </span>
+          {(() => {
+            const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
+            const penaltyVal = isPenalty 
+              ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
+              : quest.xp;
+            return (
+              <span className={`text-[10px] font-mono font-bold ml-1 ${isPenalty ? 'text-rose-400 font-bold' : 'text-emerald-400/90'}`}>
+                {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+              </span>
+            );
+          })()}
           <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
             isSelected ? 'bg-[#c5a059] shadow-[0_0_6px_rgba(197,160,89,0.85)]' : 'bg-transparent'
           }`} />
@@ -2038,9 +2048,21 @@ export const ActiveDirectives: React.FC = () => {
               <h3 className={`font-sans text-xs sm:text-sm font-bold leading-tight ${finished ? 'line-through text-zinc-500' : 'text-[#f5f5f5]'}`}>
                 {quest.name}
               </h3>
-              <span className="text-[10px] font-mono font-bold text-[#fef08a] bg-[#3a2e12]/70 border border-[#c5a059]/40 px-2 py-0.5 rounded shrink-0">
-                +{quest.xp} XP
-              </span>
+              {(() => {
+                const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
+                const penaltyVal = isPenalty 
+                  ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
+                  : quest.xp;
+                return (
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 border ${
+                    isPenalty 
+                      ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
+                      : 'text-[#fef08a] bg-[#3a2e12]/70 border-[#c5a059]/40'
+                  }`}>
+                    {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                  </span>
+                );
+              })()}
             </div>
             {quest.description && (
               <p className="text-[11px] text-zinc-300 font-sans mt-1.5 whitespace-pre-wrap leading-relaxed bg-[#0b0d13]/80 p-2 rounded border border-[#c5a059]/15">
@@ -2730,7 +2752,7 @@ export const ActiveDirectives: React.FC = () => {
                       icon: '📋',
                       headerClass: 'bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#080b11] border-[#c5a059]/40 text-[#fef08a] shadow-[0_0_12px_rgba(197,160,89,0.08)]',
                       badgeClass: 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059]/50 font-bold',
-                      accentColor: l.color || '#c5a059',
+                      accentColor: (l as any).color || '#c5a059',
                       quests: lQuests,
                     });
                   }

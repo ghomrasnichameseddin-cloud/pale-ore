@@ -1123,7 +1123,17 @@ export const SkillsView: React.FC = () => {
                     {activeSkillQuests.map(q => (
                       <div key={q.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded text-xs flex justify-between items-center">
                         <span className="text-zinc-200">{q.name}</span>
-                        <span className="font-mono text-[#e5c875]">+{q.xp} XP</span>
+                        {(() => {
+                          const isPenalty = q.type === 'Penalty' || q.xp < 0;
+                          const penaltyVal = isPenalty 
+                            ? (q.xp < 0 ? q.xp : -(q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50))
+                            : q.xp;
+                          return (
+                            <span className={`font-mono ${isPenalty ? 'text-rose-400 font-bold' : 'text-[#e5c875]'}`}>
+                              {isPenalty ? `${penaltyVal} XP` : `+${q.xp} XP`}
+                            </span>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>

@@ -3,10 +3,11 @@ import {
   BookOpen, Activity, Swords, Target, Briefcase, Award, Sparkles, 
   ShoppingBag, Settings, Compass, X, HelpCircle, Cpu,
   Zap, Timer, Coins, ArrowRight, GitFork,
-  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon
+  Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon,
+  FolderTree, FileText, Search, BarChart3, Split, Lightbulb, CheckSquare, Layers, Clock, RefreshCw, ChevronRight
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
+import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
 
 interface SystemGuideModalProps {
   isOpen: boolean;
@@ -57,16 +58,16 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'strategy',
-      title: '5. Goals, Projects & Mini-Breakdowns',
+      title: '5. Destinies, Campaigns & Milestones',
       icon: Target,
-      badge: 'PLANNING',
+      badge: 'STRATEGY',
       color: 'text-[#c5a059]',
     },
     {
       id: 'strategic-models',
-      title: '6. Decision Models & SOP Docs',
+      title: '6. Codex & Thinking Lab',
       icon: Compass,
-      badge: 'MODELS',
+      badge: 'INTELLIGENCE',
       color: 'text-cyan-400',
     },
     {
@@ -122,11 +123,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
         dir="ltr"
         className="relative border border-[#c5a059]/50 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(197,160,89,0.2)] bg-gradient-to-b from-[#0e111a] via-[#090b10] to-[#07080c]"
       >
-        <ArabesqueCorner position="top-left" className="text-[#c5a059]/40 z-10 pointer-events-none" />
-        <ArabesqueCorner position="top-right" className="text-[#c5a059]/40 z-10 pointer-events-none" />
-        <ArabesqueCorner position="bottom-left" className="text-[#c5a059]/40 z-10 pointer-events-none" />
-        <ArabesqueCorner position="bottom-right" className="text-[#c5a059]/40 z-10 pointer-events-none" />
-
         {/* MODAL HEADER */}
         <div className="p-4 sm:p-5 border-b border-[#c5a059]/30 flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-[#1c160a] via-[#0b0d13] to-[#1c160a] shrink-0 relative">
           <div className="flex items-center gap-3">
@@ -270,6 +266,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <div>
                         <span className="font-bold text-emerald-200 block">Quests & Directives</span>
                         <span className="text-[11px] text-zinc-400">Manage main/side quests, daily habits, boss fights, split/merge/move tools.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('strategy')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/60 border border-white/5 hover:border-[#c5a059]/60 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-[#fef08a] block">Strategy & Codex Hub</span>
+                        <span className="text-[11px] text-zinc-400">Grand Destinies, Campaigns, 10-Vault Codex, Thinking Lab & Closed Loop.</span>
                       </div>
                     </div>
 
@@ -844,7 +848,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Shop Lock:</strong> Scheduled habits for today are required for Reward Shop unlock.</div>
-                        <div>• <strong>Failure Consequence:</strong> Missing scheduled days resets streak & triggers Midnight Penalty.</div>
+                        <div>• <strong>Lapse Consequence:</strong> Lapsing generates a <code>Recovery Quest</code> (half XP, half time) instead of a penalty quest.</div>
                       </div>
                     </div>
 
@@ -934,10 +938,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                     <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
                       <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
-                        2. 50% HALF-TIME QUESTS
+                        2. 50% TIME & XP RECOVERY
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        The system spawns a `⚠️ RECOVERY` penalty directive with its estimated duration halved (`origEstTime / 2`) for rapid catch-up.
+                        For lapsed daily directives & habits, the system spawns a <code>🛡️ RECOVERY</code> quest with half the time (<code>origEstTime / 2</code>) and half the XP (<code>origXp / 2</code>) for rapid momentum restoration without penalization.
                       </p>
                     </div>
 
@@ -995,127 +999,446 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 5. GOALS, PROJECTS & MINI-BREAKDOWNS */}
+            {/* 5. GRAND DESTINIES, CAMPAIGNS & MILESTONES */}
             {activeSection === 'strategy' && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <Target className="h-5 w-5 text-amber-400" />
-                    5. Strategic Goals, Projects & Mini-Breakdowns
-                  </h3>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Deconstructing macro vision into actionable micro-milestones with automated progress calculation.
+                <div className="border-b border-[#c5a059]/30 pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-[#fef08a] flex items-center gap-2">
+                      <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+                      5. Grand Destinies, Campaigns & Milestones
+                    </h3>
+                    <span className="text-[10px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded uppercase font-bold">
+                      STRATEGIC_EXECUTION_CASCADE
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-[#c5a059]/80 mt-1">
+                    Pale Ore's strategic command engine connecting high-level ambition to daily operational directives with zero loss of fidelity.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* MINI GOALS EXPLANATION */}
-                  <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
-                    <h4 className="text-xs font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
-                      <GitFork className="h-4 w-4" />
-                      Mini-Goals & Sub-Goals Structure
-                    </h4>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Inside GoalsView, you can break down any main goal into specific Mini-Goals with target dates. Toggling mini-goals automatically re-calculates the goal progress bar!
-                    </p>
-                    <ul className="text-[11px] text-zinc-400 font-mono space-y-1">
-                      <li>• Assign target completion dates per mini-goal.</li>
-                      <li>• Visually track micro-milestone status.</li>
-                    </ul>
-                  </div>
-
-                  {/* MINI PROJECTS EXPLANATION */}
-                  <div className="p-4 bg-zinc-900/90 border border-blue-500/30 rounded-xl space-y-3">
-                    <h4 className="text-xs font-mono font-bold text-blue-300 uppercase flex items-center gap-1.5">
-                      <Briefcase className="h-4 w-4" />
-                      Mini-Projects & Sub-Tasks Structure
-                    </h4>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Inside ProjectsView, you can break deliverables into mini-project sub-components. Completing sub-components advances overall project readiness.
-                    </p>
-                    <ul className="text-[11px] text-zinc-400 font-mono space-y-1">
-                      <li>• Divide complex software or physical deliverables.</li>
-                      <li>• Link milestones and quests directly.</li>
-                    </ul>
-                  </div>
-
-                  {/* MILESTONES EXPLANATION */}
-                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
-                    <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
-                      <Zap className="h-4 w-4" />
-                      Milestones & Phase Gating
-                    </h4>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Milestones are sequential checkpoints that organize related quests into distinct phases within a Goal or Project. Each milestone tracks completion percentage in real-time.
-                    </p>
-                    <ul className="text-[11px] text-zinc-400 font-mono space-y-1">
-                      <li>• Create phases (e.g., "Design", "Build", "Deploy").</li>
-                      <li>• Link quests directly to a milestone.</li>
-                      <li>• Auto-calculate progress from quest completions.</li>
-                      <li>• Toggle milestone status (Active/Completed).</li>
-                    </ul>
-                  </div>
-
-                  {/* MILESTONE MECHANICS */}
-                  <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
-                    <h4 className="text-xs font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Milestone Mechanics
-                    </h4>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Each milestone automatically calculates its progress percentage based on the quests linked to it.
-                    </p>
-                    <div className="text-[10px] text-zinc-400 font-mono space-y-1 bg-black/40 p-2 rounded border border-white/5">
-                      <div>Progress = (Completed Quests / Total Quests) × 100%</div>
-                      <div className="text-zinc-500 text-[9px] mt-1">Example: 3/5 quests done = 60% milestone progress</div>
+                {/* 1. THE STRATEGIC CASCADE FORMULA */}
+                <div className="p-4 bg-gradient-to-r from-[#1c160a] via-[#0e111a] to-[#1c160a] border border-[#c5a059]/40 rounded-2xl space-y-3 shadow-[0_0_20px_rgba(197,160,89,0.15)]">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <Layers className="h-4 w-4 text-[#c5a059]" />
+                      <span>THE HIERARCHICAL STRATEGIC CASCADE</span>
                     </div>
-                    <p className="text-[11px] text-zinc-400">Deleting a milestone unlinks all its quests (they remain active but lose the milestone association).</p>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 px-2 py-0.5 rounded">
+                      CORE_DOCTRINE
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-[#07080c]/90 border border-[#c5a059]/30 rounded-xl text-center font-mono text-xs text-[#fef08a] overflow-x-auto">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs">
+                      <span className="px-2 py-1 bg-[#3a2e12] border border-[#c5a059]/50 rounded text-[#fef08a] font-bold">Grand Destiny</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span className="px-2 py-1 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-300 font-bold">Campaign</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span className="px-2 py-1 bg-purple-950 border border-purple-500/40 rounded text-purple-300 font-bold">Milestone</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span className="px-2 py-1 bg-emerald-950 border border-emerald-500/40 rounded text-emerald-300 font-bold">Tactical Quest</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span className="px-2 py-1 bg-amber-950 border border-amber-500/40 rounded text-amber-300 font-bold">Skill Mastery XP</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    <strong>The Anti-Distraction Principle:</strong> Daily effort is never spent on arbitrary tasks. Every quest completed feeds progress directly up the cascade to achieve lifetime destinies, level the 8 core attributes, and unseal ancient Pale Ores.
+                  </p>
+                </div>
+
+                {/* 2. GRAND DESTINIES (4 HORIZONS) */}
+                <div className="p-4 bg-zinc-900/80 border border-[#c5a059]/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <Target className="h-4 w-4 text-[#c5a059]" />
+                      <span>GRAND DESTINIES — 4 MACRO TIME HORIZONS</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 px-2 py-0.5 rounded">
+                      GOALS_HORIZONS
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Grand Destinies define your North Star achievements across structured temporal horizons. Each Destiny contains a concrete outcome, target deadline, linked skills/attributes, active campaigns, and auto-calculated progress bars:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+                    <div className="p-3 bg-[#0d1017] border border-cyan-500/30 rounded-xl space-y-1">
+                      <span className="text-cyan-300 font-bold block text-[11px]">⚡ 30-DAY SPRINT</span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        High-velocity execution bursts, immediate habit building, and intense monthly milestone breakthroughs.
+                      </p>
+                      <span className="text-[9px] text-cyan-400/80 block pt-1 border-t border-white/5">Cadence: Weekly Review</span>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-emerald-500/30 rounded-xl space-y-1">
+                      <span className="text-emerald-300 font-bold block text-[11px]">🌱 QUARTERLY (Q1–Q4)</span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        90-day major strategic arcs, substantial skill rank promotions, and extensive campaign deliveries.
+                      </p>
+                      <span className="text-[9px] text-emerald-400/80 block pt-1 border-t border-white/5">Cadence: End of Quarter</span>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-amber-500/30 rounded-xl space-y-1">
+                      <span className="text-amber-300 font-bold block text-[11px]">🏆 ANNUAL VISION</span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Yearly transformation milestones, career evolution, character forging, and major life deliverables.
+                      </p>
+                      <span className="text-[9px] text-amber-400/80 block pt-1 border-t border-white/5">Cadence: Annual Audit</span>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-[#c5a059]/40 rounded-xl space-y-1">
+                      <span className="text-[#fef08a] font-bold block text-[11px]">👑 LIFETIME DESTINY</span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Core spiritual servitude, enduring family legacy, philosophical contributions, and ultimate life purpose.
+                      </p>
+                      <span className="text-[9px] text-[#c5a059]/80 block pt-1 border-t border-white/5">Cadence: Biannual Muhāsabah</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[#07080c]/60 border border-white/5 rounded-xl space-y-1 text-xs">
+                    <span className="font-mono font-bold text-[#c5a059] block uppercase text-[11px]">
+                      Mini-Goals & Micro-Milestone Mathematical Progress:
+                    </span>
+                    <p className="text-zinc-300 font-sans text-[11px]">
+                      Every Grand Destiny can be divided into concrete <strong>Mini-Goals</strong> with distinct target completion dates. Checking off a mini-goal automatically recalculates the parent goal's progress bar in real time:
+                      <span className="font-mono text-[#fef08a] ml-1.5">Progress = (Completed Mini-Goals ÷ Total Mini-Goals) × 100%</span>.
+                    </p>
                   </div>
                 </div>
 
-                <div className="p-3.5 bg-zinc-900/60 border border-white/5 rounded-xl space-y-1 text-xs">
-                  <span className="font-mono font-bold text-cyan-400 block uppercase">
-                    Goal Horizon Tiers:
-                  </span>
-                  <p className="text-zinc-400 font-sans">
-                    30-Day Sprint | Quarterly (Q1-Q4) | Annual Vision | Life Vision.
+                {/* 3. CAMPAIGNS, SUB-PROJECTS & TIME BUDGETS */}
+                <div className="p-4 bg-zinc-900/80 border border-blue-500/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-blue-300 uppercase flex items-center gap-2 text-xs">
+                      <Briefcase className="h-4 w-4 text-blue-400" />
+                      <span>CAMPAIGNS & SUB-PROJECTS — OPERATIONAL EXECUTION</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-blue-950 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">
+                      PROJECT_CONTAINERS
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Campaigns transform abstract Grand Destinies into time-budgeted, deadline-bound projects. Each campaign manages deliverables, sub-projects, milestones, dependencies, and operational health telemetry:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-mono">
+                    <div className="p-3 bg-[#0d1017] border border-emerald-500/40 rounded-xl space-y-1">
+                      <span className="text-emerald-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> HEALTHY
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">
+                        Task completion velocity matches or exceeds target deadline pacing. Zero critical blockers.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-amber-500/40 rounded-xl space-y-1">
+                      <span className="text-amber-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5" /> AT RISK
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">
+                        Pacing is lagging behind target milestones or deadline is within 7 days with &lt;50% completion.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-rose-500/40 rounded-xl space-y-1">
+                      <span className="text-rose-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <ShieldAlert className="h-3.5 w-3.5" /> BLOCKED
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">
+                        Critical external dependency or severe technical hurdle halts forward progression.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] border border-cyan-500/40 rounded-xl space-y-1">
+                      <span className="text-cyan-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <Trophy className="h-3.5 w-3.5" /> COMPLETED
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">
+                        All milestone deliverables verified, archived into the Codex, and granted victory rewards.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* SUB-PROJECTS & MILESTONE GATING */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1.5">
+                      <span className="font-mono font-bold text-cyan-300 text-xs block flex items-center gap-1.5">
+                        <GitFork className="h-3.5 w-3.5 text-cyan-400" /> Sub-Projects & Time Budgets
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Decompose large engineering or creative campaigns into distinct sub-projects with allocated focus hours, estimated Pomodoro sessions, and assigned skill categories.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1.5">
+                      <span className="font-mono font-bold text-purple-300 text-xs block flex items-center gap-1.5">
+                        <Zap className="h-3.5 w-3.5 text-purple-400" /> Phase Gating & Deliverables
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Structure campaign deliverables into sequential phases (e.g. <em>Specification → Prototyping → Execution → Polish</em>). Linking quests directly to a phase tracks completion percentage in real time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. STRATEGIC BOTTLENECK DIAGNOSTICS & GLOBAL SEARCH */}
+                <div className="p-4 bg-gradient-to-br from-[#121624] to-[#0a0c14] border border-cyan-500/30 rounded-2xl space-y-2">
+                  <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-2">
+                    <Search className="h-4 w-4 text-cyan-400" />
+                    <span>STRATEGIC BOTTLENECK DIAGNOSTICS & GLOBAL INDEX SEARCH</span>
+                  </h4>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    The Strategy Overview indexes your entire knowledge base and execution queues. Filter by target horizon, locate stalled campaigns instantly, diagnose attribute imbalances across the 8-stat radar, and teleport directly to linked SOP documents or active quest lines.
                   </p>
                 </div>
               </div>
             )}
 
-            {/* 6. STRATEGIC MODELS & SOP DOCS */}
+            {/* 6. CODEX DOCTRINE & STRATEGIC THINKING LAB */}
             {activeSection === 'strategic-models' && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <Compass className="h-5 w-5 text-blue-400" />
-                    6. Strategic Decision Models & SOP Planning Logs
-                  </h3>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Interactive decision frameworks and connected Standard Operating Procedure documents.
+                <div className="border-b border-[#c5a059]/30 pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-[#fef08a] flex items-center gap-2">
+                      <Compass className="h-5 w-5 text-[#c5a059]" />
+                      6. Codex Doctrine & Strategic Thinking Lab
+                    </h3>
+                    <span className="text-[10px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded uppercase font-bold">
+                      INTELLIGENCE_CENTER
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-[#c5a059]/80 mt-1">
+                    Pale Ore's integrated knowledge base, Markdown SOP library, 11 mental model engines, and closed strategic feedback loop.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
-                    <span className="font-mono font-bold text-cyan-400 block">📊 Eisenhower Matrix</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Categorize tasks into Do Now, Schedule, Delegate, and Eliminate quadrants.</p>
+                {/* 1. 10-FOLDER CODEX VAULT ARCHITECTURE */}
+                <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <FolderTree className="h-4 w-4 text-[#c5a059]" />
+                      <span>THE 10-FOLDER STANDARDIZED CODEX ARCHITECTURE</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 px-2 py-0.5 rounded">
+                      MARKDOWN_VAULT
+                    </span>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
-                    <span className="font-mono font-bold text-purple-400 block">🎯 OKRs (Objectives & Key Results)</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Align qualitative objectives with quantitative key result progress bars.</p>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Every strategic insight, operational protocol, and historical debrief is codified into a structured 10-folder markdown knowledge base with full live preview and bidirectional relational linking:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono text-[11px]">
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-[#fef08a] font-bold block flex items-center gap-1.5">
+                        <Scroll className="h-3.5 w-3.5 text-[#c5a059]" /> 00 Vision
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Core life philosophy, North Star objectives, guiding principles, and spiritual servitude charter.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-cyan-300 font-bold block flex items-center gap-1.5">
+                        <Compass className="h-3.5 w-3.5 text-cyan-400" /> 01 Strategies
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Domain mastery doctrines across Engineering, Physical Health, Spiritual Purity & Wealth.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-blue-300 font-bold block flex items-center gap-1.5">
+                        <Layers className="h-3.5 w-3.5 text-blue-400" /> 02 Master Plans
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">System architecture blueprints, multi-year roadmaps, and campaign master plans.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-purple-300 font-bold block flex items-center gap-1.5">
+                        <Swords className="h-3.5 w-3.5 text-purple-400" /> 03 Tactical Playbooks
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Deep work execution runbooks, interview prep protocols, and examination blitz playbooks.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-emerald-500/30 rounded-xl space-y-1">
+                      <span className="text-emerald-300 font-bold block flex items-center gap-1.5">
+                        <Activity className="h-3.5 w-3.5 text-emerald-400" /> 04 Operations (Muhāsabah Archive)
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Daily operational logs, routines, and auto-archived <strong>Friday Weekly Muhāsabah Audits</strong>.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-amber-300 font-bold block flex items-center gap-1.5">
+                        <CheckSquare className="h-3.5 w-3.5 text-amber-400" /> 05 SOPs
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Standard Operating Procedures, checklist runbooks, morning/evening launch sequences.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-indigo-300 font-bold block flex items-center gap-1.5">
+                        <Cpu className="h-3.5 w-3.5 text-indigo-400" /> 06 Frameworks
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Custom mental models, analytical frameworks, and decision-tree guidelines.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-rose-300 font-bold block flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-rose-400" /> 07 Experiments
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Trial & Error laboratory logs: hypotheses, parameters, metrics, and empirical conclusions.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-amber-400 font-bold block flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5 text-amber-400" /> 08 Lessons Learned
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Post-mortems, failure retrospectives, slip analyses, and victory debrief insights.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-[#0d1017] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-zinc-300 font-bold block flex items-center gap-1.5">
+                        <Trophy className="h-3.5 w-3.5 text-zinc-400" /> 09 Reviews & Archive
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[10.5px]">Quarterly/annual strategic debriefs, legacy archives, and retired campaign scrolls.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. STRATEGIC THINKING LAB (11 ENGINES ACROSS 4 CATEGORIES) */}
+                <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
+                      <Cpu className="h-4 w-4 text-cyan-400" />
+                      <span>STRATEGIC THINKING LAB — 11 INTERACTIVE ENGINES</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded">
+                      DECISION_ENGINES
+                    </span>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
-                    <span className="font-mono font-bold text-amber-400 block">⚡ Pareto 80/20 Rule</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Identify the top 20% high-leverage activities driving 80% of actual outcomes.</p>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Interactive tactical modules designed to eliminate cognitive bias, resolve decision paralysis, and generate executable directives with a single click:
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* A. DECISION ENGINES */}
+                    <div className="p-3 bg-[#0d1017] border border-cyan-500/20 rounded-xl space-y-2">
+                      <span className="text-[11px] font-mono font-bold text-cyan-300 uppercase block">
+                        A. DECISION & PRIORITIZATION ENGINES
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">📊 Eisenhower Matrix</strong>
+                          <span className="text-zinc-400">Classifies quests into Q1 (Urgent/Important), Q2 (Deep Work Sanctum), Q3 (Delegate/Streamline), and Q4 (Eliminate).</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">⚡ Pareto 80/20 Analyzer</strong>
+                          <span className="text-zinc-400">Isolates the vital 20% of high-leverage tasks driving 80% of total strategic outcomes.</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">⚖️ Operational Heuristics</strong>
+                          <span className="text-zinc-400">Applies battle-tested rules of thumb (Two-Minute Rule, Inversion Principle, Regret Minimization).</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">🔄 OODA Loop Console</strong>
+                          <span className="text-zinc-400">High-velocity tactical decision cycle (Observe → Orient → Decide → Act) with 1-click directive injection.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* B. PROBLEM SOLVING ENGINES */}
+                    <div className="p-3 bg-[#0d1017] border border-amber-500/20 rounded-xl space-y-2">
+                      <span className="text-[11px] font-mono font-bold text-amber-300 uppercase block">
+                        B. PROBLEM SOLVING & ROOT CAUSE ENGINES
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">🔍 Root Cause Analysis (5 Whys)</strong>
+                          <span className="text-zinc-400">Drills through surface symptoms to expose root systemic vulnerabilities and create preventive SOPs.</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">⏪ Work Backwards Mechanism</strong>
+                          <span className="text-zinc-400">Starts at the final completed milestone/press release and reverse-engineers prerequisite phases.</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">🛡️ SWOT Matrix Audit</strong>
+                          <span className="text-zinc-400">Audits internal Strengths & Weaknesses against external Opportunities & Threats in a 4-quadrant grid.</span>
+                        </div>
+                        <div className="p-2 bg-black/40 rounded border border-white/5 space-y-0.5">
+                          <strong className="text-white block">🎯 SMART Goal Validator</strong>
+                          <span className="text-zinc-400">Evaluates goal quality across Specific, Measurable, Achievable, Relevant, and Time-bound scoring criteria.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* C & D. CREATIVE THINKING & EXPERIMENTATION */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-3 bg-[#0d1017] border border-purple-500/20 rounded-xl space-y-2">
+                        <span className="text-[11px] font-mono font-bold text-purple-300 uppercase block">
+                          C. CREATIVE THINKING
+                        </span>
+                        <div className="space-y-1.5 text-[11px]">
+                          <div>• <strong>Brainstorming Sandbox:</strong> Rapid divergent ideation, tagging & prioritization.</div>
+                          <div>• <strong>Lateral Thinking:</strong> Provocation & assumption-challenging to break mental ruts.</div>
+                          <div>• <strong>Mind Mapping Graph:</strong> Visualizes cross-system nodes between skills, goals & projects.</div>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-[#0d1017] border border-emerald-500/20 rounded-xl space-y-2">
+                        <span className="text-[11px] font-mono font-bold text-emerald-300 uppercase block">
+                          D. EXPERIMENTATION (TRIAL & ERROR)
+                        </span>
+                        <div className="space-y-1.5 text-[11px] text-zinc-400">
+                          <div>• <strong>Scientific Method:</strong> State hypothesis, configure variables, track metrics.</div>
+                          <div>• <strong>Empirical Validation:</strong> Measure success vs. baseline and promote winning protocols to <code>05 SOPs</code>.</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1.5">
-                    <span className="font-mono font-bold text-emerald-400 block">📑 Planning Documents & SOPs</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Create Markdown SOP planning logs and link them to Goals, Projects, or Skills.</p>
+                  {/* 1-CLICK ACTIONABLE OUTPUTS */}
+                  <div className="p-3 bg-[#07080c] border border-cyan-500/30 rounded-xl text-xs font-mono">
+                    <span className="text-cyan-300 font-bold block mb-1">⚡ 1-CLICK ACTIONABLE SPAWNER:</span>
+                    <p className="text-zinc-300 font-sans text-[11px]">
+                      Every thinking tool can instantly export its conclusion as a <strong>Tactical Quest</strong>, <strong>Operational Campaign</strong>, <strong>Controlled Experiment</strong>, <strong>Standard SOP</strong>, or <strong>Codex Markdown Document</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. THE CLOSED STRATEGIC LOOP */}
+                <div className="p-4 bg-gradient-to-br from-[#1b1509] to-[#0a0c14] border border-[#c5a059]/40 rounded-2xl space-y-3 shadow-[0_0_20px_rgba(197,160,89,0.15)]">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <RefreshCw className="h-4 w-4 text-[#c5a059]" />
+                      <span>THE CLOSED STRATEGIC LOOP & FRIDAY MUḤĀSABAH ARCHIVING</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 px-2 py-0.5 rounded">
+                      CONTINUOUS_EVOLUTION
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-[#07080c] border border-[#c5a059]/30 rounded-xl font-mono text-[11px] text-[#fef08a] text-center overflow-x-auto">
+                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                      <span>Goal</span> ➔ 
+                      <span>Analyze</span> ➔ 
+                      <span>Root Cause</span> ➔ 
+                      <span>Solutions</span> ➔ 
+                      <span>Strategy</span> ➔ 
+                      <span className="text-emerald-400 font-bold">Execute</span> ➔ 
+                      <span className="text-amber-400 font-bold">Measure</span> ➔ 
+                      <span className="text-cyan-400 font-bold">Learn</span> ➔ 
+                      <span className="text-purple-400 font-bold">Adapt</span> ➔ 
+                      <span className="text-[#fef08a] font-bold">Repeat</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    <strong>Weekly Jumu'ah Bridge:</strong> Every Friday during the Muḥāsabah audit, the system calculates your <strong>10.0 Sacred Score</strong>, evaluates weekly campaign progress, extracts lessons learned, and permanently archives the summary markdown document under <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>.
+                  </p>
+
+                  <div className="p-2.5 bg-black/40 border border-[#c5a059]/20 rounded-lg text-center font-mono text-xs text-[#c5a059]">
+                    ✦ CORE OPERATING PRINCIPLE: <strong>THINK → PLAN → EXECUTE → MEASURE → LEARN → ADAPT</strong> ✦
                   </div>
                 </div>
               </div>
@@ -1885,9 +2208,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
 
                     <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                      <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Maximum −500 XP Daily Penalty Cap & 0 XP Floor</strong>
+                      <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Full Audit Accounting & 0 XP Balance Floor</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        Total Muhāsabah penalties are strictly capped at <strong>−500 XP per calendar day</strong> to protect against death-spiral demoralization. Player XP can never drop below <code>0 XP</code>.
+                        Every non-exempt Muhāsabah audit is logged in full severity (e.g. Critical slips deduct −500 XP and −200 Coins each). Total player XP is safeguarded with a strict <code>0 XP</code> floor to prevent negative balances.
                       </p>
                     </div>
                   </div>

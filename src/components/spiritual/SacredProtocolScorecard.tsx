@@ -21,14 +21,15 @@ const AUDIT_PILLARS: {
 }[] = [
   {
     id: 1,
-    titleEn: '5 Obligatory Daily Prayers (الصلوات الخمس)',
-    titleAr: 'أركان الصلاة المكتوبة',
+    titleEn: '5 Obligatory Daily Prayers & 40-Day Masjid Sanctuary (الصلوات الخمس وعَهْدُ الأربعين)',
+    titleAr: 'أركان الصلاة المكتوبة وعَهْدُ الأربعين يوماً في المسجد',
     score: '10/10',
     status: 'Full Mark',
-    description: 'Precision logging for Fajr, Dhuhr, Asr, Maghrib, and Isha with exact rak\'ah counts.',
+    description: 'Precision logging for Fajr, Dhuhr, Asr, Maghrib, and Isha with 40-day consecutive Masjid sanctuary tracking based on the Hadith.',
     componentsCovered: [
+      '40-Day Masjid Sanctuary Tracker: 40-bead illuminated matrix & Al-Barā\'atān (Freedom from Fire & Hypocrisy) based on Jami\' at-Tirmidhi 241',
       'On-Time bonus (+40 XP) vs Delayed penalty (-50 XP) accountability',
-      'Masjid & Jamā\'ah bonus (+50 XP)',
+      'Masjid & Jamā\'ah bonus (+50 XP) and 1-click "Mark All 5 in Masjid"',
       '12 Sunan Rawatib (Fajr 2 before, Dhuhr 4 before + 2 after, Asr 4 before, Maghrib 2 after, Isha 2 after)',
       'Direct link to log delayed/missed prayers into Muhāsabah Audit'
     ]

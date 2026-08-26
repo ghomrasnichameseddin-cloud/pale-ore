@@ -13,18 +13,22 @@ import { SiamFastingSection } from './spiritual/SiamFastingSection';
 import { SunnahPrayersSection } from './spiritual/SunnahPrayersSection';
 import { AdhkarSection } from './spiritual/AdhkarSection';
 import { SacredProtocolScorecard } from './spiritual/SacredProtocolScorecard';
+import { Masjid40DayTracker } from './spiritual/Masjid40DayTracker';
 
 interface SpiritualTrackerViewProps {
   onOpenMuhasabahAudit?: () => void;
   onOpenGuide?: (section?: string) => void;
   onNavigateTab?: (tab: string) => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   onOpenMuhasabahAudit,
   onOpenGuide,
-  onNavigateTab
+  onNavigateTab,
+  onNavigate
 }) => {
+  const handleNav = onNavigateTab || onNavigate;
   const { 
     state, 
     systemDate, 
@@ -34,15 +38,17 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     togglePrayer,
     updateQiyam,
     setKhushuRating,
-    getTodayMuhasabahStats
+    getTodayMuhasabahStats,
+    getMasjid40Stats
   } = usePOS();
 
-  const [activeTab, setActiveTab] = useState<'all' | 'salaat' | 'siam' | 'sunnah' | 'adhkar' | 'audit'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'masjid40' | 'salaat' | 'siam' | 'sunnah' | 'adhkar' | 'audit'>('all');
   const [showScorecardModal, setShowScorecardModal] = useState(false);
 
   const currentLog: SpiritualDailyLog = getSpiritualLog(systemDate);
   const hijriInfo = getHijriDate(systemDate);
   const mizanStats = getTodayMuhasabahStats();
+  const masjid40Stats = getMasjid40Stats(systemDate);
 
   const postMap = currentLog.dhikr?.postSalahAdhkar || {};
   const completedPostPrayersCount = (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter(p => {
@@ -299,7 +305,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </div>
         </div>
 
-        {/* 3. METRICS STRIP: OBLIGATIONS, FASTING, SUNAN, DHIKR, QURAN, KHUSHU */}
+        {/* 3. METRICS STRIP: OBLIGATIONS, 40-DAY MASJID, FASTING, SUNAN, DHIKR, KHUSHU */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
           
           {/* Fardh Salaat */}
@@ -310,6 +316,25 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 {completedFardhCount} / 5
               </span>
               <span className="text-[10px] font-mono text-[#c5a059]">{onTimeCount} on time</span>
+            </div>
+          </div>
+
+          {/* 40-Day Masjid Sanctuary */}
+          <div 
+            onClick={() => setActiveTab('masjid40')}
+            className="p-3 bg-gradient-to-br from-[#1c160b]/40 to-[#080a0f] border border-[#c5a059]/30 hover:border-[#c5a059] rounded-xl space-y-1 cursor-pointer transition shadow-sm group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-[#c5a059] uppercase block group-hover:text-amber-200">40-Day Masjid</span>
+              <span className="text-[10px] font-mono text-amber-300">🕌</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-base font-display font-bold text-[#fef08a]">
+                {masjid40Stats.currentStreak} / 40 D
+              </span>
+              <span className={`text-[10px] font-mono ${masjid40Stats.isTodayFullyCompleted ? 'text-emerald-400 font-bold' : 'text-zinc-400'}`}>
+                {masjid40Stats.todayMasjidCount}/5 Today
+              </span>
             </div>
           </div>
 
@@ -371,6 +396,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
       <div className="flex items-center gap-1.5 p-1 bg-[#090b10] border border-white/10 rounded-2xl overflow-x-auto select-none no-scrollbar">
         {[
           { id: 'all' as const, label: 'All Protocols (الكل)', icon: Sparkles },
+          { id: 'masjid40' as const, label: '40-Day Masjid Sanctuary (أربعون في المسجد)', icon: Shield },
           { id: 'salaat' as const, label: '5 Daily Salaat (الصلوات الخمس)', icon: Sun },
           { id: 'siam' as const, label: 'Siam & Fasting (الصيام والسحور)', icon: Moon },
           { id: 'sunnah' as const, label: 'Sunan, Nawāfil & Qiyām (النوافل والقيام)', icon: Compass },
@@ -402,6 +428,14 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         {/* AUDIT SCORECARD TAB */}
         {activeTab === 'audit' && (
           <SacredProtocolScorecard />
+        )}
+
+        {/* 40-DAY MASJID COVENANT HERO (DISPLAYED ON ALL OR MASJID40 TAB) */}
+        {(activeTab === 'all' || activeTab === 'masjid40') && (
+          <Masjid40DayTracker 
+            onOpenGuide={onOpenGuide}
+            onNavigateTab={handleNav}
+          />
         )}
 
         {/* 5 OBLIGATORY PRAYERS SECTION */}
