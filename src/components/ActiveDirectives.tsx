@@ -71,18 +71,6 @@ export const getCategoryDetails = (type: string) => {
       accentBg: 'bg-teal-500/10',
     };
   }
-  if (t === 'penalty') {
-    return {
-      label: 'Penalty Quest',
-      shortLabel: 'Penalty',
-      icon: '💀',
-      badgeClass: 'bg-red-950/80 text-red-300 border-red-500/60 font-black animate-pulse',
-      borderLeftClass: 'border-l-4 border-l-red-600',
-      textColor: 'text-red-400',
-      bgHeader: 'bg-red-950/60 border-red-500/50 text-red-300',
-      accentBg: 'bg-red-500/10',
-    };
-  }
   if (t === 'optional') {
     return {
       label: 'Optional Quest',

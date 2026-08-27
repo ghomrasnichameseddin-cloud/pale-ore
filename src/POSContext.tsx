@@ -1302,12 +1302,69 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const penaltyReduction = getFailPenaltyMultiplier(activeJobForMidnight);
 
       uncheckedQuests.forEach(q => {
-        const isDailyOrHabit = q.type.toUpperCase() === 'HABIT' || q.recurrence === 'Daily' || (q.recurrence && q.recurrence !== 'None');
+        const typeUpper = q.type.toUpperCase();
+        const isDailyOrHabit = typeUpper === 'HABIT' || q.recurrence === 'Daily' || (q.recurrence && q.recurrence !== 'None');
+        const isSideOrOptional = typeUpper === 'SIDE' || typeUpper === 'OPTIONAL';
         const origEstTime = typeof q.estimatedTime === 'number' && q.estimatedTime > 0 ? q.estimatedTime : 30;
         const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
 
-        if (isDailyOrHabit) {
-          // Lapsed Daily Directive / Habit: Generate Recovery Quest with half XP and half Time (no penalty quest)
+        if (isSideOrOptional) {
+          // Side Quests / Optional Quests are EXCLUDED from penalty amount (0 XP deduction)
+          if (!q.recurrence || q.recurrence === 'None') {
+            updatedQuests = updatedQuests.map(uq => {
+              if (uq.id === q.id) {
+                return {
+                  ...uq,
+                  status: 'Failed' as const,
+                  completedAt: new Date().toISOString()
+                };
+              }
+              return uq;
+            });
+          }
+          return;
+        }
+
+        if (isDailyOrHabit || typeUpper === 'MAIN' || typeUpper === 'BOSS') {
+          // Main, Habit, and Boss quests: INCLUDED in penalty XP deduction + generates restorative Recovery Quest (half XP, half Time)
+          let penaltyXp = 50;
+          if (q.difficulty === 'Easy') penaltyXp = 25;
+          else if (q.difficulty === 'Normal') penaltyXp = 50;
+          else if (q.difficulty === 'Hard') penaltyXp = 100;
+          else if (q.difficulty === 'Boss') penaltyXp = 250;
+
+          const isCritical = typeUpper === 'MAIN' || typeUpper === 'BOSS' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
+          const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
+          const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
+
+          const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
+          const penaltyEntry: XPHistoryEntry = {
+            id: xpHistoryId,
+            questId: q.id,
+            questName: isDailyOrHabit ? `💀 MIDNIGHT PENALTY: Lapsed habit "${q.name}"` : `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
+            xp: -Math.round(finalPenaltyXp),
+            timestamp: new Date().toISOString(),
+            skillIds: q.relatedSkills || []
+          };
+
+          updatedHistory.unshift(penaltyEntry);
+          const momentumLoss = isCritical ? 25 : 10;
+          updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
+
+          // If one-off, mark as Failed
+          if (!q.recurrence || q.recurrence === 'None') {
+            updatedQuests = updatedQuests.map(uq => {
+              if (uq.id === q.id) {
+                return {
+                  ...uq,
+                  status: 'Failed' as const,
+                  completedAt: new Date().toISOString()
+                };
+              }
+              return uq;
+            });
+          }
+
           const origXp = (typeof q.xp === 'number' && q.xp > 0) 
             ? q.xp 
             : (q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50);
@@ -1315,8 +1372,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           const recoveryQuest: Quest = {
             id: `q-recovery-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            name: `🛡️ RECOVERY: Lapsed "${q.name}"`,
-            description: `Recovery directive generated for lapsed daily directive "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore momentum.`,
+            name: `🛡️ RECOVERY: Resolve "${q.name}"`,
+            description: `Recovery directive generated for failed/unchecked ${q.type} objective "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore operations.`,
             status: 'Active' as const,
             difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
             type: 'Recovery',
@@ -1343,15 +1400,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           updatedQuests.push(recoveryQuest);
           recoveryModeActivated = true;
         } else {
-          // Non-habit one-off / Main / Boss quests: apply midnight penalty and generate penalty directive
+          // Other non-side one-off quests: apply standard penalty and generate recovery directive
           let penaltyXp = 50;
           if (q.difficulty === 'Easy') penaltyXp = 25;
           else if (q.difficulty === 'Normal') penaltyXp = 50;
           else if (q.difficulty === 'Hard') penaltyXp = 100;
           else if (q.difficulty === 'Boss') penaltyXp = 250;
 
-          const isCritical = q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
-          const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
+          const basePenaltyXp = penaltyXp;
           const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
 
           const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
@@ -1365,10 +1421,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
 
           updatedHistory.unshift(penaltyEntry);
-          const momentumLoss = isCritical ? 25 : 10;
-          updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
+          updatedMomentum = Math.max(0, updatedMomentum - 10);
 
-          // Mark one-off as Failed
           if (!q.recurrence || q.recurrence === 'None') {
             updatedQuests = updatedQuests.map(uq => {
               if (uq.id === q.id) {
@@ -1382,38 +1436,38 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
 
-          const pQuest: Quest = {
-            id: `q-penalty-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            name: `⚠️ RECOVERY: Resolve failed/unchecked "${q.name}"`,
-            description: `System-generated recovery directive due to unchecked/failed objective "${q.name}". Resolve this to restore operations.`,
+          const origXp = (typeof q.xp === 'number' && q.xp > 0) ? q.xp : penaltyXp;
+          const recoveryXp = Math.max(5, Math.round(origXp / 2));
+
+          const recoveryQuest: Quest = {
+            id: `q-recovery-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            name: `🛡️ RECOVERY: Resolve "${q.name}"`,
+            description: `Recovery directive generated for unchecked objective "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore operations.`,
             status: 'Active' as const,
             difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
-            type: 'Penalty',
+            type: 'Recovery',
             estimatedTime: recoveryEstTime,
             recurrence: 'None',
             energyLevel: 'Medium',
             deadline: q.deadline || new Date().toISOString().split('T')[0],
             createdAt: new Date().toISOString(),
             completedAt: null,
-            xp: -Math.round(penaltyXp),
+            xp: recoveryXp,
             goalId: q.goalId || null,
             projectId: q.projectId || null,
             milestoneId: q.milestoneId || null,
             subquests: [
               {
-                id: `sq-penalty-${q.id}-1`,
-                name: `Resolve the underlying issue or complete the remaining actions of "${q.name}"`,
+                id: `sq-rec-${q.id}-1`,
+                name: `Execute condensed ${recoveryEstTime}-min recovery session for "${q.name}"`,
                 completed: false
               }
             ],
             relatedSkills: q.relatedSkills || []
           };
 
-          updatedQuests.push(pQuest);
-          const typeUpper = q.type.toUpperCase();
-          if (typeUpper === 'MAIN' || typeUpper === 'BOSS') {
-            recoveryModeActivated = true;
-          }
+          updatedQuests.push(recoveryQuest);
+          recoveryModeActivated = true;
         }
       });
     }
@@ -2501,6 +2555,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const failedTimestamp = new Date().toISOString();
     const isDailyOrHabit = questToFail.type.toUpperCase() === 'HABIT' || questToFail.recurrence === 'Daily' || (questToFail.recurrence && questToFail.recurrence !== 'None');
+    const isSideOrOptional = questToFail.type.toUpperCase() === 'SIDE' || questToFail.type.toUpperCase() === 'OPTIONAL';
 
     const origEstTime = typeof questToFail.estimatedTime === 'number' && questToFail.estimatedTime > 0 ? questToFail.estimatedTime : 30;
     const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
@@ -2524,16 +2579,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
 
     const xpHistoryId = `h-fail-${Date.now()}`;
-    const penaltyEntry: XPHistoryEntry | null = isDailyOrHabit ? null : {
+    const penaltyEntry: XPHistoryEntry | null = isSideOrOptional ? null : {
       id: xpHistoryId,
       questId: questToFail.id,
-      questName: `💀 PENALTY: Failed "${questToFail.name}"`,
+      questName: isDailyOrHabit ? `💀 PENALTY: Failed habit "${questToFail.name}"` : `💀 PENALTY: Failed "${questToFail.name}"`,
       xp: -Math.round(finalPenaltyXp),
       timestamp: failedTimestamp,
       skillIds: questToFail.relatedSkills
     };
 
-    const momentumLoss = isDailyOrHabit ? 5 : (isImportant ? 25 : 10);
+    const momentumLoss = isSideOrOptional ? 0 : (isDailyOrHabit ? 10 : (isImportant ? 25 : 10));
     const newMomentum = Math.max(0, state.profile.momentum - momentumLoss);
 
     setState(prev => {
@@ -2548,13 +2603,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
-      // Generate the recovery quest (for habits) or penalty quest (for non-habits)
-      let spawnedQuest: Quest;
-      if (isDailyOrHabit) {
+      // Generate the recovery quest for failed objectives
+      let spawnedQuest: Quest | null = null;
+      if (isSideOrOptional) {
+        spawnedQuest = null;
+      } else {
         spawnedQuest = {
           id: `q-recovery-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: `🛡️ RECOVERY: Lapsed "${questToFail.name}"`,
-          description: `Recovery directive generated for lapsed daily directive "${questToFail.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore momentum.`,
+          name: `🛡️ RECOVERY: Resolve "${questToFail.name}"`,
+          description: `Recovery directive generated for failed/skipped ${questToFail.type} objective "${questToFail.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore operations.`,
           status: 'Active' as const,
           difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
           type: 'Recovery',
@@ -2577,36 +2634,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ],
           relatedSkills: questToFail.relatedSkills || []
         };
-      } else {
-        spawnedQuest = {
-          id: `q-penalty-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name: `⚠️ RECOVERY: Resolve failed/unchecked "${questToFail.name}"`,
-          description: `System-generated recovery directive due to unchecked/failed objective "${questToFail.name}". Resolve this to restore operations.`,
-          status: 'Active' as const,
-          difficulty: questToFail.difficulty === 'Custom' ? 'Normal' : questToFail.difficulty,
-          type: 'Penalty',
-          estimatedTime: recoveryEstTime,
-          recurrence: 'None',
-          energyLevel: 'Medium',
-          deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
-          completedAt: null,
-          xp: -Math.round(finalPenaltyXp),
-          goalId: questToFail.goalId || null,
-          projectId: questToFail.projectId || null,
-          milestoneId: questToFail.milestoneId || null,
-          subquests: [
-            {
-              id: `sq-penalty-${questToFail.id}-1`,
-              name: `Resolve the underlying issue or complete the remaining actions of "${questToFail.name}"`,
-              completed: false
-            }
-          ],
-          relatedSkills: questToFail.relatedSkills || []
-        };
       }
 
-      const finalQuestsList = [...updatedQuests, spawnedQuest];
+      const finalQuestsList = spawnedQuest ? [...updatedQuests, spawnedQuest] : updatedQuests;
 
       const rawHistory = penaltyEntry ? [penaltyEntry, ...prev.xpHistory] : prev.xpHistory;
       const updatedHistory = resolveRecoveredPenalties(rawHistory);
@@ -2627,7 +2657,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       const typeUpper = questToFail.type.toUpperCase();
-      const activatesRecovery = typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT' || isDailyOrHabit;
+      const activatesRecovery = isSideOrOptional ? false : (typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT' || isDailyOrHabit);
       const newRecoveryMode = activatesRecovery ? true : prev.profile.recoveryMode;
 
       return {

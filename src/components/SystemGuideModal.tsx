@@ -848,7 +848,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Shop Lock:</strong> Scheduled habits for today are required for Reward Shop unlock.</div>
-                        <div>• <strong>Lapse Consequence:</strong> Lapsing generates a <code>Recovery Quest</code> (half XP, half time) instead of a penalty quest.</div>
+                        <div>• <strong>Lapse Consequence:</strong> Lapsing incurs standard penalty XP deduction &amp; generates a <code>Recovery Quest</code> (half XP, half time) to restore momentum.</div>
                       </div>
                     </div>
 
@@ -859,7 +859,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="text-[9px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">AUTO-GENERATED</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Created automatically when a Main, Boss, or Habit quest is left unchecked past midnight or marked failed.
+                        Created automatically when a Main or Boss quest is left unchecked past midnight or marked failed.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Half-Time Rule:</strong> Estimated duration is cut to <strong>50% (half)</strong> of the original quest time.</div>
@@ -892,6 +892,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         Secondary supportive tasks, quick errands, or sub-deliverables to boost discipline and minor attributes.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Penalty Exemption:</strong> Excluded from penalty XP deductions and penalty quest generation on lapse/failure.</div>
                         <div>• <strong>Shop Lock:</strong> Excluded from mandatory shop lock requirements.</div>
                         <div>• <strong>Rollover:</strong> Safe to carry over without triggering Recovery Mode.</div>
                       </div>
@@ -941,7 +942,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         2. 50% TIME & XP RECOVERY
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        For lapsed daily directives & habits, the system spawns a <code>🛡️ RECOVERY</code> quest with half the time (<code>origEstTime / 2</code>) and half the XP (<code>origXp / 2</code>) for rapid momentum restoration without penalization.
+                        For failed/lapsed <strong>Main</strong>, <strong>Habit</strong>, and <strong>Boss</strong> directives, the system applies the XP deduction and spawns a <code>🛡️ RECOVERY</code> quest with half the time (<code>origEstTime / 2</code>) and half the positive XP (<code>origXp / 2</code>) to rapidly restore operational velocity.
                       </p>
                     </div>
 
