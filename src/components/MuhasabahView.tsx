@@ -32,7 +32,8 @@ const SEVERITY_ORDER: Record<MuhasabahSeverity, number> = {
 
 type SortField = 'time' | 'severity' | 'category' | 'xp';
 type SortOrder = 'desc' | 'asc';
-type GroupMode = 'none' | 'category' | 'severity' | 'date';
+type GroupMode = 'none' | 'horizon' | 'category' | 'severity' | 'date';
+type TimeScope = 'today' | 'week' | 'all';
 
 interface MuhasabahViewProps {
   onNavigate?: (tab: any) => void;
@@ -46,6 +47,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
   } = usePOS();
 
+  const [timeScope, setTimeScope] = useState<TimeScope>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
@@ -75,6 +77,67 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const weaknesses = state.weaknesses || [];
   const savedSummaries = state.savedWeeklySummaries || [];
 
+  const todayDateStr = state.systemDate || '2026-08-27';
+
+  // Calculate 7-day week cycle range
+  const { weekStartDate, weekEndDate, daysInWeek } = useMemo(() => {
+    let refDate = new Date();
+    try {
+      const [y, m, d] = todayDateStr.split('-').map(Number);
+      refDate = new Date(y, m - 1, d);
+    } catch {
+      refDate = new Date();
+    }
+    const days: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(refDate);
+      d.setDate(d.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      days.push(`${y}-${m}-${day}`);
+    }
+    return {
+      weekStartDate: days[0],
+      weekEndDate: days[days.length - 1],
+      daysInWeek: days
+    };
+  }, [todayDateStr]);
+
+  // Today's specific slip calculations
+  const todayEntries = useMemo(() => {
+    return entries.filter(e => e.date === todayDateStr);
+  }, [entries, todayDateStr]);
+
+  const todayLostXP = useMemo(() => {
+    return todayEntries.reduce((sum, e) => sum + (e.xpDeducted || e.rawPenalty || 0), 0);
+  }, [todayEntries]);
+
+  const todayLostCoins = useMemo(() => {
+    return todayEntries.reduce((sum, e) => sum + (e.coinsDeducted || 0), 0);
+  }, [todayEntries]);
+
+  // Week-long slip calculations (7-day cycle)
+  const weekEntries = useMemo(() => {
+    return entries.filter(e => {
+      if (!e.date) return true;
+      return e.date >= weekStartDate && e.date <= weekEndDate;
+    });
+  }, [entries, weekStartDate, weekEndDate]);
+
+  const weekLostXP = useMemo(() => {
+    return weekEntries.reduce((sum, e) => sum + (e.xpDeducted || e.rawPenalty || 0), 0);
+  }, [weekEntries]);
+
+  const weekLostCoins = useMemo(() => {
+    return weekEntries.reduce((sum, e) => sum + (e.coinsDeducted || 0), 0);
+  }, [weekEntries]);
+
+  // All-time slip calculations
+  const allLostXP = useMemo(() => {
+    return entries.reduce((sum, e) => sum + (e.xpDeducted || e.rawPenalty || 0), 0);
+  }, [entries]);
+
   // Real-time live weekly evaluation out of 10.0
   const liveWeeklySummary = useMemo(() => {
     return generateWeeklyMuhasabahSummary();
@@ -83,16 +146,27 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   // Check if current systemDate is Friday
   const isFriday = useMemo(() => {
     try {
-      const dt = new Date(`${state.systemDate || '2026-08-22'}T12:00:00`);
+      const dt = new Date(`${todayDateStr}T12:00:00`);
       return dt.getDay() === 5;
     } catch {
       return false;
     }
-  }, [state.systemDate]);
-  
+  }, [todayDateStr]);
+
+  // Scope-filtered entries (Today vs This Week vs All-Time)
+  const scopeFilteredEntries = useMemo(() => {
+    if (timeScope === 'today') {
+      return todayEntries;
+    }
+    if (timeScope === 'week') {
+      return weekEntries;
+    }
+    return entries;
+  }, [timeScope, todayEntries, weekEntries, entries]);
+
   // Filtered and Sorted entries
   const processedEntries = useMemo(() => {
-    const filtered = entries.filter(e => {
+    const filtered = scopeFilteredEntries.filter(e => {
       const matchesCat = categoryFilter === 'ALL' || e.category === categoryFilter;
       const matchesSev = severityFilter === 'ALL' || e.severity === severityFilter;
       const matchesSearch = searchQuery === '' || 
@@ -122,7 +196,30 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       }
       return sortOrder === 'desc' ? -comparison : comparison;
     });
-  }, [entries, categoryFilter, severityFilter, searchQuery, sortField, sortOrder]);
+  }, [scopeFilteredEntries, categoryFilter, severityFilter, searchQuery, sortField, sortOrder]);
+
+  // Relative Date Helper
+  const getRelativeDateInfo = (dateStr?: string) => {
+    if (!dateStr || dateStr === todayDateStr) {
+      return { label: 'Today • اليوم', isToday: true, isThisWeek: true, badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-500/50' };
+    }
+    try {
+      const [cy, cm, cd] = todayDateStr.split('-').map(Number);
+      const [ey, em, ed] = dateStr.split('-').map(Number);
+      const dtCurrent = new Date(cy, cm - 1, cd);
+      const dtEntry = new Date(ey, em - 1, ed);
+      const diffDays = Math.round((dtCurrent.getTime() - dtEntry.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        return { label: 'Yesterday • أمس', isToday: false, isThisWeek: true, badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-600/40' };
+      }
+      if (diffDays > 1 && diffDays <= 7) {
+        return { label: `${diffDays}d ago • في الأسبوع`, isToday: false, isThisWeek: true, badgeColor: 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40' };
+      }
+      return { label: dateStr, isToday: false, isThisWeek: false, badgeColor: 'bg-black/50 text-zinc-400 border-white/10' };
+    } catch {
+      return { label: dateStr, isToday: false, isThisWeek: false, badgeColor: 'bg-black/50 text-zinc-400 border-white/10' };
+    }
+  };
 
   // Grouped entries structure
   const groupedEntries = useMemo(() => {
@@ -136,7 +233,19 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       let groupKey = '';
       let groupLabel = '';
 
-      if (groupMode === 'category') {
+      if (groupMode === 'horizon') {
+        const info = getRelativeDateInfo(entry.date);
+        if (info.isToday) {
+          groupKey = 'today';
+          groupLabel = '⚡ Today\'s Slips (سِجِلُّ هَفَوَاتِ اليَوْم)';
+        } else if (info.isThisWeek) {
+          groupKey = 'this-week';
+          groupLabel = '🗓️ Earlier This Week (سِجِلُّ هَفَوَاتِ الأُسْبُوع الحَالِي)';
+        } else {
+          groupKey = 'archived';
+          groupLabel = '📜 Prior Cycles (مِنْ أَسَابِيعَ سَابِقَة)';
+        }
+      } else if (groupMode === 'category') {
         groupKey = entry.category;
         groupLabel = `${entry.category} Realm`;
       } else if (groupMode === 'severity') {
@@ -158,7 +267,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       label: val.label,
       entries: val.entries
     }));
-  }, [processedEntries, groupMode]);
+  }, [processedEntries, groupMode, todayDateStr]);
 
   // Active Kaffārah / Remedy Quests
   const activeKaffarahQuests = state.quests.filter(q => 
@@ -242,7 +351,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         projectId: null,
         milestoneId: null,
         relatedSkills: [],
-        targetDate: dateStr,
+        deadline: dateStr,
         recurrence: 'Daily'
       });
       addedCount++;
@@ -260,7 +369,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         projectId: null,
         milestoneId: null,
         relatedSkills: [],
-        targetDate: dateStr,
+        deadline: dateStr,
         recurrence: 'Daily'
       });
       addedCount++;
@@ -278,7 +387,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         projectId: null,
         milestoneId: null,
         relatedSkills: [],
-        targetDate: dateStr,
+        deadline: dateStr,
         recurrence: 'Daily'
       });
       addedCount++;
@@ -296,7 +405,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         projectId: null,
         milestoneId: null,
         relatedSkills: [],
-        targetDate: dateStr,
+        deadline: dateStr,
         recurrence: 'Daily'
       });
       addedCount++;
@@ -314,7 +423,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         projectId: null,
         milestoneId: null,
         relatedSkills: [],
-        targetDate: dateStr
+        deadline: dateStr
       });
       addedCount++;
     }
@@ -895,7 +1004,9 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                       <div className="my-2">
                         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
                           <span>Chain Links:</span>
-                          <span className="text-zinc-200 font-bold">{weakness.occurrenceCount} / 5 Slips</span>
+                          <span className={`font-bold ${isSealed ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                            {isSealed ? `${weakness.occurrenceCount} / 5 Slips (Reset)` : `${weakness.occurrenceCount} / 5 Slips`}
+                          </span>
                         </div>
                         <div className="grid grid-cols-5 gap-1">
                           {[1, 2, 3, 4, 5].map(idx => (
@@ -926,9 +1037,13 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                             FORGE INTO POWER SEAL
                           </button>
                         ) : isSealed ? (
-                          <div className="w-full py-1 rounded bg-emerald-950/40 border border-emerald-500/20 text-[10px] font-mono text-emerald-300 text-center">
-                            Bound into Imperial Power Seal ⛓️
-                          </div>
+                          <button
+                            onClick={() => onNavigate && onNavigate('seals')}
+                            className="w-full py-1 rounded bg-emerald-950/40 hover:bg-emerald-950/70 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 transition text-center flex items-center justify-center gap-1"
+                          >
+                            <span>Bound into Power Seal ⛓️ (Meter Reset to 0)</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
                         ) : (
                           <button
                             onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
@@ -954,32 +1069,35 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
         {/* RIGHT COLUMN: THE SACRED LEDGER OF SLIPS */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl">
+          <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl space-y-4">
             {/* LEDGER HEADER & CONTROLS */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-[#3a2e12]/60 border border-[#c5a059]/40 text-[#fef08a]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#3a2e12]/80 border border-[#c5a059]/50 text-[#fef08a] shadow-inner">
                   <Scale className="h-4 w-4 text-[#c5a059]" />
                 </div>
                 <div>
-                  <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
-                    THE SACRED LEDGER OF SLIPS
+                  <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider flex items-center gap-2">
+                    <span>THE SACRED LEDGER OF SLIPS</span>
+                    <span className="text-[10px] font-mono font-normal text-[#c5a059] bg-[#c5a059]/10 px-2 py-0.5 rounded border border-[#c5a059]/30">
+                      سِجِلُّ الهَفَوَات
+                    </span>
                   </h3>
                   <span className="text-[10px] font-mono text-zinc-400">
-                    Arranged audit trail ({processedEntries.length} of {entries.length} Records)
+                    Sacred audit ledger • {processedEntries.length} displayed ({timeScope === 'today' ? 'Today only' : timeScope === 'week' ? 'Past 7 days' : 'Lifetime'})
                   </span>
                 </div>
               </div>
 
-              {/* SEARCH & WEEKLY SUMMARY INPUT */}
+              {/* SEARCH & WEEKLY SUMMARY ACTION */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleOpenWeeklySummaryGenerator}
-                  className="px-2.5 py-1.5 rounded-lg bg-black/40 hover:bg-[#3a2e12]/60 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono shrink-0 shadow-sm active:scale-95"
+                  className="px-2.5 py-1.5 rounded-lg bg-[#3a2e12]/40 hover:bg-[#3a2e12]/80 border border-[#c5a059]/30 hover:border-[#c5a059]/60 text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono shrink-0 shadow-sm active:scale-95"
                   title="Generate weekly summary & archive ledger"
                 >
                   <FileText className="h-3.5 w-3.5 text-[#c5a059]" />
-                  <span className="hidden sm:inline text-[11px] font-bold">Weekly Summary</span>
+                  <span className="hidden sm:inline text-[11px] font-bold">Weekly Audit</span>
                 </button>
 
                 <div className="relative">
@@ -989,14 +1107,260 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search slips, triggers..."
-                    className="bg-[#080a0f] border border-white/10 focus:border-[#c5a059] rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 outline-none w-full sm:w-48 font-mono"
+                    className="bg-[#080a0f] border border-white/10 focus:border-[#c5a059] rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-200 outline-none w-full sm:w-44 font-mono"
                   />
                 </div>
               </div>
             </div>
 
+            {/* DUAL SCOPE SELECTOR TABS (TODAY VS WEEK-LONG VS ARCHIVE) */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#06080d] border border-white/5 font-mono text-xs">
+              <button
+                onClick={() => setTimeScope('today')}
+                className={`py-2 px-2.5 rounded-lg transition flex flex-col sm:flex-row items-center justify-center gap-1.5 text-center relative ${
+                  timeScope === 'today'
+                    ? 'bg-gradient-to-b from-[#3a2e12] to-[#241c09] text-[#fef08a] border border-[#c5a059]/60 shadow-md font-bold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Clock className={`h-3.5 w-3.5 ${timeScope === 'today' ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
+                  <span className="text-[11px]">Today's Slips</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                    timeScope === 'today' ? 'bg-black/50 text-[#fef08a]' : 'bg-black/40 text-zinc-400'
+                  }`}>
+                    {todayEntries.length}
+                  </span>
+                  {todayLostXP > 0 && (
+                    <span className="text-[9px] text-rose-400 font-mono hidden md:inline">
+                      −{todayLostXP} XP
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setTimeScope('week')}
+                className={`py-2 px-2.5 rounded-lg transition flex flex-col sm:flex-row items-center justify-center gap-1.5 text-center relative ${
+                  timeScope === 'week'
+                    ? 'bg-gradient-to-b from-[#182638] to-[#0d1624] text-cyan-200 border border-cyan-500/60 shadow-md font-bold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <CalendarDays className={`h-3.5 w-3.5 ${timeScope === 'week' ? 'text-cyan-400' : 'text-zinc-500'}`} />
+                  <span className="text-[11px]">Week-Long Slips</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                    timeScope === 'week' ? 'bg-black/50 text-cyan-300' : 'bg-black/40 text-zinc-400'
+                  }`}>
+                    {weekEntries.length}
+                  </span>
+                  {weekLostXP > 0 && (
+                    <span className="text-[9px] text-rose-400 font-mono hidden md:inline">
+                      −{weekLostXP} XP
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setTimeScope('all')}
+                className={`py-2 px-2.5 rounded-lg transition flex flex-col sm:flex-row items-center justify-center gap-1.5 text-center relative ${
+                  timeScope === 'all'
+                    ? 'bg-gradient-to-b from-[#251b2e] to-[#140e1b] text-purple-200 border border-purple-500/60 shadow-md font-bold'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Layers className={`h-3.5 w-3.5 ${timeScope === 'all' ? 'text-purple-400' : 'text-zinc-500'}`} />
+                  <span className="text-[11px]">All-Time ({entries.length})</span>
+                </div>
+                {allLostXP > 0 && (
+                  <span className="text-[9px] text-zinc-400 font-mono hidden md:inline">
+                    −{allLostXP} XP
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* DEDICATED SCOPE DISTINCTION OVERVIEW BARS */}
+            <AnimatePresence mode="wait">
+              {timeScope === 'today' ? (
+                <motion.div
+                  key="today-summary"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="p-3.5 rounded-xl bg-gradient-to-r from-[#1c160a]/90 via-[#0e1017] to-[#0a0d14] border border-[#c5a059]/40 space-y-2.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Today's Audit Ledger: {todayDateStr}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Resets daily at 00:00 • Contributes to Daily Mīzān
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleOpenAuditModal()}
+                      className="px-2.5 py-1 rounded-lg bg-[#c5a059] hover:bg-[#d4b068] text-black font-bold text-[11px] font-mono transition flex items-center gap-1 shadow-sm active:scale-95"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Log Slip Today
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono">
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Today's Slips</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className={`text-base font-bold ${todayEntries.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {todayEntries.length}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">
+                          {todayEntries.length === 0 ? 'Pure Day ✓' : todayEntries.length === 1 ? 'incident' : 'incidents'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Today's Deductions</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className={`text-base font-bold ${todayLostXP > 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                          −{todayLostXP}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">XP</span>
+                        {todayLostCoins > 0 && (
+                          <span className="text-[10px] text-amber-400 ml-1">
+                            (−{todayLostCoins}g)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Today's Mīzān Balance</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className={`text-xs font-bold ${
+                          stats.equilibriumStatus === 'Radiant Balance' || stats.equilibriumStatus === 'Blessed Equilibrium' ? 'text-emerald-400' :
+                          stats.equilibriumStatus === 'Severe Nafs Warning' || stats.equilibriumStatus === 'Spiritual Deficit' ? 'text-rose-400' :
+                          'text-amber-400'
+                        }`}>
+                          {stats.equilibriumStatus}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : timeScope === 'week' ? (
+                <motion.div
+                  key="week-summary"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="p-3.5 rounded-xl bg-gradient-to-r from-[#0c1a29]/90 via-[#0e1017] to-[#0a0d14] border border-cyan-500/40 space-y-2.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        7-Day Accounting Cycle: {weekStartDate} → {weekEndDate}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Evaluated at Friday Jumu'ah
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleOpenWeeklySummaryGenerator}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] font-mono transition flex items-center gap-1 shadow-sm active:scale-95"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      View Friday Evaluation
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono">
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">7-Day Slips Tally</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className={`text-base font-bold ${weekEntries.length > 3 ? 'text-amber-400' : 'text-cyan-300'}`}>
+                          {weekEntries.length}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">
+                          audited slips
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Weekly Deductions</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className={`text-base font-bold ${weekLostXP > 0 ? 'text-rose-400' : 'text-zinc-300'}`}>
+                          −{weekLostXP}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">XP</span>
+                        {weekLostCoins > 0 && (
+                          <span className="text-[10px] text-amber-400 ml-1">
+                            (−{weekLostCoins}g)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Slip Restraint Score</span>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className="text-base font-bold text-[#fef08a]">
+                          {(liveWeeklySummary.weeklyScoreBreakdown?.slipsRestraintScore ?? 2.0).toFixed(1)}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">/ 2.0 pts</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="all-summary"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="p-3.5 rounded-xl bg-gradient-to-r from-[#1b1224]/90 via-[#0e1017] to-[#0a0d14] border border-purple-500/40 space-y-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-500/40 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1">
+                      <Layers className="h-3 w-3" />
+                      Complete Historical Ledger ({entries.length} Total Records)
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      Cumulative spiritual audit archive
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono">
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Total Audits</span>
+                      <span className="text-base font-bold text-purple-300">{entries.length}</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Lifetime Deductions</span>
+                      <span className="text-base font-bold text-rose-400">−{allLostXP} XP</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/5">
+                      <span className="text-[9px] text-zinc-500 block uppercase">Weakness Chains</span>
+                      <span className="text-base font-bold text-amber-300">{weaknesses.length}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* ARRANGE / SORT & GROUP CONTROLS BAR */}
-            <div className="py-2.5 px-3 my-2 rounded-lg bg-[#07090e] border border-white/5 flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono">
+            <div className="py-2.5 px-3 rounded-lg bg-[#07090e] border border-white/5 flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono">
               {/* SORT CONTROLS */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] text-zinc-500 uppercase tracking-wider flex items-center gap-1">
@@ -1062,6 +1426,15 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     Flat
                   </button>
                   <button
+                    onClick={() => setGroupMode('horizon')}
+                    className={`px-2 py-0.5 rounded text-[10px] transition ${
+                      groupMode === 'horizon' ? 'bg-[#3a2e12] text-[#fef08a] font-bold border border-[#c5a059]/40' : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                    title="Group by Today vs Earlier in Week"
+                  >
+                    Horizon
+                  </button>
+                  <button
                     onClick={() => setGroupMode('category')}
                     className={`px-2 py-0.5 rounded text-[10px] transition ${
                       groupMode === 'category' ? 'bg-amber-950/80 text-[#fef08a] font-bold border border-[#c5a059]/40' : 'text-zinc-400 hover:text-zinc-200'
@@ -1090,7 +1463,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             </div>
 
             {/* CATEGORY & SEVERITY FILTER CHIPS */}
-            <div className="space-y-2 py-2 border-b border-white/5">
+            <div className="space-y-2 py-1 border-b border-white/5">
               {/* Category Realm Filter */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
                 <span className="text-[10px] font-mono text-zinc-500 shrink-0">Realm:</span>
@@ -1129,7 +1502,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             </div>
 
             {/* ENTRIES FEED (SUPPORTS GROUPING & SORTING) */}
-            <div className="space-y-4 pt-3 max-h-[680px] overflow-y-auto pr-1">
+            <div className="space-y-4 pt-2 max-h-[680px] overflow-y-auto pr-1">
               {groupedEntries.some(g => g.entries.length > 0) ? (
                 groupedEntries.map(group => {
                   if (group.entries.length === 0) return null;
@@ -1137,13 +1510,13 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   return (
                     <div key={group.key} className="space-y-2.5">
                       {groupMode !== 'none' && (
-                        <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 font-mono text-xs">
-                          <span className="font-bold text-zinc-200 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gradient-to-r from-white/10 to-transparent border border-white/10 font-mono text-xs shadow-sm">
+                          <span className="font-bold text-zinc-100 flex items-center gap-2">
                             <Layers className="h-3.5 w-3.5 text-[#c5a059]" />
                             {group.label}
                           </span>
-                          <span className="text-[10px] text-zinc-400 bg-black/40 px-2 py-0.5 rounded">
-                            {group.entries.length} {group.entries.length === 1 ? 'audit' : 'audits'}
+                          <span className="text-[10px] text-zinc-400 bg-black/60 px-2 py-0.5 rounded border border-white/5 font-semibold">
+                            {group.entries.length} {group.entries.length === 1 ? 'audit record' : 'audit records'}
                           </span>
                         </div>
                       )}
@@ -1153,13 +1526,16 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           const catConfig = CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.Obligations;
                           const CatIcon = catConfig.icon;
                           const isSelected = selectedEntryDetail?.id === entry.id;
+                          const dateInfo = getRelativeDateInfo(entry.date);
 
                           // Time formatting
                           let formattedTime = entry.date;
+                          let timeOnly = '';
                           if (entry.timestamp) {
                             try {
                               const dt = new Date(entry.timestamp);
-                              formattedTime = `${entry.date} ${dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                              timeOnly = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              formattedTime = `${entry.date} ${timeOnly}`;
                             } catch {
                               formattedTime = entry.date;
                             }
@@ -1170,38 +1546,60 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                               key={entry.id}
                               className={`p-4 rounded-xl border transition ${
                                 isSelected 
-                                  ? 'bg-[#111622] border-[#c5a059]/60 shadow-lg' 
+                                  ? 'bg-[#111622] border-[#c5a059]/80 shadow-xl' 
+                                  : dateInfo.isToday
+                                  ? 'bg-[#0e0c07]/90 border-amber-500/30 hover:border-amber-500/50 shadow-md'
                                   : 'bg-[#080a10] border-white/10 hover:border-white/20'
                               }`}
                             >
                               {/* Entry Header */}
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-2.5 min-w-0">
-                                  <div className={`p-2 rounded-lg ${catConfig.bg} border ${catConfig.border} ${catConfig.text} shrink-0 mt-0.5`}>
+                                  <div className={`p-2 rounded-lg ${catConfig.bg} border ${catConfig.border} ${catConfig.text} shrink-0 mt-0.5 shadow-sm`}>
                                     <CatIcon className="h-4 w-4" />
                                   </div>
                                   <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                      {/* DISTINCTIVE TODAY VS WEEK BADGE */}
+                                      {dateInfo.isToday ? (
+                                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1 shadow-sm">
+                                          <Zap className="h-3 w-3 text-amber-400 animate-pulse" />
+                                          TODAY • اليوم
+                                        </span>
+                                      ) : dateInfo.isThisWeek ? (
+                                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
+                                          <CalendarDays className="h-2.5 w-2.5 text-cyan-400" />
+                                          {dateInfo.label}
+                                        </span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.2 rounded font-mono text-[9px] bg-black/50 text-zinc-400 border border-white/10">
+                                          Prior Cycle
+                                        </span>
+                                      )}
+
+                                      <span className={`px-1.5 py-0.2 rounded font-bold font-mono text-[10px] ${
+                                        entry.severity === 'Critical' ? 'bg-red-950 text-red-300 border border-red-500/30' :
+                                        entry.severity === 'Severe' ? 'bg-purple-950 text-purple-300 border border-purple-500/30' :
+                                        entry.severity === 'Major' ? 'bg-orange-950 text-orange-300 border border-orange-500/30' :
+                                        entry.severity === 'Moderate' ? 'bg-amber-950 text-amber-300 border border-amber-500/30' :
+                                        'bg-blue-950 text-blue-300 border border-blue-500/30'
+                                      }`}>
+                                        {entry.severity}
+                                      </span>
+                                    </div>
+
                                     <h4 className="font-bold text-xs sm:text-sm text-zinc-100 tracking-wide break-words">
                                       {entry.title}
                                     </h4>
+
                                     <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] font-mono text-zinc-400">
                                       <span className={`${catConfig.text} font-semibold`}>
-                                        {entry.category}
+                                        {entry.category} Realm
                                       </span>
                                       <span>•</span>
                                       <span className="text-zinc-300 flex items-center gap-1">
                                         <Clock className="h-2.5 w-2.5 text-zinc-500" />
-                                        {formattedTime}
-                                      </span>
-                                      <span>•</span>
-                                      <span className={`px-1.5 py-0.2 rounded font-bold ${
-                                        entry.severity === 'Critical' ? 'bg-red-950 text-red-300 border border-red-500/30' :
-                                        entry.severity === 'Severe' ? 'bg-purple-950 text-purple-300' :
-                                        entry.severity === 'Major' ? 'bg-orange-950 text-orange-300' :
-                                        entry.severity === 'Moderate' ? 'bg-amber-950 text-amber-300' :
-                                        'bg-blue-950 text-blue-300'
-                                      }`}>
-                                        {entry.severity}
+                                        {dateInfo.isToday && timeOnly ? `Today at ${timeOnly}` : formattedTime}
                                       </span>
                                     </div>
                                   </div>
@@ -1250,9 +1648,9 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                                       Kaffārah: {entry.kaffarahTitle}
                                     </span>
                                     <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
-                                      entry.kaffarahCompleted ? 'bg-emerald-950 text-emerald-300' : 'bg-amber-950 text-amber-300'
+                                      entry.kaffarahCompleted ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-amber-950 text-amber-300 border border-amber-500/30'
                                     }`}>
-                                      {entry.kaffarahCompleted ? 'Fulfilled ✓' : 'Pending'}
+                                      {entry.kaffarahCompleted ? 'Fulfilled ✓' : 'Pending Quest'}
                                     </span>
                                   </div>
                                 )}
@@ -1280,9 +1678,15 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               ) : (
                 <div className="text-center py-12 px-4 rounded-xl bg-[#07090e] border border-white/5 space-y-2">
                   <Scale className="h-10 w-10 text-zinc-600 mx-auto" />
-                  <h4 className="text-xs font-bold text-zinc-300 font-mono">No Audit Records Found</h4>
+                  <h4 className="text-xs font-bold text-zinc-300 font-mono">
+                    {timeScope === 'today' ? 'No Slips Recorded Today' : timeScope === 'week' ? 'No Slips Recorded This Week' : 'No Audit Records Found'}
+                  </h4>
                   <p className="text-[11px] text-zinc-500 font-mono max-w-xs mx-auto">
-                    {searchQuery ? 'Try changing your search query or filters.' : 'Use the 3-Tap Zen Triage above to record self-accountability reflections.'}
+                    {searchQuery 
+                      ? 'Try changing your search query or filters.' 
+                      : timeScope === 'today' 
+                      ? 'Alhamdulillah! Your daily ledger is pure. Use the 3-Tap Zen Triage above if you need to log an accountability reflection.'
+                      : 'Use the 3-Tap Zen Triage above to record self-accountability reflections.'}
                   </p>
                 </div>
               )}

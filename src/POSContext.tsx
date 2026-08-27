@@ -22,6 +22,7 @@ import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
 } from './utils/perkEvaluator';
+import { SLIP_RUNES } from './components/SlipRune';
 
 interface POSContextType {
   state: POSState;
@@ -127,6 +128,7 @@ interface POSContextType {
   breakSeal: (id: string) => { success: boolean; message: string };
   relockSeal: (id: string) => void;
   resetSealsToDefault: () => void;
+  calibrateSealsToSystemState: () => void;
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -3209,6 +3211,62 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const calibrateSealsToSystemState = () => {
+    const playerInfo = getPlayerLevelInfo();
+    const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+
+    setState(prev => ({
+      ...prev,
+      seals: (prev.seals || []).map(seal => {
+        if (seal.status === 'Broken') return seal;
+
+        // Harmonize required level with realistic player progression
+        let newReqLevel = seal.requiredLevel;
+        if (seal.rarity === 'Common') newReqLevel = Math.max(1, playerInfo.level);
+        else if (seal.rarity === 'Rare') newReqLevel = Math.max(1, Math.min(playerInfo.level + 1, 3));
+        else if (seal.rarity === 'Epic') newReqLevel = Math.max(1, Math.min(playerInfo.level + 2, 5));
+        else if (seal.rarity === 'Legendary') newReqLevel = Math.max(2, Math.min(playerInfo.level + 3, 8));
+        else if (seal.rarity === 'Divine') newReqLevel = Math.max(3, Math.min(playerInfo.level + 5, 12));
+
+        // Harmonize XP sacrifice with player's total XP reserves
+        let newCostXP = seal.costXP;
+        if (playerInfo.totalXp === 0) {
+          newCostXP = seal.rarity === 'Common' ? 0 : 25;
+        } else if (newCostXP > playerInfo.totalXp) {
+          newCostXP = Math.max(25, Math.round(playerInfo.totalXp * 0.3));
+        }
+
+        // Harmonize streak requirement with system active streak
+        let newStreak = seal.requiredStreakDays;
+        if (newStreak && newStreak > maxStreakInSystem + 3) {
+          newStreak = Math.max(1, maxStreakInSystem + 1);
+        }
+
+        // Validate linked quest requirement
+        let newQuestId = seal.requiredQuestId;
+        if (newQuestId && !prev.quests.some(q => q.id === newQuestId)) {
+          newQuestId = undefined;
+        }
+
+        return {
+          ...seal,
+          requiredLevel: newReqLevel,
+          costXP: newCostXP,
+          requiredStreakDays: newStreak,
+          requiredQuestId: newQuestId
+        };
+      })
+    }));
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: '✦ SEAL CONDITIONS HARMONIZED',
+      content: `All elemental ore chain requirements have been harmonized to current system state (Level ${playerInfo.level}, ${playerInfo.totalXp} XP reserves, and active streaks).`,
+      priority: 'medium'
+    });
+  };
+
   const breakSeal = (id: string): { success: boolean; message: string } => {
     const targetSeal = (state.seals || []).find(s => s.id === id);
     if (!targetSeal) return { success: false, message: 'Seal not found in system manifest.' };
@@ -4797,39 +4855,68 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Weakness not found' };
     }
 
+    const playerInfo = getPlayerLevelInfo();
+    const runeInfo = SLIP_RUNES[weakness.category] || SLIP_RUNES.Obligations;
+    const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+
+    // Conditions strictly harmonized to current system state
+    const requiredLevel = Math.max(1, playerInfo.level);
+    const costXP = playerInfo.totalXp > 0 
+      ? Math.min(playerInfo.totalXp, Math.max(25, Math.round(playerInfo.totalXp * 0.25))) 
+      : 0;
+    const requiredStreakDays = maxStreakInSystem > 0 ? Math.min(3, maxStreakInSystem) : 0;
+
+    // Link to an active directive in the system if available
+    const relatedQuest = state.quests.find(q => 
+      q.status === 'Active' && (
+        (weakness.category === 'Obligations' && (q.name.toLowerCase().includes('prayer') || q.name.toLowerCase().includes('fajr') || q.name.toLowerCase().includes('salah') || q.name.toLowerCase().includes('quran'))) ||
+        (weakness.category === 'Wasted Potential' && (q.type === 'Main' || q.name.toLowerCase().includes('focus') || q.name.toLowerCase().includes('deep work'))) ||
+        (weakness.category === 'Desires' && (q.name.toLowerCase().includes('fasting') || q.name.toLowerCase().includes('workout') || q.name.toLowerCase().includes('detox') || q.name.toLowerCase().includes('discipline'))) ||
+        (weakness.category === 'Speech' && (q.name.toLowerCase().includes('silence') || q.name.toLowerCase().includes('adhkar') || q.name.toLowerCase().includes('dhikr'))) ||
+        (weakness.category === 'Heart' && (q.name.toLowerCase().includes('reflection') || q.name.toLowerCase().includes('gratitude') || q.name.toLowerCase().includes('tahajjud'))) ||
+        (weakness.category === 'Rights' && (q.name.toLowerCase().includes('family') || q.name.toLowerCase().includes('charity') || q.name.toLowerCase().includes('sadaqah')))
+      )
+    );
+
     const sealId = `seal-weakness-${Date.now()}`;
     const rarity: SealRarity = customRarity || (weakness.occurrenceCount >= 8 ? 'Epic' : weakness.occurrenceCount >= 5 ? 'Rare' : 'Common');
     
     const newSeal: PowerSeal = {
       id: sealId,
       name: `Chain of ${weakness.name}`,
-      description: `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
+      description: `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Rooted in ${runeInfo.name} (${runeInfo.arabicTitle}). Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
       rarity,
       status: 'Locked',
-      requiredLevel: Math.max(1, Math.min(10, Math.floor(weakness.occurrenceCount / 2))),
-      costXP: Math.max(100, weakness.occurrenceCount * 40),
-      requiredStreakDays: Math.min(7, Math.max(3, weakness.occurrenceCount)),
+      requiredLevel,
+      costXP,
+      requiredStreakDays,
+      requiredQuestId: relatedQuest ? relatedQuest.id : undefined,
       buffName: `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
-      buffDescription: `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips.`,
+      buffDescription: `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips (+2 ${runeInfo.attributeName} Boost).`,
       xpBonusMultiplier: 1.15,
       momentumBoost: 10,
-      attributeBoosts: [{ attributeId: 'a-5', boostAmount: 2 }],
-      runeSymbol: '⛓️',
-      colorTheme: rarity === 'Epic' ? 'emerald' : rarity === 'Rare' ? 'purple' : 'cyan',
+      attributeBoosts: [{ attributeId: runeInfo.attributeId, boostAmount: 2 }],
+      runeSymbol: runeInfo.runeChar,
+      colorTheme: runeInfo.themeColor,
       createdAt: getSystemTimestamp(state.systemDate)
     };
 
     setState(prev => ({
       ...prev,
       seals: [...(prev.seals || []), newSeal],
-      weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { ...w, status: 'Sealed', sealId } : w)
+      weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { 
+        ...w, 
+        status: 'Sealed', 
+        sealId,
+        occurrenceCount: 0 // Reset the meters of chains of nafs to 0 upon seal formation
+      } : w)
     }));
 
     addSystemMessage({
       sender: 'SYSTEM',
       category: 'achievement',
       title: `⛓️ WEAKNESS SEAL FORGED: Chain of ${weakness.name}`,
-      content: `The persistent weakness has been bound into a Power Seal in the Imperial Ores & Chains chamber. Fulfill its discipline requirements to shatter the chain and claim operator rewards.`,
+      content: `The persistent weakness has been bound into a Power Seal. Chain meter reset to 0/5. Fulfill its discipline requirements to shatter the chain and claim permanent multiplier bonuses.`,
       priority: 'high'
     });
 
@@ -6317,6 +6404,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       breakSeal,
       relockSeal,
       resetSealsToDefault,
+      calibrateSealsToSystemState,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,

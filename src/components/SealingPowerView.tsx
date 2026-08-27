@@ -4,14 +4,68 @@ import { PowerSeal, SealRarity } from '../types';
 import { 
   Sparkles, Lock, Unlock, ShieldAlert, Award, Plus, Trash2, Edit3, 
   AlertCircle, Zap, Search, X, Pickaxe, Link as LinkIcon, Flame, Hammer,
-  Shield, CheckCircle2
+  Shield, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider, ChainBadge } from './IslamicRpgDecorations';
+import { SLIP_RUNES } from './SlipRune';
+
+export const ORE_COMPLEXITY_INFO: Record<SealRarity, {
+  shapeName: string;
+  facetCount: string;
+  complexityStars: string;
+  facetNumber: number;
+  description: string;
+}> = {
+  Common: {
+    shapeName: 'Rough Asymmetric Boulder',
+    facetCount: '5 Facets',
+    complexityStars: '★☆☆☆☆☆',
+    facetNumber: 5,
+    description: 'Raw unrefined basalt-iron chunk with rugged, coarse cleavage planes.'
+  },
+  Rare: {
+    shapeName: 'Chiseled Hexagonal Prism',
+    facetCount: '8 Facets',
+    complexityStars: '★★☆☆☆☆',
+    facetNumber: 8,
+    description: 'Upright quartz-style column with sharp vertical ridge bevels and pyramidal cap.'
+  },
+  Epic: {
+    shapeName: 'Brilliant Octahedral Gem',
+    facetCount: '14 Facets',
+    complexityStars: '★★★☆☆☆',
+    facetNumber: 14,
+    description: 'Dual-cone bipyramid with flat table, star crown, and refractive pavilion facets.'
+  },
+  Legendary: {
+    shapeName: 'Sovereign Spire Cluster',
+    facetCount: '24 Facets',
+    complexityStars: '★★★★☆☆',
+    facetNumber: 24,
+    description: 'Multi-crystal imperial geode: central dodecahedron flanked by dual angled satellite shards.'
+  },
+  Divine: {
+    shapeName: 'Celestial Sacred Polytope',
+    facetCount: '34 Facets',
+    complexityStars: '★★★★★☆',
+    facetNumber: 34,
+    description: '8-pointed Rub-el-Hizb crystal matrix with concentric facet tiers and 4 floating orbital crystal chips.'
+  },
+  Forbidden: {
+    shapeName: 'Hyper-Dimensional Tesseract',
+    facetCount: '48+ Facets',
+    complexityStars: '★★★★★★',
+    facetNumber: 48,
+    description: '4D hypercube void matrix with intersecting arcane facets, counter-angled cubes, and pulsing spatial fissures.'
+  }
+};
 
 const SUGGESTED_RUNES = [
+  // 6 Sacred Slip Runes
+  'ف', 'ع', 'غ', 'ق', 'ص', 'م',
   // Arabic Alphabet Calligraphy Runes
-  'أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي',
+  'أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ض', 'ط', 'ظ', 'ك', 'ل', 'ن', 'هـ', 'و', 'ي',
   // Ancient Arabic Calligraphic Forms & Ligatures
   '﷽', '۞', '۝', '؏',
   // Minerals, Gems & Elemental Carvings
@@ -249,6 +303,212 @@ const Render3DChainPath: React.FC<{
   );
 };
 
+// 3D Geometric Facet Mesh by Rank Complexity
+const OreFacetMesh: React.FC<{
+  rarity: SealRarity;
+  sealId: string;
+  theme: typeof RARITY_ORE_THEMES['Common'];
+  isBroken: boolean;
+}> = ({ rarity, sealId, theme, isBroken }) => {
+  switch (rarity) {
+    case 'Common':
+      // 5 Facets: Rough Asymmetric Boulder
+      return (
+        <g>
+          {/* Cast Shadow */}
+          <path d="M 60,45 L 140,55 L 155,130 L 75,155 L 35,95 Z" fill="#000000" opacity="0.65" transform="translate(6, 6)" />
+          {/* Facet 1: Top Roof */}
+          <path d="M 60,45 L 140,55 L 105,82 L 35,95 Z" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M 60,45 L 35,95" stroke="#fef08a" strokeWidth="1.2" opacity="0.4" />
+          {/* Facet 2: Upper Right Cleavage */}
+          <path d="M 140,55 L 155,130 L 105,82 Z" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.4" strokeLinejoin="round" />
+          {/* Facet 3: Left Stepped Flank */}
+          <path d="M 35,95 L 105,82 L 75,155 L 42,130 Z" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.4" strokeLinejoin="round" />
+          {/* Facet 4: Bottom Front Plate */}
+          <path d="M 105,82 L 155,130 L 75,155 Z" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.4" strokeLinejoin="round" />
+          {/* Rough Fracture Veins */}
+          <path d="M 60,45 L 105,82 L 75,155" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? 2.5 : 1.5} />
+          <path d="M 105,82 L 155,130" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? 2.2 : 1.2} />
+          <path d="M 35,95 L 105,82" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? 2 : 1.2} />
+        </g>
+      );
+
+    case 'Rare':
+      // 8 Facets: Chiseled Hexagonal Prism Column
+      return (
+        <g>
+          {/* Cast Shadow */}
+          <polygon points="100,18 148,58 144,146 100,162 56,146 52,58" fill="#000000" opacity="0.65" transform="translate(6, 6)" />
+          {/* Pyramidal Apex Crown Facets */}
+          <polygon points="100,18 52,58 74,48" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,18 74,48 100,56" fill={`url(#ore-top-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,18 100,56 126,48" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,18 126,48 148,58" fill={`url(#ore-right-${sealId})`} opacity="0.75" stroke="#07080c" strokeWidth="1.2" />
+          {/* Longitudinal Column Body Facets */}
+          <polygon points="52,58 74,48 76,155 56,146" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="74,48 100,56 100,162 76,155" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,56 126,48 124,155 100,162" fill={`url(#ore-core-${sealId})`} opacity="0.85" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="126,48 148,58 144,146 124,155" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Specular Ridge Highlights */}
+          <line x1="100" y1="18" x2="100" y2="162" stroke={isBroken ? '#ffffff' : theme.veinColor} strokeWidth={isBroken ? 2 : 1.2} opacity="0.8" />
+          <line x1="74" y1="48" x2="76" y2="155" stroke="#93c5fd" strokeWidth="1" opacity="0.4" />
+          <line x1="126" y1="48" x2="124" y2="155" stroke="#000000" strokeWidth="1.2" opacity="0.5" />
+        </g>
+      );
+
+    case 'Epic':
+      // 14 Facets: Brilliant Cut Octahedron with Table and Pavilion
+      return (
+        <g>
+          {/* Cast Shadow */}
+          <polygon points="100,15 145,55 155,95 100,162 45,95 55,55" fill="#000000" opacity="0.65" transform="translate(6, 6)" />
+          {/* Upper Crown Star Facets */}
+          <polygon points="100,15 55,55 75,45" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,15 75,45 100,55" fill={`url(#ore-top-${sealId})`} opacity="0.95" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,15 100,55 125,45" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,15 125,45 145,55" fill={`url(#ore-right-${sealId})`} opacity="0.8" stroke="#07080c" strokeWidth="1.2" />
+          {/* Central Girdle Table */}
+          <polygon points="55,55 75,45 80,68 45,95" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="75,45 100,55 100,82 80,68" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,55 125,45 120,68 100,82" fill={`url(#ore-core-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="125,45 145,55 155,95 120,68" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="45,95 80,68 100,82 100,108 75,95" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,82 120,68 155,95 125,95 100,108" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Lower Pavilion Facets */}
+          <polygon points="45,95 75,95 100,162" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="75,95 100,108 100,162" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,108 125,95 100,162" fill={`url(#ore-core-${sealId})`} opacity="0.85" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="125,95 155,95 100,162" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Refraction table */}
+          <polygon points="80,68 100,55 120,68 100,82" fill={isBroken ? '#ffffff' : theme.veinColor} opacity={isBroken ? 0.85 : 0.35} />
+          <line x1="100" y1="15" x2="100" y2="162" stroke={theme.veinColor} strokeWidth={isBroken ? 2 : 1} opacity="0.7" />
+        </g>
+      );
+
+    case 'Legendary':
+      // 24 Facets: Sovereign Cluster with Central Dodecahedron & Dual Satellite Shards
+      return (
+        <g>
+          {/* Cast Shadow */}
+          <ellipse cx="100" cy="155" rx="75" ry="18" fill="#000000" opacity="0.65" />
+          {/* Left Satellite Spire (5 Facets) */}
+          <polygon points="38,68 24,115 36,105" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="38,68 36,105 48,110" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="38,68 48,110 52,95" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="24,115 36,105 40,150 28,145" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="36,105 48,110 54,152 40,150" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <line x1="38" y1="68" x2="40" y2="150" stroke="#fef08a" strokeWidth="1.2" opacity="0.6" />
+          {/* Right Satellite Spire (5 Facets) */}
+          <polygon points="162,72 148,102 160,108" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="162,72 160,108 174,115" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="148,102 160,108 158,150 146,145" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <polygon points="160,108 174,115 170,146 158,150" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1" />
+          <line x1="162" y1="72" x2="158" y2="150" stroke="#fef08a" strokeWidth="1.2" opacity="0.6" />
+          {/* Central Sovereign Monolith (14 Facets) */}
+          <polygon points="100,16 75,44 100,52" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,16 100,52 125,44" fill={`url(#ore-top-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="75,44 60,70 82,72 100,52" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="125,44 100,52 118,72 140,70" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Star Cut Center */}
+          <polygon points="100,52 118,72 100,90 82,72" fill={isBroken ? '#ffffff' : theme.veinColor} stroke="#07080c" strokeWidth="1.2" opacity={isBroken ? 0.95 : 0.4} />
+          <polygon points="60,70 82,72 80,118 55,115" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="82,72 100,90 100,122 80,118" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,90 118,72 120,118 100,122" fill={`url(#ore-core-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="118,72 140,70 145,115 120,118" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="55,115 80,118 85,158 60,154" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="80,118 100,122 100,162 85,158" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,122 120,118 115,158 100,162" fill={`url(#ore-core-${sealId})`} opacity="0.85" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="120,118 145,115 140,154 115,158" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Energy Channels */}
+          <line x1="48" y1="110" x2="60" y2="112" stroke={theme.veinColor} strokeWidth={isBroken ? 2.5 : 1.2} strokeDasharray="3 2" />
+          <line x1="152" y1="108" x2="140" y2="112" stroke={theme.veinColor} strokeWidth={isBroken ? 2.5 : 1.2} strokeDasharray="3 2" />
+        </g>
+      );
+
+    case 'Divine':
+      // 34 Facets: Celestial Sacred Polytope with 4 Levitating Orbital Crystals
+      return (
+        <g>
+          {/* Cast Shadow */}
+          <ellipse cx="100" cy="162" rx="70" ry="16" fill="#000000" opacity="0.75" filter="blur(2px)" />
+          {/* 4 Floating Orbital Shards */}
+          <polygon points="32,38 42,48 30,52" fill={`url(#ore-top-${sealId})`} stroke="#f43f5e" strokeWidth="1" />
+          <polygon points="32,38 42,48 44,40" fill="#ffffff" opacity="0.7" />
+          <polygon points="168,38 158,48 170,52" fill={`url(#ore-top-${sealId})`} stroke="#f43f5e" strokeWidth="1" />
+          <polygon points="168,38 158,48 156,40" fill="#ffffff" opacity="0.7" />
+          <polygon points="26,122 38,126 28,138" fill={`url(#ore-left-${sealId})`} stroke="#f43f5e" strokeWidth="1" />
+          <polygon points="174,122 162,126 172,138" fill={`url(#ore-right-${sealId})`} stroke="#f43f5e" strokeWidth="1" />
+          <circle cx="100" cy="100" r="78" stroke={theme.stroke} strokeWidth="1" strokeDasharray="6 4" opacity="0.4" fill="none" />
+          {/* Central 8-Pointed Sacred Matrix (26 Facets) */}
+          <polygon points="100,12 85,38 100,45" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,12 100,45 115,38" fill={`url(#ore-top-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="145,26 122,46 136,58" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="162,70 136,78 136,58" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="162,100 136,92 136,112" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="145,144 122,124 136,112" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,165 115,134 100,128" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="100,165 100,128 85,134" fill={`url(#ore-core-${sealId})`} opacity="0.9" stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="55,144 78,124 64,112" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="38,100 64,92 64,112" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="38,70 64,78 64,58" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="55,26 78,46 64,58" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Inner Polyhedron */}
+          <polygon points="85,38 100,45 122,46 100,62 78,46" fill={`url(#ore-top-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="122,46 136,58 136,78 116,78 100,62" fill={`url(#ore-right-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="136,78 136,92 122,124 100,108 116,78" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="122,124 115,134 85,134 100,108" fill={`url(#ore-core-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="85,134 78,124 64,92 84,78 100,108" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          <polygon points="64,92 64,78 64,58 78,46 84,78" fill={`url(#ore-left-${sealId})`} stroke="#07080c" strokeWidth="1.2" />
+          {/* Rub-el-Hizb Dual Squares Inlay */}
+          <rect x="76" y="76" width="48" height="48" rx="2" stroke="#fef08a" strokeWidth="1.5" fill="none" opacity="0.75" />
+          <rect x="76" y="76" width="48" height="48" rx="2" transform="rotate(45 100 100)" stroke="#fef08a" strokeWidth="1.5" fill="none" opacity="0.75" />
+          <circle cx="100" cy="100" r="16" fill={isBroken ? '#ffffff' : theme.veinColor} opacity={isBroken ? 0.95 : 0.5} />
+        </g>
+      );
+
+    case 'Forbidden':
+    default:
+      // 48+ Facets: Hyper-Dimensional Void Tesseract
+      return (
+        <g>
+          {/* Singularity Void Shadow */}
+          <ellipse cx="100" cy="162" rx="72" ry="18" fill="#000000" opacity="0.9" filter="blur(3px)" />
+          <circle cx="100" cy="100" r="85" stroke="#a855f7" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.3" fill="none" />
+          {/* 4 Floating Fractured Plates */}
+          <polygon points="25,40 45,30 40,55 20,60" fill="#1b0a2c" stroke="#a855f7" strokeWidth="1" opacity="0.8" />
+          <polygon points="175,40 155,30 160,55 180,60" fill="#1b0a2c" stroke="#a855f7" strokeWidth="1" opacity="0.8" />
+          <polygon points="20,135 40,140 45,115 25,120" fill="#1b0a2c" stroke="#a855f7" strokeWidth="1" opacity="0.8" />
+          <polygon points="180,135 160,140 155,115 175,120" fill="#1b0a2c" stroke="#a855f7" strokeWidth="1" opacity="0.8" />
+          {/* Outer Hypercube Planes (16 Facets) */}
+          <polygon points="55,50 145,50 145,140 55,140" fill="none" stroke="#6b21a8" strokeWidth="1.6" />
+          <polygon points="75,25 165,25 165,115 75,115" fill="none" stroke="#3b0764" strokeWidth="1.2" opacity="0.7" />
+          <polygon points="55,50 75,25 165,25 145,50" fill={`url(#ore-top-${sealId})`} opacity="0.6" stroke="#a855f7" strokeWidth="1" />
+          <polygon points="145,50 165,25 165,115 145,140" fill={`url(#ore-right-${sealId})`} opacity="0.5" stroke="#a855f7" strokeWidth="1" />
+          <polygon points="55,50 75,25 75,115 55,140" fill={`url(#ore-left-${sealId})`} opacity="0.4" stroke="#a855f7" strokeWidth="1" />
+          <polygon points="55,140 75,115 165,115 145,140" fill={`url(#ore-core-${sealId})`} opacity="0.5" stroke="#a855f7" strokeWidth="1" />
+          {/* Inner Rotating Void Cube (16 Facets) */}
+          <polygon points="78,75 122,75 122,119 78,119" fill={`url(#ore-core-${sealId})`} stroke="#d8b4fe" strokeWidth="1.8" />
+          <polygon points="88,62 132,62 132,106 88,106" fill="#1e1b4b" opacity="0.7" stroke="#a855f7" strokeWidth="1.2" />
+          <polygon points="78,75 88,62 132,62 122,75" fill="#3b0764" stroke="#d8b4fe" strokeWidth="1" />
+          <polygon points="122,75 132,62 132,106 122,119" fill="#1b0a2c" stroke="#d8b4fe" strokeWidth="1" />
+          <polygon points="78,119 88,106 132,106 122,119" fill="#090514" stroke="#d8b4fe" strokeWidth="1" />
+          {/* 12 Dimensional Struts */}
+          <line x1="55" y1="50" x2="78" y2="75" stroke={isBroken ? '#ffffff' : '#c084fc'} strokeWidth="1.8" />
+          <line x1="145" y1="50" x2="122" y2="75" stroke={isBroken ? '#ffffff' : '#c084fc'} strokeWidth="1.8" />
+          <line x1="145" y1="140" x2="122" y2="119" stroke={isBroken ? '#ffffff' : '#c084fc'} strokeWidth="1.8" />
+          <line x1="55" y1="140" x2="78" y2="119" stroke={isBroken ? '#ffffff' : '#c084fc'} strokeWidth="1.8" />
+          <line x1="75" y1="25" x2="88" y2="62" stroke="#a855f7" strokeWidth="1.2" strokeDasharray="2 2" />
+          <line x1="165" y1="25" x2="132" y2="62" stroke="#a855f7" strokeWidth="1.2" strokeDasharray="2 2" />
+          <line x1="165" y1="115" x2="132" y2="106" stroke="#a855f7" strokeWidth="1.2" strokeDasharray="2 2" />
+          <line x1="75" y1="115" x2="88" y2="106" stroke="#a855f7" strokeWidth="1.2" strokeDasharray="2 2" />
+          {/* Singularity Pulse Node */}
+          <circle cx="100" cy="97" r="12" fill={isBroken ? '#ffffff' : theme.veinColor} opacity={isBroken ? 1 : 0.8} />
+          <circle cx="100" cy="97" r="20" stroke="#fef08a" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" fill="none" />
+        </g>
+      );
+  }
+};
+
 const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
   const theme = RARITY_ORE_THEMES[seal.rarity] || RARITY_ORE_THEMES.Common;
   const strokeColor = isBroken ? theme.stroke : '#52525b';
@@ -325,30 +585,8 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
             <path d="M 40,160 L 160,160 L 145,175 L 55,175 Z" fill={`url(#pedestal-grad-${seal.id})`} stroke="#c5a059" strokeWidth="1" />
             <line x1="40" y1="160" x2="160" y2="160" stroke="#fef08a" strokeWidth="1" opacity="0.5" />
 
-            {/* 2. ORE MONOLITH 3D CAST SHADOW */}
-            <path d="M 100,25 L 155,60 L 140,145 L 60,155 L 30,85 Z" fill="#000000" opacity="0.7" transform="translate(5, 7)" />
-
-            {/* 3. MAIN CHISELED FACETS */}
-            {/* Top Roof Bevel Facet */}
-            <path d="M 100,25 L 155,60 L 100,95 L 40,65 Z" fill={`url(#ore-top-${seal.id})`} stroke="#0b0d13" strokeWidth="1.2" strokeLinejoin="round" />
-            <path d="M 100,25 L 40,65" stroke="#fef08a" strokeWidth="1.5" opacity="0.45" />
-
-            {/* Left Vertical Chiseled Wall */}
-            <path d="M 40,65 L 100,95 L 60,155 L 30,85 Z" fill={`url(#ore-left-${seal.id})`} stroke="#07080c" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M 40,65 L 30,85 L 60,155" stroke="#c5a059" strokeWidth="1" opacity="0.4" />
-
-            {/* Right Front Facet */}
-            <path d="M 100,95 L 155,60 L 140,145 L 60,155 Z" fill={`url(#ore-right-${seal.id})`} stroke="#07080c" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M 155,60 L 140,145 L 60,155" stroke="#000000" strokeWidth="2" opacity="0.8" />
-
-            {/* 4. INNER CRYSTALLINE CORE / FISSURE VEIN */}
-            <path d="M 100,40 L 120,80 L 100,135 L 80,85 Z" fill={isBroken ? `url(#ore-core-${seal.id})` : '#181d29'} stroke={isBroken ? '#ffffff' : '#52525b'} strokeWidth="1.2" opacity={isBroken ? 0.95 : 0.75} />
-
-            {/* 5. DEEP STONE FISSURES / CRACK LINES WITH OCCLUSION */}
-            <path d="M 100,25 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2.5" : "1.5"} />
-            <path d="M 40,65 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2" : "1.2"} />
-            <path d="M 155,60 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2" : "1.2"} />
-            <path d="M 60,155 L 100,95" stroke={isBroken ? theme.veinColor : '#3a2e12'} strokeWidth={isBroken ? "2.5" : "1.5"} />
+            {/* 2. DYNAMIC GEOMETRIC FACET MESH (DEPENDS ON COMPLEXITY OF SHAPE) */}
+            <OreFacetMesh rarity={seal.rarity} sealId={seal.id} theme={theme} isBroken={isBroken} />
           </svg>
 
           {/* ORE CENTER CARVED INSCRIPTION / ARABIC GLYPH */}
@@ -453,7 +691,7 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
 export const SealingPowerView: React.FC = () => {
   const { 
     state, addXp, addSeal, updateSeal, deleteSeal, breakSeal, relockSeal, getPlayerLevelInfo, getSkillXpAndLevel,
-    toggleBatterySaverMode
+    toggleBatterySaverMode, calibrateSealsToSystemState, resetSealsToDefault
   } = usePOS();
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
@@ -659,10 +897,26 @@ export const SealingPowerView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                calibrateSealsToSystemState();
+                setUnsealMessage({ 
+                  text: '✦ All elemental ore seals successfully harmonized to your current level and system state.', 
+                  isError: false 
+                });
+              }}
+              className="px-3.5 py-2.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/40 hover:border-[#c5a059] text-xs font-mono text-[#fef08a] rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"
+              title="Calibrate and harmonize seal conditions (level, XP cost, streak) to current system state"
+            >
+              <RefreshCw className="h-4 w-4 text-[#c5a059]" />
+              <span>HARMONIZE CONDITIONS</span>
+            </button>
+
             <button
               onClick={handleOpenCreateModal}
-              className="px-5 py-2.5 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] font-bold rounded-xl text-xs font-mono tracking-wider transition shadow-[0_0_20px_rgba(197,160,89,0.3)] flex items-center gap-2 border border-[#c5a059]/60 cursor-pointer"
+              className="px-4 py-2.5 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] font-bold rounded-xl text-xs font-mono tracking-wider transition shadow-[0_0_20px_rgba(197,160,89,0.3)] flex items-center gap-2 border border-[#c5a059]/60 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>FORGE NEW ELEMENTAL ORE</span>
@@ -905,9 +1159,14 @@ export const SealingPowerView: React.FC = () => {
                       <h3 className="font-display text-base font-bold text-white tracking-wide leading-snug">
                         {seal.name}
                       </h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                         <span className={`text-[9px] font-mono px-2 py-0.5 rounded-md border uppercase font-bold ${rarityStyle.badge}`}>
                           {seal.rarity}
+                        </span>
+                        <span className="text-[8.5px] font-mono px-2 py-0.5 rounded-md border border-[#c5a059]/30 bg-[#07080c] text-[#fef08a] font-medium flex items-center gap-1">
+                          <Pickaxe className="h-2.5 w-2.5 text-[#c5a059]" />
+                          <span>{ORE_COMPLEXITY_INFO[seal.rarity]?.shapeName || 'Crystalline'}</span>
+                          <span className="text-zinc-500 font-mono">({ORE_COMPLEXITY_INFO[seal.rarity]?.facetCount})</span>
                         </span>
                       </div>
                     </div>
@@ -1219,27 +1478,65 @@ export const SealingPowerView: React.FC = () => {
                     </div>
 
                     {/* Carved Runes Palette */}
-                    <div className="col-span-3">
-                      <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Arabic Calligraphy Runes</label>
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1.5 bg-black/60 border border-[#c5a059]/20 rounded-xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]">
-                        {SUGGESTED_RUNES.map((rune, idx) => {
-                          const isSelected = formData.runeSymbol === rune;
-                          return (
-                            <button
-                              key={`${rune}-${idx}`}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, runeSymbol: rune })}
-                              className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition border font-serif font-bold select-none cursor-pointer ${
-                                isSelected
-                                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-black shadow-[0_0_10px_rgba(197,160,89,0.4)] scale-105'
-                                  : 'bg-[#07080c] border-[#c5a059]/20 text-zinc-400 hover:bg-[#181d29] hover:text-[#fef08a] hover:border-[#c5a059]/50'
-                              }`}
-                              title={`Select carved rune ${rune}`}
-                            >
-                              {rune}
-                            </button>
-                          );
-                        })}
+                    <div className="col-span-3 space-y-2">
+                      <div>
+                        <label className="text-[9px] font-mono text-[#c5a059] uppercase block mb-1 font-bold">
+                          6 Sacred Nafs Slip Runes
+                        </label>
+                        <div className="grid grid-cols-6 gap-1 bg-black/60 border border-[#c5a059]/30 p-1.5 rounded-xl">
+                          {Object.entries(SLIP_RUNES).map(([catKey, runeDef]) => {
+                            const isSelected = formData.runeSymbol === runeDef.runeChar;
+                            return (
+                              <button
+                                key={catKey}
+                                type="button"
+                                onClick={() => setFormData({ 
+                                  ...formData, 
+                                  runeSymbol: runeDef.runeChar,
+                                  buffName: formData.buffName || `Aura of ${runeDef.arabicTitle}`,
+                                  buffDescription: formData.buffDescription || `Sacred mastery unchaining ${runeDef.description}.`
+                                })}
+                                className={`flex flex-col items-center justify-center p-1 rounded-lg border transition cursor-pointer select-none ${
+                                  isSelected 
+                                    ? 'bg-[#3a2e12] border-[#c5a059] shadow-[0_0_10px_rgba(197,160,89,0.5)] scale-105' 
+                                    : 'bg-[#07080c] border-white/10 hover:border-[#c5a059]/40'
+                                }`}
+                                title={`${runeDef.name} (${runeDef.arabicTitle}) - ${runeDef.description}`}
+                              >
+                                <span className="text-base font-serif font-black text-[#fef08a] leading-tight">
+                                  {runeDef.runeChar}
+                                </span>
+                                <span className="text-[7.5px] font-mono text-zinc-400 truncate w-full text-center">
+                                  {runeDef.name}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Additional Ancient Runes & Symbols</label>
+                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto p-1.5 bg-black/60 border border-[#c5a059]/20 rounded-xl shadow-[inset_0_2px_6px_rgba(0,0,0,0.9)]">
+                          {SUGGESTED_RUNES.map((rune, idx) => {
+                            const isSelected = formData.runeSymbol === rune;
+                            return (
+                              <button
+                                key={`${rune}-${idx}`}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, runeSymbol: rune })}
+                                className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition border font-serif font-bold select-none cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] font-black shadow-[0_0_10px_rgba(197,160,89,0.4)] scale-105'
+                                    : 'bg-[#07080c] border-[#c5a059]/20 text-zinc-400 hover:bg-[#181d29] hover:text-[#fef08a] hover:border-[#c5a059]/50'
+                                }`}
+                                title={`Select carved rune ${rune}`}
+                              >
+                                {rune}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1260,19 +1557,22 @@ export const SealingPowerView: React.FC = () => {
                 {/* Rarity & Level & XP Cost */}
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Mineral Rarity</label>
+                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Shape Complexity Rank</label>
                     <select
                       value={formData.rarity}
                       onChange={(e) => setFormData({ ...formData, rarity: e.target.value as SealRarity })}
-                      className="w-full bg-[#07080c] border border-[#c5a059]/30 text-white rounded-xl p-2 focus:outline-none focus:border-[#c5a059] cursor-pointer"
+                      className="w-full bg-[#07080c] border border-[#c5a059]/30 text-white rounded-xl p-2 focus:outline-none focus:border-[#c5a059] cursor-pointer text-xs"
                     >
-                      <option value="Common">Common (Iron)</option>
-                      <option value="Rare">Rare (Cobalt)</option>
-                      <option value="Epic">Epic (Mithril)</option>
-                      <option value="Legendary">Legendary (Gold)</option>
-                      <option value="Divine">Divine (Dragonstone)</option>
-                      <option value="Forbidden">Forbidden (Obsidian)</option>
+                      <option value="Common">Common (Boulder • 5 Facets)</option>
+                      <option value="Rare">Rare (Prism • 8 Facets)</option>
+                      <option value="Epic">Epic (Octahedron • 14 Facets)</option>
+                      <option value="Legendary">Legendary (Spire Cluster • 24 Facets)</option>
+                      <option value="Divine">Divine (Celestial Polytope • 34 Facets)</option>
+                      <option value="Forbidden">Forbidden (Tesseract • 48+ Facets)</option>
                     </select>
+                    <div className="mt-1 text-[8.5px] font-mono text-zinc-400 truncate">
+                      {ORE_COMPLEXITY_INFO[formData.rarity]?.shapeName}
+                    </div>
                   </div>
                   <div>
                     <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Required Level</label>
