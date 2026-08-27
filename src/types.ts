@@ -448,6 +448,8 @@ export interface WeeklyMuhasabahSummary {
   sunnahRawatibCount: number;
   adhkarSabahCount: number;
   adhkarMasaCount: number;
+  adhkarSleepDhohrCount?: number;
+  adhkarSleepNightCount?: number;
   salawatTotal: number;
   qiyamTotalRakats: number;
   questsCompletedCount: number;
@@ -473,6 +475,8 @@ export interface SpiritualDailyLog {
   isha: PrayerCheck;
   adhkarSabah: boolean; // Morning Adhkar (+75 XP)
   adhkarMasa: boolean; // Evening Adhkar (+75 XP)
+  adhkarSleepDhohr?: boolean; // Midday Nap / Qaylulah Sleep Adhkar (+50 XP)
+  adhkarSleepNight?: boolean; // Night Sleep Adhkar (+75 XP)
   salawatCount: number; // Target 70+ Salawat upon the Prophet (ﷺ) (+100 XP when >= 70)
   salawatCompleted: boolean;
   qiyamRakats: number; // 2 mandatory baseline (+100 XP) + bonus per additional pair (+40 XP per pair)

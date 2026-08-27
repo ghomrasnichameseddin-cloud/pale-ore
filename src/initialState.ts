@@ -10,6 +10,8 @@ export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   isha: { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null },
   adhkarSabah: false,
   adhkarMasa: false,
+  adhkarSleepDhohr: false,
+  adhkarSleepNight: false,
   salawatCount: 0,
   salawatCompleted: false,
   qiyamRakats: 0,

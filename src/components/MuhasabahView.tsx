@@ -689,6 +689,9 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   </div>
                   <span className="text-[10px] text-zinc-400 block font-mono">
                     {liveWeeklySummary.adhkarSabahCount}/7 Morning • {liveWeeklySummary.adhkarMasaCount}/7 Evening
+                    {((liveWeeklySummary.adhkarSleepNightCount || 0) > 0 || (liveWeeklySummary.adhkarSleepDhohrCount || 0) > 0) && (
+                      <span> • {liveWeeklySummary.adhkarSleepNightCount || 0}/7 Night • {liveWeeklySummary.adhkarSleepDhohrCount || 0}/7 Nap</span>
+                    )}
                   </span>
                 </div>
 
@@ -1938,7 +1941,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <span className="text-[10px] text-zinc-400 block font-bold">SUNAN & ADHKĀR</span>
                     <span className="text-lg font-bold text-cyan-300 flex items-center gap-1">
                       <Sparkles className="h-4 w-4 text-cyan-400" />
-                      {generatedSummary.adhkarSabahCount + generatedSummary.adhkarMasaCount}/14
+                      {generatedSummary.adhkarSabahCount + generatedSummary.adhkarMasaCount + (generatedSummary.adhkarSleepNightCount || 0) + (generatedSummary.adhkarSleepDhohrCount || 0)} Adhkār
                     </span>
                     <span className="text-[10px] text-zinc-400 block">
                       {generatedSummary.sunnahRawatibCount} Sunan • {generatedSummary.qiyamTotalRakats} Qiyām

@@ -778,24 +778,46 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => toggleAdhkar('sabah', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
+                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
                           currentLog.adhkarSabah
                             ? 'bg-amber-950/80 border-amber-500/50 text-amber-200'
-                            : 'bg-zinc-900/60 border-white/5 text-zinc-400'
+                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        {currentLog.adhkarSabah ? '✓ Morning Adhkar' : 'Morning (+50 XP)'}
+                        {currentLog.adhkarSabah ? '✓ Morning' : 'Morning (+75)'}
+                      </button>
+
+                      <button
+                        onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                          currentLog.adhkarSleepDhohr
+                            ? 'bg-amber-900/80 border-amber-400/50 text-amber-200'
+                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        {currentLog.adhkarSleepDhohr ? '✓ Dhohr Nap' : 'Dhohr Nap (+50)'}
                       </button>
 
                       <button
                         onClick={() => toggleAdhkar('masa', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
+                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
                           currentLog.adhkarMasa
-                            ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
-                            : 'bg-zinc-900/60 border-white/5 text-zinc-400'
+                            ? 'bg-violet-950/80 border-violet-500/50 text-violet-200'
+                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        {currentLog.adhkarMasa ? '✓ Evening Adhkar' : 'Evening (+50 XP)'}
+                        {currentLog.adhkarMasa ? '✓ Evening' : 'Evening (+75)'}
+                      </button>
+
+                      <button
+                        onClick={() => toggleAdhkar('sleepNight', systemDate)}
+                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                          currentLog.adhkarSleepNight
+                            ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
+                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
+                        }`}
+                      >
+                        {currentLog.adhkarSleepNight ? '✓ Night Sleep' : 'Night Sleep (+75)'}
                       </button>
                     </div>
 

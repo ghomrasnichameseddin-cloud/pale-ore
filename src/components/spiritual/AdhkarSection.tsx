@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sun, Moon, Sparkles, CheckCircle2, Plus, 
-  Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap
+  Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap,
+  Bed, BookOpen, Clock
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { PostSalahAdhkarMap, PostSalahDhikrMode, SpiritualDailyLog } from '../../types';
 import { RubElHizbIcon } from '../IslamicRpgDecorations';
+import { SleepAdhkarModal } from './SleepAdhkarModal';
 
 interface AdhkarSectionProps {
   systemDate: string;
@@ -28,9 +30,13 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
 
   const [salawatCustomInput, setSalawatCustomInput] = useState('');
   const [showPostSalahHadith, setShowPostSalahHadith] = useState(false);
+  const [showSleepModal, setShowSleepModal] = useState(false);
+  const [sleepModalTab, setSleepModalTab] = useState<'dhohr' | 'night'>('night');
 
   const adhkarSabah = spiritualLog.adhkarSabah;
   const adhkarMasa = spiritualLog.adhkarMasa;
+  const adhkarSleepDhohr = Boolean(spiritualLog.adhkarSleepDhohr);
+  const adhkarSleepNight = Boolean(spiritualLog.adhkarSleepNight);
   const salawatCount = spiritualLog.salawatCount || 0;
   const salawatTargetReached = salawatCount >= 70;
 
@@ -248,6 +254,30 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               <span>الأَذْكَار • ADHKĀR & REMEMBRANCE</span>
             </span>
 
+            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
+              adhkarSabah ? 'bg-amber-950/80 text-amber-200 border-amber-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
+            }`}>
+              {adhkarSabah ? '✓ Morning Done' : 'Morning (+75 XP)'}
+            </span>
+
+            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
+              adhkarSleepDhohr ? 'bg-amber-900/80 text-amber-200 border-amber-400/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
+            }`}>
+              {adhkarSleepDhohr ? '✓ Dhohr Nap Done' : 'Dhohr Nap (+50 XP)'}
+            </span>
+
+            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
+              adhkarMasa ? 'bg-violet-950/80 text-violet-200 border-violet-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
+            }`}>
+              {adhkarMasa ? '✓ Evening Done' : 'Evening (+75 XP)'}
+            </span>
+
+            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
+              adhkarSleepNight ? 'bg-indigo-950/80 text-indigo-200 border-indigo-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
+            }`}>
+              {adhkarSleepNight ? '✓ Night Sleep Done' : 'Night Sleep (+75 XP)'}
+            </span>
+
             <span className="text-[10px] font-mono bg-indigo-950/80 text-indigo-300 border border-indigo-500/40 px-2.5 py-0.5 rounded-full font-bold">
               🕌 {completedPostPrayersCount}/5 Post-Prayer Adhkār
             </span>
@@ -259,29 +289,42 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             )}
           </div>
 
-          <h3 className="text-lg sm:text-xl font-display font-bold text-zinc-100 flex items-center gap-2">
-            <span>Morning &amp; Evening Adhkār, Post-Prayers (/5), Ṣalāt ‘ala ar-Rasūl ﷺ &amp; The 4 Beloved Words</span>
-          </h3>
-          <p className="text-xs text-zinc-400 font-sans leading-relaxed max-w-3xl">
-            &ldquo;The most beloved words to Allah are four: SubhanAllah, Alhamdulillah, La ilaha illallah, and Allahu Akbar.&rdquo; (Sahih Muslim) • &ldquo;Unquestionably, by the remembrance of Allah hearts are assured.&rdquo; (Surah Ar-Ra&apos;d 13:28)
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-lg sm:text-xl font-display font-bold text-zinc-100 flex items-center gap-2">
+                <span>Morning, Evening &amp; Sleep Adhkār (Dhohr &amp; Night), Post-Prayers (/5) &amp; Salawāt ﷺ</span>
+              </h3>
+              <p className="text-xs text-zinc-400 font-sans leading-relaxed max-w-3xl mt-0.5">
+                &ldquo;The most beloved words to Allah are four: SubhanAllah, Alhamdulillah, La ilaha illallah, and Allahu Akbar.&rdquo; (Muslim) • &ldquo;Unquestionably, by the remembrance of Allah hearts are assured.&rdquo; (Ar-Ra&apos;d 13:28)
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { setSleepModalTab('night'); setShowSleepModal(true); }}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1b160f] to-[#120e18] hover:from-[#251e14] hover:to-[#1a1424] border border-[#c5a059]/50 text-[#fef08a] text-xs font-mono font-bold transition flex items-center gap-2 shadow-md shrink-0 cursor-pointer"
+            >
+              <Moon className="h-4 w-4 text-violet-400" />
+              <span>Open Sleep Adhkār Sanctum (أذكار النوم)</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. PILLAR 1: MORNING & EVENING ADHKAR */}
+      {/* 2. PILLAR 1: DAILY & SLEEP ADHKAR FORTRESS (4 PILLARS) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-bold text-violet-300 uppercase tracking-wider">
-              1. Morning &amp; Evening Adhkār (أَذْكَارُ الصَّبَاحِ وَالمَسَاء)
+              1. Daily &amp; Sleep Adhkār Fortress (أَذْكَارُ الصَّبَاحِ وَالمَسَاءِ وَالنَّوْم)
             </span>
           </div>
-          <span className="text-[10px] font-mono text-zinc-400">The Spiritual Fortress</span>
+          <span className="text-[10px] font-mono text-zinc-400">Sunnah Shields of Day &amp; Night</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
           
-          {/* MORNING ADHKAR */}
+          {/* 1. MORNING ADHKAR */}
           <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
             adhkarSabah
               ? 'bg-gradient-to-br from-[#1c160c] to-[#0d0905] border-amber-500/50 shadow-sm'
@@ -293,33 +336,83 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                   <Sun className="h-4 w-4" />
                 </div>
                 <div>
-                  <span className="font-display font-bold text-zinc-100 text-sm block">Morning Adhkār (أَذْكَارُ الصَّبَاح)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">Dawn until Sunrise</span>
+                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Morning (الصَّبَاح)</span>
+                  <span className="text-[10px] font-mono text-zinc-400">Dawn till Sunrise</span>
                 </div>
               </div>
-              <span className="text-[10px] font-mono text-amber-300 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                +75 XP • +10 C
+              <span className="text-[9px] font-mono text-amber-300 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                +75 XP
               </span>
             </div>
 
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              The fortress of the believer from dawn to sunrise. Protection against harms, doubts, and anxiety throughout the day.
+            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+              Protection against all harms, whispers, and anxiety throughout the day.
             </p>
 
             <button
+              type="button"
               onClick={() => toggleAdhkar('sabah', systemDate)}
-              className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
+              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 adhkarSabah
                   ? 'bg-amber-950/80 border-amber-500/70 text-amber-100 shadow-sm'
                   : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
               }`}
             >
-              <CheckCircle2 className={`h-4 w-4 ${adhkarSabah ? 'text-amber-400' : 'text-zinc-600'}`} />
-              <span>{adhkarSabah ? 'MORNING ADHKĀR COMPLETED ✓ (أُدِّيَت)' : 'LOG MORNING ADHKĀR (+75 XP)'}</span>
+              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSabah ? 'text-amber-400' : 'text-zinc-600'}`} />
+              <span>{adhkarSabah ? 'MORNING DONE ✓' : 'LOG MORNING (+75 XP)'}</span>
             </button>
           </div>
 
-          {/* EVENING ADHKAR */}
+          {/* 2. DHOHR QAYLULAH SLEEP ADHKAR */}
+          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
+            adhkarSleepDhohr
+              ? 'bg-gradient-to-br from-[#1a140a] to-[#0a0704] border-amber-400/50 shadow-sm'
+              : 'bg-[#0a080f] border-white/10 hover:border-amber-400/30'
+          }`}>
+            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-900/60 border border-amber-400/30 text-amber-200">
+                  <Clock className="h-4 w-4 text-amber-300" />
+                </div>
+                <div>
+                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Dhohr Nap (القَيْلُولَة)</span>
+                  <span className="text-[10px] font-mono text-zinc-400">Midday Sunnah Rest</span>
+                </div>
+              </div>
+              <span className="text-[9px] font-mono text-amber-200 font-bold bg-amber-900/60 border border-amber-400/30 px-2 py-0.5 rounded-full">
+                +50 XP
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                &ldquo;Take a midday nap; devils do not take a nap.&rdquo; Recharging for Qiyam &amp; afternoon worship.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setSleepModalTab('dhohr'); setShowSleepModal(true); }}
+                className="text-[10px] font-mono text-amber-300 hover:text-amber-200 underline flex items-center gap-1 cursor-pointer"
+              >
+                <BookOpen className="h-3 w-3" />
+                <span>Read authentic Qaylulah Duas →</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                adhkarSleepDhohr
+                  ? 'bg-amber-900/80 border-amber-400/70 text-amber-100 shadow-sm'
+                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
+              }`}
+            >
+              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSleepDhohr ? 'text-amber-300' : 'text-zinc-600'}`} />
+              <span>{adhkarSleepDhohr ? 'DHOHR NAP DONE ✓' : 'LOG DHOHR NAP (+50 XP)'}</span>
+            </button>
+          </div>
+
+          {/* 3. EVENING ADHKAR */}
           <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
             adhkarMasa
               ? 'bg-gradient-to-br from-[#160d1f] to-[#0a050f] border-violet-500/50 shadow-sm'
@@ -331,29 +424,79 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                   <Moon className="h-4 w-4" />
                 </div>
                 <div>
-                  <span className="font-display font-bold text-zinc-100 text-sm block">Evening Adhkār (أَذْكَارُ المَسَاء)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">After &apos;Asr until Sunset</span>
+                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Evening (المَسَاء)</span>
+                  <span className="text-[10px] font-mono text-zinc-400">&apos;Asr until Sunset</span>
                 </div>
               </div>
-              <span className="text-[10px] font-mono text-violet-300 font-bold bg-violet-950/60 border border-violet-500/30 px-2 py-0.5 rounded-full">
-                +75 XP • +10 C
+              <span className="text-[9px] font-mono text-violet-300 font-bold bg-violet-950/60 border border-violet-500/30 px-2 py-0.5 rounded-full">
+                +75 XP
               </span>
             </div>
 
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-              Recited after &apos;Asr into the evening. Guarding the soul and home under divine protection through the night.
+            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+              Guarding soul, faith, and domicile under divine protection through the evening.
             </p>
 
             <button
+              type="button"
               onClick={() => toggleAdhkar('masa', systemDate)}
-              className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
+              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                 adhkarMasa
                   ? 'bg-violet-950/80 border-violet-500/70 text-violet-100 shadow-sm'
                   : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
               }`}
             >
-              <CheckCircle2 className={`h-4 w-4 ${adhkarMasa ? 'text-violet-400' : 'text-zinc-600'}`} />
-              <span>{adhkarMasa ? 'EVENING ADHKĀR COMPLETED ✓ (أُدِّيَت)' : 'LOG EVENING ADHKĀR (+75 XP)'}</span>
+              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarMasa ? 'text-violet-400' : 'text-zinc-600'}`} />
+              <span>{adhkarMasa ? 'EVENING DONE ✓' : 'LOG EVENING (+75 XP)'}</span>
+            </button>
+          </div>
+
+          {/* 4. NIGHT SLEEP ADHKAR */}
+          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
+            adhkarSleepNight
+              ? 'bg-gradient-to-br from-[#120e24] to-[#080614] border-indigo-500/50 shadow-sm'
+              : 'bg-[#0a080f] border-white/10 hover:border-indigo-500/30'
+          }`}>
+            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300">
+                  <Bed className="h-4 w-4 text-indigo-300" />
+                </div>
+                <div>
+                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Night Sleep (النَّوْم)</span>
+                  <span className="text-[10px] font-mono text-zinc-400">Bedtime Fortress</span>
+                </div>
+              </div>
+              <span className="text-[9px] font-mono text-indigo-300 font-bold bg-indigo-950/60 border border-indigo-500/30 px-2 py-0.5 rounded-full">
+                +75 XP
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                Ayat al-Kursi, 3 Quls with Nafth, Tasbīḥ Fāṭimah (33/33/34), and Du‘a al-Fiṭrah.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setSleepModalTab('night'); setShowSleepModal(true); }}
+                className="text-[10px] font-mono text-indigo-300 hover:text-indigo-200 underline flex items-center gap-1 cursor-pointer"
+              >
+                <BookOpen className="h-3 w-3" />
+                <span>Read authentic Night Duas →</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toggleAdhkar('sleepNight', systemDate)}
+              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                adhkarSleepNight
+                  ? 'bg-indigo-950/80 border-indigo-500/70 text-indigo-100 shadow-sm'
+                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
+              }`}
+            >
+              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSleepNight ? 'text-indigo-400' : 'text-zinc-600'}`} />
+              <span>{adhkarSleepNight ? 'NIGHT SLEEP DONE ✓' : 'LOG NIGHT SLEEP (+75 XP)'}</span>
             </button>
           </div>
 
@@ -745,6 +888,14 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         </div>
 
       </div>
+
+      {/* SLEEP ADHKAR SANCTUM MODAL (DHOHR & NIGHT) */}
+      <SleepAdhkarModal
+        isOpen={showSleepModal}
+        onClose={() => setShowSleepModal(false)}
+        initialTab={sleepModalTab}
+        systemDate={systemDate}
+      />
 
     </div>
   );

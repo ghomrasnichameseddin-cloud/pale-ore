@@ -261,7 +261,7 @@ interface POSContextType {
     field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed',
     dateStr?: string
   ) => void;
-  toggleAdhkar: (type: 'sabah' | 'masa', dateStr?: string) => void;
+  toggleAdhkar: (type: 'sabah' | 'masa' | 'sleepDhohr' | 'sleepNight', dateStr?: string) => void;
   incrementSalawat: (amount: number, dateStr?: string) => void;
   setSalawatCount: (count: number, dateStr?: string) => void;
   updateQiyam: (rakats: number, witr?: boolean, dateStr?: string) => void;
@@ -4651,6 +4651,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let sunnahRawatibCount = 0;
     let adhkarSabahCount = 0;
     let adhkarMasaCount = 0;
+    let adhkarSleepDhohrCount = 0;
+    let adhkarSleepNightCount = 0;
     let salawatTotal = 0;
     let qiyamTotalRakats = 0;
 
@@ -4674,6 +4676,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         if (log.adhkarSabah) adhkarSabahCount++;
         if (log.adhkarMasa) adhkarMasaCount++;
+        if (log.adhkarSleepDhohr) adhkarSleepDhohrCount++;
+        if (log.adhkarSleepNight) adhkarSleepNightCount++;
         salawatTotal += log.salawatCount || 0;
         qiyamTotalRakats += log.qiyamRakats || 0;
       } else {
@@ -4721,8 +4725,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const slipsRestraintScore = Number(Math.min(2.0, Math.max(0, 2.0 - slipDeductions)).toFixed(2));
 
-    // 3. Adhkar Morning & Evening Fortress (Max 1.5 pts)
-    const adhkarFortressScore = Number(Math.min(1.5, Math.max(0, ((adhkarSabahCount + adhkarMasaCount) / 14) * 1.5)).toFixed(2));
+    // 3. Adhkar Morning, Evening & Sleep Fortress (Max 1.5 pts)
+    const totalAdhkarUnits = adhkarSabahCount + adhkarMasaCount + (adhkarSleepNightCount * 0.7) + (adhkarSleepDhohrCount * 0.5);
+    const adhkarFortressScore = Number(Math.min(1.5, Math.max(0, (totalAdhkarUnits / 14) * 1.5)).toFixed(2));
 
     // 4. Sunan Rawātib, Nawāfil & Qiyām al-Layl (Max 1.5 pts)
     const rawatibPart = Math.min(0.8, (sunnahRawatibCount / 20) * 0.8);
@@ -4839,6 +4844,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sunnahRawatibCount,
       adhkarSabahCount,
       adhkarMasaCount,
+      adhkarSleepDhohrCount,
+      adhkarSleepNightCount,
       salawatTotal,
       qiyamTotalRakats,
       questsCompletedCount: questsCompletedInWeek,
@@ -4870,7 +4877,34 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const docPath = `04 Operations/Weekly Muhasabah/Weekly Summary - ${summary.generatedDate}.md`;
       const docName = `Weekly Summary - ${summary.generatedDate}`;
-      const docContent = `# 📜 Weekly Muḥāsabah Sacred Review (${summary.weekLabel})\n\n**Generated:** ${summary.generatedDate} (Jumu'ah Review)\n**Weekly Sacred Audit Score:** **${scoreStr}** — *${gradeStr}*\n**Net Weekly XP:** ${summary.totalNetXP >= 0 ? '+' : ''}${summary.totalNetXP} XP (Earned: +${summary.totalEarnedXP} XP, Lost: −${summary.totalLostXP} XP)\n${breakdownMd}\n## 🕌 Prayer & Worship Fulfillments (Out of 35 Fardh)\n- **Fardh Completed:** ${summary.prayersCount} / 35\n- **On-Time (في وقتها):** ${summary.prayersOnTimeCount} (+40 XP bonus per prayer)\n- **Delayed / Late:** ${summary.prayersDelayedCount} (−50 XP deduction)\n- **Sunan Rawātib:** ${summary.sunnahRawatibCount}\n- **Morning Adhkar:** ${summary.adhkarSabahCount} / 7\n- **Evening Adhkar:** ${summary.adhkarMasaCount} / 7\n- **Salawāt upon the Prophet (ﷺ):** ${summary.salawatTotal}\n- **Qiyām al-Layl Rak'ahs:** ${summary.qiyamTotalRakats}\n\n## ⚖️ Slip Ledger Summary\n- **Total Slips Audited:** ${summary.totalSlipsCount}\n- **Total Coin Fines:** −${summary.totalLostCoins} Coins\n- **Top Vulnerability Realm:** ${summary.topWeaknessCategories[0]?.category || 'None'} (${summary.topWeaknessCategories[0]?.count || 0} slips)\n\n## 🎯 Targeted Recommendations for the New Week\n${summary.recommendations.map(r => `- ${r}`).join('\n')}\n\n---\n*XP is an in-app motivational measure. The true reward of worship belongs to Allah alone.*`;
+      const docContent = `# 📜 Weekly Muḥāsabah Sacred Review (${summary.weekLabel})
+
+**Generated:** ${summary.generatedDate} (Jumu'ah Review)
+**Weekly Sacred Audit Score:** **${scoreStr}** — *${gradeStr}*
+**Net Weekly XP:** ${summary.totalNetXP >= 0 ? '+' : ''}${summary.totalNetXP} XP (Earned: +${summary.totalEarnedXP} XP, Lost: −${summary.totalLostXP} XP)
+${breakdownMd}
+## 🕌 Prayer & Worship Fulfillments (Out of 35 Fardh)
+- **Fardh Completed:** ${summary.prayersCount} / 35
+- **On-Time (في وقتها):** ${summary.prayersOnTimeCount} (+40 XP bonus per prayer)
+- **Delayed / Late:** ${summary.prayersDelayedCount} (−50 XP deduction)
+- **Sunan Rawātib:** ${summary.sunnahRawatibCount}
+- **Morning Adhkar:** ${summary.adhkarSabahCount} / 7
+- **Evening Adhkar:** ${summary.adhkarMasaCount} / 7
+- **Night Sleep Adhkar:** ${summary.adhkarSleepNightCount || 0} / 7
+- **Dhohr Qaylulah Adhkar:** ${summary.adhkarSleepDhohrCount || 0} / 7
+- **Salawāt upon the Prophet (ﷺ):** ${summary.salawatTotal}
+- **Qiyām al-Layl Rak'ahs:** ${summary.qiyamTotalRakats}
+
+## ⚖️ Slip Ledger Summary
+- **Total Slips Audited:** ${summary.totalSlipsCount}
+- **Total Coin Fines:** −${summary.totalLostCoins} Coins
+- **Top Vulnerability Realm:** ${summary.topWeaknessCategories[0]?.category || 'None'} (${summary.topWeaknessCategories[0]?.count || 0} slips)
+
+## 🎯 Targeted Recommendations for the New Week
+${summary.recommendations.map(r => `- ${r}`).join('\n')}
+
+---
+*XP is an in-app motivational measure. The true reward of worship belongs to Allah alone.*`;
 
       const existingDocs = prev.planningDocuments || [];
       const docIndex = existingDocs.findIndex(d => d.path === docPath);
@@ -5470,15 +5504,44 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const toggleAdhkar = (type: 'sabah' | 'masa', dateStr?: string) => {
+  const toggleAdhkar = (type: 'sabah' | 'masa' | 'sleepDhohr' | 'sleepNight', dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const completedTimestamp = getSystemTimestamp(targetDate);
     const existingLog = getSpiritualLog(targetDate);
-    const field = type === 'sabah' ? 'adhkarSabah' : 'adhkarMasa';
+
+    let field: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepDhohr' | 'adhkarSleepNight';
+    let xpReward = 75;
+    let coinsReward = 10;
+    let label = '';
+    let messageContent = '';
+
+    if (type === 'sabah') {
+      field = 'adhkarSabah';
+      xpReward = 75;
+      coinsReward = 10;
+      label = 'Morning Adhkār (أذكار الصباح)';
+      messageContent = 'Morning Fortress complete (+75 XP, +10 Coins). Sheltered in divine grace from dawn till dusk.';
+    } else if (type === 'masa') {
+      field = 'adhkarMasa';
+      xpReward = 75;
+      coinsReward = 10;
+      label = 'Evening Adhkār (أذكار المساء)';
+      messageContent = 'Evening Fortress complete (+75 XP, +10 Coins). Guarded under divine light through the night.';
+    } else if (type === 'sleepDhohr') {
+      field = 'adhkarSleepDhohr';
+      xpReward = 50;
+      coinsReward = 8;
+      label = 'Dhohr Qaylulah Sleep Adhkār (أذكار قيلولة الظهيرة)';
+      messageContent = 'Qaylulah Midday Nap Adhkār complete (+50 XP, +8 Coins). Sunnah recharge sealed with prophetic remembrance.';
+    } else {
+      field = 'adhkarSleepNight';
+      xpReward = 75;
+      coinsReward = 10;
+      label = 'Night Sleep Adhkār (أذكار النوم بالليل)';
+      messageContent = 'Night Sleep Adhkār complete (+75 XP, +10 Coins). Fortified with Ayat al-Kursi, Mu‘awwidhatayn & Tasbīḥ Fāṭimah.';
+    }
+
     const newValue = !existingLog[field];
-    const xpReward = 75;
-    const coinsReward = 10;
-    const label = type === 'sabah' ? 'Morning Adhkār (أذكار الصباح)' : 'Evening Adhkār (أذكار المساء)';
     const questIdentifier = `spiritual-adhkar-${targetDate}-${type}`;
 
     setState(prev => {
@@ -5491,7 +5554,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let updatedHistory = [...prev.xpHistory];
       if (newValue) {
         const entry: XPHistoryEntry = {
-          id: `h-adhkar-${Date.now()}`,
+          id: `h-adhkar-${Date.now()}-${type}`,
           questId: questIdentifier,
           questName: `📿 ADHKĀR: ${label}`,
           xp: xpReward,
@@ -5512,7 +5575,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'achievement',
           title: `📿 ADHKĀR COMPLETED: ${label}`,
-          content: `Fortress of daily remembrance complete (+${xpReward} XP, +${coinsReward} Coins). Faith shields active.`,
+          content: messageContent,
           priority: 'medium'
         });
       }
