@@ -128,6 +128,7 @@ interface POSContextType {
   breakSeal: (id: string) => { success: boolean; message: string };
   relockSeal: (id: string) => void;
   resetSealsToDefault: () => void;
+  restoreMissingDefaultSeals: () => void;
   calibrateSealsToSystemState: () => void;
   
   // Profile Adjustments
@@ -227,7 +228,12 @@ interface POSContextType {
   addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
   updateWeakness: (id: string, updates: Partial<Weakness>) => void;
   deleteWeakness: (id: string) => void;
-  convertWeaknessToSeal: (weaknessId: string, customRarity?: SealRarity) => { success: boolean; sealId?: string; message: string };
+  unbindWeaknessFromSeal: (weaknessId: string) => void;
+  convertWeaknessToSeal: (
+    weaknessId: string, 
+    customRarity?: SealRarity, 
+    customOverrides?: Partial<PowerSeal>
+  ) => { success: boolean; sealId?: string; message: string };
   getTodayMuhasabahStats: () => {
     todayEarnedXP: number;
     todayLostXP: number;
@@ -683,6 +689,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const completedBossCount = getCompletedBossQuestsCount(reconciledQuests, reconciledXpHistory);
           const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
+          const rawSeals: PowerSeal[] = (parsed.seals && parsed.seals.length > 0) ? parsed.seals : DEFAULT_SEALS;
+          const activeSealIds = new Set(rawSeals.map((s: PowerSeal) => s.id));
+          const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) ? parsed.weaknesses : (INITIAL_STATE.weaknesses || []);
+          
+          // Reconcile weaknesses whose bound seal was deleted
+          const reconciledWeaknesses = rawWeaknesses.map((w: Weakness) => {
+            if (w.sealId && !activeSealIds.has(w.sealId)) {
+              return {
+                ...w,
+                status: 'Active' as const,
+                sealId: null,
+                occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
+              };
+            }
+            return w;
+          });
+
           // Robustly merge to guarantee all schema properties are defined
           return {
             ...INITIAL_STATE,
@@ -695,6 +718,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               coins: parsed.profile?.coins ?? 150,
               focusShields: parsed.profile?.focusShields ?? 0
             },
+            seals: rawSeals,
+            weaknesses: reconciledWeaknesses,
             shopItems: (parsed.shopItems && parsed.shopItems.length > 0) ? parsed.shopItems : DEFAULT_SHOP_ITEMS,
             inventory: parsed.inventory || [],
             goals: parsed.goals || [],
@@ -727,6 +752,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  // Auto-heal any orphaned weakness whose linked seal was deleted
+  useEffect(() => {
+    const activeSealIds = new Set((state.seals || []).map(s => s.id));
+    const hasOrphans = (state.weaknesses || []).some(w => w.sealId && !activeSealIds.has(w.sealId));
+    if (hasOrphans) {
+      setState(prev => {
+        const currentSealIds = new Set((prev.seals || []).map(s => s.id));
+        return {
+          ...prev,
+          weaknesses: (prev.weaknesses || []).map(w => {
+            if (w.sealId && !currentSealIds.has(w.sealId)) {
+              return {
+                ...w,
+                status: 'Active' as const,
+                sealId: null,
+                occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
+              };
+            }
+            return w;
+          })
+        };
+      });
+    }
+  }, [state.seals]);
 
   const addPlanningDocument = (path: string, name: string, content: string): string => {
     const id = `pdoc-${Date.now()}`;
@@ -3191,10 +3241,36 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteSeal = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      seals: (prev.seals || []).filter(s => s.id !== id)
-    }));
+    setState(prev => {
+      const remainingSeals = (prev.seals || []).filter(s => s.id !== id);
+      const remainingSealIds = new Set(remainingSeals.map(s => s.id));
+      
+      const updatedWeaknesses = (prev.weaknesses || []).map(w => {
+        if (w.sealId === id || (w.sealId && !remainingSealIds.has(w.sealId))) {
+          return {
+            ...w,
+            status: 'Active' as const,
+            sealId: null,
+            occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
+          };
+        }
+        return w;
+      });
+
+      return {
+        ...prev,
+        seals: remainingSeals,
+        weaknesses: updatedWeaknesses
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: '⛓️ ELEMENTAL ORE DELETED',
+      content: 'Elemental ore deleted. Any bound Chains of the Nafs have been liberated and restored to 5/5 slips, ready to be bound again.',
+      priority: 'medium'
+    });
   };
 
   const relockSeal = (id: string) => {
@@ -3209,6 +3285,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       seals: DEFAULT_SEALS
     }));
+  };
+
+  const restoreMissingDefaultSeals = () => {
+    setState(prev => {
+      const existingIds = new Set((prev.seals || []).map(s => s.id));
+      const missing = DEFAULT_SEALS.filter(ds => !existingIds.has(ds.id));
+      if (missing.length === 0) return prev;
+      return {
+        ...prev,
+        seals: [...(prev.seals || []), ...missing]
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: '✦ DEFAULT ORES RESTORED',
+      content: 'Missing default elemental ores have been restored to your sanctum.',
+      priority: 'low'
+    });
   };
 
   const calibrateSealsToSystemState = () => {
@@ -4849,10 +4945,47 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const convertWeaknessToSeal = (weaknessId: string, customRarity?: SealRarity) => {
+  const unbindWeaknessFromSeal = (weaknessId: string) => {
+    setState(prev => {
+      const targetWeakness = (prev.weaknesses || []).find(w => w.id === weaknessId);
+      if (!targetWeakness) return prev;
+      const linkedSealId = targetWeakness.sealId;
+      
+      return {
+        ...prev,
+        seals: linkedSealId ? (prev.seals || []).filter(s => s.id !== linkedSealId) : prev.seals,
+        weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? {
+          ...w,
+          status: 'Active' as const,
+          sealId: null,
+          occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
+        } : w)
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: '⛓️ CHAIN UNBOUND',
+      content: 'The chain has been unbound from its elemental ore and is ready to be forged or bound again.',
+      priority: 'low'
+    });
+  };
+
+  const convertWeaknessToSeal = (
+    weaknessId: string, 
+    customRarity?: SealRarity,
+    customOverrides?: Partial<PowerSeal>
+  ) => {
     const weakness = (state.weaknesses || []).find(w => w.id === weaknessId);
     if (!weakness) {
       return { success: false, message: 'Weakness not found' };
+    }
+
+    // Check if it's already bound to a seal that currently exists
+    const existingSeal = (state.seals || []).find(s => s.id === weakness.sealId);
+    if (existingSeal && weakness.status === 'Sealed' && !customOverrides) {
+      return { success: false, message: `Already bound to Power Seal: ${existingSeal.name}` };
     }
 
     const playerInfo = getPlayerLevelInfo();
@@ -4860,11 +4993,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
 
     // Conditions strictly harmonized to current system state
-    const requiredLevel = Math.max(1, playerInfo.level);
-    const costXP = playerInfo.totalXp > 0 
-      ? Math.min(playerInfo.totalXp, Math.max(25, Math.round(playerInfo.totalXp * 0.25))) 
-      : 0;
-    const requiredStreakDays = maxStreakInSystem > 0 ? Math.min(3, maxStreakInSystem) : 0;
+    const requiredLevel = customOverrides?.requiredLevel ?? Math.max(1, playerInfo.level);
+    const costXP = customOverrides?.costXP !== undefined
+      ? customOverrides.costXP
+      : (playerInfo.totalXp > 0 
+          ? Math.min(playerInfo.totalXp, Math.max(25, Math.round(playerInfo.totalXp * 0.25))) 
+          : 0);
+    const requiredStreakDays = customOverrides?.requiredStreakDays ?? (maxStreakInSystem > 0 ? Math.min(3, maxStreakInSystem) : 0);
 
     // Link to an active directive in the system if available
     const relatedQuest = state.quests.find(q => 
@@ -4879,43 +5014,47 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     const sealId = `seal-weakness-${Date.now()}`;
-    const rarity: SealRarity = customRarity || (weakness.occurrenceCount >= 8 ? 'Epic' : weakness.occurrenceCount >= 5 ? 'Rare' : 'Common');
+    const rarity: SealRarity = customOverrides?.rarity || customRarity || (weakness.occurrenceCount >= 8 ? 'Epic' : weakness.occurrenceCount >= 5 ? 'Rare' : 'Common');
     
     const newSeal: PowerSeal = {
       id: sealId,
-      name: `Chain of ${weakness.name}`,
-      description: `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Rooted in ${runeInfo.name} (${runeInfo.arabicTitle}). Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
+      name: customOverrides?.name || `Chain of ${weakness.name}`,
+      description: customOverrides?.description || `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Rooted in ${runeInfo.name} (${runeInfo.arabicTitle}). Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
       rarity,
       status: 'Locked',
       requiredLevel,
       costXP,
       requiredStreakDays,
-      requiredQuestId: relatedQuest ? relatedQuest.id : undefined,
-      buffName: `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
-      buffDescription: `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips (+2 ${runeInfo.attributeName} Boost).`,
-      xpBonusMultiplier: 1.15,
-      momentumBoost: 10,
-      attributeBoosts: [{ attributeId: runeInfo.attributeId, boostAmount: 2 }],
-      runeSymbol: runeInfo.runeChar,
-      colorTheme: runeInfo.themeColor,
+      requiredQuestId: customOverrides?.requiredQuestId !== undefined ? customOverrides.requiredQuestId : (relatedQuest ? relatedQuest.id : undefined),
+      buffName: customOverrides?.buffName || `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
+      buffDescription: customOverrides?.buffDescription || `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips (+2 ${runeInfo.attributeName} Boost).`,
+      xpBonusMultiplier: customOverrides?.xpBonusMultiplier || 1.15,
+      momentumBoost: customOverrides?.momentumBoost || 10,
+      attributeBoosts: customOverrides?.attributeBoosts || [{ attributeId: runeInfo.attributeId, boostAmount: 2 }],
+      runeSymbol: customOverrides?.runeSymbol || runeInfo.runeChar,
+      colorTheme: customOverrides?.colorTheme || runeInfo.themeColor,
       createdAt: getSystemTimestamp(state.systemDate)
     };
 
-    setState(prev => ({
-      ...prev,
-      seals: [...(prev.seals || []), newSeal],
-      weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { 
-        ...w, 
-        status: 'Sealed', 
-        sealId,
-        occurrenceCount: 0 // Reset the meters of chains of nafs to 0 upon seal formation
-      } : w)
-    }));
+    setState(prev => {
+      // Remove any previously linked seal with old sealId if one existed
+      const filteredSeals = (prev.seals || []).filter(s => s.id !== weakness.sealId);
+      return {
+        ...prev,
+        seals: [...filteredSeals, newSeal],
+        weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { 
+          ...w, 
+          status: 'Sealed' as const, 
+          sealId,
+          occurrenceCount: 0 // Reset the meters of chains of nafs to 0 upon seal formation
+        } : w)
+      };
+    });
 
     addSystemMessage({
       sender: 'SYSTEM',
       category: 'achievement',
-      title: `⛓️ WEAKNESS SEAL FORGED: Chain of ${weakness.name}`,
+      title: `⛓️ WEAKNESS SEAL FORGED: ${newSeal.name}`,
       content: `The persistent weakness has been bound into a Power Seal. Chain meter reset to 0/5. Fulfill its discipline requirements to shatter the chain and claim permanent multiplier bonuses.`,
       priority: 'high'
     });
@@ -6404,6 +6543,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       breakSeal,
       relockSeal,
       resetSealsToDefault,
+      restoreMissingDefaultSeals,
       calibrateSealsToSystemState,
       toggleRecoveryMode,
       updateProfileFocus,
@@ -6473,6 +6613,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addWeakness,
       updateWeakness,
       deleteWeakness,
+      unbindWeaknessFromSeal,
       convertWeaknessToSeal,
       getTodayMuhasabahStats,
       recalibrateMizan,

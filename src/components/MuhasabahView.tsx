@@ -43,7 +43,7 @@ interface MuhasabahViewProps {
 export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpenGuide }) => {
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
-    convertWeaknessToSeal, deleteWeakness, updateWeakness,
+    convertWeaknessToSeal, deleteWeakness, updateWeakness, unbindWeaknessFromSeal,
     addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
   } = usePOS();
 
@@ -284,8 +284,11 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const handleForgeSeal = (weaknessId: string) => {
     const res = convertWeaknessToSeal(weaknessId);
     if (res.success) {
-      setSealForgeMessage(res.message);
-      setTimeout(() => setSealForgeMessage(null), 4500);
+      setSealForgeMessage(`✨ ${res.message}`);
+      setTimeout(() => setSealForgeMessage(null), 5000);
+    } else {
+      setSealForgeMessage(`⚠️ ${res.message || 'Could not forge seal'}`);
+      setTimeout(() => setSealForgeMessage(null), 5000);
     }
   };
 
@@ -970,8 +973,9 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             {weaknesses.length > 0 ? (
               <div className="space-y-3">
                 {weaknesses.map(weakness => {
-                  const isSealed = weakness.status === 'Sealed' || !!weakness.sealId;
-                  const isReadyToForge = weakness.occurrenceCount >= 5 && !isSealed;
+                  const linkedSeal = (state.seals || []).find(s => s.id === weakness.sealId);
+                  const isSealed = Boolean(linkedSeal && weakness.status === 'Sealed');
+                  const isReadyToForge = !isSealed && weakness.occurrenceCount >= 5;
                   const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
 
                   return (
@@ -996,7 +1000,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                               ? 'bg-amber-950/60 border-amber-500/40 text-amber-300 animate-pulse font-bold'
                               : 'bg-black/40 border-white/10 text-zinc-400'
                         }`}>
-                          {weakness.status}
+                          {isSealed ? 'Bound to Ore' : isReadyToForge ? 'Ready to Bind' : weakness.status}
                         </span>
                       </div>
 
@@ -1005,7 +1009,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
                           <span>Chain Links:</span>
                           <span className={`font-bold ${isSealed ? 'text-emerald-400' : 'text-zinc-200'}`}>
-                            {isSealed ? `${weakness.occurrenceCount} / 5 Slips (Reset)` : `${weakness.occurrenceCount} / 5 Slips`}
+                            {isSealed ? `${weakness.occurrenceCount} / 5 Slips (Bound)` : `${weakness.occurrenceCount} / 5 Slips`}
                           </span>
                         </div>
                         <div className="grid grid-cols-5 gap-1">
@@ -1029,28 +1033,56 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                       {/* Action buttons */}
                       <div className="flex items-center gap-2">
                         {isReadyToForge ? (
-                          <button
-                            onClick={() => handleForgeSeal(weakness.id)}
-                            className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-[#c5a059] text-black font-display text-[11px] font-bold tracking-wider hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-1.5 shadow-md"
-                          >
-                            <Pickaxe className="h-3.5 w-3.5" />
-                            FORGE INTO POWER SEAL
-                          </button>
+                          <div className="w-full flex flex-col gap-1.5">
+                            <button
+                              onClick={() => handleForgeSeal(weakness.id)}
+                              className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-[#c5a059] text-black font-display text-[11px] font-bold tracking-wider hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                            >
+                              <Pickaxe className="h-3.5 w-3.5" />
+                              FORGE INTO POWER SEAL
+                            </button>
+                            <button
+                              onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
+                              className="w-full py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition text-center cursor-pointer"
+                            >
+                              + Record Another Slip
+                            </button>
+                          </div>
                         ) : isSealed ? (
-                          <button
-                            onClick={() => onNavigate && onNavigate('seals')}
-                            className="w-full py-1 rounded bg-emerald-950/40 hover:bg-emerald-950/70 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 transition text-center flex items-center justify-center gap-1"
-                          >
-                            <span>Bound into Power Seal ⛓️ (Meter Reset to 0)</span>
-                            <ArrowRight className="h-3 w-3" />
-                          </button>
+                          <div className="w-full flex items-center gap-1.5">
+                            <button
+                              onClick={() => onNavigate && onNavigate('seals')}
+                              className="flex-1 py-1 px-2 rounded bg-emerald-950/40 hover:bg-emerald-950/70 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 transition text-center flex items-center justify-center gap-1 cursor-pointer"
+                              title="View bound elemental ore in sanctum"
+                            >
+                              <span className="truncate">Bound: {linkedSeal?.name || 'Power Seal'} ⛓️</span>
+                              <ArrowRight className="h-3 w-3 shrink-0" />
+                            </button>
+                            <button
+                              onClick={() => unbindWeaknessFromSeal(weakness.id)}
+                              className="px-2.5 py-1 rounded bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/30 text-[9.5px] font-mono text-rose-300 hover:text-rose-100 transition cursor-pointer shrink-0"
+                              title="Unbind chain from ore"
+                            >
+                              Unbind
+                            </button>
+                          </div>
                         ) : (
-                          <button
-                            onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
-                            className="w-full py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-mono text-zinc-300 transition text-center"
-                          >
-                            + Record Slip on this Chain
-                          </button>
+                          <div className="w-full flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
+                              className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 transition text-center cursor-pointer"
+                            >
+                              + Record Slip
+                            </button>
+                            <button
+                              onClick={() => handleForgeSeal(weakness.id)}
+                              className="px-3 py-1 rounded bg-gradient-to-r from-[#3a2e12] to-[#8a6d2b] hover:to-[#c5a059] border border-[#c5a059]/50 text-[10px] font-mono text-[#fef08a] transition font-bold cursor-pointer shrink-0 flex items-center gap-1"
+                              title="Bind into Power Seal now"
+                            >
+                              <Pickaxe className="h-3 w-3" />
+                              <span>Bind Seal</span>
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>

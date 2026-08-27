@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
-import { PowerSeal, SealRarity } from '../types';
+import { PowerSeal, SealRarity, Weakness } from '../types';
+import { DEFAULT_SEALS } from '../initialState';
 import { 
   Sparkles, Lock, Unlock, ShieldAlert, Award, Plus, Trash2, Edit3, 
   AlertCircle, Zap, Search, X, Pickaxe, Link as LinkIcon, Flame, Hammer,
@@ -691,13 +692,20 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
 export const SealingPowerView: React.FC = () => {
   const { 
     state, addXp, addSeal, updateSeal, deleteSeal, breakSeal, relockSeal, getPlayerLevelInfo, getSkillXpAndLevel,
-    toggleBatterySaverMode, calibrateSealsToSystemState, resetSealsToDefault
+    toggleBatterySaverMode, calibrateSealsToSystemState, resetSealsToDefault, restoreMissingDefaultSeals,
+    convertWeaknessToSeal, unbindWeaknessFromSeal
   } = usePOS();
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
 
   const playerInfo = getPlayerLevelInfo();
   const seals = state.seals || [];
+  const weaknesses = state.weaknesses || [];
+
+  // Track unbound chains of nafs
+  const activeSealIds = new Set(seals.map(s => s.id));
+  const unboundWeaknesses = weaknesses.filter(w => !w.sealId || !activeSealIds.has(w.sealId) || w.status !== 'Sealed');
+  const hasMissingDefaultSeals = DEFAULT_SEALS.some(ds => !activeSealIds.has(ds.id));
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -706,6 +714,7 @@ export const SealingPowerView: React.FC = () => {
 
   // Modal States
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isBindChainModalOpen, setIsBindChainModalOpen] = useState(false);
   const [editingSeal, setEditingSeal] = useState<PowerSeal | null>(null);
   const [selectedSealForBreak, setSelectedSealForBreak] = useState<PowerSeal | null>(null);
 
@@ -728,7 +737,8 @@ export const SealingPowerView: React.FC = () => {
     momentumBoost: 5,
     runeSymbol: '🪨',
     selectedAttributeId: 'a-4',
-    attributeBoostAmount: 2
+    attributeBoostAmount: 2,
+    boundWeaknessId: ''
   });
 
   // Calculate System-Wide Active Seal Buff Summary
@@ -744,30 +754,50 @@ export const SealingPowerView: React.FC = () => {
     });
   });
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (preselectedWeaknessId?: string) => {
     setEditingSeal(null);
+    let initialName = '';
+    let initialDesc = '';
+    let initialRune = '🪨';
+    let initialBuffName = '';
+    let initialBuffDesc = '';
+
+    if (preselectedWeaknessId) {
+      const targetWeakness = weaknesses.find(w => w.id === preselectedWeaknessId);
+      if (targetWeakness) {
+        const runeInfo = SLIP_RUNES[targetWeakness.category] || SLIP_RUNES.Obligations;
+        initialName = `Chain of ${targetWeakness.name}`;
+        initialDesc = `A heavy chain forged to shatter "${targetWeakness.name}". Root cause: "${targetWeakness.triggerCause}".`;
+        initialRune = runeInfo.runeChar;
+        initialBuffName = `Liberation: ${targetWeakness.name.replace(/^Weakness:\s*/i, '')}`;
+        initialBuffDesc = `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${targetWeakness.category} slips.`;
+      }
+    }
+
     setFormData({
-      name: '',
-      description: '',
+      name: initialName,
+      description: initialDesc,
       rarity: 'Common',
       requiredLevel: Math.max(1, playerInfo.level),
       costXP: 200,
       requiredQuestId: '',
       requiredSkillId: '',
       requiredSkillLevel: 1,
-      buffName: '',
-      buffDescription: '',
+      buffName: initialBuffName,
+      buffDescription: initialBuffDesc,
       xpBonusPercent: 15,
       momentumBoost: 5,
-      runeSymbol: '🪨',
+      runeSymbol: initialRune,
       selectedAttributeId: 'a-4',
-      attributeBoostAmount: 2
+      attributeBoostAmount: 2,
+      boundWeaknessId: preselectedWeaknessId || ''
     });
     setIsFormOpen(true);
   };
 
   const handleOpenEditModal = (seal: PowerSeal) => {
     setEditingSeal(seal);
+    const linkedWeakness = weaknesses.find(w => w.sealId === seal.id);
     setFormData({
       name: seal.name,
       description: seal.description,
@@ -783,7 +813,8 @@ export const SealingPowerView: React.FC = () => {
       momentumBoost: seal.momentumBoost || 5,
       runeSymbol: seal.runeSymbol || '🪨',
       selectedAttributeId: seal.attributeBoosts?.[0]?.attributeId || 'a-4',
-      attributeBoostAmount: seal.attributeBoosts?.[0]?.boostAmount || 2
+      attributeBoostAmount: seal.attributeBoosts?.[0]?.boostAmount || 2,
+      boundWeaknessId: linkedWeakness ? linkedWeakness.id : ''
     });
     setIsFormOpen(true);
   };
@@ -815,6 +846,29 @@ export const SealingPowerView: React.FC = () => {
         attributeBoosts: attrBoosts,
         runeSymbol: formData.runeSymbol || '🪨'
       });
+      setUnsealMessage({
+        text: `✨ Elemental Ore "${formData.name.trim()}" updated successfully.`,
+        isError: false
+      });
+    } else if (formData.boundWeaknessId) {
+      const res = convertWeaknessToSeal(formData.boundWeaknessId, formData.rarity, {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        rarity: formData.rarity,
+        requiredLevel: Number(formData.requiredLevel),
+        costXP: Number(formData.costXP),
+        requiredQuestId: formData.requiredQuestId || undefined,
+        buffName: formData.buffName.trim(),
+        buffDescription: formData.buffDescription.trim(),
+        xpBonusMultiplier: multiplier,
+        momentumBoost: Number(formData.momentumBoost),
+        attributeBoosts: attrBoosts,
+        runeSymbol: formData.runeSymbol || '🪨'
+      });
+      setUnsealMessage({
+        text: res.success ? `✨ ${res.message}` : `⚠️ ${res.message}`,
+        isError: !res.success
+      });
     } else {
       addSeal({
         name: formData.name.trim(),
@@ -832,9 +886,51 @@ export const SealingPowerView: React.FC = () => {
         attributeBoosts: attrBoosts,
         runeSymbol: formData.runeSymbol || '🪨'
       });
+      setUnsealMessage({
+        text: `✨ New Elemental Ore "${formData.name.trim()}" forged into your sanctum!`,
+        isError: false
+      });
     }
 
+    setTimeout(() => setUnsealMessage(null), 5000);
     setIsFormOpen(false);
+  };
+
+  const handleDeleteSealWithFeedback = (seal: PowerSeal) => {
+    const linkedWeakness = weaknesses.find(w => w.sealId === seal.id);
+    deleteSeal(seal.id);
+    if (linkedWeakness) {
+      setUnsealMessage({
+        text: `⛓️ Elemental Ore "${seal.name}" deleted. Chain of Nafs "${linkedWeakness.name}" has been liberated and is ready to be bound again!`,
+        isError: false
+      });
+    } else {
+      setUnsealMessage({
+        text: `Elemental Ore "${seal.name}" deleted.`,
+        isError: false
+      });
+    }
+    setTimeout(() => setUnsealMessage(null), 5500);
+  };
+
+  const handleBindWeaknessDirect = (weaknessId: string) => {
+    const targetWeakness = weaknesses.find(w => w.id === weaknessId);
+    if (!targetWeakness) return;
+    const res = convertWeaknessToSeal(weaknessId);
+    setUnsealMessage({
+      text: res.success ? `✨ ${res.message}` : `⚠️ ${res.message}`,
+      isError: !res.success
+    });
+    setTimeout(() => setUnsealMessage(null), 5000);
+  };
+
+  const handleUnbindWeaknessDirect = (weaknessId: string) => {
+    unbindWeaknessFromSeal(weaknessId);
+    setUnsealMessage({
+      text: '⛓️ Chain unbound from its elemental ore and restored to active state.',
+      isError: false
+    });
+    setTimeout(() => setUnsealMessage(null), 5000);
   };
 
   const handleTriggerBreakSeal = (seal: PowerSeal) => {
@@ -898,6 +994,39 @@ export const SealingPowerView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {hasMissingDefaultSeals && (
+              <button
+                type="button"
+                onClick={() => {
+                  restoreMissingDefaultSeals();
+                  setUnsealMessage({ 
+                    text: '✦ Default elemental ores have been restored to your sanctum.', 
+                    isError: false 
+                  });
+                  setTimeout(() => setUnsealMessage(null), 4500);
+                }}
+                className="px-3 py-2.5 bg-[#0b0d13] hover:bg-[#181d29] border border-white/10 hover:border-[#c5a059]/40 text-xs font-mono text-zinc-300 hover:text-white rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                title="Restore any missing original default ores"
+              >
+                <span>✦ RESTORE DEFAULT ORES</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsBindChainModalOpen(true)}
+              className="px-3.5 py-2.5 bg-gradient-to-r from-amber-950/70 to-[#3a2e12] hover:to-[#574418] border border-amber-500/50 hover:border-amber-400 text-xs font-mono text-[#fef08a] rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm relative"
+              title="Bind active Chains of the Nafs directly into Elemental Ores"
+            >
+              <span className="text-sm">⛓️</span>
+              <span className="font-bold">BIND ACTIVE CHAINS</span>
+              {unboundWeaknesses.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9.5px] bg-amber-400 text-black font-black font-mono animate-pulse">
+                  {unboundWeaknesses.length}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -906,6 +1035,7 @@ export const SealingPowerView: React.FC = () => {
                   text: '✦ All elemental ore seals successfully harmonized to your current level and system state.', 
                   isError: false 
                 });
+                setTimeout(() => setUnsealMessage(null), 4500);
               }}
               className="px-3.5 py-2.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/40 hover:border-[#c5a059] text-xs font-mono text-[#fef08a] rounded-xl flex items-center gap-2 transition cursor-pointer shadow-sm"
               title="Calibrate and harmonize seal conditions (level, XP cost, streak) to current system state"
@@ -915,7 +1045,7 @@ export const SealingPowerView: React.FC = () => {
             </button>
 
             <button
-              onClick={handleOpenCreateModal}
+              onClick={() => handleOpenCreateModal()}
               className="px-4 py-2.5 bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] font-bold rounded-xl text-xs font-mono tracking-wider transition shadow-[0_0_20px_rgba(197,160,89,0.3)] flex items-center gap-2 border border-[#c5a059]/60 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
@@ -1101,7 +1231,7 @@ export const SealingPowerView: React.FC = () => {
             Forge a new elemental ore or reset active search filters.
           </p>
           <button
-            onClick={handleOpenCreateModal}
+            onClick={() => handleOpenCreateModal()}
             className="px-4 py-2 bg-[#3a2e12] hover:bg-[#4d3d18] border border-[#c5a059]/50 text-[#fef08a] rounded-xl text-xs font-mono font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -1267,52 +1397,74 @@ export const SealingPowerView: React.FC = () => {
                 </div>
 
                 {/* CARD ACTION BUTTONS */}
-                <div className="mt-5 pt-3 border-t border-[#c5a059]/20 flex items-center justify-between gap-2 relative z-10">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handleOpenEditModal(seal)}
-                      className="p-1.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-zinc-400 hover:text-[#fef08a] rounded-lg transition cursor-pointer"
-                      title="Edit Elemental Ore"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => deleteSeal(seal.id)}
-                      className="p-1.5 bg-[#0b0d13] hover:bg-rose-950 border border-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-lg transition cursor-pointer"
-                      title="Delete Elemental Ore"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                    {isBroken && (
-                      <button
-                        onClick={() => relockSeal(seal.id)}
-                        className="px-2 py-1 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-[9.5px] font-mono text-zinc-400 hover:text-zinc-200 rounded-lg transition cursor-pointer"
-                        title="Re-bind Chains"
-                      >
-                        RE-BIND
-                      </button>
-                    )}
-                  </div>
+                <div className="mt-5 pt-3 border-t border-[#c5a059]/20 flex flex-col gap-2 relative z-10">
+                  {(() => {
+                    const linkedWeakness = weaknesses.find(w => w.sealId === seal.id);
+                    if (!linkedWeakness) return null;
+                    return (
+                      <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-[10px] font-mono text-emerald-300">
+                        <span className="truncate flex items-center gap-1">
+                          <span>⛓️</span>
+                          <span>Chain: {linkedWeakness.name}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnbindWeaknessDirect(linkedWeakness.id)}
+                          className="text-[9px] text-rose-300 hover:text-rose-100 hover:underline cursor-pointer ml-1 shrink-0"
+                          title="Unbind this chain from this ore"
+                        >
+                          Unbind
+                        </button>
+                      </div>
+                    );
+                  })()}
 
-                  {!isBroken ? (
-                    <button
-                      onClick={() => setSelectedSealForBreak(seal)}
-                      className={`px-3.5 py-2 text-xs font-mono font-bold rounded-xl border transition flex items-center gap-1.5 cursor-pointer ${
-                        canBreak
-                          ? 'bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] border-[#c5a059]/80 shadow-[0_0_20px_rgba(197,160,89,0.4)] animate-pulse'
-                          : 'bg-zinc-900 text-zinc-500 border-white/5 cursor-not-allowed'
-                      }`}
-                    >
-                      <Zap className="h-3.5 w-3.5" />
-                      <span>{canBreak ? 'SHATTER CHAINS' : 'CHAIN-BOUND'}</span>
-                    </button>
-                  ) : (
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => {
-                          addXp(25);
-                          setUnsealMessage({ text: `✨ Elemental Ore Pulse Channeled from "${seal.name}"! +25 System XP Granted!`, isError: false });
-                        }}
+                        onClick={() => handleOpenEditModal(seal)}
+                        className="p-1.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-zinc-400 hover:text-[#fef08a] rounded-lg transition cursor-pointer"
+                        title="Edit Elemental Ore"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSealWithFeedback(seal)}
+                        className="p-1.5 bg-[#0b0d13] hover:bg-rose-950 border border-rose-500/30 text-zinc-400 hover:text-rose-300 rounded-lg transition cursor-pointer"
+                        title="Delete Elemental Ore (liberates any bound chains)"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      {isBroken && (
+                        <button
+                          onClick={() => relockSeal(seal.id)}
+                          className="px-2 py-1 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/30 text-[9.5px] font-mono text-zinc-400 hover:text-zinc-200 rounded-lg transition cursor-pointer"
+                          title="Re-bind Chains"
+                        >
+                          RE-BIND
+                        </button>
+                      )}
+                    </div>
+
+                    {!isBroken ? (
+                      <button
+                        onClick={() => setSelectedSealForBreak(seal)}
+                        className={`px-3.5 py-2 text-xs font-mono font-bold rounded-xl border transition flex items-center gap-1.5 cursor-pointer ${
+                          canBreak
+                            ? 'bg-gradient-to-r from-[#3a2e12] via-[#8a6d2b] to-[#c5a059] hover:from-[#4d3d18] hover:to-[#e5c875] text-[#fef08a] border-[#c5a059]/80 shadow-[0_0_20px_rgba(197,160,89,0.4)] animate-pulse'
+                            : 'bg-zinc-900 text-zinc-500 border-white/5 cursor-not-allowed'
+                        }`}
+                      >
+                        <Zap className="h-3.5 w-3.5" />
+                        <span>{canBreak ? 'SHATTER CHAINS' : 'CHAIN-BOUND'}</span>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            addXp(25);
+                            setUnsealMessage({ text: `✨ Elemental Ore Pulse Channeled from "${seal.name}"! +25 System XP Granted!`, isError: false });
+                          }}
                         className="px-2.5 py-1.5 bg-[#3a2e12]/80 hover:bg-[#4d3d18] border border-[#c5a059]/60 text-[10px] font-mono font-bold text-[#fef08a] rounded-lg transition shadow-sm flex items-center gap-1 cursor-pointer"
                         title="Channel localized energy surge from this unchained ore"
                       >
@@ -1325,6 +1477,7 @@ export const SealingPowerView: React.FC = () => {
                       </span>
                     </div>
                   )}
+                  </div>
                 </div>
 
               </motion.div>
@@ -1441,6 +1594,58 @@ export const SealingPowerView: React.FC = () => {
 
               <form onSubmit={handleSaveSeal} className="space-y-3 text-xs font-mono">
                 
+                {/* BIND TO ACTIVE CHAIN (OPTIONAL) */}
+                {!editingSeal && weaknesses.length > 0 && (
+                  <div className="p-3 bg-gradient-to-r from-amber-950/40 via-[#11141c] to-amber-950/20 border border-amber-500/40 rounded-xl space-y-1.5 shadow-inner">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[9.5px] font-mono text-[#fef08a] uppercase font-bold flex items-center gap-1.5">
+                        <span>⛓️</span>
+                        <span>BIND ACTIVE CHAIN OF THE NAFS (OPTIONAL)</span>
+                      </label>
+                      <span className="text-[9px] font-mono text-zinc-400">
+                        {formData.boundWeaknessId ? 'Chain Selected' : 'Standalone Ore'}
+                      </span>
+                    </div>
+                    <select
+                      value={formData.boundWeaknessId}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        if (!selectedId) {
+                          setFormData(prev => ({ ...prev, boundWeaknessId: '' }));
+                          return;
+                        }
+                        const targetWeakness = weaknesses.find(w => w.id === selectedId);
+                        if (targetWeakness) {
+                          const runeInfo = SLIP_RUNES[targetWeakness.category] || SLIP_RUNES.Obligations;
+                          setFormData(prev => ({
+                            ...prev,
+                            boundWeaknessId: selectedId,
+                            name: prev.name || `Chain of ${targetWeakness.name}`,
+                            description: prev.description || `A heavy chain forged to shatter "${targetWeakness.name}". Root cause: "${targetWeakness.triggerCause}".`,
+                            runeSymbol: runeInfo.runeChar,
+                            buffName: prev.buffName || `Liberation: ${targetWeakness.name.replace(/^Weakness:\s*/i, '')}`,
+                            buffDescription: prev.buffDescription || `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${targetWeakness.category} slips.`
+                          }));
+                        }
+                      }}
+                      className="w-full bg-[#07080c] border border-amber-500/40 rounded-xl p-2 text-[#fef08a] font-mono text-xs focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="">-- No Chain (Standalone Elemental Ore) --</option>
+                      {weaknesses.map(w => {
+                        const isBoundToOther = w.sealId && activeSealIds.has(w.sealId) && (!editingSeal || w.sealId !== editingSeal.id);
+                        return (
+                          <option key={w.id} value={w.id} disabled={Boolean(isBoundToOther)}>
+                            {w.name} ({w.occurrenceCount}/5 slips - {w.category}) {isBoundToOther ? '[Already Bound]' : '[Ready to Bind]'}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <p className="text-[10px] font-sans text-zinc-400">
+                      Selecting a chain binds this vulnerability directly to this forged ore. Shattering it grants permanent mastery over the slip.
+                    </p>
+                  </div>
+                )}
+
                 {/* Ore Name */}
                 <div>
                   <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Ore Name *</label>
@@ -1714,6 +1919,161 @@ export const SealingPowerView: React.FC = () => {
                 </div>
 
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* BIND CHAINS OF THE NAFS MODAL */}
+      <AnimatePresence>
+        {isBindChainModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-2xl w-full bg-[#0b0d13] border border-[#c5a059]/50 rounded-2xl p-6 space-y-4 shadow-[0_0_40px_rgba(197,160,89,0.2)] text-left relative"
+            >
+              <ArabesqueCorner position="top-left" className="top-2 left-2 h-4 w-4" color="#c5a059" />
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+
+              <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 bg-[#3a2e12]/80 border border-[#c5a059]/60 rounded-xl text-[#fef08a]">
+                    <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+                  </span>
+                  <div>
+                    <h3 className="font-display text-base font-bold text-white tracking-wide flex items-center gap-2">
+                      <span>BIND CHAINS OF THE NAFS INTO ORES</span>
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-sans">
+                      Bind recurrent slips and spiritual vulnerabilities into heavy forged elemental ores to shatter and overcome.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsBindChainModalOpen(false)} 
+                  className="text-zinc-400 hover:text-white cursor-pointer p-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {weaknesses.length === 0 ? (
+                <div className="p-8 text-center bg-[#07080c] border border-white/10 rounded-2xl space-y-3">
+                  <div className="h-12 w-12 mx-auto rounded-full bg-[#18150c] border border-[#c5a059]/30 flex items-center justify-center text-xl">
+                    ⛓️
+                  </div>
+                  <h4 className="font-mono text-sm font-bold text-white">NO ACTIVE CHAINS FOUND</h4>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto font-sans leading-relaxed">
+                    When you track recurrent slips and weaknesses in Muḥāsabah (Self-Accountability), they form Chains of the Nafs that can be bound into elemental ores right here.
+                  </p>
+                </div>
+              ) : (
+                <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3">
+                  {weaknesses.map((w) => {
+                    const linkedSeal = seals.find(s => s.id === w.sealId);
+                    const isBound = Boolean(linkedSeal && w.status === 'Sealed');
+                    const runeDef = SLIP_RUNES[w.category] || SLIP_RUNES.Obligations;
+
+                    return (
+                      <div 
+                        key={w.id}
+                        className={`p-4 rounded-xl border transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                          isBound
+                            ? 'bg-[#0f1418] border-emerald-500/30'
+                            : 'bg-[#07080c] border-[#c5a059]/30 hover:border-[#c5a059]/60'
+                        }`}
+                      >
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="h-7 w-7 rounded-lg bg-[#3a2e12] border border-[#c5a059]/50 flex items-center justify-center text-[#fef08a] font-serif font-bold text-sm">
+                              {runeDef.runeChar}
+                            </span>
+                            <h4 className="text-sm font-mono font-bold text-white truncate">
+                              {w.name}
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-black/60 border border-white/10 text-zinc-300">
+                              {w.category}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-amber-950/60 border border-amber-500/30 text-amber-300">
+                              {w.occurrenceCount}/5 slips
+                            </span>
+                          </div>
+
+                          {w.triggerCause && (
+                            <p className="text-[11px] text-zinc-400 font-sans line-clamp-1">
+                              <span className="text-zinc-500">Root Cause:</span> "{w.triggerCause}"
+                            </p>
+                          )}
+
+                          <div className="pt-1 flex items-center gap-2 text-[10.5px] font-mono">
+                            {isBound ? (
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Bound to Ore: "{linkedSeal?.name}"
+                              </span>
+                            ) : (
+                              <span className="text-[#fef08a] flex items-center gap-1 font-bold">
+                                <span>⚡</span> Ready to be bound into Elemental Ore
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isBound ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUnbindWeaknessDirect(w.id)}
+                              className="px-3 py-1.5 bg-[#0b0d13] hover:bg-rose-950/60 border border-rose-500/40 text-xs font-mono text-rose-300 rounded-lg transition cursor-pointer"
+                              title="Unbind this chain from its ore so you can re-bind it or delete it cleanly"
+                            >
+                              Unbind Chain
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleBindWeaknessDirect(w.id)}
+                                className="px-3 py-1.5 bg-gradient-to-r from-[#3a2e12] to-[#8a6d2b] hover:from-[#4d3d18] hover:to-[#c5a059] border border-[#c5a059]/60 text-xs font-mono font-bold text-[#fef08a] rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                title="Quickly forge this chain into an elemental ore"
+                              >
+                                <Zap className="h-3.5 w-3.5" />
+                                <span>Quick Bind</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsBindChainModalOpen(false);
+                                  handleOpenCreateModal(w.id);
+                                }}
+                                className="px-3 py-1.5 bg-[#0b0d13] hover:bg-[#181d29] border border-[#c5a059]/40 text-xs font-mono text-zinc-300 hover:text-white rounded-lg transition cursor-pointer"
+                                title="Customize stats, rarity, and perks for this chain ore"
+                              >
+                                Customize
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-[#c5a059]/20">
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {unboundWeaknesses.length} unbound chains available
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsBindChainModalOpen(false)}
+                  className="px-4 py-2 bg-[#07080c] hover:bg-[#181d29] border border-[#c5a059]/30 text-zinc-300 hover:text-white rounded-xl text-xs font-mono transition cursor-pointer"
+                >
+                  CLOSE
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
