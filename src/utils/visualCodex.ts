@@ -1,4 +1,4 @@
-export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet';
+export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';
 export type CodexOrnamentation = 'minimal' | 'standard' | 'rich';
 export type CodexGlow = 'low' | 'standard' | 'high';
 export type CodexDensity = 'compact' | 'standard' | 'spacious';
@@ -50,36 +50,36 @@ export const CODEX_THEMES: Record<CodexThemeId, CodexThemeMetadata> = {
   'shadow-blue': {
     id: 'shadow-blue',
     name: 'Shadow Blue',
-    subtitle: 'Black Deep Sapphire & Luminous Electric Blue',
-    description: 'A formidable nocturnal realm of black deep sapphire and abyssal obsidian slate, coursing with radiant electric blue power veins.',
+    subtitle: 'Black Deep Sapphire & Royal Cobalt Veins',
+    description: 'A formidable nocturnal realm carved from deep obsidian black and abyssal midnight stone, coursing with deep royal sapphire and vibrant cobalt power veins.',
     archetype: 'Nocturnal Arcane Sentinel',
     swatches: {
-      void: '#02040a',
-      surface: '#040a17',
-      card: '#081426',
+      void: '#06070b',
+      surface: '#0a0c12',
+      card: '#0e111a',
       accent: '#1d4ed8',
-      bright: '#0284c7',
-      highlight: '#00f0ff'
+      bright: '#3b82f6',
+      highlight: '#60a5fa'
     },
-    hierarchy: 'Void Slate → Black Deep Sapphire → Electric Blue Resonance',
-    atmosphere: 'Nocturnal, abyssal focus, electric power veins, disciplined arcane intensity'
+    hierarchy: 'Obsidian Void → Deep Sapphire → Royal Cobalt Power Vein',
+    atmosphere: 'Nocturnal obsidian, royal sapphire intensity, electric cobalt veins, disciplined arcane focus'
   },
   'emerald-manuscript': {
     id: 'emerald-manuscript',
     name: 'Emerald Manuscript',
-    subtitle: 'Scholarly Forest & Sacred Jade',
-    description: 'Deep primordial forest surfaces with muted scholarly jade and celestial celadon accents. Conveys wisdom, sanctuary, and serene spiritual focus.',
+    subtitle: 'Sacred Jade & Illuminated Obsidian Manuscript',
+    description: 'Deep obsidian black manuscript tablets illuminated by sacred jade calligraphy, verdant forest borders, and celestial celadon telemetry against pure dark stone.',
     archetype: 'Scholarly Sage',
     swatches: {
-      void: '#030c08',
-      surface: '#061811',
-      card: '#0b241b',
+      void: '#060807',
+      surface: '#0a0d0c',
+      card: '#0e1210',
       accent: '#10b981',
       bright: '#34d399',
       highlight: '#6ee7b7'
     },
-    hierarchy: 'Forest Void → Jade Surface → Celadon Telemetry',
-    atmosphere: 'Scholarly, organic, contemplative, sacred fortitude'
+    hierarchy: 'Obsidian Void → Sacred Jade Inlay → Celadon Telemetry',
+    atmosphere: 'Illuminated obsidian, sacred jade sanctuary, disciplined scholarly contemplation'
   },
   'obsidian-silver': {
     id: 'obsidian-silver',
@@ -114,6 +114,23 @@ export const CODEX_THEMES: Record<CodexThemeId, CodexThemeMetadata> = {
     },
     hierarchy: 'Obsidian Slate → Royal Amethyst → Ethereal Violet Vein',
     atmosphere: 'Mystical night vigil, concentrated ethereal mana, pulsing power veins'
+  },
+  'crimson-sovereign': {
+    id: 'crimson-sovereign',
+    name: 'Crimson Sovereign',
+    subtitle: 'Bloodstone Damascus & Imperial Ruby Veins',
+    description: 'A formidable realm forged in pure obsidian black stone, chiseled with deep Damascus ruby power veins and radiant crimson illumination. Embodies martial Furūsiyya chivalry, resolute discipline, and uncompromising accountability.',
+    archetype: 'Vanguard Sovereign / Furūsiyya',
+    swatches: {
+      void: '#06070a',
+      surface: '#0a0c10',
+      card: '#0f1118',
+      accent: '#dc2626',
+      bright: '#ef4444',
+      highlight: '#fca5a5'
+    },
+    hierarchy: 'Obsidian Void → Bloodstone Damascus → Imperial Ruby Power Vein',
+    atmosphere: 'Deep black obsidian, imperial ruby chivalry, resolute discipline, incandescent crimson veins'
   }
 };
 
@@ -133,7 +150,7 @@ export const getStoredVisualCodexSettings = (): VisualCodexSettings => {
     const raw = localStorage.getItem(CODEX_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const validThemes: CodexThemeId[] = ['imperial-gold', 'shadow-blue', 'emerald-manuscript', 'obsidian-silver', 'astral-violet'];
+      const validThemes: CodexThemeId[] = ['imperial-gold', 'shadow-blue', 'emerald-manuscript', 'obsidian-silver', 'astral-violet', 'crimson-sovereign'];
       return {
         theme: (validThemes.includes(parsed.theme) ? parsed.theme : 'imperial-gold') as CodexThemeId,
         ornamentation: (['minimal', 'standard', 'rich'].includes(parsed.ornamentation) ? parsed.ornamentation : 'standard') as CodexOrnamentation,

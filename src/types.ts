@@ -570,7 +570,7 @@ export interface POSState {
   visualCodex?: VisualCodexSettings;
 }
 
-export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet';
+export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';
 export type CodexOrnamentation = 'minimal' | 'standard' | 'rich';
 export type CodexGlow = 'low' | 'standard' | 'high';
 export type CodexDensity = 'compact' | 'standard' | 'spacious';

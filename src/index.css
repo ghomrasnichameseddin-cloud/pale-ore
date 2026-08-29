@@ -66,60 +66,60 @@
   --pattern-stroke-inner: rgba(255, 255, 255, 0.015);
 }
 
-/* 2. SHADOW BLUE (Black Deep Sapphire & Electric Blue Power Veins) */
+/* 2. SHADOW BLUE (Black Deep Sapphire & Royal Cobalt Power Veins) */
 [data-theme="shadow-blue"] {
-  --bg-void: #02040a;
-  --bg-surface: #040a17;
-  --bg-card: #081426;
-  --bg-card-hover: #0d203d;
-  --bg-elevated: #122b52;
+  --bg-void: #06070b;
+  --bg-surface: #0a0c12;
+  --bg-card: #0e111a;
+  --bg-card-hover: #131724;
+  --bg-elevated: #181d2c;
 
   --accent-primary: #1d4ed8;
-  --accent-bright: #0284c7;
-  --accent-highlight: #00f0ff;
-  --accent-dim: #091b36;
-  --accent-surface: #091b36;
-  --accent-surface-hover: #0f2d59;
+  --accent-bright: #3b82f6;
+  --accent-highlight: #60a5fa;
+  --accent-dim: #172554;
+  --accent-surface: #0b1528;
+  --accent-surface-hover: #10203d;
 
-  --border-subtle: rgba(2, 132, 199, 0.25);
-  --border-accent: rgba(0, 240, 255, 0.45);
-  --border-strong: #00f0ff;
+  --border-subtle: rgba(29, 78, 216, 0.28);
+  --border-accent: rgba(59, 130, 246, 0.48);
+  --border-strong: #3b82f6;
 
-  --text-primary: #f0f8ff;
+  --text-primary: #f0f4fc;
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
-  --text-accent: #38bdf8;
-  --text-highlight: #00f0ff;
+  --text-accent: #60a5fa;
+  --text-highlight: #93c5fd;
 
-  --glow-color: rgba(0, 162, 255, 0.32);
-  --glow-strong: rgba(0, 240, 255, 0.65);
-  --progress-gradient: linear-gradient(90deg, #091b36 0%, #1d4ed8 50%, #00f0ff 100%);
-  --scrollbar-thumb: rgba(2, 132, 199, 0.35);
-  --scrollbar-thumb-hover: rgba(0, 240, 255, 0.65);
+  --glow-color: rgba(29, 78, 216, 0.35);
+  --glow-strong: rgba(59, 130, 246, 0.65);
+  --progress-gradient: linear-gradient(90deg, #172554 0%, #1d4ed8 50%, #3b82f6 85%, #60a5fa 100%);
+  --scrollbar-thumb: rgba(29, 78, 216, 0.4);
+  --scrollbar-thumb-hover: rgba(59, 130, 246, 0.7);
 
-  --pattern-radial-1: rgba(2, 132, 199, 0.08);
-  --pattern-radial-2: rgba(0, 240, 255, 0.04);
-  --pattern-stroke: rgba(2, 132, 199, 0.05);
-  --pattern-stroke-inner: rgba(0, 240, 255, 0.025);
+  --pattern-radial-1: rgba(29, 78, 216, 0.035);
+  --pattern-radial-2: rgba(37, 99, 235, 0.02);
+  --pattern-stroke: rgba(59, 130, 246, 0.03);
+  --pattern-stroke-inner: rgba(96, 165, 250, 0.015);
 }
 
-/* 3. EMERALD MANUSCRIPT (Deep Forest, Scholarly Jade & Celadon) */
+/* 3. EMERALD MANUSCRIPT (Sacred Jade & Illuminated Obsidian Manuscript) */
 [data-theme="emerald-manuscript"] {
-  --bg-void: #030c08;
-  --bg-surface: #061811;
-  --bg-card: #0b241b;
-  --bg-card-hover: #103327;
-  --bg-elevated: #164032;
+  --bg-void: #060807;
+  --bg-surface: #0a0d0c;
+  --bg-card: #0e1210;
+  --bg-card-hover: #131915;
+  --bg-elevated: #18211b;
 
   --accent-primary: #10b981;
   --accent-bright: #34d399;
   --accent-highlight: #6ee7b7;
-  --accent-dim: #059669;
-  --accent-surface: #064e3b;
-  --accent-surface-hover: #0b634c;
+  --accent-dim: #064e3b;
+  --accent-surface: #081d14;
+  --accent-surface-hover: #0e2e20;
 
   --border-subtle: rgba(16, 185, 129, 0.22);
-  --border-accent: rgba(52, 211, 153, 0.4);
+  --border-accent: rgba(52, 211, 153, 0.42);
   --border-strong: #34d399;
 
   --text-primary: #f0fdf4;
@@ -128,16 +128,16 @@
   --text-accent: #34d399;
   --text-highlight: #6ee7b7;
 
-  --glow-color: rgba(16, 185, 129, 0.25);
-  --glow-strong: rgba(110, 231, 183, 0.45);
+  --glow-color: rgba(16, 185, 129, 0.22);
+  --glow-strong: rgba(52, 211, 153, 0.55);
   --progress-gradient: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
   --scrollbar-thumb: rgba(16, 185, 129, 0.32);
   --scrollbar-thumb-hover: rgba(52, 211, 153, 0.6);
 
-  --pattern-radial-1: rgba(16, 185, 129, 0.06);
-  --pattern-radial-2: rgba(5, 150, 105, 0.04);
-  --pattern-stroke: rgba(52, 211, 153, 0.04);
-  --pattern-stroke-inner: rgba(110, 231, 183, 0.02);
+  --pattern-radial-1: rgba(16, 185, 129, 0.035);
+  --pattern-radial-2: rgba(5, 150, 105, 0.02);
+  --pattern-stroke: rgba(52, 211, 153, 0.03);
+  --pattern-stroke-inner: rgba(110, 231, 183, 0.015);
 }
 
 /* 4. OBSIDIAN SILVER (Tactical Graphite, Monolithic Stealth, Sterling Silver & Pearlescent White) */
@@ -212,6 +212,43 @@
   --pattern-radial-2: rgba(192, 132, 252, 0.04);
   --pattern-stroke: rgba(168, 85, 247, 0.05);
   --pattern-stroke-inner: rgba(243, 232, 255, 0.025);
+}
+
+/* 6. CRIMSON SOVEREIGN (Bloodstone Damascus & Imperial Ruby Veins on Obsidian Black) */
+[data-theme="crimson-sovereign"] {
+  --bg-void: #06070a;
+  --bg-surface: #0a0c10;
+  --bg-card: #0f1118;
+  --bg-card-hover: #161822;
+  --bg-elevated: #1c1f2c;
+
+  --accent-primary: #dc2626;
+  --accent-bright: #ef4444;
+  --accent-highlight: #fca5a5;
+  --accent-dim: #7f1d1d;
+  --accent-surface: #1e0b0b;
+  --accent-surface-hover: #2d1010;
+
+  --border-subtle: rgba(220, 38, 38, 0.28);
+  --border-accent: rgba(239, 68, 68, 0.48);
+  --border-strong: #ef4444;
+
+  --text-primary: #fef2f2;
+  --text-secondary: #fecaca;
+  --text-muted: #f87171;
+  --text-accent: #f87171;
+  --text-highlight: #ffffff;
+
+  --glow-color: rgba(220, 38, 38, 0.35);
+  --glow-strong: rgba(239, 68, 68, 0.7);
+  --progress-gradient: linear-gradient(90deg, #450a0a 0%, #991b1b 40%, #dc2626 75%, #fca5a5 100%);
+  --scrollbar-thumb: rgba(220, 38, 38, 0.38);
+  --scrollbar-thumb-hover: rgba(239, 68, 68, 0.7);
+
+  --pattern-radial-1: rgba(220, 38, 38, 0.035);
+  --pattern-radial-2: rgba(239, 68, 68, 0.02);
+  --pattern-stroke: rgba(239, 68, 68, 0.03);
+  --pattern-stroke-inner: rgba(254, 202, 202, 0.015);
 }
 
 /* ==========================================================================
@@ -392,27 +429,27 @@ html, body, #root {
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.6) !important;
 }
 
-/* 2. SHADOW BLUE: Electric blue power veins through black deep sapphire */
+/* 2. SHADOW BLUE: Electric deep sapphire power veins through black obsidian void */
 [data-theme="shadow-blue"] .talisman-frame,
 [data-theme="shadow-blue"] .glass-panel {
-  border-color: rgba(2, 132, 199, 0.32) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(0, 240, 255, 0.14), 0 0 18px rgba(0, 162, 255, 0.22) !important;
+  border-color: rgba(29, 78, 216, 0.35) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(59, 130, 246, 0.2), 0 0 20px rgba(29, 78, 216, 0.25) !important;
 }
 
 [data-theme="shadow-blue"] .glass-panel-hover:hover {
-  border-color: rgba(0, 240, 255, 0.65) !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95), 0 0 28px rgba(0, 162, 255, 0.45), inset 0 0 14px rgba(0, 162, 255, 0.18) !important;
+  border-color: rgba(59, 130, 246, 0.7) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.98), 0 0 28px rgba(37, 99, 235, 0.45), inset 0 0 14px rgba(37, 99, 235, 0.2) !important;
 }
 
 [data-theme="shadow-blue"] .gilded-corners::after {
-  border-color: #00f0ff !important;
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.9) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.85) !important;
 }
 
 [data-theme="shadow-blue"] .rpg-progress-gold,
 [data-theme="shadow-blue"] .codex-progress-bar {
-  background: linear-gradient(90deg, #091b36 0%, #1d4ed8 50%, #00f0ff 100%) !important;
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6) !important;
+  background: linear-gradient(90deg, #172554 0%, #1d4ed8 50%, #3b82f6 85%, #60a5fa 100%) !important;
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.65) !important;
 }
 
 /* 3. OBSIDIAN SILVER: Pearlescent white crystalline sheen through monolithic obsidian */
@@ -438,11 +475,50 @@ html, body, #root {
   box-shadow: 0 0 14px rgba(255, 255, 255, 0.5) !important;
 }
 
-/* 4. EMERALD MANUSCRIPT: Sacred jade glow */
+/* 4. EMERALD MANUSCRIPT: Sacred jade glow on illuminated obsidian manuscript */
+[data-theme="emerald-manuscript"] .talisman-frame,
+[data-theme="emerald-manuscript"] .glass-panel {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(52, 211, 153, 0.15), 0 0 18px rgba(16, 185, 129, 0.18) !important;
+}
+
+[data-theme="emerald-manuscript"] .glass-panel-hover:hover {
+  border-color: rgba(52, 211, 153, 0.65) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.98), 0 0 28px rgba(16, 185, 129, 0.4), inset 0 0 14px rgba(16, 185, 129, 0.18) !important;
+}
+
+[data-theme="emerald-manuscript"] .gilded-corners::after {
+  border-color: #34d399 !important;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.85) !important;
+}
+
 [data-theme="emerald-manuscript"] .rpg-progress-gold,
 [data-theme="emerald-manuscript"] .codex-progress-bar {
   background: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%) !important;
   box-shadow: 0 0 14px rgba(16, 185, 129, 0.55) !important;
+}
+
+/* 5. CRIMSON SOVEREIGN: Imperial ruby power veins through black obsidian void */
+[data-theme="crimson-sovereign"] .talisman-frame,
+[data-theme="crimson-sovereign"] .glass-panel {
+  border-color: rgba(220, 38, 38, 0.32) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(239, 68, 68, 0.2), 0 0 20px rgba(220, 38, 38, 0.25) !important;
+}
+
+[data-theme="crimson-sovereign"] .glass-panel-hover:hover {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.98), 0 0 28px rgba(220, 38, 38, 0.45), inset 0 0 14px rgba(220, 38, 38, 0.2) !important;
+}
+
+[data-theme="crimson-sovereign"] .gilded-corners::after {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.85) !important;
+}
+
+[data-theme="crimson-sovereign"] .rpg-progress-gold,
+[data-theme="crimson-sovereign"] .codex-progress-bar {
+  background: linear-gradient(90deg, #450a0a 0%, #991b1b 40%, #dc2626 75%, #fca5a5 100%) !important;
+  box-shadow: 0 0 14px rgba(220, 38, 38, 0.65) !important;
 }
 
 /* ==========================================================================
@@ -451,7 +527,7 @@ html, body, #root {
    without breaking semantic statuses (emerald/spiritual, teal/quran, violet/night, ruby/accountability).
    ========================================================================== */
 
-:is([data-theme="shadow-blue"], [data-theme="emerald-manuscript"], [data-theme="obsidian-silver"], [data-theme="astral-violet"]),
+:is([data-theme="shadow-blue"], [data-theme="emerald-manuscript"], [data-theme="obsidian-silver"], [data-theme="astral-violet"], [data-theme="crimson-sovereign"]),
 [data-theme]:not([data-theme="imperial-gold"]) {
   /* Surfaces */
   & [class*="bg-[#07080c]"], &[class*="bg-[#07080c]"] {
