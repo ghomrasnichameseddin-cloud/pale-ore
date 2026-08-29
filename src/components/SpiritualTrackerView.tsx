@@ -209,14 +209,14 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     <div className="space-y-6 max-w-7xl mx-auto pb-12" id="sacred-protocol-root">
       
       {/* 1. SINCERITY SAFEGUARD & TOP BAR */}
-      <div className="p-3.5 sm:p-4 bg-gradient-to-r from-[#17140e] via-[#100e0a] to-[#0a0806] border border-[#c5a059]/40 rounded-2xl relative overflow-hidden shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-3.5 sm:p-4 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-2xl relative overflow-hidden shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-start sm:items-center gap-3">
-          <div className="p-2 rounded-xl bg-[#c5a059]/15 border border-[#c5a059]/40 text-[#fef08a] shrink-0 mt-0.5 sm:mt-0">
-            <RubElHizbIcon className="h-4 sm:h-5 w-4 sm:w-5 text-[#c5a059]" />
+          <div className="p-2 rounded-xl bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shrink-0 mt-0.5 sm:mt-0">
+            <RubElHizbIcon className="h-4 sm:h-5 w-4 sm:w-5 text-[var(--accent-bright)]" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#c5a059] font-bold">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--accent-bright)] font-bold">
                 ضَابِطُ الإِخْلَاصِ وَالنِّيَّة • THEOLOGICAL SINCERITY SAFEGUARD
               </span>
             </div>
@@ -240,20 +240,20 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
           <button
             onClick={() => setShowScorecardModal(true)}
-            className="px-3 py-1.5 bg-[#1f1a10] hover:bg-[#2a2213] border border-[#c5a059]/50 text-[#fef08a] text-xs font-mono font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+            className="px-3 py-1.5 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm"
           >
-            <Award className="h-3.5 w-3.5 text-[#c5a059]" />
+            <Award className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
             <span>10/10 Scorecard</span>
           </button>
         </div>
       </div>
 
       {/* 2. SACRED ASTRONOMICAL HEADER & HIJRI CALENDAR BAR */}
-      <div className="p-5 sm:p-6 bg-gradient-to-b from-[#131722] via-[#0b0d13] to-[#07080c] border border-[#c5a059]/30 rounded-2xl relative overflow-hidden shadow-xl space-y-4">
+      <div className="p-5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-accent)] rounded-2xl relative overflow-hidden shadow-xl space-y-4">
         
         {/* Background Arabesque filigree */}
         <div className="absolute top-0 right-0 w-80 h-full opacity-10 pointer-events-none">
-          <svg viewBox="0 0 200 200" className="w-full h-full text-[#c5a059] fill-current">
+          <svg viewBox="0 0 200 200" className="w-full h-full text-[var(--accent-bright)] fill-current">
             <path d="M100 0 L130 70 L200 100 L130 130 L100 200 L70 130 L0 100 L70 70 Z" />
           </svg>
         </div>
@@ -261,8 +261,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono bg-[#c5a059]/15 text-[#fef08a] border border-[#c5a059]/40 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1">
-                <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              <span className="text-[10px] font-mono bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1">
+                <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
                 <span>SACRED PROTOCOL • البُرُوتُوكُولُ الإِيمَانِيّ</span>
               </span>
 
@@ -278,7 +278,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 </span>
               )}
               {(hijriInfo.dayOfWeekEn === 'Monday' || hijriInfo.dayOfWeekEn === 'Thursday') && (
-                <span className="text-[10px] font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
                   🌟 Sunnah Fasting Day
                 </span>
               )}
@@ -288,7 +288,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
               <h1 className="text-xl sm:text-2xl font-display font-bold text-white tracking-wide">
                 {hijriInfo.formattedAr}
               </h1>
-              <span className="text-sm font-mono text-[#c5a059]">
+              <span className="text-sm font-mono text-[var(--accent-bright)]">
                 ({hijriInfo.formattedEn})
               </span>
             </div>
@@ -310,9 +310,9 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
             <button
               onClick={syncWithRealClock}
-              className="px-3 py-1.5 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-[#c5a059]/30 text-xs font-mono text-[#fef08a] font-bold transition flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-accent)] text-xs font-mono text-[var(--accent-highlight)] font-bold transition flex items-center gap-1.5"
             >
-              <RefreshCw className="h-3.5 w-3.5 text-[#c5a059]" />
+              <RefreshCw className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
               <span>TODAY</span>
             </button>
 
@@ -342,21 +342,21 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
               <span className={`text-base font-display font-bold ${completedFardhCount === 5 ? 'text-emerald-400' : 'text-zinc-100'}`}>
                 {completedFardhCount} / 5
               </span>
-              <span className="text-[10px] font-mono text-[#c5a059]">{onTimeCount} on time</span>
+              <span className="text-[10px] font-mono text-[var(--accent-bright)]">{onTimeCount} on time</span>
             </div>
           </div>
 
           {/* 40-Day Masjid Sanctuary */}
           <div 
             onClick={() => setActiveTab('masjid40')}
-            className="p-3 bg-gradient-to-br from-[#1c160b]/40 to-[#080a0f] border border-[#c5a059]/30 hover:border-[#c5a059] rounded-xl space-y-1 cursor-pointer transition shadow-sm group"
+            className="p-3 bg-gradient-to-br from-[var(--accent-surface)] to-[var(--bg-void)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl space-y-1 cursor-pointer transition shadow-sm group"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-[#c5a059] uppercase group-hover:text-amber-200">40-Day Masjid</span>
-              <Shield className="h-3.5 w-3.5 text-[#c5a059]" />
+              <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase group-hover:text-[var(--accent-highlight)]">40-Day Masjid</span>
+              <Shield className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
             </div>
             <div className="flex items-baseline justify-between">
-              <span className="text-base font-display font-bold text-[#fef08a]">
+              <span className="text-base font-display font-bold text-[var(--accent-highlight)]">
                 {masjid40Stats.currentStreak} / 40 D
               </span>
               <span className={`text-[10px] font-mono ${masjid40Stats.isTodayFullyCompleted ? 'text-emerald-400 font-bold' : 'text-zinc-400'}`}>
@@ -406,7 +406,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
       </div>
 
       {/* 4. CLEAN TAB NAVIGATION BAR */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#090b10] border border-white/10 rounded-2xl overflow-x-auto select-none no-scrollbar">
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl overflow-x-auto select-none no-scrollbar">
         {tabsConfig.map(tab => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
@@ -416,16 +416,16 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 shrink-0 ${
                 isSelected
-                  ? 'bg-[#1a1710] text-[#fef08a] border border-[#c5a059]/60 shadow-[0_0_12px_rgba(197,160,89,0.2)]'
+                  ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] shadow-[0_0_12px_var(--glow-color)]'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
               }`}
             >
-              <Icon className={`h-3.5 w-3.5 ${isSelected ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
+              <Icon className={`h-3.5 w-3.5 ${isSelected ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
               <span>{tab.label}</span>
               <span className="text-[10px] opacity-60 font-sans hidden sm:inline">({tab.labelAr})</span>
               {tab.badge && (
                 <span className={`text-[9px] px-1.5 py-0.2 rounded-full border ${
-                  isSelected ? 'bg-[#c5a059]/20 text-[#fef08a] border-[#c5a059]/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  isSelected ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border-[var(--border-accent)]' : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                 }`}>
                   {tab.badge}
                 </span>
@@ -464,7 +464,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
                 <button
                   onClick={() => setActiveTab('salaat')}
-                  className="text-xs font-mono text-[#c5a059] hover:text-amber-200 transition flex items-center gap-1 self-start sm:self-auto"
+                  className="text-xs font-mono text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] transition flex items-center gap-1 self-start sm:self-auto"
                 >
                   <span>Detailed Salaat View</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
@@ -504,13 +504,13 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <h4 className="font-display font-bold text-base text-zinc-100">{prayer.nameEn}</h4>
-                                <span className="text-xs text-[#c5a059] font-display">({prayer.nameAr})</span>
+                                <span className="text-xs text-[var(--accent-bright)] font-display">({prayer.nameAr})</span>
                               </div>
                               <span className="text-[10px] font-mono text-zinc-400 block">{prayer.timeLabel} • {prayer.fardhRakats} Rak&apos;ahs</span>
                             </div>
                           </div>
 
-                          <span className="text-[10px] font-mono font-bold text-[#c5a059] bg-[#1a140a] border border-[#c5a059]/30 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-mono font-bold text-[var(--accent-bright)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded-full">
                             +{prayer.fardhXp} XP
                           </span>
                         </div>
@@ -572,7 +572,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         >
                           <span className="flex items-center gap-1.5">
                             <span>🕌 In Masjid / Jamā&apos;ah</span>
-                            {prayerState.inMasjid && <span className="text-[9px] text-[#fef08a] bg-[#c5a059]/20 px-1 rounded">40D +1</span>}
+                            {prayerState.inMasjid && <span className="text-[9px] text-[var(--accent-highlight)] bg-[var(--accent-surface)] border border-[var(--border-subtle)] px-1 rounded">40D +1</span>}
                           </span>
                           <span className="text-[10px] text-indigo-300">+{prayer.masjidXp} XP</span>
                         </button>
@@ -616,7 +616,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
                     <button
                       onClick={() => setActiveTab('siam')}
-                      className="text-[10px] font-mono text-[#c5a059] hover:underline flex items-center gap-0.5"
+                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
                     >
                       <span>Full Hub</span>
                       <ArrowUpRight className="h-3 w-3" />
@@ -690,7 +690,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
                     <button
                       onClick={() => setActiveTab('sunnah')}
-                      className="text-[10px] font-mono text-[#c5a059] hover:underline flex items-center gap-0.5"
+                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
                     >
                       <span>Full Hub</span>
                       <ArrowUpRight className="h-3 w-3" />
@@ -767,7 +767,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
                     <button
                       onClick={() => setActiveTab('adhkar')}
-                      className="text-[10px] font-mono text-[#c5a059] hover:underline flex items-center gap-0.5"
+                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
                     >
                       <span>Full Hub</span>
                       <ArrowUpRight className="h-3 w-3" />
@@ -853,11 +853,11 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
             </div>
 
             {/* 3. KHUSHU' & HEART PRESENCE GAUGE */}
-            <div className="p-5 bg-gradient-to-r from-[#17140e] via-[#100e0a] to-[#070605] border border-[#c5a059]/30 rounded-2xl relative overflow-hidden shadow-lg space-y-4">
+            <div className="p-5 bg-gradient-to-r from-[#17140e] via-[#100e0a] to-[#070605] border border-[var(--border-accent)] rounded-2xl relative overflow-hidden shadow-lg space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                    <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                     <h4 className="font-display font-bold text-base text-zinc-100">
                       Khushū&apos; &amp; Heart Presence Gauge (مِيزَانُ الخُشُوعِ وَحُضُورِ القَلْب)
                     </h4>
@@ -882,7 +882,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     onClick={() => setKhushuRating(val, systemDate)}
                     className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold transition flex flex-col items-center justify-center ${
                       khushuRating === val
-                        ? 'bg-[#c5a059] text-black border border-amber-200 shadow-[0_0_15px_rgba(197,160,89,0.4)]'
+                        ? 'bg-[var(--accent-bright)] text-[var(--bg-void)] border border-[var(--accent-highlight)] shadow-[0_0_15px_var(--glow-accent)]'
                         : 'bg-[#07080a] border border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
                     }`}
                   >
@@ -961,13 +961,13 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <h4 className="font-display font-bold text-base text-zinc-100">{prayer.nameEn}</h4>
-                                <span className="text-xs text-[#c5a059] font-display">({prayer.nameAr})</span>
+                                <span className="text-xs text-[var(--accent-bright)] font-display">({prayer.nameAr})</span>
                               </div>
                               <span className="text-[10px] font-mono text-zinc-400 block">{prayer.timeLabel} • {prayer.fardhRakats} Rak&apos;ahs</span>
                             </div>
                           </div>
 
-                          <span className="text-[10px] font-mono font-bold text-[#c5a059] bg-[#1a140a] border border-[#c5a059]/30 px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] font-mono font-bold text-[var(--accent-bright)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded-full">
                             +{prayer.fardhXp} XP
                           </span>
                         </div>

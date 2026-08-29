@@ -23,9 +23,9 @@ export const AnalyticsView: React.FC = () => {
     <div className="space-y-6" id="analytics-view-root">
       
       {/* SECTION HEADER */}
-      <div className="border-b border-[#c5a059]/20 pb-4">
+      <div className="border-b border-[var(--border-subtle)] pb-4">
         <h2 className="font-display text-2xl font-bold tracking-tight text-white uppercase flex items-center gap-2">
-          <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+          <RubElHizbIcon className="h-5 w-5 text-[var(--accent-bright)]" />
           DIVINE ORACLE & METRICS SANCTUM
         </h2>
         <p className="text-xs text-zinc-300 font-mono mt-1">
@@ -43,14 +43,14 @@ export const AnalyticsView: React.FC = () => {
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div key={idx} className="glass-panel rounded-xl p-5 flex items-center justify-between gap-4 border border-[#c5a059]/25 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
-              <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
+            <div key={idx} className="glass-panel rounded-xl p-5 flex items-center justify-between gap-4 border border-[var(--border-accent)] bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
+              <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" />
               <div className="space-y-1">
-                <span className="text-[10px] font-mono text-[#c5a059] uppercase block font-bold">{stat.label}</span>
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase block font-bold">{stat.label}</span>
                 <span className="text-3xl font-display font-extrabold text-white block mt-1">{stat.value}</span>
                 <span className="text-[9px] font-mono text-zinc-400 block">{stat.desc}</span>
               </div>
-              <Icon className="h-8 w-8 text-[#c5a059]/20 shrink-0" />
+              <Icon className="h-8 w-8 text-[var(--border-accent)]/30 shrink-0" />
             </div>
           );
         })}
@@ -60,19 +60,19 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* CHART BAR CARD (DAILY XP TREND) */}
-        <div className="lg:col-span-2 glass-panel rounded-xl p-6 space-y-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">
-          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+        <div className="lg:col-span-2 glass-panel rounded-xl p-6 space-y-4 border border-[var(--border-accent)] bg-[#0b0d13]/90 relative shadow-xl">
+          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
           
           <div>
             <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+              <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
               DAILY RESONANCE HARVEST CYCLE
             </h3>
             <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Empirical measurement of spiritual essence over the past 7 days</p>
           </div>
 
           {/* Bar Chart Svg/CSS */}
-          <div className="pt-6 h-[240px] flex items-end justify-between gap-4 border-b border-[#c5a059]/20">
+          <div className="pt-6 h-[240px] flex items-end justify-between gap-4 border-b border-[var(--border-subtle)]">
             {analytics.dailyXpTrend.map((day: any, idx: number) => {
               const percentHeight = Math.max(5, Math.round((day.xp / maxTrendXp) * 100));
               
@@ -80,7 +80,7 @@ export const AnalyticsView: React.FC = () => {
                 <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative group">
                   
                   {/* Tooltip on Hover */}
-                  <div className="absolute -top-7 opacity-0 group-hover:opacity-100 bg-[#07080c] border border-[#c5a059] text-[9px] font-mono text-[#fef08a] px-2 py-0.5 rounded transition-opacity pointer-events-none z-10 shadow-lg font-bold">
+                  <div className="absolute -top-7 opacity-0 group-hover:opacity-100 bg-[#07080c] border border-[var(--border-strong)] text-[9px] font-mono text-[var(--accent-highlight)] px-2 py-0.5 rounded transition-opacity pointer-events-none z-10 shadow-lg font-bold">
                     +{day.xp} XP
                   </div>
 
@@ -88,7 +88,7 @@ export const AnalyticsView: React.FC = () => {
                   <div 
                     className={`w-full max-w-[28px] rounded-t-md transition-all duration-500 ${
                       day.xp > 0 
-                        ? 'bg-gradient-to-t from-[#8a6d2b] to-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.25)] group-hover:brightness-125' 
+                        ? 'rpg-progress-gold group-hover:brightness-125' 
                         : 'bg-[#07080c] border border-white/5'
                     }`}
                     style={{ height: `${percentHeight}%` }}
@@ -105,27 +105,27 @@ export const AnalyticsView: React.FC = () => {
 
           {/* Chart footer metrics */}
           <div className="grid grid-cols-3 text-center pt-2">
-            <div className="border-r border-[#c5a059]/20">
+            <div className="border-r border-[var(--border-subtle)]">
               <span className="text-[9px] font-mono text-zinc-400 uppercase block">WEEKLY TOTAL</span>
               <span className="text-lg font-mono font-bold text-white block mt-1">+{analytics.weeklyXp} XP</span>
             </div>
-            <div className="border-r border-[#c5a059]/20">
+            <div className="border-r border-[var(--border-subtle)]">
               <span className="text-[9px] font-mono text-zinc-400 uppercase block">MONTHLY TOTAL</span>
               <span className="text-lg font-mono font-bold text-white block mt-1">+{analytics.monthlyXp} XP</span>
             </div>
             <div>
-              <span className="text-[9px] font-mono text-[#c5a059] uppercase block font-bold">DAILY AVERAGE</span>
-              <span className="text-lg font-mono font-bold text-[#fef08a] block mt-1">+{analytics.averageXp} XP</span>
+              <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase block font-bold">DAILY AVERAGE</span>
+              <span className="text-lg font-mono font-bold text-[var(--accent-highlight)] block mt-1">+{analytics.averageXp} XP</span>
             </div>
           </div>
         </div>
 
         {/* COMPREHENSIVE POS ATTRIBUTES RADAR LIST */}
-        <div className="glass-panel rounded-xl p-6 space-y-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">
-          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+        <div className="glass-panel rounded-xl p-6 space-y-4 border border-[var(--border-accent)] bg-[#0b0d13]/90 relative shadow-xl">
+          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
           <div>
             <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+              <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
               SUSTAINED ATTRIBUTES
             </h3>
             <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Attributes mastery based on empirical trial data</p>
@@ -133,10 +133,10 @@ export const AnalyticsView: React.FC = () => {
 
           <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
             {attributes.map((attr) => (
-              <div key={attr.id} className="space-y-1.5 text-xs bg-[#07080c]/60 p-2.5 rounded-lg border border-[#c5a059]/15">
+              <div key={attr.id} className="space-y-1.5 text-xs bg-[#07080c]/60 p-2.5 rounded-lg border border-[var(--border-subtle)]">
                 <div className="flex justify-between items-center text-[10px] font-mono">
                   <span className="text-zinc-200 font-bold uppercase">{attr.name}</span>
-                  <span className="text-[#e5c875] font-bold">LVL {attr.level}</span>
+                  <span className="text-[var(--accent-bright)] font-bold">LVL {attr.level}</span>
                 </div>
                 
                 <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden relative border border-white/5">
@@ -156,17 +156,17 @@ export const AnalyticsView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
         
         {/* COMPREHENSIVE CATEGORY BREAKDOWNS */}
-        <div className="glass-panel rounded-xl p-6 space-y-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">
-          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-          <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider border-b border-[#c5a059]/20 pb-2 flex items-center gap-2">
-            <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+        <div className="glass-panel rounded-xl p-6 space-y-4 border border-[var(--border-accent)] bg-[#0b0d13]/90 relative shadow-xl">
+          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+          <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider border-b border-[var(--border-subtle)] pb-2 flex items-center gap-2">
+            <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
             CATEGORICAL ORACLE REVELATION
           </h3>
 
           <div className="space-y-4">
             <div className="flex justify-between items-center text-xs py-1.5 border-b border-white/5">
               <span className="text-zinc-400 font-mono">MOST_IMPROVED_DISCIPLINE:</span>
-              <span className="text-[#fef08a] font-sans font-bold uppercase">{analytics.mostImprovedSkill}</span>
+              <span className="text-[var(--accent-highlight)] font-sans font-bold uppercase">{analytics.mostImprovedSkill}</span>
             </div>
 
             <div className="flex justify-between items-start text-xs py-1.5 border-b border-white/5 gap-4">
@@ -196,10 +196,10 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         {/* CONSISTENCY ANALYSIS & WORKLOAD */}
-        <div className="glass-panel rounded-xl p-6 space-y-5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">
-          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-          <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider border-b border-[#c5a059]/20 pb-2 flex items-center gap-2">
-            <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+        <div className="glass-panel rounded-xl p-6 space-y-5 border border-[var(--border-accent)] bg-[#0b0d13]/90 relative shadow-xl">
+          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+          <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider border-b border-[var(--border-subtle)] pb-2 flex items-center gap-2">
+            <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
             CONSISTENCY METRIC REPORT
           </h3>
 
@@ -208,7 +208,7 @@ export const AnalyticsView: React.FC = () => {
             {/* Consistency Gauge */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-mono">
-                <span className="text-[#c5a059] font-bold">ACTIVE REPETITION RATIO</span>
+                <span className="text-[var(--accent-bright)] font-bold">ACTIVE REPETITION RATIO</span>
                 <span className="text-white font-bold">{consistencyScore}%</span>
               </div>
               <div className="w-full bg-[#07080c] rounded-full h-2 overflow-hidden border border-white/5">
@@ -225,12 +225,12 @@ export const AnalyticsView: React.FC = () => {
             </div>
 
             {/* Workload Status breakdown */}
-            <div className="p-4 bg-[#07080c] rounded-xl border border-[#c5a059]/20 space-y-2">
+            <div className="p-4 bg-[#07080c] rounded-xl border border-[var(--border-subtle)] space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">LOAD BALANCE INDEX</span>
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">LOAD BALANCE INDEX</span>
                 <span className={`text-xs font-mono font-bold uppercase ${
                   analytics.workloadStatus === 'Heavy Workload' ? 'text-rose-400' :
-                  analytics.workloadStatus === 'Moderate Workload' ? 'text-[#fef08a]' :
+                  analytics.workloadStatus === 'Moderate Workload' ? 'text-[var(--accent-highlight)]' :
                   analytics.workloadStatus === 'No Workload' ? 'text-zinc-500' : 'text-emerald-400'
                 }`}>
                   {analytics.workloadStatus}

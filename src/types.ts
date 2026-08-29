@@ -567,4 +567,18 @@ export interface POSState {
   spiritualLogs?: Record<string, SpiritualDailyLog>;
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
   masjid40Covenant?: Masjid40DayCovenant;
+  visualCodex?: VisualCodexSettings;
+}
+
+export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet';
+export type CodexOrnamentation = 'minimal' | 'standard' | 'rich';
+export type CodexGlow = 'low' | 'standard' | 'high';
+export type CodexDensity = 'compact' | 'standard' | 'spacious';
+
+export interface VisualCodexSettings {
+  theme: CodexThemeId;
+  ornamentation: CodexOrnamentation;
+  glow: CodexGlow;
+  density: CodexDensity;
+  reducedMotion: boolean;
 }

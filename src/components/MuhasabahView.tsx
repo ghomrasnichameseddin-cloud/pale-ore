@@ -475,15 +475,15 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             initial={{ opacity: 0, y: -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
-            className="p-4 rounded-xl bg-gradient-to-r from-amber-950 via-[#1e170c] to-[#0c0f17] border border-[#c5a059]/60 shadow-xl flex items-center justify-between gap-3 text-xs font-mono text-[#fef08a]"
+            className="p-4 rounded-xl bg-gradient-to-r from-[var(--accent-surface)] via-[var(--bg-card)] to-[var(--bg-void)] border border-[var(--border-accent)] shadow-xl flex items-center justify-between gap-3 text-xs font-mono text-[var(--accent-highlight)]"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a]">
-                <Sparkles className="h-4 w-4 text-[#c5a059]" />
+              <div className="p-2 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)]">
+                <Sparkles className="h-4 w-4 text-[var(--accent-bright)]" />
               </div>
               <div>
-                <span className="font-bold uppercase tracking-wider text-[#e5c875] flex items-center gap-1.5">
-                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                <span className="font-bold uppercase tracking-wider text-[var(--accent-bright)] flex items-center gap-1.5">
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                   10/10 Action Directives Synchronized
                 </span>
                 <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{injectedActionSuccess}</p>
@@ -500,10 +500,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       </AnimatePresence>
 
       {/* ISLAMIC GAMIFICATION SAFEGUARD DISCLAIMER */}
-      <div className="p-3.5 rounded-xl bg-[#120f08] border border-[#c5a059]/40 flex items-start gap-3 shadow-md">
-        <Shield className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
+      <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-accent)] flex items-start gap-3 shadow-md">
+        <Shield className="h-4 w-4 text-[var(--accent-bright)] shrink-0 mt-0.5" />
         <div className="space-y-0.5 text-xs text-zinc-300">
-          <p className="font-semibold text-amber-300">
+          <p className="font-semibold text-[var(--accent-highlight)]">
             &ldquo;XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.&rdquo;
           </p>
           <p className="text-[11px] text-zinc-400 font-sans">
@@ -538,15 +538,15 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         const isNearTen = currentScore >= 9.5;
 
         return (
-          <div className="p-4 sm:p-5 rounded-2xl border border-[#c5a059]/40 bg-[#090c12] relative overflow-hidden shadow-2xl space-y-4">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,rgba(197,160,89,0.08),transparent_65%)] pointer-events-none" />
+          <div className="p-4 sm:p-5 rounded-2xl border border-[var(--border-accent)] bg-[var(--bg-card)] relative overflow-hidden shadow-2xl space-y-4">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,var(--glow-color),transparent_65%)] pointer-events-none" />
 
             {/* TOP HEADER ROW */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10 pb-3 border-b border-white/10">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
-                    <Scale className="h-3 w-3 text-[#c5a059]" />
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+                    <Scale className="h-3 w-3 text-[var(--accent-bright)]" />
                     <span>تقييم ومحاسبة الأسبوع • WEEKLY SACRED AUDIT / 10</span>
                   </span>
                   <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
@@ -556,10 +556,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
                 <div className="flex flex-wrap items-baseline gap-3 pt-1">
                   <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                    <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                    <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                     <span>Weekly Spiritual Standing:</span>
                   </h3>
-                  <span className="text-sm font-bold text-[#e5c875] font-mono">
+                  <span className="text-sm font-bold text-[var(--accent-bright)] font-mono">
                     {b?.gradeAr} — <span className="text-zinc-300">{b?.gradeEn}</span>
                   </span>
                 </div>
@@ -567,16 +567,16 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
               {/* 10/10 GAUGE BADGE */}
               <div className="flex items-center gap-4 shrink-0">
-                <div className="flex items-center gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[#1c160a] to-[#07090e] border border-[#c5a059]/50 shadow-inner">
+                <div className="flex items-center gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
                   <div className="text-right">
                     <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">WEEKLY JUDGMENT</span>
-                    <span className="text-[10px] font-mono text-amber-400/80">{isNearTen ? 'Full Mark (10/10)' : 'Refinement Target'}</span>
+                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">{isNearTen ? 'Full Mark (10/10)' : 'Refinement Target'}</span>
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className={`text-2xl sm:text-3xl font-black ${
                       currentScore >= 9.5 ? 'text-emerald-300' :
-                      currentScore >= 8.5 ? 'text-[#fef08a]' :
-                      currentScore >= 7.0 ? 'text-amber-400' :
+                      currentScore >= 8.5 ? 'text-[var(--accent-highlight)]' :
+                      currentScore >= 7.0 ? 'text-[var(--accent-bright)]' :
                       'text-rose-400'
                     }`}>
                       {currentScore.toFixed(1)}
@@ -589,16 +589,16 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   <button
                     type="button"
                     onClick={() => setShowRefineDrawer(!showRefineDrawer)}
-                    className="px-3 py-1.5 rounded-lg bg-[#3a2e12] hover:bg-[#4d3c16] border border-[#c5a059]/60 text-[#fef08a] text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                     <span>{showRefineDrawer ? 'HIDE PLAN' : '⚡ REFINE 10/10'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleInstantFridaySealAndReset}
-                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[#c5a059] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[var(--accent-primary)] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
                     title="Snapshot weekly 10/10 audit to Codex & reset slips ledger clean for the new week"
                     id="one-click-friday-seal-btn"
                   >
@@ -609,10 +609,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   <button
                     type="button"
                     onClick={handleOpenWeeklySummaryGenerator}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[#c5a059]/40 text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95"
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95"
                     id="full-friday-audit-modal-btn"
                   >
-                    <FileText className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                     <span>FULL AUDIT</span>
                   </button>
 
@@ -764,12 +764,12 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="pt-3 border-t border-[#c5a059]/20 space-y-3"
+                  className="pt-3 border-t border-[var(--border-subtle)] space-y-3"
                 >
-                  <div className="p-3.5 rounded-xl bg-[#16120b] border border-[#c5a059]/40 space-y-2">
+                  <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-accent)] space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                      <span className="text-xs font-mono font-bold text-[var(--accent-highlight)] flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                         <span>خطة الارتقاء للدرجة الكاملة 10/10 • ACTION PLAN TO REFINE TO 10/10</span>
                       </span>
                       <span className="text-[10px] font-mono text-zinc-400">
@@ -780,7 +780,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <ul className="space-y-1.5 text-xs text-zinc-200">
                       {b.actionPlan10OutOf10.map((step, idx) => (
                         <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-black/40 border border-white/5 font-sans leading-relaxed">
-                          <span className="text-[#c5a059] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
+                          <span className="text-[var(--accent-bright)] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
                           <span className="text-zinc-200">{step}</span>
                         </li>
                       ))}
@@ -790,7 +790,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                       <button
                         type="button"
                         onClick={handleInject10OutOf10Directives}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-mono text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-amber-950/60"
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--accent-dim)] via-[var(--accent-primary)] to-[var(--accent-bright)] hover:brightness-110 active:scale-95 text-black font-mono text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-[var(--glow-color)]"
                         id="inject-10-out-of-10-directives-btn"
                       >
                         <Zap className="h-3.5 w-3.5" />

@@ -348,5 +348,12 @@ export const INITIAL_STATE: POSState = {
       createdAt: new Date().toISOString()
     }
   ],
-  spiritualLogs: {}
+  spiritualLogs: {},
+  visualCodex: {
+    theme: 'imperial-gold',
+    ornamentation: 'standard',
+    glow: 'standard',
+    density: 'standard',
+    reducedMotion: false
+  }
 };

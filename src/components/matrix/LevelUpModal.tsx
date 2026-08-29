@@ -229,21 +229,21 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-lg animate-fade-in font-mono text-xs">
-      <div className="bg-zinc-950 border border-amber-500/40 rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden text-zinc-300">
+      <div className="bg-zinc-950 border border-[var(--border-accent)] rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden text-zinc-300">
         
         {/* HEADER */}
-        <div className="p-4 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-amber-950/40 border-b border-amber-500/30 flex items-center justify-between">
+        <div className="p-4 bg-gradient-to-r from-[var(--accent-surface)] via-zinc-900 to-[var(--accent-surface)] border-b border-[var(--border-accent)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-500/20 border border-amber-400/40 rounded-lg text-amber-300">
+            <div className="p-2 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg text-[var(--accent-bright)]">
               {renderTopicIcon(activeSpec.iconName, "h-5 w-5")}
             </div>
             <div>
-              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest block">
+              <span className="text-[10px] text-[var(--accent-bright)] font-bold uppercase tracking-widest block">
                 {isJob ? 'JOB CLASS PROGRESSION PIPELINE' : 'HONORIFIC TITLE PRESTIGE PIPELINE'}
               </span>
               <h3 className="text-base font-extrabold text-white uppercase flex items-center gap-2">
                 {activeSpec.name}
-                <span className="text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded font-black">
+                <span className="text-[10px] bg-[var(--accent-primary)] text-black px-2 py-0.5 rounded font-black">
                   LVL {targetLevel} ({LEVEL_RANK_NAMES[targetLevel]})
                 </span>
               </h3>
@@ -274,7 +274,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                 onClick={() => handleTargetLevelChange(lvl)}
                 className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                    ? 'bg-[var(--accent-primary)] text-black shadow-[0_0_10px_var(--glow-color)]'
                     : isCompleted
                       ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900'
                       : 'bg-zinc-900 border border-white/10 text-zinc-400 hover:bg-zinc-800 hover:text-white'
@@ -344,7 +344,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex-1 py-1.5 px-2 rounded-md font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === tab.id 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
+                      ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)]' 
                       : 'text-zinc-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -666,10 +666,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           )}
 
           {/* REAL-TIME SYSTEM DIAGNOSTIC EVALUATION BOX */}
-          <div className="p-3.5 bg-zinc-900/80 border border-amber-500/30 rounded-xl space-y-2">
+          <div className="p-3.5 bg-zinc-900/80 border border-[var(--border-accent)] rounded-xl space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Activity className="h-4 w-4 text-amber-400" />
+              <span className="font-bold text-[var(--accent-bright)] uppercase tracking-wider flex items-center gap-1.5">
+                <Activity className="h-4 w-4 text-[var(--accent-bright)]" />
                 SYSTEM DIAGNOSTIC FOR LEVEL {targetLevel}:
               </span>
               <span className={`px-2 py-0.5 rounded font-extrabold uppercase text-[10px] ${
@@ -720,7 +720,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           <button
             type="button"
             onClick={handleConfirmLevelUp}
-            className="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-black font-extrabold rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.4)] transition flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-[var(--accent-primary)] via-[var(--accent-bright)] to-[var(--accent-primary)] hover:opacity-95 text-black font-extrabold rounded-lg shadow-[0_0_15px_var(--glow-color)] transition flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Sparkles className="h-4 w-4" /> CONFIRM & ELEVATE TO LVL {targetLevel}!
           </button>

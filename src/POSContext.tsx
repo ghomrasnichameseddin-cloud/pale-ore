@@ -6,9 +6,11 @@ import {
   MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity,
   SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
-  Masjid40Stats, Masjid40DayCovenant
+  Masjid40Stats, Masjid40DayCovenant,
+  VisualCodexSettings, CodexThemeId
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
+import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
   const dateStr = systemDateStr || getLocalDateString();
@@ -278,6 +280,11 @@ interface POSContextType {
   toggleAllPrayersInMasjid: (dateStr?: string, forceState?: boolean) => void;
   resetMasjid40Streak: (dateStr?: string) => void;
   setMasjid40Override: (streak: number) => void;
+
+  // Visual Codex (Appearance System)
+  visualCodex: VisualCodexSettings;
+  updateVisualCodexSettings: (updates: Partial<VisualCodexSettings>) => void;
+  setTheme: (themeId: CodexThemeId) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -734,7 +741,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             muhasabahEntries: reconciledMuhasabahEntries,
             systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
             planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
-            messages: parsed.messages || INITIAL_STATE.messages || []
+            messages: parsed.messages || INITIAL_STATE.messages || [],
+            visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex
           };
         }
       }
@@ -4155,6 +4163,32 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  // Sync Visual Codex DOM attributes on mount and on changes
+  useEffect(() => {
+    const codex = state.visualCodex || getStoredVisualCodexSettings();
+    applyVisualCodexToDOM(codex);
+  }, [state.visualCodex]);
+
+  const updateVisualCodexSettings = (updates: Partial<VisualCodexSettings>) => {
+    setState(prev => {
+      const current = prev.visualCodex || getStoredVisualCodexSettings();
+      const updated: VisualCodexSettings = {
+        ...current,
+        ...updates
+      };
+      saveStoredVisualCodexSettings(updated);
+      applyVisualCodexToDOM(updated);
+      return {
+        ...prev,
+        visualCodex: updated
+      };
+    });
+  };
+
+  const setTheme = (themeId: CodexThemeId) => {
+    updateVisualCodexSettings({ theme: themeId });
+  };
+
   // Battery Saver & Eco Defense Functions
   const updateBatterySettings = (updates: Partial<BatterySettings>) => {
     setState(prev => {
@@ -6695,7 +6729,10 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       getMasjid40Stats,
       toggleAllPrayersInMasjid,
       resetMasjid40Streak,
-      setMasjid40Override
+      setMasjid40Override,
+      visualCodex: state.visualCodex || getStoredVisualCodexSettings(),
+      updateVisualCodexSettings,
+      setTheme
     }}>
       {children}
     </POSContext.Provider>

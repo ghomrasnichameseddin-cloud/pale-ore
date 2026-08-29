@@ -248,22 +248,22 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
         initial={{ opacity: 0, scale: 0.97, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 12 }}
-        className="glass-panel border border-[#c5a059]/40 rounded-2xl bg-[#0b0d13]/98 max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden text-zinc-300"
+        className="glass-panel border border-[var(--border-strong)] rounded-2xl bg-[#0b0d13]/98 max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden text-zinc-300"
         id="muhasabah-modal-container"
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-[#c5a059]/20 shrink-0">
+        <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#3a2e12] to-[#1a1408] border border-[#c5a059]/50 text-[#fef08a] shadow-inner">
-              <Scale className="h-5 w-5 text-[#c5a059]" />
+            <div className="p-2 rounded-xl bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shadow-inner">
+              <Scale className="h-5 w-5 text-[var(--accent-bright)]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-display text-base font-bold text-zinc-100 tracking-wider flex items-center gap-1.5">
-                  <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                  <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                   MUHĀSABAH AUDIT
                 </h3>
-                <span className="text-[10px] font-mono uppercase bg-[#1e1708] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] font-mono uppercase bg-[var(--bg-void)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2 py-0.5 rounded-full font-bold">
                   Self-Accountability
                 </span>
               </div>
@@ -285,10 +285,10 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
         {/* MODAL BODY */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-3.5 pr-1">
           {/* SAFEGUARD DISCLAIMER BANNER */}
-          <div className="p-3 bg-amber-950/30 border border-amber-500/40 rounded-xl flex items-start gap-2.5 text-xs text-amber-200">
-            <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="p-3 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-xl flex items-start gap-2.5 text-xs text-[var(--accent-highlight)]">
+            <ShieldCheck className="h-4 w-4 text-[var(--accent-bright)] shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <p className="font-semibold text-amber-300">
+              <p className="font-semibold text-[var(--accent-highlight)]">
                 &ldquo;XP is an in-app motivational measure. It does not represent Allah&apos;s reward, hasanat, or ajr. The true reward of worship belongs to Allah alone.&rdquo;
               </p>
               <p className="text-[10.5px] text-zinc-400">
@@ -342,7 +342,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">1</span>
+                <span className="w-4 h-4 rounded-full bg-[var(--accent-bright)] text-black text-[10px] font-bold flex items-center justify-center">1</span>
                 Identify the Slip
               </label>
               <button
@@ -355,7 +355,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                     setKaffarahTitle('');
                   }
                 }}
-                className="text-xs font-mono text-amber-400 hover:underline flex items-center gap-1"
+                className="text-xs font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-1"
               >
                 {isCustomMode ? '← Use Quick Presets' : 'Custom Slip Entry →'}
               </button>
@@ -373,7 +373,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                       onClick={() => setSelectedPresetId(preset.id)}
                       className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition ${
                         isSelected 
-                          ? `${preset.color} ring-1 ring-[#c5a059] shadow-lg` 
+                          ? `${preset.color} ring-1 ring-[var(--border-accent)] shadow-lg` 
                           : 'bg-[#0f121a] border-white/10 hover:border-white/20 text-zinc-400'
                       }`}
                     >
@@ -401,7 +401,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="Slip Summary (e.g. Delayed Asr prayer by 30 mins)..."
-                  className="w-full bg-[#08090d] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
+                  className="w-full bg-[#08090d] border border-white/15 focus:border-[var(--border-accent)] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
                 />
                 <input 
                   type="text"
@@ -409,7 +409,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                   value={cause}
                   onChange={e => setCause(e.target.value)}
                   placeholder="Root Cause / Trigger (e.g. Phone notifications distraction)..."
-                  className="w-full bg-[#08090d] border border-white/15 focus:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
+                  className="w-full bg-[#08090d] border border-white/15 focus:border-[var(--border-accent)] rounded-lg px-3 py-2 text-xs text-zinc-200 outline-none placeholder:text-zinc-600"
                 />
                 <div className="grid grid-cols-3 gap-1.5 pt-1">
                   {(['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'] as MuhasabahCategory[]).map(cat => (
@@ -418,7 +418,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                       type="button"
                       onClick={() => setCategory(cat)}
                       className={`px-2 py-1 rounded text-[10px] font-mono border transition ${
-                        category === cat ? 'bg-amber-950/60 border-amber-500/50 text-amber-200 font-bold' : 'bg-black/30 border-white/5 text-zinc-400'
+                        category === cat ? 'bg-[var(--accent-surface)] border-[var(--border-accent)] text-[var(--accent-highlight)] font-bold' : 'bg-black/30 border-white/5 text-zinc-400'
                       }`}
                     >
                       {cat}
@@ -433,7 +433,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
           <div>
             <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center justify-between mb-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">2</span>
+                <span className="w-4 h-4 rounded-full bg-[var(--accent-bright)] text-black text-[10px] font-bold flex items-center justify-center">2</span>
                 Determine Consequence Weight (Wazn)
               </span>
               <span className="text-xs text-rose-400 font-bold font-mono">
@@ -452,13 +452,13 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                     onClick={() => setSeverity(sevKey)}
                     className={`py-2 px-1 rounded-xl border font-mono text-center flex flex-col items-center justify-center transition ${
                       isSelected 
-                        ? `${s.badge} ring-1 ring-[#c5a059] shadow-lg font-bold scale-[1.02]` 
+                        ? `${s.badge} ring-1 ring-[var(--border-accent)] shadow-lg font-bold scale-[1.02]` 
                         : 'bg-[#0e111a] border-white/10 hover:border-white/20 text-zinc-400'
                     }`}
                   >
                     <span className="text-xs font-bold">{s.label}</span>
                     <span className="text-[10px] opacity-80">−{s.xpPenalty} XP</span>
-                    <span className="text-[9px] text-amber-400">−{s.coinFine} Coins</span>
+                    <span className="text-[9px] text-[var(--accent-bright)]">−{s.coinFine} Coins</span>
                   </button>
                 );
               })}
@@ -471,7 +471,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                   <Flame className="h-3.5 w-3.5" />
                   <span>−{consequence.xpPenalty} XP</span>
                 </div>
-                <div className="flex items-center gap-1 text-amber-400">
+                <div className="flex items-center gap-1 text-[var(--accent-bright)]">
                   <Coins className="h-3.5 w-3.5" />
                   <span>−{consequence.coinFine} Coins Fine</span>
                 </div>
@@ -493,7 +493,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
           <div>
             <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center justify-between mb-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-4 h-4 rounded-full bg-[#c5a059] text-black text-[10px] font-bold flex items-center justify-center">3</span>
+                <span className="w-4 h-4 rounded-full bg-[var(--accent-bright)] text-black text-[10px] font-bold flex items-center justify-center">3</span>
                 Sacred Kaffārah Restitution (Unlocks Equilibrium)
               </span>
               <span className="text-[10px] text-emerald-400 font-mono">
@@ -523,13 +523,13 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
           {weaknesses.length > 0 && (
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#0e111a] border border-white/10 text-xs font-mono">
               <span className="text-zinc-400 flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                <AlertTriangle className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                 Link to Chain:
               </span>
               <select
                 value={selectedWeaknessId}
                 onChange={e => setSelectedWeaknessId(e.target.value)}
-                className="bg-[#07090e] border border-white/10 rounded px-2.5 py-1 text-xs text-zinc-200 outline-none focus:border-[#c5a059]"
+                className="bg-[#07090e] border border-white/10 rounded px-2.5 py-1 text-xs text-zinc-200 outline-none focus:border-[var(--border-accent)]"
               >
                 <option value="">-- No specific chain --</option>
                 {weaknesses.map(w => (
@@ -564,7 +564,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 text-black font-display text-xs font-bold tracking-wider hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-xl shadow-amber-950/50"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[var(--border-strong)] via-[var(--accent-bright)] to-[var(--border-strong)] text-[var(--bg-void)] font-display text-xs font-bold tracking-wider hover:brightness-110 active:scale-95 transition flex items-center gap-2 shadow-xl shadow-black/50"
               id="confirm-muhasabah-audit-btn"
             >
               <Scale className="h-4 w-4" />

@@ -51,17 +51,17 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
     <div 
       className={`p-4 rounded-xl border relative overflow-hidden transition-all duration-200 flex flex-col gap-3 font-mono text-xs ${
         isActive 
-          ? 'border-[#c5a059] bg-[#141824]/90 shadow-[0_0_20px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40' 
+          ? 'border-[var(--border-strong)] bg-[var(--bg-card)] shadow-[0_0_20px_var(--glow-color)] ring-1 ring-[var(--border-accent)]' 
           : isUnlocked 
-            ? 'border-[#c5a059]/20 bg-[#0b0d13]/80 hover:border-[#c5a059]/40 hover:bg-[#131722]/80' 
+            ? 'border-[var(--border-subtle)] bg-[#0b0d13]/80 hover:border-[var(--border-accent)] hover:bg-[#131722]/80' 
             : 'border-white/5 bg-[#07080c]/60 opacity-75'
       }`}
     >
       {/* Corner filigree for active cards */}
       {isActive && (
         <>
-          <ArabesqueCorner position="top-left" className="top-1 left-1 h-3.5 w-3.5" color="#e5c875" />
-          <ArabesqueCorner position="top-right" className="top-1 right-1 h-3.5 w-3.5" color="#e5c875" />
+          <ArabesqueCorner position="top-left" className="top-1 left-1 h-3.5 w-3.5" color="var(--accent-bright)" />
+          <ArabesqueCorner position="top-right" className="top-1 right-1 h-3.5 w-3.5" color="var(--accent-bright)" />
         </>
       )}
 
@@ -71,8 +71,8 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className={`p-2.5 rounded-xl border shrink-0 ${
             isActive 
-              ? 'bg-[#3a2e12]/80 border-[#c5a059] text-[#fef08a] shadow-[0_0_12px_rgba(197,160,89,0.3)]' 
-              : 'bg-[#07080c] border-[#c5a059]/25 text-[#c5a059]'
+              ? 'bg-[var(--accent-surface)] border-[var(--border-strong)] text-[var(--accent-highlight)] shadow-[0_0_12px_var(--glow-color)]' 
+              : 'bg-[#07080c] border-[var(--border-subtle)] text-[var(--accent-bright)]'
           }`}>
             {renderTopicIcon(item.iconName || (isJob ? 'Building' : 'GraduationCap'), "h-6 w-6")}
           </div>
@@ -81,8 +81,8 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
             {/* BADGES & TITLE */}
             <div className="flex items-center gap-2 flex-wrap">
               {titleSpec?.badge && (
-                <span className="text-[10px] font-black bg-[#c5a059]/20 text-[#fef08a] border border-[#c5a059]/50 px-2 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                  <RubElHizbIcon className="h-2.5 w-2.5 text-[#e5c875]" />
+                <span className="text-[10px] font-black bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-2 py-0.5 rounded flex items-center gap-1 shadow-sm">
+                  <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)]" />
                   [{titleSpec.badge}]
                 </span>
               )}
@@ -91,8 +91,8 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
                 {item.name}
               </h4>
 
-              <span className="text-[9px] text-[#fef08a] bg-[#3a2e12]/80 border border-[#c5a059]/60 px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
-                <Star className="h-3 w-3 text-[#e5c875] fill-[#e5c875]" />
+              <span className="text-[9px] text-[var(--accent-highlight)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
+                <Star className="h-3 w-3 text-[var(--accent-bright)] fill-[var(--accent-bright)]" />
                 LVL {currentLevel}/7 ({LEVEL_RANK_NAMES[currentLevel]})
               </span>
 
@@ -117,10 +117,10 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
             <div className="space-y-1 pt-0.5">
               <div className="flex items-center justify-between text-[9px] text-zinc-400">
                 <span className="uppercase text-zinc-500 flex items-center gap-1">
-                  <RubElHizbIcon className="h-2 w-2 text-[#c5a059]" />
+                  <RubElHizbIcon className="h-2 w-2 text-[var(--accent-bright)]" />
                   Progression Pipeline:
                 </span>
-                <span className="text-[#e5c875] font-bold">
+                <span className="text-[var(--accent-bright)] font-bold">
                   {currentLevel === 7 ? '👑 MAX APEX LEVEL 7' : `Next: Lvl ${nextLevel} (${LEVEL_RANK_NAMES[nextLevel]})`}
                 </span>
               </div>
@@ -130,7 +130,7 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
                     key={lvl} 
                     className={`h-2 rounded transition-all ${
                       lvl <= currentLevel 
-                        ? 'rpg-progress-gold shadow-[0_0_8px_rgba(197,160,89,0.5)]' 
+                        ? 'rpg-progress-gold shadow-[0_0_8px_var(--glow-color)]' 
                         : 'bg-zinc-800/80 border border-white/5'
                     }`}
                     title={`Level ${lvl}: ${LEVEL_RANK_NAMES[lvl]}`}
@@ -144,15 +144,15 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
 
             {/* PERK / UNLOCK REQUIREMENT */}
             {isJob && scaledPerk && (
-              <div className="text-[10px] text-[#e5c875] font-bold bg-[#3a2e12]/60 border border-[#c5a059]/40 rounded px-2.5 py-1 inline-flex items-center gap-1.5">
-                <Zap className="h-3 w-3 text-[#e5c875] shrink-0" />
+              <div className="text-[10px] text-[var(--accent-bright)] font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded px-2.5 py-1 inline-flex items-center gap-1.5">
+                <Zap className="h-3 w-3 text-[var(--accent-bright)] shrink-0" />
                 <span>PERK: {scaledPerk}</span>
               </div>
             )}
 
             {!isJob && titleSpec && (
               <div className="text-[10px] text-zinc-400 bg-white/[0.02] border border-white/10 rounded px-2.5 py-1 inline-flex items-center gap-1.5">
-                <Lock className="h-3 w-3 text-[#c5a059] shrink-0" />
+                <Lock className="h-3 w-3 text-[var(--accent-bright)] shrink-0" />
                 <span>REQUIREMENT: <strong className="text-zinc-200">{titleSpec.unlockCondition}</strong></span>
               </div>
             )}
@@ -162,15 +162,15 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowConditionsDetail(!showConditionsDetail)}
-                className="text-[10px] text-[#c5a059] hover:text-[#e5c875] flex items-center gap-1 transition cursor-pointer"
+                className="text-[10px] text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] flex items-center gap-1 transition cursor-pointer"
               >
                 <span>{currentLevel === 7 ? 'View Apex Conditions' : `Level ${nextLevel} Requirements`}</span>
                 {showConditionsDetail ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
 
               {showConditionsDetail && (
-                <div className="mt-2 p-2.5 bg-[#07080c]/90 rounded-lg border border-[#c5a059]/30 space-y-1.5 animate-fade-in">
-                  <span className="text-[9px] text-[#c5a059] uppercase font-bold block flex items-center gap-1">
+                <div className="mt-2 p-2.5 bg-[#07080c]/90 rounded-lg border border-[var(--border-accent)] space-y-1.5 animate-fade-in">
+                  <span className="text-[9px] text-[var(--accent-bright)] uppercase font-bold block flex items-center gap-1">
                     <RubElHizbIcon className="h-2 w-2" />
                     {currentLevel === 7 ? 'MAX LEVEL CONDITIONS SATISFIED:' : `LEVEL ${nextLevel} CONDITIONS STATUS:`}
                   </span>
@@ -202,7 +202,7 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
             <button
               type="button"
               onClick={onEdit}
-              className="p-1.5 text-zinc-400 hover:text-[#e5c875] hover:bg-[#3a2e12]/40 rounded-lg border border-transparent hover:border-[#c5a059]/30 transition cursor-pointer"
+              className="p-1.5 text-zinc-400 hover:text-[var(--accent-bright)] hover:bg-[var(--accent-surface)] rounded-lg border border-transparent hover:border-[var(--border-accent)] transition cursor-pointer"
               title="Edit Specs & Unlock Rules"
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -211,10 +211,10 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
             <button
               type="button"
               onClick={onLevelUp}
-              className="px-2.5 py-1 bg-[#3a2e12]/60 hover:bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+              className="px-2.5 py-1 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] text-[var(--accent-highlight)] border border-[var(--border-accent)] rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
               title="Level Up & Condition Configurator"
             >
-              <Sparkles className="h-3.5 w-3.5 text-[#e5c875]" />
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
               <span>LEVEL UP / RULES</span>
             </button>
 
@@ -232,20 +232,20 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
 
           {/* EQUIP / ACTIVE BUTTON */}
           {isActive ? (
-            <span className="w-full md:w-auto text-center px-3 py-1.5 bg-[#3a2e12]/80 border border-[#c5a059] text-[#fef08a] font-bold rounded-lg flex items-center justify-center gap-1.5 text-[10px] shadow-[0_0_12px_rgba(197,160,89,0.25)]">
-              <Check className="h-3.5 w-3.5 stroke-[3] text-[#e5c875]" /> EQUIPPED ACTIVE
+            <span className="w-full md:w-auto text-center px-3 py-1.5 bg-[var(--accent-surface)] border border-[var(--border-strong)] text-[var(--accent-highlight)] font-bold rounded-lg flex items-center justify-center gap-1.5 text-[10px] shadow-[0_0_12px_var(--glow-color)]">
+              <Check className="h-3.5 w-3.5 stroke-[3] text-[var(--accent-bright)]" /> EQUIPPED ACTIVE
             </span>
           ) : isUnlocked ? (
             <button
               type="button"
               onClick={onEquip}
-              className="w-full md:w-auto px-4 py-1.5 bg-[#141824] hover:bg-[#c5a059] hover:text-[#07080c] text-white border border-[#c5a059]/30 hover:border-[#c5a059] font-bold rounded-lg transition-all cursor-pointer text-[10px] uppercase tracking-wider"
+              className="w-full md:w-auto px-4 py-1.5 bg-[#141824] hover:bg-[var(--accent-primary)] hover:text-black text-white border border-[var(--border-accent)] hover:border-[var(--border-strong)] font-bold rounded-lg transition-all cursor-pointer text-[10px] uppercase tracking-wider"
             >
               {isJob ? 'EQUIP JOB CLASS' : 'EQUIP TITLE'}
             </button>
           ) : (
             <div className="w-full md:w-auto text-center px-3 py-1.5 bg-[#07080c] border border-white/10 text-zinc-500 font-medium rounded-lg flex items-center justify-center gap-1.5 text-[10px]">
-              <Lock className="h-3.5 w-3.5 text-[#c5a059]/60" /> LOCKED
+              <Lock className="h-3.5 w-3.5 text-[var(--accent-bright)]/60" /> LOCKED
             </div>
           )}
 

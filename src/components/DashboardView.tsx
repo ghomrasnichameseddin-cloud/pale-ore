@@ -322,21 +322,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     <div className="space-y-6" id="dashboard-view-root">
       
       {/* HEADER BAR & QUICK ACTION STRIP */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#c5a059]/20 pb-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[var(--border-subtle)] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+            <RubElHizbIcon className="h-5 w-5 text-[var(--accent-bright)]" />
             <h2 className="font-display text-2xl font-bold tracking-tight text-white uppercase flex items-center gap-2">
               SANCTUM COMMAND TERMINAL
             </h2>
-            <span className="text-[10px] font-mono font-bold bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-2 py-0.5 rounded-md">
               DIVINE SYSTEM OPERATIONAL
             </span>
           </div>
           <p className="text-xs text-zinc-300 font-mono mt-1">
             SYS_DATE: {systemDate} • STATUS:{' '}
             {isRecoveryActive ? (
-              <span className="text-[#e5c875] font-bold animate-pulse drop-shadow-[0_0_10px_rgba(229,200,117,0.8)]">
+              <span className="text-[var(--accent-bright)] font-bold animate-pulse drop-shadow-[0_0_10px_var(--glow-color)]">
                 🛡️ RECOVERY PROTOCOL ACTIVE
               </span>
             ) : (
@@ -351,19 +351,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <button
             onClick={() => setIsQuickQuestOpen(true)}
-            className="px-3.5 py-2 bg-gradient-to-r from-[#8a6d2b] to-[#c5a059] hover:from-[#a07f35] hover:to-[#e5c875] text-[#07080c] font-mono font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(197,160,89,0.3)] transition flex items-center gap-1.5 border border-[#e5c875]/60 cursor-pointer"
+            className="px-3.5 py-2 bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-primary)] hover:from-[var(--accent-primary)] hover:to-[var(--accent-bright)] text-black font-mono font-bold text-xs rounded-xl shadow-[0_0_15px_var(--glow-color)] transition flex items-center gap-1.5 border border-[var(--border-accent)] cursor-pointer"
           >
-            <Plus className="h-4 w-4 text-[#07080c]" />
+            <Plus className="h-4 w-4 text-black" />
             + QUICK TRIAL
           </button>
 
           {onNavigate && (
             <button
               onClick={() => onNavigate('shop')}
-              className="px-3 py-2 bg-[#3a2e12]/60 hover:bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] text-[var(--accent-highlight)] border border-[var(--border-accent)] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
               title="Open Imperial Vault"
             >
-              <ShoppingBag className="h-3.5 w-3.5 text-[#c5a059]" />
+              <ShoppingBag className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
               VAULT ({state.profile.coins ?? 150} 🪙)
             </button>
           )}
@@ -373,12 +373,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             onClick={(e) => e.preventDefault()}
             className={`px-3 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border transition-all ${
               isRecoveryActive
-                ? 'bg-[#3a2e12]/80 text-[#fef08a] border-[#c5a059]/60 shadow-[0_0_18px_rgba(197,160,89,0.6)] animate-pulse cursor-not-allowed pointer-events-none'
-                : 'bg-[#07080c]/60 text-zinc-600 border-white/5 opacity-40 cursor-not-allowed pointer-events-none'
+                ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border-[var(--border-accent)] shadow-[0_0_18px_var(--glow-color)] animate-pulse cursor-not-allowed pointer-events-none'
+                : 'bg-[var(--bg-void)]/60 text-zinc-600 border-white/5 opacity-40 cursor-not-allowed pointer-events-none'
             }`}
             title="Recovery Protocol status is automated by system requirements (no manual switching off)"
           >
-            <Lock className={`h-3.5 w-3.5 ${isRecoveryActive ? 'text-[#c5a059]' : 'text-zinc-600'}`} />
+            <Lock className={`h-3.5 w-3.5 ${isRecoveryActive ? 'text-[var(--accent-bright)]' : 'text-zinc-600'}`} />
             <span>{isRecoveryActive ? 'RECOVERY SANCTUM ACTIVE' : 'RECOVERY INACTIVE'}</span>
           </button>
         </div>
@@ -394,23 +394,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* PROFILE TERMINAL CARD */}
-          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[#c5a059]/30 bg-[#0b0d13]/90 shadow-xl" id="profile-card">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-5 w-5" color="#c5a059" />
-            <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-5 w-5" color="#c5a059" />
+          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[var(--border-accent)] bg-[var(--bg-card)]/90 shadow-xl" id="profile-card">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-5 w-5" />
+            <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-5 w-5" />
 
             {/* Background glow accent */}
             <div className={`absolute right-0 top-0 w-48 h-48 rounded-full blur-3xl pointer-events-none transition-all ${
-              isRecoveryActive ? 'bg-[#e5c875]/15 animate-pulse' : 'bg-[#c5a059]/10'
+              isRecoveryActive ? 'bg-[var(--glow-color)] animate-pulse' : 'bg-[var(--accent-primary)]/10'
             }`} />
             
             <div className="flex justify-between items-start flex-wrap gap-4 relative z-10">
               <div>
-                <span className="text-[10px] font-mono text-[#c5a059] tracking-widest uppercase font-bold flex items-center gap-1.5">
-                  <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" /> OPERATOR SACRED SIGNATURE
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] tracking-widest uppercase font-bold flex items-center gap-1.5">
+                  <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" /> OPERATOR SACRED SIGNATURE
                 </span>
                 <h3 className={`font-display text-3xl font-extrabold uppercase tracking-tight transition-all mt-1 ${
                   isRecoveryActive
-                    ? 'text-[#e5c875] drop-shadow-[0_0_20px_rgba(229,200,117,0.95)] animate-pulse'
+                    ? 'text-[var(--accent-bright)] drop-shadow-[0_0_20px_var(--glow-color)] animate-pulse'
                     : 'text-white'
                 }`}>
                   {isRecoveryActive ? '🛡️ RECOVERING_OPERATOR' : 'SOLE_PROGRESSOR'}
@@ -420,88 +420,88 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   {/* RECOVERY TITLE BADGE - GLOWS WHEN ACTIVE, DIMS WHEN INACTIVE */}
                   {isRecoveryActive ? (
-                    <span className="text-[10px] font-mono font-bold bg-[#3a2e12]/90 border border-[#c5a059]/60 text-[#fef08a] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_rgba(197,160,89,0.5)] animate-pulse">
-                      <Shield className="h-3.5 w-3.5 text-[#e5c875]" />
+                    <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_var(--glow-color)] animate-pulse">
+                      <Shield className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                       [RECOVERY] RECOVERING OPERATOR
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono font-bold bg-[#07080c]/60 border border-white/5 text-zinc-600 px-3 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
+                    <span className="text-[10px] font-mono font-bold bg-[var(--bg-void)]/60 border border-white/5 text-zinc-600 px-3 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
                       <Shield className="h-3.5 w-3.5 text-zinc-600" />
                       [RECOVERY] RECOVERING OPERATOR (INACTIVE)
                     </span>
                   )}
 
-                  <span className="text-[10px] font-mono font-bold bg-[#3a2e12]/60 border border-[#c5a059]/40 text-[#fef08a] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
                     [{activeTitle.badge}] {activeTitle.name}
                   </span>
 
-                  <span className="text-[10px] font-mono font-bold bg-[#141824] border border-[#c5a059]/30 text-zinc-200 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[10px] font-mono font-bold bg-[var(--bg-card)] border border-[var(--border-accent)] text-zinc-200 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     {renderTopicIcon(activeJob.iconName || 'Shield', 'h-3.5 w-3.5')}
                     DISCIPLINE: {activeJob.name}
                   </span>
 
                   <button
                     onClick={() => setIsJobTitleModalOpen(true)}
-                    className="text-[10px] font-mono font-bold bg-[#07080c] hover:bg-[#3a2e12]/40 border border-[#c5a059]/30 hover:border-[#c5a059] text-zinc-300 hover:text-[#fef08a] px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-mono font-bold bg-[var(--bg-void)] hover:bg-[var(--accent-surface)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] text-zinc-300 hover:text-[var(--accent-highlight)] px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    <Sliders className="h-3 w-3 text-[#c5a059]" /> CAREER & TITLES
+                    <Sliders className="h-3 w-3 text-[var(--accent-bright)]" /> CAREER & TITLES
                   </button>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">SANCTUM RANK</span>
-                <p className="text-xl font-display font-bold text-[#e5c875] tracking-wide uppercase mt-0.5">
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SANCTUM RANK</span>
+                <p className="text-xl font-display font-bold text-[var(--accent-bright)] tracking-wide uppercase mt-0.5">
                   {levelInfo.rank}
                 </p>
                 <div className="text-[10px] font-mono text-zinc-300 mt-1">
-                  PERK: <span className="text-[#fef08a] font-bold">{activeJob.perk}</span>
+                  PERK: <span className="text-[var(--accent-highlight)] font-bold">{activeJob.perk}</span>
                 </div>
               </div>
             </div>
 
             {/* LEVEL & XP PROGRESSION HUD */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-6 border-t border-[#c5a059]/20 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
               {/* Level indicator */}
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/25 rounded-xl p-3.5 flex flex-col justify-between">
-                <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">SYS_LEVEL</span>
+              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col justify-between">
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SYS_LEVEL</span>
                 <span className="text-2xl font-display font-bold text-white mt-1">LVL {levelInfo.level}</span>
               </div>
 
               {/* XP progress */}
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/25 rounded-xl p-3.5 lg:col-span-2 flex flex-col justify-between">
+              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 lg:col-span-2 flex flex-col justify-between">
                 <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase font-bold">
-                  <span className="text-[#c5a059]">DIVINE_XP</span>
-                  <span className="text-[#e5c875] font-bold">{levelInfo.totalXp} XP</span>
+                  <span className="text-[var(--accent-bright)]">DIVINE_XP</span>
+                  <span className="text-[var(--accent-bright)] font-bold">{levelInfo.totalXp} XP</span>
                 </div>
                 <div className="mt-2 space-y-1">
-                  <div className="w-full bg-[#07080c] rounded-full h-2 overflow-hidden border border-[#c5a059]/20">
+                  <div className="w-full bg-[var(--bg-void)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
                     <div 
-                      className="bg-gradient-to-r from-[#8a6d2b] to-[#c5a059] h-full transition-all duration-500 shadow-[0_0_10px_rgba(197,160,89,0.5)]" 
+                      className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all duration-500 shadow-[0_0_10px_var(--glow-color)]" 
                       style={{ width: `${levelInfo.progress}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-[9px] font-mono text-zinc-400 font-bold">
                     <span>{levelInfo.xpIntoLevel} / {levelInfo.xpRequiredForNextLevel} XP</span>
-                    <span className="text-[#c5a059]">{levelInfo.xpUntilNextLevel} XP TO NEXT LVL</span>
+                    <span className="text-[var(--accent-bright)]">{levelInfo.xpUntilNextLevel} XP TO NEXT LVL</span>
                   </div>
                 </div>
               </div>
 
               {/* Momentum Indicator */}
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/25 rounded-xl p-3.5 flex flex-col justify-between">
+              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col justify-between">
                 <div className="flex justify-between items-center text-[10px] font-mono text-zinc-300 uppercase font-bold">
-                  <span className="text-[#c5a059]">MOMENTUM</span>
-                  <Flame className={`h-3.5 w-3.5 ${state.profile.momentum > 50 ? 'text-[#e5c875] animate-pulse' : 'text-zinc-500'}`} />
+                  <span className="text-[var(--accent-bright)]">MOMENTUM</span>
+                  <Flame className={`h-3.5 w-3.5 ${state.profile.momentum > 50 ? 'text-[var(--accent-bright)] animate-pulse' : 'text-zinc-500'}`} />
                 </div>
                 <div className="text-2xl font-display font-bold text-white mt-0.5">
                   {state.profile.momentum}%
                 </div>
-                <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden mt-1 border border-white/5">
+                <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden mt-1 border border-white/5">
                   <div 
                     className={`h-full transition-all duration-300 ${
-                      state.profile.momentum > 75 ? 'bg-gradient-to-r from-amber-500 to-[#e5c875]' : state.profile.momentum > 40 ? 'bg-[#c5a059]' : 'bg-zinc-600'
+                      state.profile.momentum > 75 ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-highlight)]' : state.profile.momentum > 40 ? 'bg-[var(--accent-primary)]' : 'bg-zinc-600'
                     }`}
                     style={{ width: `${state.profile.momentum}%` }}
                   />
@@ -511,16 +511,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               {/* Coins & Reward Shop Card */}
               <div 
                 onClick={() => onNavigate?.('shop')}
-                className="bg-[#3a2e12]/40 hover:bg-[#3a2e12]/70 border border-[#c5a059]/50 hover:border-[#e5c875] rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
+                className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
               >
-                <div className="flex justify-between items-center text-[10px] font-mono text-[#fef08a] uppercase font-bold">
+                <div className="flex justify-between items-center text-[10px] font-mono text-[var(--accent-highlight)] uppercase font-bold">
                   <span>VAULT DINARS</span>
-                  <ShoppingBag className="h-3.5 w-3.5 text-[#c5a059] group-hover:scale-110 transition" />
+                  <ShoppingBag className="h-3.5 w-3.5 text-[var(--accent-bright)] group-hover:scale-110 transition" />
                 </div>
-                <div className="text-2xl font-mono font-extrabold text-[#fef08a] mt-0.5">
+                <div className="text-2xl font-mono font-extrabold text-[var(--accent-highlight)] mt-0.5">
                   {state.profile.coins ?? 150} 🪙
                 </div>
-                <div className="text-[9px] font-mono text-[#c5a059] font-bold mt-1 flex items-center gap-1">
+                <div className="text-[9px] font-mono text-[var(--accent-bright)] font-bold mt-1 flex items-center gap-1">
                   <span>OPEN VAULT</span>
                   <ArrowUpRight className="h-3 w-3" />
                 </div>
@@ -528,31 +528,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* FOCUS HUD & PERFORMANCE METRICS */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[#c5a059]/20 relative z-10">
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/20 rounded-xl p-2.5">
-                <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold block">FOCUS MINUTES TODAY</span>
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)] relative z-10">
+              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-2.5">
+                <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold block">FOCUS MINUTES TODAY</span>
                 <span className="text-sm font-mono font-bold text-white mt-1 flex items-center gap-1.5">
                   🧘 {state.profile.focusMinutesToday || 0}m
                 </span>
               </div>
-              <div className="bg-[#07080c]/80 border border-[#c5a059]/20 rounded-xl p-2.5">
-                <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold block">FOCUS STREAK</span>
-                <span className="text-sm font-mono font-bold text-[#e5c875] mt-1 flex items-center gap-1.5">
+              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-2.5">
+                <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold block">FOCUS STREAK</span>
+                <span className="text-sm font-mono font-bold text-[var(--accent-bright)] mt-1 flex items-center gap-1.5">
                   🔥 {state.profile.focusStreak || 0} Days
                 </span>
               </div>
             </div>
 
             {/* MUHĀSABAH SELF-ACCOUNTABILITY WIDGET */}
-            <div className="mt-4 p-3 bg-[#0d1017] border border-[#c5a059]/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+            <div className="mt-4 p-3 bg-[var(--bg-void)] border border-[var(--border-accent)] rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#3a2e12]/70 border border-[#c5a059]/50 text-[#fef08a] shrink-0">
-                  <Scale className="h-4 w-4 text-[#c5a059]" />
+                <div className="p-2 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shrink-0">
+                  <Scale className="h-4 w-4 text-[var(--accent-bright)]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-zinc-100 flex items-center gap-1">
-                      <RubElHizbIcon className="h-2.5 w-2.5 text-[#c5a059]" />
+                      <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)]" />
                       MUHĀSABAH AUDIT
                     </span>
                     <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
@@ -610,12 +610,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* ATTRIBUTES MATRIX PREVIEW CARD */}
-          <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden space-y-4 shadow-xl" id="dashboard-attributes-matrix">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+          <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden space-y-4 shadow-xl" id="dashboard-attributes-matrix">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
 
-            <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2.5">
+            <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2.5">
               <div className="flex items-center gap-2">
-                <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                 <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
                   CORE ATTRIBUTE CAPABILITIES MATRIX
                 </h3>
@@ -624,7 +624,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {selectedAttributeName && (
                   <button
                     onClick={() => setSelectedAttributeName(null)}
-                    className="text-[10px] font-mono text-[#fef08a] hover:text-white bg-[#3a2e12] border border-[#c5a059]/40 px-2 py-0.5 rounded transition cursor-pointer"
+                    className="text-[10px] font-mono text-[var(--accent-highlight)] hover:text-white bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded transition cursor-pointer"
                   >
                     RESET FILTER
                   </button>
@@ -632,7 +632,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 {onNavigate && (
                   <button 
                     onClick={() => onNavigate('analytics')}
-                    className="text-[10px] font-mono text-[#c5a059] hover:text-[#e5c875] flex items-center gap-1 transition cursor-pointer font-bold"
+                    className="text-[10px] font-mono text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] flex items-center gap-1 transition cursor-pointer font-bold"
                   >
                     FULL MATRIX <ChevronRight className="h-3 w-3" />
                   </button>
@@ -657,8 +657,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     onClick={() => setSelectedAttributeName(isSelected ? null : attr.name)}
                     className={`p-3 rounded-xl border transition cursor-pointer space-y-1.5 ${
                       isSelected
-                        ? 'bg-[#3a2e12]/80 border-[#e5c875] shadow-[0_0_15px_rgba(197,160,89,0.3)] ring-1 ring-[#e5c875]/50'
-                        : 'bg-[#07080c]/80 border-[#c5a059]/20 hover:border-[#c5a059] hover:bg-[#141824]'
+                        ? 'bg-[var(--accent-surface)] border-[var(--accent-bright)] shadow-[0_0_15px_var(--glow-color)] ring-1 ring-[var(--border-accent)]'
+                        : 'bg-[var(--bg-void)]/80 border-[var(--border-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--bg-surface)]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -666,21 +666,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                         <span className="text-sm">{attr.icon}</span>
                         {attr.name}
                       </span>
-                      <span className="text-sm font-mono font-extrabold text-[#e5c875]">
+                      <span className="text-sm font-mono font-extrabold text-[var(--accent-highlight)]">
                         LVL {totalVal}
                       </span>
                     </div>
 
-                    <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden border border-white/5">
+                    <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden border border-white/5">
                       <div 
-                        className="bg-gradient-to-r from-[#8a6d2b] to-[#c5a059] h-full rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(197,160,89,0.4)]" 
+                        className="bg-gradient-to-r from-[var(--border-strong)] to-[var(--accent-bright)] h-full rounded-full transition-all duration-300 shadow-[0_0_8px_var(--glow-color)]" 
                         style={{ width: `${Math.min(100, (totalVal / 50) * 100)}%` }}
                       />
                     </div>
 
                     <div className="flex justify-between text-[9px] font-mono text-zinc-400 pt-0.5">
                       <span>BASE {baseVal}</span>
-                      <span className="text-[#fef08a] font-bold">BONUS +{bonusVal}</span>
+                      <span className="text-[var(--accent-highlight)] font-bold">BONUS +{bonusVal}</span>
                     </div>
                   </div>
                 );
@@ -708,13 +708,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               });
 
               return (
-                <div className="mt-3 p-4 bg-[#07080c]/90 border border-[#c5a059]/40 rounded-xl space-y-3 animate-fadeIn">
-                  <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2">
+                <div className="mt-3 p-4 bg-[var(--bg-void)]/90 border border-[var(--border-accent)] rounded-xl space-y-3 animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{selectedAttr.icon}</span>
                       <div>
                         <h4 className="text-xs font-mono font-bold text-white uppercase flex items-center gap-1">
-                          <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                          <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
                           {selectedAttr.name} Attribute Intelligence
                         </h4>
                         <p className="text-[10px] font-mono text-zinc-400">
@@ -732,31 +732,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                   {/* FORMULA BREAKDOWN GRID */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
-                    <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg">
+                    <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
                       <span className="text-[9px] text-zinc-400 uppercase block">STARTING BASELINE</span>
-                      <span className="text-sm font-bold text-[#e5c875]">{baseVal}</span>
+                      <span className="text-sm font-bold text-[var(--accent-bright)]">{baseVal}</span>
                     </div>
-                    <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg">
+                    <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
                       <span className="text-[9px] text-zinc-400 uppercase block">DECREE EARNED</span>
                       <span className="text-sm font-bold text-emerald-400">+{bonusVal}</span>
                     </div>
-                    <div className="p-2 bg-[#0b0d13] border border-[#c5a059]/20 rounded-lg">
+                    <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
                       <span className="text-[9px] text-zinc-400 uppercase block">CHAIN BOOST</span>
-                      <span className="text-sm font-bold text-[#fef08a]">+{sealVal}</span>
+                      <span className="text-sm font-bold text-[var(--accent-highlight)]">+{sealVal}</span>
                     </div>
-                    <div className="p-2 bg-[#3a2e12] border border-[#c5a059]/50 rounded-lg">
-                      <span className="text-[9px] text-[#fef08a] font-bold uppercase block">TOTAL POWER</span>
+                    <div className="p-2 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg">
+                      <span className="text-[9px] text-[var(--accent-highlight)] font-bold uppercase block">TOTAL POWER</span>
                       <span className="text-sm font-extrabold text-white">{totalVal}</span>
                     </div>
                   </div>
 
                   {/* LINKED SKILLS & DIRECTIVES QUICK ACTION */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[#c5a059]/20">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
                     <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono">
-                      <span className="text-[#c5a059] font-bold uppercase">LINKED SKILLS:</span>
+                      <span className="text-[var(--accent-bright)] font-bold uppercase">LINKED SKILLS:</span>
                       {relatedSkills.length > 0 ? (
                         relatedSkills.map(sk => (
-                          <span key={sk.id} className="bg-[#3a2e12]/60 border border-[#c5a059]/30 text-[#fef08a] px-2 py-0.5 rounded-md">
+                          <span key={sk.id} className="bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2 py-0.5 rounded-md">
                             {sk.name} (LVL {sk.level})
                           </span>
                         ))
@@ -769,7 +769,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       {onNavigate && (
                         <button
                           onClick={() => onNavigate('system')}
-                          className="text-[10px] font-mono text-zinc-400 hover:text-[#e5c875] underline"
+                          className="text-[10px] font-mono text-zinc-400 hover:text-[var(--accent-highlight)] underline"
                         >
                           Calibrate Baseline in System →
                         </button>
@@ -782,18 +782,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
 
           {/* STRATEGIC COMMAND & CODEX PORTAL */}
-          <div className="glass-panel rounded-2xl p-4 border border-[#c5a059]/40 bg-gradient-to-r from-[#141824] via-[#0b0d13] to-[#1a170e] relative overflow-hidden shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+          <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] shrink-0 shadow-[0_0_12px_rgba(197,160,89,0.25)]">
-                <Compass className="h-5 w-5 text-[#c5a059]" />
+              <div className="p-2.5 rounded-xl bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shrink-0 shadow-[0_0_12px_var(--glow-color)]">
+                <Compass className="h-5 w-5 text-[var(--accent-bright)]" />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
                     STRATEGIC MATRIX & CODEX LAB
                   </h4>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-black">
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] font-black">
                     11 ENGINES ACTIVE
                   </span>
                 </div>
@@ -808,25 +808,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <>
                   <button
                     onClick={() => onNavigate('goals')}
-                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
                   >
                     <span>DESTINIES</span>
                   </button>
                   <button
                     onClick={() => onNavigate('projects')}
-                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
                   >
                     <span>CAMPAIGNS</span>
                   </button>
                   <button
                     onClick={() => onNavigate('frameworks')}
-                    className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-white/10 hover:border-[#c5a059]/50 text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
                   >
                     <span>ENGINES</span>
                   </button>
                   <button
                     onClick={() => onNavigate('strategy_codex')}
-                    className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[11px] font-mono font-bold hover:brightness-110 active:scale-95 transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                    className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[var(--border-strong)] via-[var(--accent-bright)] to-[var(--border-strong)] text-[var(--bg-void)] text-[11px] font-mono font-bold hover:brightness-110 active:scale-95 transition flex items-center gap-1.5 cursor-pointer shadow-md"
                   >
                     <span>MATRIX HUB</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -838,17 +838,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
           {/* Strategy 1: Eat the Frog Priority Target */}
           {frogOfTheDay && (
-            <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/40 bg-[#3a2e12]/30 relative overflow-hidden shadow-[0_0_20px_rgba(197,160,89,0.12)]" id="frog-of-the-day-card">
-              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-              <div className="absolute top-0 right-0 p-3 text-[8px] font-mono text-[#c5a059]/60 uppercase font-bold tracking-widest">
+            <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent)] bg-[var(--accent-surface)] relative overflow-hidden shadow-[0_0_20px_var(--glow-color)]" id="frog-of-the-day-card">
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+              <div className="absolute top-0 right-0 p-3 text-[8px] font-mono text-[var(--accent-bright)]/60 uppercase font-bold tracking-widest">
                 CRITICAL_SANCTUM_NODE
               </div>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#e5c875] animate-ping" />
-                    <span className="text-[10px] font-mono text-[#e5c875] font-bold uppercase tracking-wider flex items-center gap-1">
-                      <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+                    <span className="h-2 w-2 rounded-full bg-[var(--accent-bright)] animate-ping" />
+                    <span className="text-[10px] font-mono text-[var(--accent-highlight)] font-bold uppercase tracking-wider flex items-center gap-1">
+                      <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
                       COGNITIVE PRIORITY // PRIMORDIAL DECREE
                     </span>
                   </div>
@@ -858,7 +858,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <p className="text-xs text-zinc-300 line-clamp-1">
                     {frogOfTheDay.description || 'No operational decree parameters logged.'}
                   </p>
-                  <p className="text-[9px] text-[#c5a059]/80 font-mono italic">
+                  <p className="text-[9px] text-[var(--accent-bright)]/80 font-mono italic">
                     "Conquer the heaviest burden at dawn, and all subsequent trials shall yield before you."
                   </p>
                 </div>
@@ -866,7 +866,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <div className="flex items-center gap-2 w-full md:w-auto shrink-0 pt-2 md:pt-0">
                   <button
                     onClick={() => completeQuest(frogOfTheDay.id)}
-                    className="flex-1 md:flex-none px-4 py-2.5 bg-gradient-to-r from-[#8a6d2b] to-[#c5a059] hover:from-[#a07f35] hover:to-[#e5c875] text-[#07080c] font-mono font-bold text-xs rounded-xl transition shadow-[0_0_15px_rgba(197,160,89,0.35)] uppercase flex items-center justify-center gap-1.5 border border-[#e5c875]/50 cursor-pointer"
+                    className="flex-1 md:flex-none px-4 py-2.5 bg-gradient-to-r from-[var(--border-strong)] to-[var(--accent-bright)] hover:brightness-110 text-[var(--bg-void)] font-mono font-bold text-xs rounded-xl transition shadow-[0_0_15px_var(--glow-color)] uppercase flex items-center justify-center gap-1.5 border border-[var(--border-accent)] cursor-pointer"
                   >
                     <Check className="h-4 w-4" /> COMPLETE_DECREE (+{frogOfTheDay.xp} XP)
                   </button>
@@ -876,18 +876,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           )}
 
           {/* ACTIVE OPERATIONAL DIRECTIVES TERMINAL BOARD */}
-          <div className="glass-panel rounded-2xl p-5 space-y-4 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="dashboard-active-directives">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+          <div className="glass-panel rounded-2xl p-5 space-y-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-xl" id="dashboard-active-directives">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#c5a059]/20 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                 <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                   <span>OPERATIONAL DECREES BOARD ({filteredDirectives.length})</span>
-                  <span className="inline-block w-2 h-3.5 bg-[#c5a059] animate-pulse shadow-[0_0_8px_rgba(197,160,89,0.85)] rounded-[1px] ml-0.5" title="Terminal Live Cursor" />
+                  <span className="inline-block w-2 h-3.5 bg-[var(--accent-bright)] animate-pulse shadow-[0_0_8px_var(--glow-color)] rounded-[1px] ml-0.5" title="Terminal Live Cursor" />
                 </h3>
                 {selectedAttributeName && (
-                  <span className="text-[10px] font-mono bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold">
+                  <span className="text-[10px] font-mono bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold">
                     <span>⚡ RESONANCE: {selectedAttributeName.toUpperCase()}</span>
                     <button 
                       onClick={() => setSelectedAttributeName(null)}

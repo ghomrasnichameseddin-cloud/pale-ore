@@ -568,12 +568,12 @@ export const FrameworksView: React.FC = () => {
     <div className="space-y-6" id="frameworks-hub-view">
       
       {/* Header Banner */}
-      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-5 rounded-2xl flex flex-col justify-between gap-4 relative overflow-hidden shadow-xl">
-        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+      <div className="glass-panel border border-[var(--border-accent)] bg-[var(--bg-card)]/90 p-5 rounded-2xl flex flex-col justify-between gap-4 relative overflow-hidden shadow-xl">
+        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
+              <RubElHizbIcon className="h-5 w-5 text-[var(--accent-bright)]" />
               <h2 className="font-display text-base font-black tracking-widest text-white uppercase">
                 STRATEGIC THINKING LAB & INTERACTIVE ENGINES
               </h2>
@@ -608,8 +608,8 @@ export const FrameworksView: React.FC = () => {
                 }}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition border cursor-pointer whitespace-nowrap ${
                   activeCategory === cat.id
-                    ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-md'
-                    : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-white'
+                    ? 'bg-[var(--accent-surface)] border-[var(--border-accent)] text-[var(--accent-highlight)] shadow-md'
+                    : 'bg-[var(--bg-void)] border-white/5 text-zinc-400 hover:text-white'
                 }`}
               >
                 {cat.label}
@@ -648,8 +648,8 @@ export const FrameworksView: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition cursor-pointer whitespace-nowrap border flex items-center gap-1.5 ${
                   isTabActive
-                    ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_12px_rgba(197,160,89,0.2)]'
-                    : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-[#c5a059]/30'
+                    ? 'bg-gradient-to-r from-[var(--border-accent)] via-[var(--bg-card-hover)] to-[var(--bg-surface)] text-[var(--accent-highlight)] border-[var(--border-accent)] shadow-[0_0_12px_var(--glow-color)]'
+                    : 'bg-[var(--bg-void)] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-[var(--border-accent)]'
                 }`}
               >
                 <span>{tab.label}</span>
@@ -672,15 +672,15 @@ export const FrameworksView: React.FC = () => {
           {/* --- EISENHOWER MATRIX VIEW --- */}
           {activeTab === 'eisenhower' && (
             <div className="space-y-4" id="framework-eisenhower-window">
-              <div className="glass-panel border-[#c5a059]/25 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs relative overflow-hidden shadow-lg shadow-black/50">
-                <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
+              <div className="glass-panel border border-[var(--border-accent)] bg-[var(--bg-card)]/90 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs relative overflow-hidden shadow-lg shadow-black/50">
+                <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" />
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-display font-bold text-white uppercase flex items-center gap-2 tracking-wide text-sm">
-                      <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
+                      <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                       EISENHOWER STRATEGIC DECREES MATRIX
                     </h3>
-                    <span className="text-[10px] font-mono text-[#e5c875] bg-[#3a2e12]/80 border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold">
+                    <span className="text-[10px] font-mono text-[var(--accent-highlight)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded font-bold">
                       {activeQuests.length} ACTIVE DIRECTIVES
                     </span>
                   </div>
@@ -694,21 +694,21 @@ export const FrameworksView: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAutoClassify}
-                    className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/50 text-[#fef08a] font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
+                    className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] font-mono text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all shadow-sm"
                     title="Auto-classify unmapped tasks based on type & difficulty"
                   >
-                    <Zap className="h-3.5 w-3.5 text-[#e5c875]" />
+                    <Zap className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                     AUTO-CALIBRATE
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowMatrixGuide(!showMatrixGuide)}
-                    className="bg-[#07080c] hover:bg-[#141824] border border-[#c5a059]/30 text-zinc-300 font-mono text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                    className="bg-[var(--bg-void)] hover:bg-[var(--bg-card-hover)] border border-[var(--border-accent)] text-zinc-300 font-mono text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
                   >
-                    <Info className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <Info className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                     STRATEGY DOCTRINE
-                    {showMatrixGuide ? <ChevronUp className="h-3 w-3 text-[#c5a059]" /> : <ChevronDown className="h-3 w-3 text-[#c5a059]" />}
+                    {showMatrixGuide ? <ChevronUp className="h-3 w-3 text-[var(--accent-bright)]" /> : <ChevronDown className="h-3 w-3 text-[var(--accent-bright)]" />}
                   </button>
                 </div>
               </div>
@@ -722,7 +722,7 @@ export const FrameworksView: React.FC = () => {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#0b0d13] border border-[#c5a059]/30 p-4 rounded-xl text-[11px] font-sans shadow-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-[var(--bg-surface)] border border-[var(--border-accent)] p-4 rounded-xl text-[11px] font-sans shadow-lg">
                       <div className="p-3 bg-rose-950/30 border border-rose-500/30 rounded-lg">
                         <div className="font-mono font-bold text-rose-300 flex items-center gap-1.5 mb-1 text-[11px]">
                           <RubElHizbIcon className="h-3 w-3" color="#f43f5e" /> Q1: IMPERIAL CRISIS
@@ -731,9 +731,9 @@ export const FrameworksView: React.FC = () => {
                           Urgent decrees, critical penalty threats & hard deadlines. Slay with immediate focus.
                         </p>
                       </div>
-                      <div className="p-3 bg-[#3a2e12]/40 border border-[#c5a059]/40 rounded-lg">
-                        <div className="font-mono font-bold text-[#fef08a] flex items-center gap-1.5 mb-1 text-[11px]">
-                          <RubElHizbIcon className="h-3 w-3" color="#e5c875" /> Q2: SACRED MASTERY
+                      <div className="p-3 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg">
+                        <div className="font-mono font-bold text-[var(--accent-highlight)] flex items-center gap-1.5 mb-1 text-[11px]">
+                          <RubElHizbIcon className="h-3 w-3" /> Q2: SACRED MASTERY
                         </div>
                         <p className="text-zinc-300 text-[10px] leading-relaxed">
                           Strategic skill progression, deep work & long-term destiny. Safeguard this chamber from shallow distractions.
@@ -747,7 +747,7 @@ export const FrameworksView: React.FC = () => {
                           Urgent administrative interruptions & recurring low-leverage demands. Batch or automate with haste.
                         </p>
                       </div>
-                      <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg">
+                      <div className="p-3 bg-[var(--bg-void)] border border-white/10 rounded-lg">
                         <div className="font-mono font-bold text-zinc-400 flex items-center gap-1.5 mb-1 text-[11px]">
                           <RubElHizbIcon className="h-3 w-3" color="#71717a" /> Q4: DISCARDED SHADOWS
                         </div>
@@ -761,10 +761,10 @@ export const FrameworksView: React.FC = () => {
               </AnimatePresence>
 
               {/* Timeline Horizon Filter Bar */}
-              <div className="bg-[#0b0d13]/90 p-2.5 rounded-xl border border-[#c5a059]/25 font-mono text-[10px] shadow-sm">
+              <div className="bg-[var(--bg-surface)]/90 p-2.5 rounded-xl border border-[var(--border-accent)] font-mono text-[10px] shadow-sm">
                 <div className="flex items-center gap-1.5 overflow-x-auto">
-                  <span className="text-[#c5a059] font-bold uppercase flex items-center gap-1 mr-1 shrink-0">
-                    <Calendar className="h-3 w-3 text-[#c5a059]" /> HORIZON:
+                  <span className="text-[var(--accent-bright)] font-bold uppercase flex items-center gap-1 mr-1 shrink-0">
+                    <Calendar className="h-3 w-3 text-[var(--accent-bright)]" /> HORIZON:
                   </span>
                   {(['ALL', 'TODAY', 'TOMORROW', 'NEXT_7_DAYS', 'NO_DATE', 'OVERDUE'] as const).map(horizon => {
                     const labelMap = {
@@ -782,8 +782,8 @@ export const FrameworksView: React.FC = () => {
                         onClick={() => setSelectedTimelineFilter(horizon)}
                         className={`px-2.5 py-1 rounded-lg font-bold transition-all shrink-0 ${
                           isSelected 
-                            ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] shadow font-black' 
-                            : 'bg-[#07080c] text-zinc-400 hover:bg-[#141824] hover:text-white border border-white/5'
+                            ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] shadow font-black' 
+                            : 'bg-[var(--bg-void)] text-zinc-400 hover:bg-[var(--bg-card-hover)] hover:text-white border border-white/5'
                         }`}
                       >
                         {labelMap[horizon]}
@@ -879,19 +879,19 @@ export const FrameworksView: React.FC = () => {
                 <div 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => moveQuestQuadrant(e.dataTransfer.getData('text'), 'Q2')}
-                  className="glass-panel border-[#c5a059]/40 hover:border-[#c5a059]/60 bg-[#0b0d13]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg shadow-[#c5a059]/5"
+                  className="glass-panel border border-[var(--border-accent)] hover:border-[var(--border-strong)] bg-[var(--bg-card)]/90 p-4 rounded-xl flex flex-col min-h-[320px] transition-all relative overflow-hidden space-y-3 shadow-lg shadow-[var(--glow-color)]"
                 >
-                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-[#c5a059]/10 font-mono select-none">Q2</div>
-                    <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2.5">
+                    <div className="absolute top-0 right-0 p-2 text-[32px] font-black text-[var(--accent-bright)]/10 font-mono select-none">Q2</div>
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2.5">
                       <div>
-                        <h4 className="font-mono text-xs font-black text-[#fef08a] flex items-center gap-1.5">
-                          <RubElHizbIcon className="h-3.5 w-3.5" color="#e5c875" />
+                        <h4 className="font-mono text-xs font-black text-[var(--accent-highlight)] flex items-center gap-1.5">
+                          <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                           Q2: SACRED MASTERY (IMPORTANT • STRATEGIC FOCUS)
                         </h4>
-                        <p className="text-[10px] font-mono text-[#c5a059]/80 mt-0.5">High leverage strategic execution & skill compounding</p>
+                        <p className="text-[10px] font-mono text-[var(--accent-bright)]/80 mt-0.5">High leverage strategic execution & skill compounding</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-[#fef08a] font-bold bg-[#3a2e12]/80 border border-[#c5a059]/50 px-2 py-0.5 rounded-lg">
+                        <span className="text-[10px] font-mono text-[var(--accent-highlight)] font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded-lg">
                           {classifiedQuests.Q2.length} QUESTS ({classifiedQuests.Q2.reduce((sum, q) => sum + (q.estimatedTime || 0), 0)}m)
                         </span>
                       </div>
@@ -907,12 +907,12 @@ export const FrameworksView: React.FC = () => {
                         value={quickAddTexts.Q2}
                         onChange={(e) => setQuickAddTexts(prev => ({ ...prev, Q2: e.target.value }))}
                         placeholder="+ Seed strategic Q2 mastery directive..."
-                        className="flex-1 bg-[#07080c] border border-[#c5a059]/25 focus:border-[#c5a059] rounded-lg px-2.5 py-1 text-xs text-white placeholder-[#c5a059]/40 focus:outline-none font-mono"
+                        className="flex-1 bg-[var(--bg-void)] border border-[var(--border-accent)] focus:border-[var(--border-strong)] rounded-lg px-2.5 py-1 text-xs text-white placeholder-[var(--text-muted)]/40 focus:outline-none font-mono"
                       />
                       <select
                         value={quickAddTimelines.Q2}
                         onChange={(e) => setQuickAddTimelines(prev => ({ ...prev, Q2: e.target.value as any }))}
-                        className="bg-[#07080c] border border-[#c5a059]/25 text-[#e5c875] font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
+                        className="bg-[var(--bg-void)] border border-[var(--border-accent)] text-[var(--accent-highlight)] font-mono text-[10px] rounded-lg px-1.5 py-1 focus:outline-none shrink-0 font-bold"
                       >
                         <option value="TODAY">📅 Today</option>
                         <option value="TOMORROW">☀️ Tomorrow</option>
@@ -921,7 +921,7 @@ export const FrameworksView: React.FC = () => {
                       </select>
                       <button
                         type="submit"
-                        className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/50 text-[#fef08a] text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
+                        className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs px-2.5 py-1 rounded-lg font-mono font-bold shrink-0 transition"
                       >
                         + ADD
                       </button>

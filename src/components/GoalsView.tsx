@@ -148,7 +148,7 @@ export const GoalsView: React.FC = () => {
 
   // Status mapping with RPG theme
   const statusColors = {
-    'Active': 'text-[#e5c875] bg-[#3a2e12] border-[#c5a059]/40',
+    'Active': 'text-[var(--accent-highlight)] bg-[var(--accent-surface)] border-[var(--border-accent)]',
     'Paused': 'text-amber-300 bg-amber-950/60 border-amber-500/40',
     'Planned': 'text-purple-300 bg-purple-950/60 border-purple-500/40',
     'Completed': 'text-emerald-300 bg-emerald-950/60 border-emerald-500/40',
@@ -352,15 +352,15 @@ export const GoalsView: React.FC = () => {
       
       {/* LEFT PANEL: GOAL SELECTOR & CREATOR */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="flex justify-between items-center pb-2 border-b border-[#c5a059]/20">
-          <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
-            <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+        <div className="flex justify-between items-center pb-2 border-b border-[var(--border-subtle)]">
+          <span className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold flex items-center gap-1.5">
+            <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
             DESTINIES ({state.goals.length})
           </span>
           <div className="flex gap-2">
             <button 
               onClick={() => { setShowCreateGoal(!showCreateGoal); setShowEmptyGoalsConfirm(false); }}
-              className="text-xs font-mono bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] text-[#fef08a] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-bold"
+              className="text-xs font-mono bg-[var(--accent-surface)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer font-bold"
             >
               <Plus className="h-3 w-3" />
               NEW
@@ -407,20 +407,20 @@ export const GoalsView: React.FC = () => {
 
         {/* Goal Creator Form */}
         {showCreateGoal && (
-          <form onSubmit={handleCreateGoal} className="p-4 bg-[#0b0d13] border border-[#c5a059]/30 rounded-xl space-y-3 shadow-xl">
-            <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold flex items-center gap-1.5">
-              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+          <form onSubmit={handleCreateGoal} className="p-4 bg-[var(--bg-surface)] border border-[var(--border-accent)] rounded-xl space-y-3 shadow-xl">
+            <h4 className="text-xs font-mono text-[var(--accent-highlight)] uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
               ESTABLISH_NEW_DESTINY
             </h4>
             
             <div>
-              <label className="block text-[10px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Goal Name</label>
+              <label className="block text-[10px] font-mono text-[var(--accent-bright)] uppercase mb-1 font-bold">Goal Name</label>
               <input 
                 type="text" 
                 placeholder="e.g. Master Islamic Geometric Art..."
                 value={newGoalName}
                 onChange={(e) => setNewGoalName(e.target.value)}
-                className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded p-2 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                className="w-full bg-[#07080c] border border-[var(--border-accent)] rounded p-2 text-xs text-white focus:outline-none focus:border-[var(--border-strong)]"
                 required
               />
             </div>
@@ -432,7 +432,7 @@ export const GoalsView: React.FC = () => {
                 value={newGoalDesc}
                 onChange={(e) => setNewGoalDesc(e.target.value)}
                 rows={2}
-                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none focus:border-[#c5a059] font-sans"
+                className="w-full bg-[#07080c] border border-white/10 rounded p-2 text-xs text-zinc-300 focus:outline-none focus:border-[var(--border-strong)] font-sans"
               />
             </div>
 
@@ -477,12 +477,12 @@ export const GoalsView: React.FC = () => {
 
             {/* Link standard skills */}
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-[#c5a059] uppercase font-bold">Link Disciplines</label>
+              <label className="block text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">Link Disciplines</label>
               
               {/* Primary Core Skills */}
               {state.skills.filter(s => (s.tier || 'Primary') === 'Primary').length > 0 && (
                 <div className="space-y-1">
-                  <span className="text-[8px] font-mono text-[#c5a059] uppercase block font-semibold">Primary Disciplines</span>
+                  <span className="text-[8px] font-mono text-[var(--accent-bright)] uppercase block font-semibold">Primary Disciplines</span>
                   <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
                     {state.skills
                       .filter(s => (s.tier || 'Primary') === 'Primary')
@@ -495,7 +495,7 @@ export const GoalsView: React.FC = () => {
                             onClick={() => setNewGoalSkills(prev => isSel ? prev.filter(x => x !== sk.id) : [...prev, sk.id])}
                             className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-colors cursor-pointer ${
                               isSel 
-                                ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold' 
+                                ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border-[var(--border-accent)] font-bold' 
                                 : 'bg-[#07080c] text-zinc-400 border-white/5 hover:border-white/10'
                             }`}
                           >
@@ -546,7 +546,7 @@ export const GoalsView: React.FC = () => {
               </button>
               <button 
                 type="submit" 
-                className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] text-[10px] font-mono font-black px-3.5 py-1 rounded cursor-pointer"
+                className="bg-gradient-to-r from-[var(--border-accent)] via-[var(--accent-bright)] to-[var(--border-accent)] text-[var(--bg-void)] text-[10px] font-mono font-black px-3.5 py-1 rounded cursor-pointer"
               >
                 CONFIRM
               </button>
@@ -569,12 +569,12 @@ export const GoalsView: React.FC = () => {
                 }}
                 className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all flex flex-col justify-between gap-3 cursor-pointer relative overflow-hidden ${
                   isSelected 
-                    ? 'bg-[#141824]/90 border-[#c5a059] shadow-[0_0_18px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40' 
-                    : 'bg-[#0b0d13]/80 border-[#c5a059]/20 hover:border-[#c5a059]/40 hover:bg-[#131722]/60'
+                    ? 'bg-[var(--bg-card-hover)]/90 border-[var(--border-accent)] shadow-[0_0_18px_var(--glow-color)] ring-1 ring-[var(--border-accent)]' 
+                    : 'bg-[var(--bg-card)]/80 border-[var(--border-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--bg-card-hover)]'
                 }`}
               >
                 {isSelected && (
-                  <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
+                  <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" />
                 )}
 
                 <div className="space-y-1 w-full">
@@ -588,7 +588,7 @@ export const GoalsView: React.FC = () => {
                           🌐 {goal.horizon}
                         </span>
                       )}
-                      <span className="text-[9px] font-mono text-[#c5a059] font-bold">P_{goal.priority.toUpperCase()}</span>
+                      <span className="text-[9px] font-mono text-[var(--accent-bright)] font-bold">P_{goal.priority.toUpperCase()}</span>
                     </div>
                   </div>
 
@@ -600,7 +600,7 @@ export const GoalsView: React.FC = () => {
                 {/* Progress bar info */}
                 <div className="w-full space-y-1">
                   <div className="flex justify-between text-[9px] font-mono text-zinc-400">
-                    <span className="text-[#c5a059]">ALIGNMENT</span>
+                    <span className="text-[var(--accent-bright)]">ALIGNMENT</span>
                     <span>{progress}%</span>
                   </div>
                   <div className="w-full bg-[#07080c] rounded-full h-1.5 overflow-hidden border border-white/5">
@@ -619,15 +619,15 @@ export const GoalsView: React.FC = () => {
       {/* RIGHT PANEL: GOAL MASTER DETAILS PANE */}
       <div className="lg:col-span-3 space-y-6">
         {selectedGoal ? (
-          <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
+          <div className="glass-panel rounded-xl p-6 space-y-6 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
             
             {/* GOAL HEADER / NAME / BRIEF */}
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-[#c5a059]/20 pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-[var(--border-subtle)] pb-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-                  <span className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">SANCTUM_DESTINY_ANALYSIS</span>
+                  <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
+                  <span className="text-xs font-mono text-[var(--accent-highlight)] uppercase tracking-wider font-bold">SANCTUM_DESTINY_ANALYSIS</span>
                 </div>
 
                 {isEditingGoal ? (
@@ -636,7 +636,7 @@ export const GoalsView: React.FC = () => {
                       type="text" 
                       value={editGoalName}
                       onChange={(e) => setEditGoalName(e.target.value)}
-                      className="w-full bg-[#07080c] border border-[#c5a059] rounded px-3 py-1.5 text-sm text-white font-sans font-bold"
+                      className="w-full bg-[#07080c] border border-[var(--border-accent)] rounded px-3 py-1.5 text-sm text-white font-sans font-bold"
                       required
                     />
                     
@@ -688,7 +688,7 @@ export const GoalsView: React.FC = () => {
                       </button>
                       <button 
                         type="submit" 
-                        className="bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer"
+                        className="bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]"
                       >
                         APPLY_EDITS
                       </button>
@@ -701,7 +701,7 @@ export const GoalsView: React.FC = () => {
                         {selectedGoal.name}
                       </h3>
                       {selectedGoal.horizon && (
-                        <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)]">
                           {selectedGoal.horizon}
                         </span>
                       )}
@@ -718,7 +718,7 @@ export const GoalsView: React.FC = () => {
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
                     onClick={startEditing}
-                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 hover:text-[#e5c875] rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
+                    className="p-1.5 bg-[#07080c] border border-white/10 hover:border-[var(--border-accent)] text-zinc-300 hover:text-[var(--accent-highlight)] rounded text-xs flex items-center gap-1.5 font-mono cursor-pointer"
                     title="Edit goal details"
                   >
                     <Edit3 className="h-3.5 w-3.5" />
@@ -737,7 +737,7 @@ export const GoalsView: React.FC = () => {
             </div>
 
             {/* Quick Status Adjustments */}
-            <div className="flex flex-wrap gap-2 pt-1 border-b border-[#c5a059]/20 pb-4">
+            <div className="flex flex-wrap gap-2 pt-1 border-b border-[var(--border-subtle)] pb-4">
               {['Active', 'Paused', 'Planned', 'Completed', 'Archived'].map(status => {
                 const isActive = selectedGoal.status === status;
                 return (
@@ -757,7 +757,7 @@ export const GoalsView: React.FC = () => {
             </div>
 
             {/* GOAL TABS */}
-            <div className="flex border-b border-[#c5a059]/20 gap-4">
+            <div className="flex border-b border-[var(--border-subtle)] gap-4">
               {[
                 { id: 'overview', label: 'OVERVIEW', icon: Target },
                 { id: 'projects', label: 'PROJECTS & MILESTONES', icon: BookOpen },
@@ -772,11 +772,11 @@ export const GoalsView: React.FC = () => {
                     onClick={() => setActiveSubTab(tab.id as any)}
                     className={`py-2 px-1 text-xs font-mono border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
                       isActive 
-                        ? 'border-[#c5a059] text-[#e5c875] font-bold' 
+                        ? 'border-[var(--border-accent)] text-[var(--accent-highlight)] font-bold' 
                         : 'border-transparent text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    <Icon className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <Icon className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                     {tab.label}
                   </button>
                 );
@@ -791,8 +791,8 @@ export const GoalsView: React.FC = () => {
                 <div className="space-y-6">
                   {/* METRIC BOXES */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 shadow-sm">
-                      <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ALIGNMENT SCORE</span>
+                    <div className="bg-[#07080c] border border-[var(--border-accent)] rounded-xl p-4 shadow-sm">
+                      <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">ALIGNMENT SCORE</span>
                       <p className="text-3xl font-display font-extrabold text-white mt-2">
                         {getGoalProgress(selectedGoal.id)}%
                       </p>
@@ -811,10 +811,10 @@ export const GoalsView: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-4 shadow-sm">
-                      <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">ESTIMATED COMPLETION</span>
+                    <div className="bg-[#07080c] border border-[var(--border-accent)] rounded-xl p-4 shadow-sm">
+                      <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">ESTIMATED COMPLETION</span>
                       <p className="text-base font-display font-bold text-white mt-2 flex items-center gap-1.5">
-                        <Calendar className="h-4 w-4 text-[#c5a059] shrink-0" />
+                        <Calendar className="h-4 w-4 text-[var(--accent-bright)] shrink-0" />
                         {selectedGoal.estimatedCompletion}
                       </p>
                       <p className="text-[9px] font-mono text-zinc-400 mt-2 uppercase">
@@ -827,15 +827,15 @@ export const GoalsView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                     {/* Projects briefly */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">PROJECTS HIERARCHY ({goalProjects.length})</h4>
+                      <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">PROJECTS HIERARCHY ({goalProjects.length})</h4>
                       <div className="space-y-2">
                         {goalProjects.length === 0 ? (
                           <p className="text-xs font-mono text-zinc-500">No projects linked to this goal.</p>
                         ) : (
                           goalProjects.map(proj => (
-                            <div key={proj.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
+                            <div key={proj.id} className="p-3 bg-[#07080c] border border-[var(--border-subtle)] rounded-lg flex justify-between items-center text-xs">
                               <span className="text-white font-sans font-medium">{proj.name}</span>
-                              <span className="text-[#e5c875] font-mono font-bold">{getProjectProgress(proj.id)}%</span>
+                              <span className="text-[var(--accent-bright)] font-mono font-bold">{getProjectProgress(proj.id)}%</span>
                             </div>
                           ))
                         )}
@@ -844,7 +844,7 @@ export const GoalsView: React.FC = () => {
 
                     {/* Skills briefly */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">LINKED DISCIPLINES</h4>
+                      <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">LINKED DISCIPLINES</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedGoal.relatedSkills.length === 0 ? (
                           <p className="text-xs font-mono text-zinc-500">No disciplines linked to this goal.</p>
@@ -858,12 +858,12 @@ export const GoalsView: React.FC = () => {
                               <div 
                                 key={sid} 
                                 className={`p-2 bg-[#07080c] border rounded-lg flex items-center gap-2 text-xs transition-colors ${
-                                  isPrimary ? 'border-[#c5a059]/30' : 'border-purple-500/30'
+                                  isPrimary ? 'border-[var(--border-accent)]' : 'border-purple-500/30'
                                 }`}
                               >
                                 <span className="text-white font-sans">{skill.name}</span>
                                 <span className={`font-mono font-bold ${
-                                  isPrimary ? 'text-[#e5c875]' : 'text-purple-300'
+                                  isPrimary ? 'text-[var(--accent-bright)]' : 'text-purple-300'
                                 }`}>LVL {skillInfo.level}</span>
                               </div>
                             );
@@ -874,10 +874,10 @@ export const GoalsView: React.FC = () => {
                   </div>
 
                   {/* MINI GOALS / SUB-GOALS BREAKDOWN */}
-                  <div className="pt-4 border-t border-[#c5a059]/20 space-y-4">
+                  <div className="pt-4 border-t border-[var(--border-subtle)] space-y-4">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
-                        <GitFork className="h-4 w-4 text-[#c5a059]" />
+                      <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                        <GitFork className="h-4 w-4 text-[var(--accent-bright)]" />
                         SANCTUM MILESTONES ({(selectedGoal.subGoals || []).filter(sg => sg.completed).length}/{(selectedGoal.subGoals || []).length})
                       </h4>
                       <span className="text-[10px] font-mono text-zinc-400">
@@ -886,13 +886,13 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     {/* Add Mini Goal Form */}
-                    <form onSubmit={handleAddSubGoalSubmit} className="flex flex-col sm:flex-row gap-2 bg-[#07080c] p-3 rounded-xl border border-[#c5a059]/30">
+                    <form onSubmit={handleAddSubGoalSubmit} className="flex flex-col sm:flex-row gap-2 bg-[#07080c] p-3 rounded-xl border border-[var(--border-accent)]">
                       <input 
                         type="text" 
                         placeholder="Enter milestone title..."
                         value={newSubGoalInput}
                         onChange={(e) => setNewSubGoalInput(e.target.value)}
-                        className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#c5a059]"
+                        className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[var(--border-strong)]"
                       />
                       <input 
                         type="date" 
@@ -902,7 +902,7 @@ export const GoalsView: React.FC = () => {
                       />
                       <button 
                         type="submit"
-                        className="bg-[#3a2e12] hover:bg-[#524119] text-[#fef08a] border border-[#c5a059] px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 cursor-pointer"
+                        className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         ADD MILESTONE
@@ -912,7 +912,7 @@ export const GoalsView: React.FC = () => {
                     {/* SubGoals Checklist */}
                     <div className="space-y-2">
                       {(!selectedGoal.subGoals || selectedGoal.subGoals.length === 0) ? (
-                        <div className="p-4 border border-dashed border-[#c5a059]/20 rounded-lg text-center bg-[#07080c]/50">
+                        <div className="p-4 border border-dashed border-[var(--border-subtle)] rounded-lg text-center bg-[#07080c]/50">
                           <p className="text-xs font-mono text-zinc-500">
                             No mini-milestones established yet.
                           </p>
@@ -923,12 +923,12 @@ export const GoalsView: React.FC = () => {
 
                           if (isEditing) {
                             return (
-                              <div key={sg.id} className="p-3 bg-[#07080c] border border-[#c5a059] rounded-lg flex flex-col sm:flex-row gap-2">
+                              <div key={sg.id} className="p-3 bg-[#07080c] border border-[var(--border-strong)] rounded-lg flex flex-col sm:flex-row gap-2">
                                 <input
                                   type="text"
                                   value={editSubGoalName}
                                   onChange={(e) => setEditSubGoalName(e.target.value)}
-                                  className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                                  className="flex-1 bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[var(--border-strong)]"
                                   placeholder="Milestone Name..."
                                 />
                                 <input
@@ -946,7 +946,7 @@ export const GoalsView: React.FC = () => {
                                       }
                                       setEditingSubGoalId(null);
                                     }}
-                                    className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-xs px-2.5 py-1 rounded font-mono font-bold cursor-pointer"
+                                    className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] text-xs px-2.5 py-1 rounded font-mono font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]"
                                   >
                                     SAVE
                                   </button>
@@ -967,8 +967,8 @@ export const GoalsView: React.FC = () => {
                               key={sg.id} 
                               className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-all ${
                                 sg.completed 
-                                  ? 'bg-[#07080c]/60 border-emerald-500/20 text-zinc-400' 
-                                  : 'bg-[#07080c] border-[#c5a059]/20 text-white'
+                                ? 'bg-[#07080c]/60 border-emerald-500/20 text-zinc-400' 
+                                : 'bg-[#07080c] border-[var(--border-subtle)] text-white'
                               }`}
                             >
                               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -977,8 +977,8 @@ export const GoalsView: React.FC = () => {
                                   onClick={() => toggleSubGoal(selectedGoal.id, sg.id)}
                                   className={`w-5 h-5 rounded flex items-center justify-center border transition shrink-0 cursor-pointer ${
                                     sg.completed 
-                                      ? 'bg-gradient-to-br from-[#8a6d2b] to-[#c5a059] border-[#c5a059] text-black font-black' 
-                                      : 'border-zinc-600 hover:border-[#c5a059] text-transparent'
+                                      ? 'bg-gradient-to-br from-[var(--border-accent)] to-[var(--accent-bright)] border-[var(--border-accent)] text-black font-black' 
+                                      : 'border-zinc-600 hover:border-[var(--border-strong)] text-transparent'
                                   }`}
                                 >
                                   ✓
@@ -990,7 +990,7 @@ export const GoalsView: React.FC = () => {
 
                               <div className="flex items-center gap-2 shrink-0">
                                 {sg.targetDate && (
-                                  <span className="text-[10px] font-mono text-[#c5a059] bg-[#0b0d13] px-2 py-0.5 rounded border border-[#c5a059]/20">
+                                  <span className="text-[10px] font-mono text-[var(--accent-bright)] bg-[#0b0d13] px-2 py-0.5 rounded border border-[var(--border-subtle)]">
                                     📅 {sg.targetDate}
                                   </span>
                                 )}
@@ -1001,7 +1001,7 @@ export const GoalsView: React.FC = () => {
                                     setEditSubGoalName(sg.name);
                                     setEditSubGoalDate(sg.targetDate || '');
                                   }}
-                                  className="text-zinc-500 hover:text-[#e5c875] p-1 transition cursor-pointer"
+                                  className="text-zinc-500 hover:text-[var(--accent-highlight)] p-1 transition cursor-pointer"
                                   title="Edit"
                                 >
                                   <Edit3 className="h-3.5 w-3.5" />
@@ -1023,8 +1023,8 @@ export const GoalsView: React.FC = () => {
                   </div>
 
                   {/* Connected Planning Documents Section */}
-                  <div className="pt-4 border-t border-[#c5a059]/20 space-y-3">
-                    <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                  <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
+                    <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider flex items-center gap-1.5 font-bold">
                       📄 STRATEGIC PLANNING DIRECTIVES
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1032,11 +1032,11 @@ export const GoalsView: React.FC = () => {
                         <p className="text-xs font-mono text-zinc-500 col-span-2">No active strategic planning documents linked to this goal.</p>
                       ) : (
                         state.planningDocuments.filter(doc => doc.linkedGoals?.includes(selectedGoal.id)).map(doc => (
-                          <div key={doc.id} className="p-2.5 bg-[#07080c] border border-[#c5a059]/20 rounded-lg flex justify-between items-center text-xs">
+                          <div key={doc.id} className="p-2.5 bg-[#07080c] border border-[var(--border-subtle)] rounded-lg flex justify-between items-center text-xs">
                             <span className="text-zinc-300 font-mono text-[10px] truncate flex items-center gap-1.5">
                               📂 {doc.path}
                             </span>
-                            <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                            <span className="text-[9px] bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
                               Connected
                             </span>
                           </div>
@@ -1055,18 +1055,18 @@ export const GoalsView: React.FC = () => {
                     {/* LEFT PANEL: PROJECTS LIST & CREATION */}
                     <div className="space-y-4 border-r border-white/5 pr-0 md:pr-6">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">PROJECTS HIERARCHY</h4>
+                        <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">PROJECTS HIERARCHY</h4>
                       </div>
 
                       {/* Add project Form */}
-                      <form onSubmit={handleCreateProject} className="p-3 bg-[#07080c] border border-[#c5a059]/25 rounded-xl space-y-2.5">
-                        <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold">ADD_PROJECT_ENTRY</span>
+                      <form onSubmit={handleCreateProject} className="p-3 bg-[#07080c] border border-[var(--border-accent)] rounded-xl space-y-2.5">
+                        <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold">ADD_PROJECT_ENTRY</span>
                         <input 
                           type="text"
                           placeholder="Project title..."
                           value={newProjName}
                           onChange={(e) => setNewProjName(e.target.value)}
-                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[var(--border-strong)]"
                           required
                         />
                         <textarea 
@@ -1074,7 +1074,7 @@ export const GoalsView: React.FC = () => {
                           value={newProjDesc}
                           onChange={(e) => setNewProjDesc(e.target.value)}
                           rows={2}
-                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059] font-sans"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[var(--border-strong)] font-sans"
                         />
                         <div className="flex justify-between items-center">
                           <input 
@@ -1084,7 +1084,7 @@ export const GoalsView: React.FC = () => {
                             onChange={(e) => setNewProjEstTime(e.target.value)}
                             className="bg-[#0b0d13] border border-white/10 rounded p-1 text-[10px] text-white focus:outline-none font-mono"
                           />
-                          <button type="submit" className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer">
+                          <button type="submit" className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]">
                             LAUNCH
                           </button>
                         </div>
@@ -1096,7 +1096,7 @@ export const GoalsView: React.FC = () => {
                           <p className="text-xs font-mono text-zinc-500 text-center py-4">No projects initialized for this goal.</p>
                         ) : (
                           goalProjects.map(proj => (
-                            <div key={proj.id} className="p-3.5 bg-[#07080c] border border-[#c5a059]/20 rounded-xl text-xs space-y-3">
+                            <div key={proj.id} className="p-3.5 bg-[#07080c] border border-[var(--border-subtle)] rounded-xl text-xs space-y-3">
                               <div className="flex justify-between items-center">
                                 <h5 className="font-display font-bold text-white">{proj.name}</h5>
                                 <button 
@@ -1116,7 +1116,7 @@ export const GoalsView: React.FC = () => {
 
                               <div className="flex justify-between text-[10px] font-mono text-zinc-400">
                                 <span>TIME: {proj.estimatedTime}</span>
-                                <span className="text-[#e5c875] font-bold">{getProjectProgress(proj.id)}% COMPLETED</span>
+                                <span className="text-[var(--accent-bright)] font-bold">{getProjectProgress(proj.id)}% COMPLETED</span>
                               </div>
 
                               <div className="w-full bg-[#0b0d13] rounded-full h-1.5 overflow-hidden border border-white/5">
@@ -1133,17 +1133,17 @@ export const GoalsView: React.FC = () => {
 
                     {/* RIGHT PANEL: MILESTONES LIST & CREATION */}
                     <div className="space-y-4">
-                      <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">MILESTONES TREE</h4>
+                      <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">MILESTONES TREE</h4>
 
                       {/* Add milestone form */}
-                      <form onSubmit={handleCreateMilestone} className="p-3 bg-[#07080c] border border-[#c5a059]/25 rounded-xl space-y-2.5">
-                        <span className="text-[9px] font-mono text-[#c5a059] uppercase font-bold">ADD_MILESTONE_MARKER</span>
+                      <form onSubmit={handleCreateMilestone} className="p-3 bg-[#07080c] border border-[var(--border-accent)] rounded-xl space-y-2.5">
+                        <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold">ADD_MILESTONE_MARKER</span>
                         <input 
                           type="text"
                           placeholder="Milestone title..."
                           value={newMileName}
                           onChange={(e) => setNewMileName(e.target.value)}
-                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                          className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[var(--border-strong)]"
                           required
                         />
                         <div className="flex justify-between items-center">
@@ -1159,7 +1159,7 @@ export const GoalsView: React.FC = () => {
                             ))}
                           </select>
 
-                          <button type="submit" className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer">
+                          <button type="submit" className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-3 py-1 rounded text-[10px] font-mono font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]">
                             CREATE
                           </button>
                         </div>
@@ -1173,11 +1173,11 @@ export const GoalsView: React.FC = () => {
                           goalMilestones.map(mile => {
                             const progress = getMilestoneProgress(mile.id);
                             return (
-                              <div key={mile.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl text-xs space-y-2 flex flex-col">
+                              <div key={mile.id} className="p-3 bg-[#07080c] border border-[var(--border-subtle)] rounded-xl text-xs space-y-2 flex flex-col">
                                 <div className="flex justify-between items-start gap-2">
                                   <div>
                                     <h5 className="font-sans font-bold text-zinc-200">{mile.name}</h5>
-                                    <span className="text-[9px] font-mono text-[#c5a059]">
+                                    <span className="text-[9px] font-mono text-[var(--accent-bright)]">
                                       PROJECT: {state.projects.find(p => p.id === mile.projectId)?.name || 'Unknown'}
                                     </span>
                                   </div>
@@ -1191,7 +1191,7 @@ export const GoalsView: React.FC = () => {
                                 
                                 <div className="flex justify-between text-[10px] font-mono text-zinc-400 mt-1">
                                   <span>STATUS: {progress === 100 ? 'ACHIEVED' : 'IN_PROGRESS'}</span>
-                                  <span className="text-[#e5c875] font-bold">{progress}%</span>
+                                  <span className="text-[var(--accent-bright)] font-bold">{progress}%</span>
                                 </div>
                               </div>
                             );
@@ -1208,22 +1208,22 @@ export const GoalsView: React.FC = () => {
                 <div className="space-y-6">
                   
                   {/* QUEST CREATOR INLINE FOR GOAL */}
-                  <form onSubmit={handleCreateQuest} className="p-4 bg-[#07080c] border border-[#c5a059]/30 rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-4 border-b border-[#c5a059]/20 pb-1 flex justify-between items-center">
-                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1">
-                        <RubElHizbIcon className="h-2.5 w-2.5 text-[#c5a059]" />
+                  <form onSubmit={handleCreateQuest} className="p-4 bg-[#07080c] border border-[var(--border-accent)] rounded-xl grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="md:col-span-4 border-b border-[var(--border-subtle)] pb-1 flex justify-between items-center">
+                      <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold flex items-center gap-1">
+                        <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)]" />
                         ASSIGN_DIRECTIVE_TO_DESTINY
                       </span>
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-[9px] font-mono text-[#c5a059] uppercase mb-1 font-bold">Directive Title</label>
+                      <label className="block text-[9px] font-mono text-[var(--accent-bright)] uppercase mb-1 font-bold">Directive Title</label>
                       <input 
                         type="text"
                         placeholder="Draft technical blueprint..."
                         value={newQuestName}
                         onChange={(e) => setNewQuestName(e.target.value)}
-                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[#c5a059]"
+                        className="w-full bg-[#0b0d13] border border-white/10 rounded p-1.5 text-xs text-white focus:outline-none focus:border-[var(--border-strong)]"
                         required
                       />
                     </div>
@@ -1311,7 +1311,7 @@ export const GoalsView: React.FC = () => {
                     </div>
 
                     <div className="md:col-span-4 mt-2">
-                      <button type="submit" className="w-full bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] text-[#07080c] py-2 rounded-lg text-xs font-mono font-black transition-colors cursor-pointer">
+                      <button type="submit" className="w-full bg-gradient-to-r from-[var(--border-accent)] via-[var(--accent-bright)] to-[var(--border-accent)] text-[var(--bg-void)] py-2 rounded-lg text-xs font-mono font-black transition-colors cursor-pointer">
                         DISPATCH_DIRECTIVE
                       </button>
                     </div>
@@ -1350,21 +1350,21 @@ export const GoalsView: React.FC = () => {
                           step="0.05"
                           value={splitRatio}
                           onChange={(e) => setSplitRatio(Number(e.target.value))}
-                          className="w-32 accent-[#c5a059]"
+                          className="w-32 accent-[var(--accent-bright)]"
                         />
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setSplitQuestId(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeSplit} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">CONFIRM_SPLIT</button>
+                        <button onClick={executeSplit} className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]">CONFIRM_SPLIT</button>
                       </div>
                     </div>
                   )}
 
                   {/* Merge Action Sheet */}
                   {mergeQuestIdA && (
-                    <div className="p-4 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3">
-                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1.5">
-                        <Link2 className="h-4 w-4 text-[#c5a059]" />
+                    <div className="p-4 bg-[#07080c] border border-[var(--border-accent)] rounded-xl space-y-3">
+                      <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold flex items-center gap-1.5">
+                        <Link2 className="h-4 w-4 text-[var(--accent-bright)]" />
                         MERGE_DIRECTIVES_ENGINE
                       </span>
                       <div className="space-y-2">
@@ -1392,16 +1392,16 @@ export const GoalsView: React.FC = () => {
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setMergeQuestIdA(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeMerge} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">EXECUTE_MERGE</button>
+                        <button onClick={executeMerge} className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]">EXECUTE_MERGE</button>
                       </div>
                     </div>
                   )}
 
                   {/* Move Action Sheet */}
                   {moveQuestId && (
-                    <div className="p-4 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3">
-                      <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1.5">
-                        <Move className="h-4 w-4 text-[#c5a059]" />
+                    <div className="p-4 bg-[#07080c] border border-[var(--border-accent)] rounded-xl space-y-3">
+                      <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold flex items-center gap-1.5">
+                        <Move className="h-4 w-4 text-[var(--accent-bright)]" />
                         REASSIGN_MAPPING
                       </span>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1447,7 +1447,7 @@ export const GoalsView: React.FC = () => {
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button onClick={() => setMoveQuestId(null)} className="text-[10px] font-mono text-zinc-500">CANCEL</button>
-                        <button onClick={executeMove} className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer">REASSIGN</button>
+                        <button onClick={executeMove} className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] text-[10px] font-mono px-3 py-1 rounded font-bold cursor-pointer hover:bg-[var(--accent-surface-hover)]">REASSIGN</button>
                       </div>
                     </div>
                   )}
@@ -1463,9 +1463,9 @@ export const GoalsView: React.FC = () => {
 
                         if (isEditing) {
                           return (
-                            <div key={quest.id} className="p-3.5 bg-[#07080c] border border-[#c5a059]/40 rounded-xl space-y-3 text-left">
+                            <div key={quest.id} className="p-3.5 bg-[#07080c] border border-[var(--border-strong)] rounded-xl space-y-3 text-left">
                               <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                                <span className="text-[10px] font-mono text-[#e5c875] uppercase tracking-wider font-bold">CHANGE_DIRECTIVE_PARAMETERS</span>
+                                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">CHANGE_DIRECTIVE_PARAMETERS</span>
                                 <button type="button" onClick={() => setEditingQuestId(null)} className="text-zinc-500 hover:text-white cursor-pointer">
                                   <X className="h-3.5 w-3.5" />
                                 </button>
@@ -1553,7 +1553,7 @@ export const GoalsView: React.FC = () => {
                                     <button
                                       type="button"
                                       onClick={() => setEditQuestDeadline(editQuestDeadline ? '' : systemDate)}
-                                      className="text-[9px] font-mono text-[#c5a059] hover:underline"
+                                      className="text-[9px] font-mono text-[var(--accent-bright)] hover:underline"
                                     >
                                       {!editQuestDeadline ? '♾️ Set Current' : 'Clear Date'}
                                     </button>
@@ -1567,7 +1567,7 @@ export const GoalsView: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2 pt-1 border-t border-white/5">
-                                  <label className="block text-[9px] font-mono text-[#c5a059] uppercase font-bold">Associate Disciplines</label>
+                                  <label className="block text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold">Associate Disciplines</label>
                                   <div className="flex flex-wrap gap-1.5">
                                     {state.skills.map(skill => {
                                       const isSelected = editQuestSkills.includes(skill.id);
@@ -1578,7 +1578,7 @@ export const GoalsView: React.FC = () => {
                                           onClick={() => handleEditSkillToggle(skill.id)}
                                           className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all cursor-pointer ${
                                             isSelected 
-                                              ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold' 
+                                              ? 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border-[var(--border-accent)] font-bold' 
                                               : 'bg-[#0b0d13] text-zinc-400 border-white/5 hover:border-white/10'
                                           }`}
                                         >
@@ -1601,7 +1601,7 @@ export const GoalsView: React.FC = () => {
                                 <button 
                                   type="button" 
                                   onClick={() => handleSaveQuestEdit(quest.id)}
-                                  className="bg-[#3a2e12] hover:bg-[#524119] border border-[#c5a059] text-[#fef08a] text-xs font-mono px-3 py-1 rounded transition-colors flex items-center gap-1 font-bold cursor-pointer"
+                                  className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono px-3 py-1 rounded transition-colors flex items-center gap-1 font-bold cursor-pointer"
                                 >
                                   <CheckCircle className="h-3 w-3" />
                                   SAVE_CHANGES
@@ -1612,16 +1612,16 @@ export const GoalsView: React.FC = () => {
                         }
 
                         return (
-                          <div key={quest.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl flex items-center justify-between gap-3 hover:border-[#c5a059]/50 transition-colors">
+                          <div key={quest.id} className="p-3 bg-[#07080c] border border-[var(--border-subtle)] rounded-xl flex items-center justify-between gap-3 hover:border-[var(--border-accent)] transition-colors">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <button 
                                 onClick={() => isCompleted ? reopenQuest(quest.id) : completeQuest(quest.id)}
                                 className="shrink-0 cursor-pointer"
                               >
                                 {isCompleted ? (
-                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#8a6d2b] to-[#c5a059] flex items-center justify-center text-black font-bold text-xs">✓</div>
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[var(--border-accent)] to-[var(--accent-bright)] flex items-center justify-center text-[var(--bg-void)] font-bold text-xs">✓</div>
                                 ) : (
-                                  <div className="h-5 w-5 rounded-full border border-zinc-600 hover:border-[#c5a059]" />
+                                  <div className="h-5 w-5 rounded-full border border-zinc-600 hover:border-[var(--accent-bright)]" />
                                 )}
                               </button>
 
@@ -1632,7 +1632,7 @@ export const GoalsView: React.FC = () => {
                                 <div className="flex flex-wrap gap-1.5 items-center mt-1">
                                   <span className="text-[9px] font-mono text-zinc-500 uppercase">{quest.type}</span>
                                   <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                  <span className="text-[9px] font-mono text-[#c5a059]">LVL {quest.difficulty}</span>
+                                  <span className="text-[9px] font-mono text-[var(--accent-bright)]">LVL {quest.difficulty}</span>
                                   {quest.recurrence && quest.recurrence !== 'None' && (
                                     <>
                                       <span className="text-[9px] font-mono text-zinc-600">•</span>
@@ -1644,7 +1644,7 @@ export const GoalsView: React.FC = () => {
                                   {quest.projectId && (
                                     <>
                                       <span className="text-[9px] font-mono text-zinc-600">•</span>
-                                      <span className="text-[9px] font-mono text-[#e5c875] truncate max-w-[100px]">
+                                      <span className="text-[9px] font-mono text-[var(--accent-highlight)] truncate max-w-[100px]">
                                         📁 {state.projects.find(p => p.id === quest.projectId)?.name}
                                       </span>
                                     </>
@@ -1669,16 +1669,16 @@ export const GoalsView: React.FC = () => {
                               
                               {!isCompleted && (
                                 <div className="flex gap-1">
-                                  <button onClick={() => startEditingQuest(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Edit">
+                                  <button onClick={() => startEditingQuest(quest)} className="p-1 hover:bg-[var(--accent-surface)] rounded text-zinc-400 hover:text-[var(--accent-highlight)] cursor-pointer" title="Edit">
                                     <Edit3 className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerSplit(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-amber-400 cursor-pointer" title="Split">
+                                  <button onClick={() => triggerSplit(quest)} className="p-1 hover:bg-[var(--accent-surface)] rounded text-zinc-400 hover:text-amber-400 cursor-pointer" title="Split">
                                     <GitFork className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerMerge(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Merge">
+                                  <button onClick={() => triggerMerge(quest)} className="p-1 hover:bg-[var(--accent-surface)] rounded text-zinc-400 hover:text-[var(--accent-highlight)] cursor-pointer" title="Merge">
                                     <Link2 className="h-3 w-3" />
                                   </button>
-                                  <button onClick={() => triggerMove(quest)} className="p-1 hover:bg-[#3a2e12] rounded text-zinc-400 hover:text-[#e5c875] cursor-pointer" title="Move">
+                                  <button onClick={() => triggerMove(quest)} className="p-1 hover:bg-[var(--accent-surface)] rounded text-zinc-400 hover:text-[var(--accent-highlight)] cursor-pointer" title="Move">
                                     <Move className="h-3 w-3" />
                                   </button>
                                 </div>
@@ -1702,7 +1702,7 @@ export const GoalsView: React.FC = () => {
               {/* TAB 4: SKILLS CONTRIBUTION */}
               {activeSubTab === 'skills' && (
                 <div className="space-y-4">
-                  <h4 className="text-xs font-mono text-[#e5c875] uppercase tracking-wider font-bold">DISCIPLINES REINFORCED BY GOAL</h4>
+                  <h4 className="text-xs font-mono text-[var(--accent-bright)] uppercase tracking-wider font-bold">DISCIPLINES REINFORCED BY GOAL</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedGoal.relatedSkills.length === 0 ? (
                       <p className="text-xs font-mono text-zinc-500 col-span-2">No disciplines associated. Edit the goal to link discipline parameters.</p>
@@ -1715,18 +1715,18 @@ export const GoalsView: React.FC = () => {
                         return (
                           <div 
                             key={sid} 
-                            className="p-4 bg-[#07080c] border border-[#c5a059]/25 rounded-xl text-xs space-y-3 shadow-sm"
+                            className="p-4 bg-[#07080c] border border-[var(--border-accent)] rounded-xl text-xs space-y-3 shadow-sm"
                           >
                             <div className="flex justify-between items-start">
                               <div className="space-y-0.5">
                                 <h5 className="font-display font-bold text-white leading-tight">{skill.name}</h5>
                                 <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded uppercase font-bold border ${
-                                  isPrimary ? 'text-[#fef08a] bg-[#3a2e12] border-[#c5a059]/40' : 'text-purple-300 bg-purple-950 border-purple-500/40'
+                                  isPrimary ? 'text-[var(--accent-highlight)] bg-[var(--accent-surface)] border-[var(--border-accent)]' : 'text-purple-300 bg-purple-950 border-purple-500/40'
                                 }`}>
                                   {skill.tier || 'Primary'}
                                 </span>
                               </div>
-                              <span className="font-mono font-bold text-[#e5c875]">LVL {sInfo.level}</span>
+                              <span className="font-mono font-bold text-[var(--accent-bright)]">LVL {sInfo.level}</span>
                             </div>
                             
                             <div className="w-full bg-[#0b0d13] rounded-full h-1.5 overflow-hidden border border-white/5">
@@ -1752,8 +1752,8 @@ export const GoalsView: React.FC = () => {
 
           </div>
         ) : (
-          <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[#c5a059]/20 bg-[#0b0d13]/80">
-            <Target className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
+          <div className="glass-panel rounded-xl p-10 text-center space-y-2 border border-[var(--border-subtle)] bg-[#0b0d13]/80">
+            <Target className="h-8 w-8 text-[var(--accent-bright)] mx-auto opacity-70" />
             <h3 className="font-display text-sm font-bold text-white uppercase">No Goal Selected</h3>
             <p className="text-xs text-zinc-500 font-mono">Create a goal or select an existing parameter on the left panel.</p>
           </div>

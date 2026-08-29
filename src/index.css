@@ -7,55 +7,246 @@
   --font-serif: "Cinzel Decorative", "Cinzel", serif;
   --font-arabic: "Amiri", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Centralized Visual Codex Semantic Tokens */
+  --color-codex-void: var(--bg-void);
+  --color-codex-surface: var(--bg-surface);
+  --color-codex-card: var(--bg-card);
+  --color-codex-card-hover: var(--bg-card-hover);
+  --color-codex-elevated: var(--bg-elevated);
+  --color-codex-accent: var(--accent-primary);
+  --color-codex-bright: var(--accent-bright);
+  --color-codex-highlight: var(--accent-highlight);
+  --color-codex-dim: var(--accent-dim);
+  --color-codex-accent-surface: var(--accent-surface);
+  --color-codex-border-subtle: var(--border-subtle);
+  --color-codex-border-accent: var(--border-accent);
+  --color-codex-border-strong: var(--border-strong);
+  --color-codex-text-muted: var(--text-muted);
 }
 
-:root {
-  --bg-onyx: #07080c;
-  --bg-charcoal: #0b0d13;
+/* ==========================================================================
+   VISUAL CODEX DESIGN TOKENS (PALE ORE PROGRESS_OS)
+   ========================================================================== */
+
+/* 1. DEFAULT — IMPERIAL GOLD (Canonical Cyber-Islamic RPG Manuscript) */
+:root, [data-theme="imperial-gold"] {
+  --bg-void: #07080c;
+  --bg-surface: #0b0d13;
   --bg-card: #0f121a;
   --bg-card-hover: #141824;
-  
-  --gold-antique: #c5a059;
-  --gold-bright: #e5c875;
-  --gold-dim: #8a6d2b;
-  --gold-dark: #3a2e12;
-  
-  --emerald-deep: #064e3b;
-  --emerald-bright: #10b981;
-  --teal-celestial: #0e7490;
-  --navy-royal: #1e1b4b;
-  --ruby-burgundy: #881337;
-  --violet-astral: #581c87;
+  --bg-elevated: #1a1f2e;
+
+  --accent-primary: #c5a059;
+  --accent-bright: #e5c875;
+  --accent-highlight: #fef08a;
+  --accent-dim: #8a6d2b;
+  --accent-surface: #3a2e12;
+  --accent-surface-hover: #524017;
+
+  --border-subtle: rgba(197, 160, 89, 0.18);
+  --border-accent: rgba(197, 160, 89, 0.35);
+  --border-strong: #c5a059;
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #d4d4d8;
+  --text-muted: #a1a1aa;
+  --text-accent: #c5a059;
+  --text-highlight: #fef08a;
+
+  --glow-color: rgba(197, 160, 89, 0.2);
+  --glow-strong: rgba(229, 200, 117, 0.45);
+  --progress-gradient: linear-gradient(90deg, #8a6d2b 0%, #c5a059 50%, #fef08a 100%);
+  --scrollbar-thumb: rgba(197, 160, 89, 0.28);
+  --scrollbar-thumb-hover: rgba(197, 160, 89, 0.55);
+
+  --pattern-radial-1: rgba(197, 160, 89, 0.04);
+  --pattern-radial-2: rgba(14, 116, 144, 0.03);
+  --pattern-stroke: rgba(197, 160, 89, 0.03);
+  --pattern-stroke-inner: rgba(255, 255, 255, 0.015);
 }
 
+/* 2. SHADOW BLUE (Black Deep Sapphire & Electric Blue Power Veins) */
+[data-theme="shadow-blue"] {
+  --bg-void: #02040a;
+  --bg-surface: #040a17;
+  --bg-card: #081426;
+  --bg-card-hover: #0d203d;
+  --bg-elevated: #122b52;
+
+  --accent-primary: #1d4ed8;
+  --accent-bright: #0284c7;
+  --accent-highlight: #00f0ff;
+  --accent-dim: #091b36;
+  --accent-surface: #091b36;
+  --accent-surface-hover: #0f2d59;
+
+  --border-subtle: rgba(2, 132, 199, 0.25);
+  --border-accent: rgba(0, 240, 255, 0.45);
+  --border-strong: #00f0ff;
+
+  --text-primary: #f0f8ff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-accent: #38bdf8;
+  --text-highlight: #00f0ff;
+
+  --glow-color: rgba(0, 162, 255, 0.32);
+  --glow-strong: rgba(0, 240, 255, 0.65);
+  --progress-gradient: linear-gradient(90deg, #091b36 0%, #1d4ed8 50%, #00f0ff 100%);
+  --scrollbar-thumb: rgba(2, 132, 199, 0.35);
+  --scrollbar-thumb-hover: rgba(0, 240, 255, 0.65);
+
+  --pattern-radial-1: rgba(2, 132, 199, 0.08);
+  --pattern-radial-2: rgba(0, 240, 255, 0.04);
+  --pattern-stroke: rgba(2, 132, 199, 0.05);
+  --pattern-stroke-inner: rgba(0, 240, 255, 0.025);
+}
+
+/* 3. EMERALD MANUSCRIPT (Deep Forest, Scholarly Jade & Celadon) */
+[data-theme="emerald-manuscript"] {
+  --bg-void: #030c08;
+  --bg-surface: #061811;
+  --bg-card: #0b241b;
+  --bg-card-hover: #103327;
+  --bg-elevated: #164032;
+
+  --accent-primary: #10b981;
+  --accent-bright: #34d399;
+  --accent-highlight: #6ee7b7;
+  --accent-dim: #059669;
+  --accent-surface: #064e3b;
+  --accent-surface-hover: #0b634c;
+
+  --border-subtle: rgba(16, 185, 129, 0.22);
+  --border-accent: rgba(52, 211, 153, 0.4);
+  --border-strong: #34d399;
+
+  --text-primary: #f0fdf4;
+  --text-secondary: #d1fae5;
+  --text-muted: #9ca3af;
+  --text-accent: #34d399;
+  --text-highlight: #6ee7b7;
+
+  --glow-color: rgba(16, 185, 129, 0.25);
+  --glow-strong: rgba(110, 231, 183, 0.45);
+  --progress-gradient: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
+  --scrollbar-thumb: rgba(16, 185, 129, 0.32);
+  --scrollbar-thumb-hover: rgba(52, 211, 153, 0.6);
+
+  --pattern-radial-1: rgba(16, 185, 129, 0.06);
+  --pattern-radial-2: rgba(5, 150, 105, 0.04);
+  --pattern-stroke: rgba(52, 211, 153, 0.04);
+  --pattern-stroke-inner: rgba(110, 231, 183, 0.02);
+}
+
+/* 4. OBSIDIAN SILVER (Tactical Graphite, Monolithic Stealth, Sterling Silver & Pearlescent White) */
+[data-theme="obsidian-silver"] {
+  --bg-void: #040406;
+  --bg-surface: #090a0f;
+  --bg-card: #12131a;
+  --bg-card-hover: #1b1c26;
+  --bg-elevated: #252736;
+
+  --accent-primary: #8492a6;
+  --accent-bright: #cbd5e1;
+  --accent-highlight: #fcfdff;
+  --accent-dim: #334155;
+  --accent-surface: #1a1d27;
+  --accent-surface-hover: #262a39;
+
+  --border-subtle: rgba(148, 163, 184, 0.22);
+  --border-accent: rgba(226, 232, 240, 0.45);
+  --border-strong: #ffffff;
+
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-accent: #e2e8f0;
+  --text-highlight: #ffffff;
+
+  --glow-color: rgba(226, 232, 240, 0.28);
+  --glow-strong: rgba(255, 255, 255, 0.7);
+  --progress-gradient: linear-gradient(90deg, #1e293b 0%, #94a3b8 50%, #ffffff 100%);
+  --scrollbar-thumb: rgba(148, 163, 184, 0.35);
+  --scrollbar-thumb-hover: rgba(226, 232, 240, 0.65);
+
+  --pattern-radial-1: rgba(148, 163, 184, 0.05);
+  --pattern-radial-2: rgba(226, 232, 240, 0.03);
+  --pattern-stroke: rgba(226, 232, 240, 0.03);
+  --pattern-stroke-inner: rgba(255, 255, 255, 0.02);
+}
+
+/* 5. ASTRAL VIOLET (Obsidian Slate & Ethereal Violet Power Veins) */
+[data-theme="astral-violet"] {
+  --bg-void: #030206;
+  --bg-surface: #080512;
+  --bg-card: #110a22;
+  --bg-card-hover: #1b1035;
+  --bg-elevated: #27184c;
+
+  --accent-primary: #7c3aed;
+  --accent-bright: #a855f7;
+  --accent-highlight: #f3e8ff;
+  --accent-dim: #581c87;
+  --accent-surface: #1f103d;
+  --accent-surface-hover: #301a5d;
+
+  --border-subtle: rgba(168, 85, 247, 0.25);
+  --border-accent: rgba(192, 132, 252, 0.48);
+  --border-strong: #c084fc;
+
+  --text-primary: #faf5ff;
+  --text-secondary: #e9d5ff;
+  --text-muted: #c084fc;
+  --text-accent: #d8b4fe;
+  --text-highlight: #ffffff;
+
+  --glow-color: rgba(168, 85, 247, 0.38);
+  --glow-strong: rgba(216, 180, 254, 0.75);
+  --progress-gradient: linear-gradient(90deg, #3b0764 0%, #8b5cf6 50%, #f3e8ff 100%);
+  --scrollbar-thumb: rgba(139, 92, 246, 0.38);
+  --scrollbar-thumb-hover: rgba(192, 132, 252, 0.68);
+
+  --pattern-radial-1: rgba(168, 85, 247, 0.08);
+  --pattern-radial-2: rgba(192, 132, 252, 0.04);
+  --pattern-stroke: rgba(168, 85, 247, 0.05);
+  --pattern-stroke-inner: rgba(243, 232, 255, 0.025);
+}
+
+/* ==========================================================================
+   GLOBAL APP SHELL & FOUNDATION
+   ========================================================================== */
+
 html, body, #root {
-  background-color: #07080c;
-  color: #d4d4d8;
+  background-color: var(--bg-void);
+  color: var(--text-secondary);
   min-height: 100%;
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* SUBTLE ISLAMIC GIRIH 8-STAR GEOMETRIC BACKGROUND PATTERN */
 .islamic-girih-bg {
-  background-color: #07080c;
+  background-color: var(--bg-void);
   background-image: 
-    radial-gradient(ellipse at 50% 0%, rgba(197, 160, 89, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 90%, rgba(14, 116, 144, 0.03) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L40 10 L50 10 L50 20 L60 30 L50 40 L50 50 L40 50 L30 60 L20 50 L10 50 L10 40 L0 30 L10 20 L10 10 L20 10 Z' fill='none' stroke='rgba(197, 160, 89, 0.025)' stroke-width='0.75'/%3E%3Cpolygon points='30,12 36,24 48,30 36,36 30,48 24,36 12,30 24,24' fill='none' stroke='rgba(255, 255, 255, 0.015)' stroke-width='0.5'/%3E%3C/svg%3E");
+    radial-gradient(ellipse at 50% 0%, var(--pattern-radial-1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 90%, var(--pattern-radial-2) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L40 10 L50 10 L50 20 L60 30 L50 40 L50 50 L40 50 L30 60 L20 50 L10 50 L10 40 L0 30 L10 20 L10 10 L20 10 Z' fill='none' stroke='rgba(255, 255, 255, 0.03)' stroke-width='0.75'/%3E%3Cpolygon points='30,12 36,24 48,30 36,36 30,48 24,36 12,30 24,24' fill='none' stroke='rgba(255, 255, 255, 0.015)' stroke-width='0.5'/%3E%3C/svg%3E");
 }
 
 /* ISLAMIC MASHRABIYA LATTICE PATTERN */
 .mashrabiya-lattice-bg {
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(197, 160, 89, 0.03)' stroke-width='0.6'%3E%3Cpath d='M0 20 L20 0 L40 20 L20 40 Z'/%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='0' cy='0' r='3'/%3E%3Ccircle cx='40' cy='0' r='3'/%3E%3Ccircle cx='0' cy='40' r='3'/%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255, 255, 255, 0.03)' stroke-width='0.6'%3E%3Cpath d='M0 20 L20 0 L40 20 L20 40 Z'/%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='0' cy='0' r='3'/%3E%3Ccircle cx='40' cy='0' r='3'/%3E%3Ccircle cx='0' cy='40' r='3'/%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* ARABIC MANUSCRIPT BORDER & TALISMAN FRAMES */
 .talisman-frame {
   position: relative;
-  background: #0b0d13;
-  border: 1px solid rgba(197, 160, 89, 0.2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
@@ -63,12 +254,13 @@ html, body, #root {
   content: '';
   position: absolute;
   inset: 2px;
-  border: 1px solid rgba(197, 160, 89, 0.08);
+  border: 1px solid var(--border-subtle);
+  opacity: 0.5;
   pointer-events: none;
   border-radius: inherit;
 }
 
-/* Gilded corner brackets for cards and panels */
+/* Gilded / themed corner brackets for cards and panels */
 .gilded-corners {
   position: relative;
 }
@@ -80,26 +272,28 @@ html, body, #root {
   left: 0;
   width: 8px;
   height: 8px;
-  border-top: 2px solid #c5a059;
-  border-left: 2px solid #c5a059;
+  border-top: 2px solid var(--accent-bright);
+  border-left: 2px solid var(--accent-bright);
   pointer-events: none;
+  transition: border-color 0.25s ease;
 }
 
-/* Glassmorphism custom classes with Islamic Dark RPG polish */
+/* Glassmorphism custom classes with Visual Codex polish */
 .glass-panel {
-  background: rgba(11, 13, 19, 0.85);
+  background: var(--bg-surface);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(197, 160, 89, 0.15);
+  border: 1px solid var(--border-subtle);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .glass-panel-hover {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-panel-hover:hover {
-  background: rgba(16, 20, 28, 0.95);
-  border-color: rgba(197, 160, 89, 0.35);
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 15px rgba(197, 160, 89, 0.08);
+  background: var(--bg-card-hover);
+  border-color: var(--border-accent);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), 0 0 15px var(--glow-color);
 }
 
 /* ISLAMIC ARCH SHAPED CRESTS */
@@ -109,9 +303,34 @@ html, body, #root {
   position: relative;
 }
 
+/* Dynamic RPG Level Progress Inlays */
+.rpg-progress-gold,
+.codex-progress-bar {
+  background: var(--progress-gradient) !important;
+  box-shadow: 0 0 8px var(--glow-color) !important;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Semantic Inlays (Preserved Constant Across Themes) */
+.rpg-progress-emerald {
+  background: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.rpg-progress-cyan {
+  background: linear-gradient(90deg, #0e7490 0%, #06b6d4 50%, #a5f3fc 100%);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+}
+
+.rpg-progress-ruby {
+  background: linear-gradient(90deg, #881337 0%, #e11d48 50%, #fecdd3 100%);
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.5);
+}
+
 /* RPG Glow & Lighting Effects */
-.glow-gold {
-  box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
+.glow-gold,
+.glow-codex {
+  box-shadow: 0 0 20px var(--glow-color) !important;
 }
 .glow-cyan {
   box-shadow: 0 0 20px rgba(14, 116, 144, 0.25);
@@ -129,41 +348,419 @@ html, body, #root {
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
-/* RPG Level Progress Inlay */
-.rpg-progress-gold {
-  background: linear-gradient(90deg, #8a6d2b 0%, #c5a059 50%, #fef08a 100%);
-  box-shadow: 0 0 8px rgba(197, 160, 89, 0.5);
-}
-
-.rpg-progress-emerald {
-  background: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
-}
-
-.rpg-progress-cyan {
-  background: linear-gradient(90deg, #0e7490 0%, #06b6d4 50%, #a5f3fc 100%);
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
-}
-
-.rpg-progress-ruby {
-  background: linear-gradient(90deg, #881337 0%, #e11d48 50%, #fecdd3 100%);
-  box-shadow: 0 0 8px rgba(225, 29, 72, 0.5);
-}
-
-/* Custom Gilded Scrollbar */
+/* Custom Themed Scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #07080c;
+  background: var(--bg-void);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(197, 160, 89, 0.25);
+  background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(197, 160, 89, 0.5);
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ==========================================================================
+   ETHEREAL POWER VEIN STYLES FOR REALMS
+   Power veins chiseled through deep obsidian and dark void slate
+   ========================================================================== */
+
+/* 1. ASTRAL VIOLET: Ethereal amethyst power veins through obsidian slate */
+[data-theme="astral-violet"] .talisman-frame,
+[data-theme="astral-violet"] .glass-panel {
+  border-color: rgba(168, 85, 247, 0.32) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(243, 232, 255, 0.14), 0 0 18px rgba(168, 85, 247, 0.22) !important;
+}
+
+[data-theme="astral-violet"] .glass-panel-hover:hover {
+  border-color: rgba(192, 132, 252, 0.65) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95), 0 0 28px rgba(168, 85, 247, 0.45), inset 0 0 14px rgba(168, 85, 247, 0.18) !important;
+}
+
+[data-theme="astral-violet"] .gilded-corners::after {
+  border-color: #c084fc !important;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.9) !important;
+}
+
+[data-theme="astral-violet"] .rpg-progress-gold,
+[data-theme="astral-violet"] .codex-progress-bar {
+  background: linear-gradient(90deg, #3b0764 0%, #8b5cf6 50%, #f3e8ff 100%) !important;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.6) !important;
+}
+
+/* 2. SHADOW BLUE: Electric blue power veins through black deep sapphire */
+[data-theme="shadow-blue"] .talisman-frame,
+[data-theme="shadow-blue"] .glass-panel {
+  border-color: rgba(2, 132, 199, 0.32) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(0, 240, 255, 0.14), 0 0 18px rgba(0, 162, 255, 0.22) !important;
+}
+
+[data-theme="shadow-blue"] .glass-panel-hover:hover {
+  border-color: rgba(0, 240, 255, 0.65) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95), 0 0 28px rgba(0, 162, 255, 0.45), inset 0 0 14px rgba(0, 162, 255, 0.18) !important;
+}
+
+[data-theme="shadow-blue"] .gilded-corners::after {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.9) !important;
+}
+
+[data-theme="shadow-blue"] .rpg-progress-gold,
+[data-theme="shadow-blue"] .codex-progress-bar {
+  background: linear-gradient(90deg, #091b36 0%, #1d4ed8 50%, #00f0ff 100%) !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.6) !important;
+}
+
+/* 3. OBSIDIAN SILVER: Pearlescent white crystalline sheen through monolithic obsidian */
+[data-theme="obsidian-silver"] .talisman-frame,
+[data-theme="obsidian-silver"] .glass-panel {
+  border-color: rgba(226, 232, 240, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 16px rgba(248, 250, 252, 0.15) !important;
+}
+
+[data-theme="obsidian-silver"] .glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.98), 0 0 26px rgba(255, 255, 255, 0.4) !important;
+}
+
+[data-theme="obsidian-silver"] .gilded-corners::after {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="obsidian-silver"] .rpg-progress-gold,
+[data-theme="obsidian-silver"] .codex-progress-bar {
+  background: linear-gradient(90deg, #1e293b 0%, #94a3b8 50%, #ffffff 100%) !important;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 4. EMERALD MANUSCRIPT: Sacred jade glow */
+[data-theme="emerald-manuscript"] .rpg-progress-gold,
+[data-theme="emerald-manuscript"] .codex-progress-bar {
+  background: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%) !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.55) !important;
+}
+
+/* ==========================================================================
+   GLOBAL THEME OVERRIDES FOR UNIFIED VISUAL COHESION
+   Ensures ALL existing elements dynamically conform to active theme tokens
+   without breaking semantic statuses (emerald/spiritual, teal/quran, violet/night, ruby/accountability).
+   ========================================================================== */
+
+:is([data-theme="shadow-blue"], [data-theme="emerald-manuscript"], [data-theme="obsidian-silver"], [data-theme="astral-violet"]),
+[data-theme]:not([data-theme="imperial-gold"]) {
+  /* Surfaces */
+  & [class*="bg-[#07080c]"], &[class*="bg-[#07080c]"] {
+    background-color: var(--bg-void) !important;
+  }
+
+  & [class*="bg-[#0b0d13]"], &[class*="bg-[#0b0d13]"] {
+    background-color: var(--bg-surface) !important;
+  }
+
+  & [class*="bg-[#0f121a]"], &[class*="bg-[#0f121a]"] {
+    background-color: var(--bg-card) !important;
+  }
+
+  & [class*="bg-[#141824]"], &[class*="bg-[#141824]"] {
+    background-color: var(--bg-card-hover) !important;
+  }
+
+  /* Golden/Amber Brown Surfaces & Badges -> Active Accent Surface */
+  & [class*="bg-[#3a2e12]"], &[class*="bg-[#3a2e12]"],
+  & [class*="bg-[#4a3b18]"], &[class*="bg-[#4a3b18]"],
+  & [class*="bg-[#524119]"], &[class*="bg-[#524119]"],
+  & [class*="bg-[#524017]"], &[class*="bg-[#524017]"],
+  & [class*="bg-[#2a220e]"], &[class*="bg-[#2a220e]"],
+  & [class*="bg-[#1f1a10]"], &[class*="bg-[#1f1a10]"],
+  & [class*="bg-[#2a2213]"], &[class*="bg-[#2a2213]"],
+  & [class*="bg-[#1a1710]"], &[class*="bg-[#1a1710]"],
+  & [class*="bg-[#1a140a]"], &[class*="bg-[#1a140a]"],
+  & [class*="bg-[#1e1708]"], &[class*="bg-[#1e1708]"],
+  & [class*="bg-[#1a1408]"], &[class*="bg-[#1a1408]"],
+  & [class*="bg-[#120f08]"], &[class*="bg-[#120f08]"],
+  & [class*="bg-[#16120b]"], &[class*="bg-[#16120b]"],
+  & [class*="bg-[#1c160a]"], &[class*="bg-[#1c160a]"],
+  & [class*="bg-[#1e170c]"], &[class*="bg-[#1e170c]"],
+  & [class*="bg-[#1a170e]"], &[class*="bg-[#1a170e]"],
+  & [class*="bg-[#17140e]"], &[class*="bg-[#17140e]"],
+  & [class*="bg-[#100e0a]"], &[class*="bg-[#100e0a]"],
+  & [class*="bg-[#1c160b]"], &[class*="bg-[#1c160b]"],
+  & [class*="bg-[#c5a059]"], &[class*="bg-[#c5a059]"],
+  & [class*="bg-amber-950"], &[class*="bg-amber-950"],
+  & [class*="bg-amber-900"], &[class*="bg-amber-900"],
+  & [class*="bg-yellow-950"], &[class*="bg-yellow-950"] {
+    background-color: var(--accent-surface) !important;
+  }
+
+  & [class*="hover:bg-[#141824]"]:hover,
+  & [class*="hover:bg-[#1c2233]"]:hover {
+    background-color: var(--bg-card-hover) !important;
+  }
+
+  & [class*="hover:bg-[#524017]"]:hover,
+  & [class*="hover:bg-[#524119]"]:hover,
+  & [class*="hover:bg-[#4a3b18]"]:hover,
+  & [class*="hover:bg-[#3a2e12]"]:hover,
+  & [class*="hover:bg-[#2a2213]"]:hover {
+    background-color: var(--accent-surface-hover) !important;
+  }
+
+  /* Accents & Text: Golden & Yellow -> Active Realm Accent */
+  & [class*="text-[#c5a059]"],
+  & [class*="text-[#e5c875]"],
+  & [class*="text-amber-400"],
+  & [class*="text-amber-300"],
+  & [class*="text-yellow-400"],
+  & [class*="text-yellow-300"],
+  & [class*="text-yellow-500"] {
+    color: var(--accent-bright) !important;
+  }
+
+  & [class*="text-[#fef08a]"],
+  & [class*="text-amber-200"],
+  & [class*="text-amber-100"],
+  & [class*="text-yellow-200"],
+  & [class*="text-yellow-100"] {
+    color: var(--accent-highlight) !important;
+  }
+
+  & [class*="hover:text-[#c5a059]"]:hover,
+  & [class*="hover:text-[#e5c875]"]:hover,
+  & [class*="hover:text-[#fef08a]"]:hover,
+  & [class*="hover:text-amber-400"]:hover,
+  & [class*="hover:text-amber-300"]:hover,
+  & [class*="hover:text-yellow-400"]:hover,
+  & [class*="hover:text-yellow-300"]:hover {
+    color: var(--accent-highlight) !important;
+  }
+
+  /* Borders: Golden / Yellow / Amber -> Realm Accent Border */
+  & [class*="border-[#c5a059]"],
+  & [class*="border-[#e5c875]"],
+  & [class*="border-[#8a6d2b]"],
+  & [class*="border-amber-500"],
+  & [class*="border-amber-400"],
+  & [class*="border-amber-300"],
+  & [class*="border-yellow-500"],
+  & [class*="border-yellow-400"] {
+    border-color: var(--border-accent) !important;
+  }
+
+  & [class*="border-l-[#c5a059]"] {
+    border-left-color: var(--border-strong) !important;
+  }
+
+  & [class*="hover:border-[#c5a059]"]:hover,
+  & [class*="hover:border-[#e5c875]"]:hover,
+  & [class*="hover:border-amber-400"]:hover,
+  & [class*="hover:border-amber-500"]:hover {
+    border-color: var(--border-strong) !important;
+  }
+
+  /* Focus rings */
+  & [class*="focus:ring-[#c5a059]"],
+  & [class*="focus:ring-amber-500"] {
+    --tw-ring-color: var(--border-accent) !important;
+  }
+
+  & [class*="focus:border-[#c5a059]"],
+  & [class*="focus:border-amber-500"] {
+    border-color: var(--border-strong) !important;
+  }
+
+  /* Gradients: Golden & Amber -> Active Realm Spectrum */
+  & [class*="from-[#8a6d2b]"],
+  & [class*="from-[#c5a059]"],
+  & [class*="from-amber-600"],
+  & [class*="from-amber-500"],
+  & [class*="from-amber-950"],
+  & [class*="from-yellow-400"],
+  & [class*="from-[#17140e]"],
+  & [class*="from-[#1c160a]"],
+  & [class*="from-[#1c160b]"],
+  & [class*="from-[#3a2e12]"] {
+    --tw-gradient-from: var(--accent-dim) !important;
+  }
+
+  & [class*="to-[#c5a059]"],
+  & [class*="to-[#e5c875]"],
+  & [class*="to-amber-500"],
+  & [class*="to-amber-400"],
+  & [class*="to-yellow-400"],
+  & [class*="to-yellow-300"],
+  & [class*="to-[#0a0806]"],
+  & [class*="to-[#1a170e]"],
+  & [class*="to-[#1a1408]"],
+  & [class*="to-[#070605]"] {
+    --tw-gradient-to: var(--accent-bright) !important;
+  }
+
+  & [class*="via-[#c5a059]"],
+  & [class*="via-[#8a6d2b]"],
+  & [class*="via-amber-500"],
+  & [class*="via-amber-400"],
+  & [class*="via-yellow-400"],
+  & [class*="via-[#100e0a]"],
+  & [class*="via-[#1e170c]"] {
+    --tw-gradient-via: var(--accent-primary) !important;
+  }
+
+  & [class*="hover:from-[#a07f35]"]:hover {
+    --tw-gradient-from: var(--accent-primary) !important;
+  }
+
+  & [class*="hover:to-[#e5c875]"]:hover {
+    --tw-gradient-to: var(--accent-highlight) !important;
+  }
+
+  & [class*="via-[#141824]"] {
+    --tw-gradient-via: var(--bg-card-hover) !important;
+  }
+
+  & [class*="to-[#0b0d13]"] {
+    --tw-gradient-to: var(--bg-surface) !important;
+  }
+
+  /* Selection highlight */
+  & [class*="selection:bg-[#c5a059]"]::selection,
+  &::selection,
+  & *::selection {
+    background-color: var(--border-accent) !important;
+    color: var(--text-highlight) !important;
+  }
+
+  /* Shadows and Glows */
+  & [class*="shadow-[0_0_12px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_15px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_18px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_20px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_25px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_8px_rgba(197,160,89"],
+  & [class*="shadow-[0_0_10px_rgba(245,158,11"],
+  & [class*="shadow-[0_0_12px_rgba(245,158,11"],
+  & [class*="shadow-[0_0_15px_rgba(245,158,11"],
+  & [class*="shadow-[0_0_18px_rgba(245,158,11"],
+  & [class*="shadow-[0_0_20px_rgba(245,158,11"],
+  & [class*="shadow-[0_0_10px_rgba(229,200,117"],
+  & [class*="shadow-[0_0_15px_rgba(229,200,117"],
+  & [class*="shadow-[0_0_20px_rgba(229,200,117"] {
+    box-shadow: 0 0 16px var(--glow-color) !important;
+  }
+
+  & [class*="drop-shadow-[0_0_10px_rgba(229,200,117"],
+  & [class*="drop-shadow-[0_0_12px_rgba(197,160,89"],
+  & [class*="drop-shadow-[0_0_20px_rgba(229,200,117"] {
+    filter: drop-shadow(0 0 10px var(--glow-strong)) !important;
+  }
+
+  /* SVG Fills and Strokes */
+  & [class*="fill-[#c5a059]"],
+  & [class*="fill-[#e5c875]"],
+  & [class*="fill-[#fef08a]"],
+  & [class*="fill-amber-"],
+  & [class*="fill-yellow-"] {
+    fill: var(--accent-bright) !important;
+  }
+
+  & [class*="stroke-[#c5a059]"],
+  & [class*="stroke-[#e5c875]"],
+  & [class*="stroke-[#fef08a]"],
+  & [class*="stroke-amber-"],
+  & [class*="stroke-yellow-"] {
+    stroke: var(--accent-bright) !important;
+  }
+
+  /* Rings */
+  & [class*="ring-[#c5a059]"],
+  & [class*="ring-[#e5c875]"],
+  & [class*="ring-amber-"],
+  & [class*="ring-yellow-"] {
+    --tw-ring-color: var(--border-accent) !important;
+  }
+}
+
+/* ==========================================================================
+   VISUAL CODEX CALIBRATION MODIFIERS
+   ========================================================================== */
+
+/* 1. ORNAMENTATION MODIFIERS */
+[data-ornamentation="minimal"] .arabesque-corner-filigree,
+[data-ornamentation="minimal"] .gilded-corners::after,
+[data-ornamentation="minimal"] .talisman-frame::before {
+  display: none !important;
+}
+
+[data-ornamentation="minimal"] .mashrabiya-lattice-bg {
+  background-image: none !important;
+}
+
+[data-ornamentation="rich"] .gilded-corners::after {
+  width: 12px;
+  height: 12px;
+  border-width: 2.5px;
+}
+
+[data-ornamentation="rich"] .glass-panel {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 0 1px var(--border-subtle), 0 0 16px var(--glow-color) !important;
+}
+
+/* 2. GLOW MODIFIERS */
+[data-glow="low"] * {
+  text-shadow: none !important;
+}
+
+[data-glow="low"] .glass-panel,
+[data-glow="low"] .glass-panel-hover:hover,
+[data-glow="low"] .glow-gold,
+[data-glow="low"] .glow-codex,
+[data-glow="low"] .rpg-progress-gold,
+[data-glow="low"] .codex-progress-bar {
+  box-shadow: none !important;
+}
+
+[data-glow="high"] .glow-gold,
+[data-glow="high"] .glow-codex {
+  box-shadow: 0 0 28px var(--glow-strong) !important;
+}
+
+[data-glow="high"] .rpg-progress-gold,
+[data-glow="high"] .codex-progress-bar {
+  box-shadow: 0 0 18px var(--glow-strong) !important;
+}
+
+[data-glow="high"] .glass-panel-hover:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 25px var(--glow-color) !important;
+}
+
+/* 3. DENSITY MODIFIERS */
+[data-density="compact"] main {
+  padding: 0.75rem !important;
+}
+
+[data-density="compact"] .glass-panel {
+  padding: 0.85rem !important;
+}
+
+[data-density="spacious"] main {
+  padding: 2.25rem !important;
+}
+
+[data-density="spacious"] .glass-panel {
+  padding: 1.75rem !important;
+}
+
+/* 4. REDUCED MOTION MODIFIER */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }
 
 /* HARDWARE BATTERY SAVER / ECO DEFENSE MODE OVERRIDES */
@@ -178,7 +775,7 @@ html.battery-saver-active * {
 .battery-saver-active .glass-panel,
 html.battery-saver-active .glass-panel {
   backdrop-filter: none !important;
-  background-color: #0b0d13 !important;
+  background-color: var(--bg-surface) !important;
 }
 
 /* OLED PURE BLACK DISPLAY MODE */

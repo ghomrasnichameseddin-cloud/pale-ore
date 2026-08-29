@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { SystemMessageBox } from './SystemMessageBox';
+import { VisualCodexSettingsView } from './VisualCodexSettingsView';
 import { 
   BarChart3, Settings, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, Clock, ShieldCheck, Zap, Network, Download, Upload, 
   RotateCcw, AlertTriangle, Check, ShieldAlert, Cpu, CheckCircle2,
-  Inbox, Percent, Sparkles, RefreshCw, ChevronRight, Layers
+  Inbox, Percent, Sparkles, RefreshCw, ChevronRight, Layers, Palette
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
-export type OracleSystemSubTab = 'analytics' | 'system' | 'messages';
+export type OracleSystemSubTab = 'appearance' | 'analytics' | 'system' | 'messages';
 
 interface OracleSystemViewProps {
   initialSubTab?: OracleSystemSubTab;
@@ -127,8 +128,21 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
         {/* SUB-NAVIGATION BAR */}
         <div className="flex items-center gap-2 pt-2 border-t border-white/5 overflow-x-auto pb-1">
           <button
+            onClick={() => handleTabChange('appearance')}
+            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
+              activeSubTab === 'appearance'
+                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
+                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
+            }`}
+            id="oracle-subtab-appearance"
+          >
+            <Palette className={`h-4 w-4 ${activeSubTab === 'appearance' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
+            <span>VISUAL CODEX (APPEARANCE)</span>
+          </button>
+
+          <button
             onClick={() => handleTabChange('analytics')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
               activeSubTab === 'analytics'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
                 : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
@@ -141,7 +155,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
 
           <button
             onClick={() => handleTabChange('system')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
               activeSubTab === 'system'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
                 : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
@@ -154,7 +168,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
 
           <button
             onClick={() => handleTabChange('messages')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer ${
+            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
               activeSubTab === 'messages'
                 ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
                 : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
@@ -171,6 +185,11 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 0. VISUAL CODEX APPEARANCE SUBTAB */}
+      {activeSubTab === 'appearance' && (
+        <VisualCodexSettingsView />
+      )}
 
       {/* 1. ORACLE ANALYTICS SUBTAB */}
       {activeSubTab === 'analytics' && (
