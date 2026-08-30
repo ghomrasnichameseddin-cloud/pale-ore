@@ -15,6 +15,7 @@ import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 import { MuhasabahModal } from './MuhasabahModal';
 import { BossProgressionBanner } from './BossProgressionBanner';
+import { CrystallineCrucible, OreXpChannelingBadge } from './CrystallineCrucible';
 
 interface DashboardViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
@@ -609,6 +610,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             )}
           </div>
 
+          {/* THE CRYSTALLINE CRUCIBLE: ACTIVE ORE RESONANCE & STRUCTURAL GEOMETRY */}
+          <CrystallineCrucible onNavigateToCodex={() => onNavigate?.('seals')} />
+
           {/* ATTRIBUTES MATRIX PREVIEW CARD */}
           <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden space-y-4 shadow-xl" id="dashboard-attributes-matrix">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
@@ -1025,20 +1029,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {(() => {
                         const isPenalty = quest.type === 'Penalty' || quest.xp < 0;
                         const penaltyVal = isPenalty 
                           ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
                           : quest.xp;
                         return (
-                          <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg shadow-sm border ${
-                            isPenalty 
-                              ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
-                              : 'text-[#fef08a] bg-[#3a2e12]/60 border-[#c5a059]/40'
-                          }`}>
-                            {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg shadow-sm border ${
+                              isPenalty 
+                                ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
+                                : 'text-[#fef08a] bg-[#3a2e12]/60 border-[#c5a059]/40'
+                            }`}>
+                              {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                            </span>
+                            {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
+                          </div>
                         );
                       })()}
                     </div>

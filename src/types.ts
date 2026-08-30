@@ -172,6 +172,7 @@ export interface UserProfile {
   titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
   fatigueLevel?: number; // 0 to 100
   lastFatigueUpdateDate?: string;
+  activeOreId?: string; // Currently focused or resonating ore in the Crystalline Crucible
 }
 
 export interface XPHistoryEntry {
@@ -248,6 +249,7 @@ export interface PowerSeal {
   unlockedFeatures?: string[];
   runeSymbol?: string;
   colorTheme?: string;
+  carvedFacets?: number; // Cleaved and polished facet count toward full crystalline emergence
   createdAt: string;
 }
 

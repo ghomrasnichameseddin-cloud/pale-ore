@@ -8,6 +8,7 @@ import {
   Archive, ArchiveRestore
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { OreXpChannelingBadge } from './CrystallineCrucible';
 
 export const getCategoryDetails = (type: string) => {
   const t = (type || '').toLowerCase();
@@ -1662,9 +1663,12 @@ export const ActiveDirectives: React.FC = () => {
               ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
               : quest.xp;
             return (
-              <span className={`text-[10px] font-mono font-bold ml-1 ${isPenalty ? 'text-rose-400 font-bold' : 'text-emerald-400/90'}`}>
-                {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className={`text-[10px] font-mono font-bold ml-1 ${isPenalty ? 'text-rose-400 font-bold' : 'text-emerald-400/90'}`}>
+                  {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                </span>
+                {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
+              </div>
             );
           })()}
           <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
@@ -2042,13 +2046,16 @@ export const ActiveDirectives: React.FC = () => {
                   ? (quest.xp < 0 ? quest.xp : -(quest.difficulty === 'Boss' ? 250 : quest.difficulty === 'Hard' ? 100 : quest.difficulty === 'Easy' ? 25 : 50))
                   : quest.xp;
                 return (
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded shrink-0 border ${
-                    isPenalty 
-                      ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
-                      : 'text-[#fef08a] bg-[#3a2e12]/70 border-[#c5a059]/40'
-                  }`}>
-                    {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      isPenalty 
+                        ? 'text-rose-300 bg-rose-950/70 border-rose-500/50' 
+                        : 'text-[#fef08a] bg-[#3a2e12]/70 border-[#c5a059]/40'
+                    }`}>
+                      {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
+                    </span>
+                    {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
+                  </div>
                 );
               })()}
             </div>

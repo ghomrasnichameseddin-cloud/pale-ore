@@ -132,6 +132,10 @@ interface POSContextType {
   resetSealsToDefault: () => void;
   restoreMissingDefaultSeals: () => void;
   calibrateSealsToSystemState: () => void;
+  setActiveOreId: (oreId: string) => void;
+  getActiveOre: () => PowerSeal | null;
+  getTotalOreXpMultiplier: () => number;
+  checkCanBreakSeal: (seal: PowerSeal) => { canBreak: boolean; reason?: string; progressPercent: number };
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -3487,6 +3491,103 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const setActiveOreId = (oreId: string) => {
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        activeOreId: oreId
+      }
+    }));
+  };
+
+  const getActiveOre = (): PowerSeal | null => {
+    const seals = state.seals || [];
+    if (seals.length === 0) return null;
+    
+    // 1. If user explicitly set an active ore
+    if (state.profile.activeOreId) {
+      const explicit = seals.find(s => s.id === state.profile.activeOreId);
+      if (explicit) return explicit;
+    }
+
+    // 2. Default to highest-tier broken (ignited) seal
+    const rarityRank: Record<string, number> = {
+      Forbidden: 6,
+      Divine: 5,
+      Legendary: 4,
+      Epic: 3,
+      Rare: 2,
+      Common: 1
+    };
+    const brokenSeals = seals.filter(s => s.status === 'Broken');
+    if (brokenSeals.length > 0) {
+      return [...brokenSeals].sort((a, b) => (rarityRank[b.rarity] || 0) - (rarityRank[a.rarity] || 0))[0];
+    }
+
+    // 3. Fallback to the first seal in manifest
+    return seals[0];
+  };
+
+  const getTotalOreXpMultiplier = (): number => {
+    const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
+    return brokenSeals.reduce((acc, s) => acc * (s.xpBonusMultiplier || 1.0), 1.0);
+  };
+
+  const checkCanBreakSeal = (seal: PowerSeal): { canBreak: boolean; reason?: string; progressPercent: number } => {
+    const playerInfo = getPlayerLevelInfo();
+    const lvlOk = playerInfo.level >= seal.requiredLevel;
+    const xpOk = seal.costXP === 0 || playerInfo.totalXp >= seal.costXP;
+    
+    let questOk = true;
+    let questReason = '';
+    if (seal.requiredQuestId) {
+      const q = state.quests.find(item => item.id === seal.requiredQuestId);
+      questOk = q ? q.status === 'Completed' : false;
+      if (!questOk) questReason = `Requires directive "${q?.name || 'Required Quest'}"`;
+    }
+    
+    let skillOk = true;
+    let skillReason = '';
+    if (seal.requiredSkillId && seal.requiredSkillLevel) {
+      const sInfo = getSkillXpAndLevel(seal.requiredSkillId);
+      skillOk = sInfo.level >= seal.requiredSkillLevel;
+      if (!skillOk) skillReason = `Requires Skill Level ${seal.requiredSkillLevel}`;
+    }
+
+    let streakOk = true;
+    let streakReason = '';
+    if (seal.requiredStreakDays) {
+      const maxStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+      streakOk = maxStreak >= seal.requiredStreakDays;
+      if (!streakOk) streakReason = `Requires ${seal.requiredStreakDays}-day streak (Current: ${maxStreak})`;
+    }
+
+    const canBreak = lvlOk && xpOk && questOk && skillOk && streakOk;
+    
+    let reason = '';
+    if (!lvlOk) reason = `Requires Level ${seal.requiredLevel} (Current: ${playerInfo.level})`;
+    else if (!xpOk) reason = `Requires ${seal.costXP} XP (Current: ${playerInfo.totalXp})`;
+    else if (!questOk) reason = questReason;
+    else if (!skillOk) reason = skillReason;
+    else if (!streakOk) reason = streakReason;
+
+    // Progress computation
+    const checks = [lvlOk ? 1 : Math.min(1, playerInfo.level / Math.max(1, seal.requiredLevel))];
+    if (seal.costXP > 0) {
+      checks.push(xpOk ? 1 : Math.min(1, playerInfo.totalXp / Math.max(1, seal.costXP)));
+    }
+    if (seal.requiredStreakDays) {
+      const maxStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
+      checks.push(streakOk ? 1 : Math.min(1, maxStreak / seal.requiredStreakDays));
+    }
+    const avgProgress = checks.reduce((a, b) => a + b, 0) / checks.length;
+    const progressPercent = Math.round(avgProgress * 100);
+
+    return { canBreak, reason, progressPercent };
+  };
+
+
   // Reward Shop & Coins Operations
   const isShopLocked = React.useMemo(() => {
     const todayStr = state.systemDate || getLocalDateString();
@@ -6642,6 +6743,10 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       resetSealsToDefault,
       restoreMissingDefaultSeals,
       calibrateSealsToSystemState,
+      setActiveOreId,
+      getActiveOre,
+      getTotalOreXpMultiplier,
+      checkCanBreakSeal,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,

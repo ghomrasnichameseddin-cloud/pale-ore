@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider, ChainBadge } from './IslamicRpgDecorations';
 import { SLIP_RUNES } from './SlipRune';
+import { AncientCarvedRune } from './AncientCarvedRune';
 
 export const ORE_COMPLEXITY_INFO: Record<SealRarity, {
   shapeName: string;
@@ -154,7 +155,7 @@ interface OreChainsStageProps {
   canBreak?: boolean;
 }
 
-const RARITY_ORE_THEMES: Record<SealRarity, {
+export const RARITY_ORE_THEMES: Record<SealRarity, {
   stroke: string;
   glow: string;
   oreGrad1: string;
@@ -241,7 +242,7 @@ const RARITY_ORE_THEMES: Record<SealRarity, {
 };
 
 // 3D Chain Path Link Generator Component
-const Render3DChainPath: React.FC<{
+export const Render3DChainPath: React.FC<{
   x1: number; y1: number; x2: number; y2: number;
   curveY?: number; count?: number;
   chainColor?: string; chainStroke?: string;
@@ -305,7 +306,7 @@ const Render3DChainPath: React.FC<{
 };
 
 // 3D Geometric Facet Mesh by Rank Complexity
-const OreFacetMesh: React.FC<{
+export const OreFacetMesh: React.FC<{
   rarity: SealRarity;
   sealId: string;
   theme: typeof RARITY_ORE_THEMES['Common'];
@@ -590,26 +591,19 @@ const OreChainsStage: React.FC<OreChainsStageProps> = ({ seal, isBroken }) => {
             <OreFacetMesh rarity={seal.rarity} sealId={seal.id} theme={theme} isBroken={isBroken} />
           </svg>
 
-          {/* ORE CENTER CARVED INSCRIPTION / ARABIC GLYPH */}
+          {/* ORE CENTER ANCIENT CARVED INSCRIPTION / ARABIC GLYPH */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
-            <div className="relative flex items-center justify-center">
-              {/* Carved Inner Shadow */}
-              <span className="absolute text-3xl font-serif text-black font-black translate-x-[1.5px] translate-y-[2px] opacity-90">
-                {seal.runeSymbol || '🪨'}
-              </span>
-              {/* Carved Specular Light Bevel */}
-              <span className="absolute text-3xl font-serif text-[#fef08a]/50 font-black -translate-x-[1px] -translate-y-[1px]">
-                {seal.runeSymbol || '🪨'}
-              </span>
-              {/* Main Carved Rune Symbol */}
-              <span className={`relative text-3xl font-serif font-black transition-transform duration-500 ${
-                isBroken
-                  ? 'scale-125 text-[#fef08a] [text-shadow:_0_0_15px_rgba(197,160,89,0.9),_0_2px_4px_rgba(0,0,0,0.95)]'
-                  : 'text-zinc-300/85 [text-shadow:_0_2px_4px_rgba(0,0,0,0.95)]'
-              }`}>
-                {seal.runeSymbol || '🪨'}
-              </span>
-            </div>
+            <AncientCarvedRune
+              glyph={seal.runeSymbol || '🪨'}
+              size={54}
+              shape="octagram"
+              stoneVariant={seal.rarity === 'Divine' ? 'meteorite' : seal.rarity === 'Epic' ? 'iron' : 'basalt'}
+              conduitColor={theme.veinColor}
+              secondaryColor="#fef08a"
+              glowIntensity={isBroken ? 'radiant' : 'subtle'}
+              showCracks={true}
+              className={`transition-transform duration-500 ${isBroken ? 'scale-110' : ''}`}
+            />
           </div>
 
         </div>
@@ -1501,7 +1495,16 @@ export const SealingPowerView: React.FC = () => {
 
               <div className="flex items-start justify-between border-b border-[#c5a059]/20 pb-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl p-2 bg-[#3a2e12]/80 border border-[#c5a059]/50 rounded-xl">{selectedSealForBreak.runeSymbol || '🪨'}</span>
+                  <AncientCarvedRune
+                    glyph={selectedSealForBreak.runeSymbol || '🪨'}
+                    size={48}
+                    shape="octagram"
+                    stoneVariant="meteorite"
+                    conduitColor="#c5a059"
+                    secondaryColor="#fef08a"
+                    glowIntensity="radiant"
+                    showCracks={true}
+                  />
                   <div>
                     <span className="text-[9.5px] font-mono text-[#fef08a] uppercase font-bold tracking-wider flex items-center gap-1">
                       <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
@@ -1670,15 +1673,26 @@ export const SealingPowerView: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-4 gap-2 items-center">
-                    {/* Carved Custom Input Slot */}
-                    <div className="col-span-1">
-                      <label className="text-[9px] font-mono text-[#c5a059] uppercase block mb-1 font-bold">Carved Symbol</label>
+                    {/* Carved Custom Input Slot with Live Inscription Preview */}
+                    <div className="col-span-1 flex flex-col items-center">
+                      <label className="text-[9px] font-mono text-[#c5a059] uppercase block mb-1 font-bold w-full text-center">Carved Slab</label>
+                      <div className="mb-2">
+                        <AncientCarvedRune
+                          glyph={formData.runeSymbol || '🪨'}
+                          size={46}
+                          shape="octagram"
+                          stoneVariant="meteorite"
+                          conduitColor="#c5a059"
+                          secondaryColor="#fef08a"
+                          glowIntensity="subtle"
+                        />
+                      </div>
                       <input
                         type="text"
                         value={formData.runeSymbol}
                         onChange={(e) => setFormData({ ...formData, runeSymbol: e.target.value })}
                         placeholder="🪨"
-                        className="w-full bg-black/90 border-2 border-[#c5a059]/40 rounded-xl py-2 px-1 text-center text-xl text-[#fef08a] font-serif font-bold tracking-widest shadow-[inset_0_3px_8px_rgba(0,0,0,0.95)] focus:outline-none focus:border-[#c5a059] transition"
+                        className="w-full bg-black/90 border-2 border-[#c5a059]/40 rounded-xl py-1.5 px-1 text-center text-lg text-[#fef08a] font-serif font-bold tracking-widest shadow-[inset_0_3px_8px_rgba(0,0,0,0.95)] focus:outline-none focus:border-[#c5a059] transition"
                       />
                     </div>
 
@@ -1688,7 +1702,7 @@ export const SealingPowerView: React.FC = () => {
                         <label className="text-[9px] font-mono text-[#c5a059] uppercase block mb-1 font-bold">
                           6 Sacred Nafs Slip Runes
                         </label>
-                        <div className="grid grid-cols-6 gap-1 bg-black/60 border border-[#c5a059]/30 p-1.5 rounded-xl">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 bg-black/60 border border-[#c5a059]/30 p-2 rounded-xl">
                           {Object.entries(SLIP_RUNES).map(([catKey, runeDef]) => {
                             const isSelected = formData.runeSymbol === runeDef.runeChar;
                             return (
@@ -1698,21 +1712,27 @@ export const SealingPowerView: React.FC = () => {
                                 onClick={() => setFormData({ 
                                   ...formData, 
                                   runeSymbol: runeDef.runeChar,
-                                  buffName: formData.buffName || `Aura of ${runeDef.arabicTitle}`,
-                                  buffDescription: formData.buffDescription || `Sacred mastery unchaining ${runeDef.description}.`
+                                  buffName: formData.buffName || `Aura of ${runeDef.name}`,
+                                  buffDescription: formData.buffDescription || `Sacred mastery granting ${runeDef.statBonus} (${runeDef.attributeName}).`
                                 })}
-                                className={`flex flex-col items-center justify-center p-1 rounded-lg border transition cursor-pointer select-none ${
+                                className={`flex flex-col items-center justify-center p-1.5 rounded-lg border transition cursor-pointer select-none ${
                                   isSelected 
-                                    ? 'bg-[#3a2e12] border-[#c5a059] shadow-[0_0_10px_rgba(197,160,89,0.5)] scale-105' 
+                                    ? 'bg-[#3a2e12] border-[#c5a059] shadow-[0_0_12px_rgba(197,160,89,0.6)] scale-[1.03]' 
                                     : 'bg-[#07080c] border-white/10 hover:border-[#c5a059]/40'
                                 }`}
-                                title={`${runeDef.name} (${runeDef.arabicTitle}) - ${runeDef.description}`}
+                                title={`${runeDef.runeChar} — ${runeDef.name} — ${runeDef.colorName} — ${runeDef.statBonus}`}
                               >
-                                <span className="text-base font-serif font-black text-[#fef08a] leading-tight">
-                                  {runeDef.runeChar}
-                                </span>
-                                <span className="text-[7.5px] font-mono text-zinc-400 truncate w-full text-center">
+                                <AncientCarvedRune
+                                  category={catKey as any}
+                                  size={34}
+                                  glowIntensity={isSelected ? 'radiant' : 'subtle'}
+                                  interactive={false}
+                                />
+                                <span className="text-[10px] font-mono font-bold text-white mt-1 leading-tight text-center truncate w-full">
                                   {runeDef.name}
+                                </span>
+                                <span className="text-[8px] font-mono font-semibold text-amber-400/90 leading-none mt-0.5">
+                                  {runeDef.statBonus}
                                 </span>
                               </button>
                             );
@@ -1987,9 +2007,12 @@ export const SealingPowerView: React.FC = () => {
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="h-7 w-7 rounded-lg bg-[#3a2e12] border border-[#c5a059]/50 flex items-center justify-center text-[#fef08a] font-serif font-bold text-sm">
-                              {runeDef.runeChar}
-                            </span>
+                            <AncientCarvedRune
+                              category={w.category}
+                              size={28}
+                              glowIntensity={isBound ? 'radiant' : 'subtle'}
+                              interactive={false}
+                            />
                             <h4 className="text-sm font-mono font-bold text-white truncate">
                               {w.name}
                             </h4>

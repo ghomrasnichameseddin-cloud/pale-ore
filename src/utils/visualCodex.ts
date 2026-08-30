@@ -51,14 +51,14 @@ export const CODEX_THEMES: Record<CodexThemeId, CodexThemeMetadata> = {
     id: 'shadow-blue',
     name: 'Shadow Blue',
     subtitle: 'Black Deep Sapphire & Royal Cobalt Veins',
-    description: 'A formidable nocturnal realm carved from deep obsidian black and abyssal midnight stone, coursing with deep royal sapphire and vibrant cobalt power veins.',
+    description: 'A formidable nocturnal realm carved from deep pitch-black obsidian void and abyssal stone, coursing with deep royal sapphire and crystalline cobalt power veins.',
     archetype: 'Nocturnal Arcane Sentinel',
     swatches: {
-      void: '#06070b',
-      surface: '#0a0c12',
-      card: '#0e111a',
-      accent: '#1d4ed8',
-      bright: '#3b82f6',
+      void: '#030407',
+      surface: '#06080d',
+      card: '#090c14',
+      accent: '#1e3a8a',
+      bright: '#2563eb',
       highlight: '#60a5fa'
     },
     hierarchy: 'Obsidian Void → Deep Sapphire → Royal Cobalt Power Vein',
@@ -68,15 +68,15 @@ export const CODEX_THEMES: Record<CodexThemeId, CodexThemeMetadata> = {
     id: 'emerald-manuscript',
     name: 'Emerald Manuscript',
     subtitle: 'Sacred Jade & Illuminated Obsidian Manuscript',
-    description: 'Deep obsidian black manuscript tablets illuminated by sacred jade calligraphy, verdant forest borders, and celestial celadon telemetry against pure dark stone.',
+    description: 'Deep pitch-black obsidian manuscript tablets illuminated by sacred jade calligraphy, verdant forest borders, and celestial celadon telemetry against pure dark stone.',
     archetype: 'Scholarly Sage',
     swatches: {
-      void: '#060807',
-      surface: '#0a0d0c',
-      card: '#0e1210',
-      accent: '#10b981',
-      bright: '#34d399',
-      highlight: '#6ee7b7'
+      void: '#030504',
+      surface: '#060907',
+      card: '#0a0d0b',
+      accent: '#047857',
+      bright: '#059669',
+      highlight: '#34d399'
     },
     hierarchy: 'Obsidian Void → Sacred Jade Inlay → Celadon Telemetry',
     atmosphere: 'Illuminated obsidian, sacred jade sanctuary, disciplined scholarly contemplation'
@@ -122,12 +122,12 @@ export const CODEX_THEMES: Record<CodexThemeId, CodexThemeMetadata> = {
     description: 'A formidable realm forged in pure obsidian black stone, chiseled with deep Damascus ruby power veins and radiant crimson illumination. Embodies martial Furūsiyya chivalry, resolute discipline, and uncompromising accountability.',
     archetype: 'Vanguard Sovereign / Furūsiyya',
     swatches: {
-      void: '#06070a',
-      surface: '#0a0c10',
-      card: '#0f1118',
-      accent: '#dc2626',
-      bright: '#ef4444',
-      highlight: '#fca5a5'
+      void: '#040304',
+      surface: '#070507',
+      card: '#0b080a',
+      accent: '#b91c1c',
+      bright: '#dc2626',
+      highlight: '#f87171'
     },
     hierarchy: 'Obsidian Void → Bloodstone Damascus → Imperial Ruby Power Vein',
     atmosphere: 'Deep black obsidian, imperial ruby chivalry, resolute discipline, incandescent crimson veins'

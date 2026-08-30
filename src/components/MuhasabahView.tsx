@@ -4,6 +4,8 @@ import { MuhasabahCategory, MuhasabahSeverity, Weakness, MuhasabahEntry, WeeklyM
 import { MuhasabahModal } from './MuhasabahModal';
 import { DailyBalanceScale } from './DailyBalanceScale';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
+import { ORE_COMPLEXITY_INFO, RARITY_ORE_THEMES } from './SealingPowerView';
+import { AncientCarvedRune } from './AncientCarvedRune';
 import { 
   Scale, Shield, Flame, Heart, MessageSquare, Clock, AlertTriangle, 
   Sparkles, Plus, Search, Filter, Pickaxe, CheckCircle2, 
@@ -44,7 +46,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     convertWeaknessToSeal, deleteWeakness, updateWeakness, unbindWeaknessFromSeal,
-    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
+    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary,
+    getActiveOre, getTotalOreXpMultiplier
   } = usePOS();
 
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
@@ -274,6 +277,17 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     q.status === 'Active' && 
     (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]') || q.type === 'Recovery')
   );
+
+  // Active Ore & Shackle Strain Telemetry (Pillar 4)
+  const activeOre = getActiveOre();
+  const totalMultiplier = getTotalOreXpMultiplier();
+  const activeOreTheme = activeOre ? (RARITY_ORE_THEMES[activeOre.rarity] || RARITY_ORE_THEMES.Common) : RARITY_ORE_THEMES.Common;
+  const activeOreComplexity = activeOre ? (ORE_COMPLEXITY_INFO[activeOre.rarity] || ORE_COMPLEXITY_INFO.Common) : ORE_COMPLEXITY_INFO.Common;
+
+  const activeWeaknesses = weaknesses.filter(w => w.status === 'Active');
+  const boundWeaknesses = weaknesses.filter(w => w.status === 'Sealed');
+  const shackleStrainScore = Math.min(100, (activeWeaknesses.length * 15) + (activeKaffarahQuests.length * 10));
+  const corrosionPenaltyPercent = shackleStrainScore === 0 ? 0 : Math.min(25, Math.max(3, Math.floor(shackleStrainScore * 0.25)));
 
   const handleOpenAuditModal = (weaknessId?: string, cat?: MuhasabahCategory) => {
     setPrefillWeaknessId(weaknessId);
@@ -873,6 +887,153 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         )}
       </AnimatePresence>
 
+      {/* SHACKLE STRAIN & ORE CORROSION TELEMETRY (PILLAR 4) */}
+      <div 
+        id="shackle-strain-ore-corrosion-panel"
+        className="p-5 sm:p-6 bg-gradient-to-r from-[#0e090b] via-[#090b10] to-[#120d14] border border-rose-500/30 rounded-2xl relative overflow-hidden shadow-xl space-y-4"
+      >
+        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#ef4444" />
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-500/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <AncientCarvedRune
+                glyph={activeOre?.runeSymbol || '🪨'}
+                size={48}
+                shape="octagram"
+                stoneVariant={corrosionPenaltyPercent > 0 ? 'iron' : 'meteorite'}
+                conduitColor={corrosionPenaltyPercent > 0 ? '#ef4444' : activeOreTheme.veinColor}
+                secondaryColor={corrosionPenaltyPercent > 0 ? '#fca5a5' : '#fef08a'}
+                glowIntensity={corrosionPenaltyPercent > 0 ? 'none' : 'subtle'}
+                showCracks={true}
+              />
+              {corrosionPenaltyPercent > 0 && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 border border-black flex items-center justify-center text-[9px] font-bold text-white animate-pulse">
+                  !
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-mono tracking-wider uppercase font-bold px-2 py-0.5 rounded border ${
+                  corrosionPenaltyPercent > 0
+                    ? 'bg-rose-950/80 border-rose-500/50 text-rose-300'
+                    : 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                }`}>
+                  {corrosionPenaltyPercent > 0 ? 'CORROSION DETECTED' : 'CRYSTALLINE EQUILIBRIUM'}
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  BOUND CRUCIBLE ORE: {activeOre?.name} ({activeOre?.rarity})
+                </span>
+              </div>
+              <h3 className="text-base font-display font-bold text-white mt-0.5 flex items-center gap-2">
+                <span>Shackle Strain & Ore Corrosion Matrix</span>
+                <span className="text-xs font-mono font-normal text-zinc-400">
+                  (مَصْفُوفَةُ إِجْهَادِ القُيُودِ وَصَدَأِ النَّفْس)
+                </span>
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <span className="text-[10px] font-mono text-zinc-400 block uppercase">Crucible Vein Impurity</span>
+              <span className={`text-base font-mono font-bold flex items-center justify-end gap-1 ${
+                corrosionPenaltyPercent > 0 ? 'text-rose-400' : 'text-emerald-400'
+              }`}>
+                {corrosionPenaltyPercent > 0 ? `-${corrosionPenaltyPercent}% XP Vein Dampening` : '100% Facet Luster (Zero Rust)'}
+              </span>
+            </div>
+
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('dashboard')}
+                className="px-3 py-2 bg-[#181219] hover:bg-[#221824] border border-rose-500/40 rounded-xl text-xs font-mono text-rose-300 font-bold flex items-center gap-1.5 transition shrink-0 shadow-md cursor-pointer"
+              >
+                <span>VIEW CRUCIBLE</span>
+                <ChevronRight className="h-3.5 w-3.5 text-rose-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 3 METRIC CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Card 1: Shackle Strain Gauge */}
+          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-rose-400" />
+                <span>Total Shackle Tension</span>
+              </span>
+              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {shackleStrainScore}% Strain
+              </span>
+            </div>
+            
+            <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden p-0.5 border border-white/5">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  shackleStrainScore > 50 
+                    ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' 
+                    : shackleStrainScore > 0 
+                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                      : 'bg-emerald-400'
+                }`}
+                style={{ width: `${Math.max(6, shackleStrainScore)}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              {activeWeaknesses.length} unsealed weaknesses & {activeKaffarahQuests.length} pending penances tighten chains.
+            </p>
+          </div>
+
+          {/* Card 2: Facet Corrosion State */}
+          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                <span>Facet Luster & Corrosion</span>
+              </span>
+              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {corrosionPenaltyPercent > 0 ? `${corrosionPenaltyPercent}% Dulled Facets` : 'Pristine Core'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-mono">
+              <span>Vein Status:</span>
+              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                {corrosionPenaltyPercent > 0 ? 'Dross Encrusted (Tawbah Needed)' : 'Sanctified & Polished'}
+              </span>
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              Settling Kaffārah restitutions and forging seals burns away the tarnish.
+            </p>
+          </div>
+
+          {/* Card 3: Forging Equilibrium */}
+          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <Pickaxe className="h-3.5 w-3.5 text-[#c5a059]" />
+                <span>Chains Bound into Seals</span>
+              </span>
+              <span className="font-bold text-[#fef08a]">
+                {boundWeaknesses.length} / {weaknesses.length} Neutralized
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-mono text-zinc-300">
+              <span>Awakened Crucible Yield:</span>
+              <span className="text-[#fef08a] font-bold">+{Math.round((totalMultiplier - 1.0) * 100)}% Total</span>
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              Binding a weakness into a Power Seal permanently converts strain into bonus XP.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* 3. MAIN DUAL-COLUMN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: ACTIVE KAFFĀRAH RESTITUTIONS & CHAINS OF THE NAFS */}
@@ -1027,6 +1188,17 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                             />
                           ))}
                         </div>
+                      </div>
+
+                      {/* Shackle Strain & Corrosion Impact */}
+                      <div className="flex items-center justify-between text-[10px] font-mono px-2 py-1 rounded bg-black/40 border border-white/5 my-2">
+                        <span className="text-zinc-400 flex items-center gap-1">
+                          <Lock className="h-3 w-3 text-zinc-500" />
+                          <span>Shackle Strain:</span>
+                        </span>
+                        <span className={isSealed ? 'text-emerald-400 font-bold' : weakness.occurrenceCount >= 4 ? 'text-rose-400 font-bold' : 'text-amber-300 font-bold'}>
+                          {isSealed ? '0% (Forged & Bound)' : `+${10 + weakness.occurrenceCount * 2}% Tension`}
+                        </span>
                       </div>
 
                       <p className="text-[10px] font-mono text-zinc-400 line-clamp-1 mb-2.5">

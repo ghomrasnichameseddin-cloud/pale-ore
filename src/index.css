@@ -68,22 +68,22 @@
 
 /* 2. SHADOW BLUE (Black Deep Sapphire & Royal Cobalt Power Veins) */
 [data-theme="shadow-blue"] {
-  --bg-void: #06070b;
-  --bg-surface: #0a0c12;
-  --bg-card: #0e111a;
-  --bg-card-hover: #131724;
-  --bg-elevated: #181d2c;
+  --bg-void: #030407;
+  --bg-surface: #06080d;
+  --bg-card: #090c14;
+  --bg-card-hover: #0e121e;
+  --bg-elevated: #131828;
 
-  --accent-primary: #1d4ed8;
-  --accent-bright: #3b82f6;
+  --accent-primary: #1e3a8a;
+  --accent-bright: #2563eb;
   --accent-highlight: #60a5fa;
   --accent-dim: #172554;
-  --accent-surface: #0b1528;
-  --accent-surface-hover: #10203d;
+  --accent-surface: #060a14;
+  --accent-surface-hover: #0a1122;
 
-  --border-subtle: rgba(29, 78, 216, 0.28);
-  --border-accent: rgba(59, 130, 246, 0.48);
-  --border-strong: #3b82f6;
+  --border-subtle: rgba(30, 58, 138, 0.32);
+  --border-accent: rgba(37, 99, 235, 0.48);
+  --border-strong: #2563eb;
 
   --text-primary: #f0f4fc;
   --text-secondary: #cbd5e1;
@@ -91,36 +91,36 @@
   --text-accent: #60a5fa;
   --text-highlight: #93c5fd;
 
-  --glow-color: rgba(29, 78, 216, 0.35);
-  --glow-strong: rgba(59, 130, 246, 0.65);
-  --progress-gradient: linear-gradient(90deg, #172554 0%, #1d4ed8 50%, #3b82f6 85%, #60a5fa 100%);
-  --scrollbar-thumb: rgba(29, 78, 216, 0.4);
-  --scrollbar-thumb-hover: rgba(59, 130, 246, 0.7);
+  --glow-color: rgba(30, 58, 138, 0.28);
+  --glow-strong: rgba(37, 99, 235, 0.6);
+  --progress-gradient: linear-gradient(90deg, #172554 0%, #1e3a8a 45%, #2563eb 80%, #60a5fa 100%);
+  --scrollbar-thumb: rgba(30, 58, 138, 0.45);
+  --scrollbar-thumb-hover: rgba(37, 99, 235, 0.75);
 
-  --pattern-radial-1: rgba(29, 78, 216, 0.035);
+  --pattern-radial-1: rgba(30, 58, 138, 0.035);
   --pattern-radial-2: rgba(37, 99, 235, 0.02);
-  --pattern-stroke: rgba(59, 130, 246, 0.03);
+  --pattern-stroke: rgba(37, 99, 235, 0.03);
   --pattern-stroke-inner: rgba(96, 165, 250, 0.015);
 }
 
 /* 3. EMERALD MANUSCRIPT (Sacred Jade & Illuminated Obsidian Manuscript) */
 [data-theme="emerald-manuscript"] {
-  --bg-void: #060807;
-  --bg-surface: #0a0d0c;
-  --bg-card: #0e1210;
-  --bg-card-hover: #131915;
-  --bg-elevated: #18211b;
+  --bg-void: #030504;
+  --bg-surface: #060907;
+  --bg-card: #0a0d0b;
+  --bg-card-hover: #0f1411;
+  --bg-elevated: #131915;
 
-  --accent-primary: #10b981;
-  --accent-bright: #34d399;
-  --accent-highlight: #6ee7b7;
+  --accent-primary: #047857;
+  --accent-bright: #059669;
+  --accent-highlight: #34d399;
   --accent-dim: #064e3b;
-  --accent-surface: #081d14;
-  --accent-surface-hover: #0e2e20;
+  --accent-surface: #051009;
+  --accent-surface-hover: #091a0f;
 
-  --border-subtle: rgba(16, 185, 129, 0.22);
-  --border-accent: rgba(52, 211, 153, 0.42);
-  --border-strong: #34d399;
+  --border-subtle: rgba(4, 120, 87, 0.28);
+  --border-accent: rgba(5, 150, 105, 0.46);
+  --border-strong: #10b981;
 
   --text-primary: #f0fdf4;
   --text-secondary: #d1fae5;
@@ -128,16 +128,16 @@
   --text-accent: #34d399;
   --text-highlight: #6ee7b7;
 
-  --glow-color: rgba(16, 185, 129, 0.22);
-  --glow-strong: rgba(52, 211, 153, 0.55);
-  --progress-gradient: linear-gradient(90deg, #064e3b 0%, #10b981 50%, #6ee7b7 100%);
-  --scrollbar-thumb: rgba(16, 185, 129, 0.32);
-  --scrollbar-thumb-hover: rgba(52, 211, 153, 0.6);
+  --glow-color: rgba(4, 120, 87, 0.22);
+  --glow-strong: rgba(16, 185, 129, 0.55);
+  --progress-gradient: linear-gradient(90deg, #064e3b 0%, #047857 45%, #059669 80%, #34d399 100%);
+  --scrollbar-thumb: rgba(4, 120, 87, 0.35);
+  --scrollbar-thumb-hover: rgba(16, 185, 129, 0.65);
 
-  --pattern-radial-1: rgba(16, 185, 129, 0.035);
+  --pattern-radial-1: rgba(4, 120, 87, 0.035);
   --pattern-radial-2: rgba(5, 150, 105, 0.02);
-  --pattern-stroke: rgba(52, 211, 153, 0.03);
-  --pattern-stroke-inner: rgba(110, 231, 183, 0.015);
+  --pattern-stroke: rgba(16, 185, 129, 0.03);
+  --pattern-stroke-inner: rgba(52, 211, 153, 0.015);
 }
 
 /* 4. OBSIDIAN SILVER (Tactical Graphite, Monolithic Stealth, Sterling Silver & Pearlescent White) */
@@ -216,22 +216,22 @@
 
 /* 6. CRIMSON SOVEREIGN (Bloodstone Damascus & Imperial Ruby Veins on Obsidian Black) */
 [data-theme="crimson-sovereign"] {
-  --bg-void: #06070a;
-  --bg-surface: #0a0c10;
-  --bg-card: #0f1118;
-  --bg-card-hover: #161822;
-  --bg-elevated: #1c1f2c;
+  --bg-void: #040304;
+  --bg-surface: #070507;
+  --bg-card: #0b080a;
+  --bg-card-hover: #110d10;
+  --bg-elevated: #161114;
 
-  --accent-primary: #dc2626;
-  --accent-bright: #ef4444;
-  --accent-highlight: #fca5a5;
+  --accent-primary: #b91c1c;
+  --accent-bright: #dc2626;
+  --accent-highlight: #f87171;
   --accent-dim: #7f1d1d;
-  --accent-surface: #1e0b0b;
-  --accent-surface-hover: #2d1010;
+  --accent-surface: #120406;
+  --accent-surface-hover: #1e070a;
 
-  --border-subtle: rgba(220, 38, 38, 0.28);
-  --border-accent: rgba(239, 68, 68, 0.48);
-  --border-strong: #ef4444;
+  --border-subtle: rgba(185, 28, 28, 0.32);
+  --border-accent: rgba(220, 38, 38, 0.5);
+  --border-strong: #dc2626;
 
   --text-primary: #fef2f2;
   --text-secondary: #fecaca;
@@ -239,16 +239,16 @@
   --text-accent: #f87171;
   --text-highlight: #ffffff;
 
-  --glow-color: rgba(220, 38, 38, 0.35);
-  --glow-strong: rgba(239, 68, 68, 0.7);
-  --progress-gradient: linear-gradient(90deg, #450a0a 0%, #991b1b 40%, #dc2626 75%, #fca5a5 100%);
-  --scrollbar-thumb: rgba(220, 38, 38, 0.38);
-  --scrollbar-thumb-hover: rgba(239, 68, 68, 0.7);
+  --glow-color: rgba(185, 28, 28, 0.3);
+  --glow-strong: rgba(220, 38, 38, 0.65);
+  --progress-gradient: linear-gradient(90deg, #450a0a 0%, #7f1d1d 40%, #dc2626 75%, #f87171 100%);
+  --scrollbar-thumb: rgba(185, 28, 28, 0.4);
+  --scrollbar-thumb-hover: rgba(220, 38, 38, 0.72);
 
-  --pattern-radial-1: rgba(220, 38, 38, 0.035);
-  --pattern-radial-2: rgba(239, 68, 68, 0.02);
-  --pattern-stroke: rgba(239, 68, 68, 0.03);
-  --pattern-stroke-inner: rgba(254, 202, 202, 0.015);
+  --pattern-radial-1: rgba(185, 28, 28, 0.035);
+  --pattern-radial-2: rgba(220, 38, 38, 0.02);
+  --pattern-stroke: rgba(220, 38, 38, 0.03);
+  --pattern-stroke-inner: rgba(248, 113, 113, 0.015);
 }
 
 /* ==========================================================================

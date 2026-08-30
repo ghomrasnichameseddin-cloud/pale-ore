@@ -1,14 +1,26 @@
 import React from 'react';
 import { usePOS, isQuestArchived } from '../POSContext';
-import { Swords, Compass, ShieldAlert, CheckCircle2, Circle } from 'lucide-react';
+import { Swords, Compass, ShieldAlert, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { ActiveDirectives } from './ActiveDirectives';
 import { ExecuteQuestForm } from './ExecuteQuestForm';
 import { QuestDirectory } from './QuestDirectory';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { BossProgressionBanner } from './BossProgressionBanner';
+import { ORE_COMPLEXITY_INFO } from './SealingPowerView';
 
 export const QuestsView: React.FC = () => {
-  const { state, isQuestFinishedForToday, isQuestScheduledForDate, systemDate } = usePOS();
+  const { 
+    state, 
+    isQuestFinishedForToday, 
+    isQuestScheduledForDate, 
+    systemDate,
+    getActiveOre,
+    getTotalOreXpMultiplier
+  } = usePOS();
+
+  const activeOre = getActiveOre();
+  const totalMultiplier = getTotalOreXpMultiplier();
+  const complexity = activeOre ? (ORE_COMPLEXITY_INFO[activeOre.rarity] || ORE_COMPLEXITY_INFO.Common) : null;
 
   const baseQuests = state.quests.filter(q => {
     if (isQuestArchived(q, state.lists, state.folders)) return false;
@@ -66,6 +78,52 @@ export const QuestsView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ACTIVE ORE RESONANCE CHANNELING STRIP */}
+      {activeOre && complexity && (
+        <div 
+          id="quests-ore-resonance-banner"
+          className="rounded-xl border border-[#c5a059]/30 bg-gradient-to-r from-[#141824] via-[#090b10] to-[#141824] p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md relative overflow-hidden"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-[#07080c] border border-[#c5a059]/40 flex items-center justify-center font-serif text-base font-black text-[#fef08a] shadow-inner shrink-0">
+              {activeOre.runeSymbol || '🪨'}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#c5a059]">
+                  ACTIVE ORE RESONANCE
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded border border-[#c5a059]/30 text-[#fef08a] uppercase">
+                  {activeOre.rarity}
+                </span>
+              </div>
+              <div className="text-xs text-zinc-200 font-sans font-medium flex items-center gap-2 mt-0.5">
+                <span className="text-white font-bold">{activeOre.name}</span>
+                <span className="text-zinc-500">•</span>
+                <span className="text-[#c5a059] font-mono text-[11px]">{complexity.shapeName} ({complexity.facetCount})</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 font-mono text-xs w-full sm:w-auto justify-between sm:justify-end">
+            <div className="text-right">
+              <span className="text-[9px] text-zinc-400 block uppercase">Channeling Boost</span>
+              <span className="text-sm font-bold text-[#fef08a]">
+                +{Math.round((totalMultiplier - 1.0) * 100)}% XP
+              </span>
+            </div>
+            <div className="h-6 w-px bg-white/10 hidden sm:block" />
+            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+              activeOre.status === 'Broken'
+                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                : 'bg-[#3a2e12]/60 text-[#fef08a] border-[#c5a059]/40'
+            }`}>
+              {activeOre.status === 'Broken' ? '✨ UNCHAINED' : '⛓️ BOUND BY NAFS'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* BOSS PROGRESSION GATE BANNER */}
       <BossProgressionBanner />

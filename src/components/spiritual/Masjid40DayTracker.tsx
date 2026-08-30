@@ -3,10 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   CheckCircle2, Sparkles, Award, Shield, Flame, Heart, 
   ChevronRight, RefreshCw, AlertCircle, Info, Moon, Sun, 
-  Compass, Check, BookOpen, Layers, Star, ExternalLink
+  Compass, Check, BookOpen, Layers, Star, ExternalLink,
+  Pickaxe, Zap, Activity
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { RubElHizbIcon, GeometricDivider } from '../IslamicRpgDecorations';
+import { ORE_COMPLEXITY_INFO, RARITY_ORE_THEMES } from '../SealingPowerView';
+import { AncientCarvedRune } from '../AncientCarvedRune';
 
 interface Masjid40DayTrackerProps {
   onOpenGuide?: (section?: string) => void;
@@ -24,7 +27,9 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
     getMasjid40Stats, 
     toggleAllPrayersInMasjid,
     resetMasjid40Streak,
-    setMasjid40Override
+    setMasjid40Override,
+    getActiveOre,
+    getTotalOreXpMultiplier
   } = usePOS();
 
   const [showHadithExplanation, setShowHadithExplanation] = useState(false);
@@ -33,6 +38,14 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const stats = getMasjid40Stats(systemDate);
+  const activeOre = getActiveOre();
+  const totalMultiplier = getTotalOreXpMultiplier();
+  const complexity = ORE_COMPLEXITY_INFO[activeOre.rarity];
+  const theme = RARITY_ORE_THEMES[activeOre.rarity];
+  
+  // Calculate Covenant Resonance: Stage 1 = +5%, Stage 2 = +10%, Stage 3 = +15%, Stage 4 = +20%, Full 40-Day Sanctuary = +25%
+  const covenantResonancePercent = stats.currentStreak >= 40 ? 25 : Math.max(5, stats.currentStage.stageNumber * 5);
+  const prayerCleavedFacets = Math.min(complexity.facetNumber, Math.floor((stats.currentStreak / 40) * complexity.facetNumber));
   const currentLog = getSpiritualLog(systemDate);
 
   const prayers = [
@@ -367,6 +380,145 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
 
         </div>
 
+      </div>
+
+      {/* COVENANT ORE CRYSTALLIZATION & CLEAVING RESONANCE */}
+      <div className="p-5 sm:p-6 bg-gradient-to-r from-[#0d1017] via-[#090b10] to-[#121622] border border-[#c5a059]/30 rounded-3xl relative overflow-hidden shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#c5a059]/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              <AncientCarvedRune
+                glyph={activeOre.runeSymbol || '💎'}
+                size={48}
+                shape="octagram"
+                stoneVariant="meteorite"
+                conduitColor={theme.veinColor}
+                secondaryColor="#fef08a"
+                glowIntensity="radiant"
+                showCracks={true}
+              />
+              <div 
+                className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border text-[9px] font-bold z-10"
+                style={{ backgroundColor: theme.veinColor, borderColor: '#000000', color: '#000000' }}
+              >
+                ✦
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono tracking-wider uppercase font-bold px-2 py-0.5 rounded border"
+                  style={{
+                    backgroundColor: `${theme.veinColor}20`,
+                    borderColor: `${theme.veinColor}60`,
+                    color: theme.veinColor
+                  }}
+                >
+                  {activeOre.rarity} ORE IN CRUCIBLE
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {complexity.facetCount} FACET MATRIX
+                </span>
+              </div>
+              <h3 className="text-base font-display font-bold text-white mt-0.5">
+                {activeOre.name}: Congregational Crystalline Resonance
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <span className="text-[10px] font-mono text-zinc-400 block uppercase">Covenant Cleave Multiplier</span>
+              <span className="text-base font-mono font-bold text-[#fef08a] flex items-center justify-end gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+                +{covenantResonancePercent}% Multiplier Boost
+              </span>
+            </div>
+
+            {onNavigateTab && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab('dashboard')}
+                className="px-3 py-2 bg-[#181d2a] hover:bg-[#202738] border border-[#c5a059]/40 rounded-xl text-xs font-mono text-[#e5c875] font-bold flex items-center gap-1.5 transition shrink-0 shadow-md"
+              >
+                <span>OPEN CRUCIBLE</span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#c5a059]" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* FACET CLEAVING PROGRESSION FROM MASJID PRAYERS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Card 1: Facet Cleaving */}
+          <div className="p-3.5 rounded-2xl bg-[#090c14] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <Pickaxe className="h-3.5 w-3.5 text-[#c5a059]" />
+                <span>Congregational Facet Cleave</span>
+              </span>
+              <span className="font-bold text-[#fef08a]">
+                {prayerCleavedFacets} / {complexity.facetNumber} Facets
+              </span>
+            </div>
+            
+            <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden p-0.5 border border-white/5">
+              <div 
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.max(8, (prayerCleavedFacets / complexity.facetNumber) * 100)}%`,
+                  background: `linear-gradient(90deg, ${theme.veinColor}, #fef08a)`
+                }}
+              />
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              Each 5-prayer Masjid day cleaves and polishes the raw mineral matrix.
+            </p>
+          </div>
+
+          {/* Card 2: Divine Purity State */}
+          <div className="p-3.5 rounded-2xl bg-[#090c14] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Crucible Purification</span>
+              </span>
+              <span className="font-bold text-emerald-400">
+                {stats.currentStreak > 0 ? 'SANCTIFIED BY JAMA\'AH' : 'NEUTRAL PURITY'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-mono">
+              <span className="text-emerald-300 font-bold">Stage {stats.currentStage.stageNumber}:</span>
+              <span>{stats.currentStage.stageNameEn} ({stats.currentStage.stageNameAr})</span>
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              Consecutive congregation shields the ore against corrosion from spiritual slips.
+            </p>
+          </div>
+
+          {/* Card 3: Live XP Multiplier Stacking */}
+          <div className="p-3.5 rounded-2xl bg-[#090c14] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-zinc-400 flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-amber-400" />
+                <span>Effective Crucible Yield</span>
+              </span>
+              <span className="font-bold text-amber-300">
+                +{Math.round((totalMultiplier - 1.0) * 100) + covenantResonancePercent}% Total XP
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-mono text-zinc-300">
+              <span>Ore Multiplier:</span>
+              <span className="text-[#fef08a] font-bold">+{Math.round(((activeOre.xpBonusMultiplier || 1.0) - 1.0) * 100)}%</span>
+              <span className="text-zinc-500">+</span>
+              <span>Covenant:</span>
+              <span className="text-emerald-400 font-bold">+{covenantResonancePercent}%</span>
+            </div>
+            <p className="text-[10px] font-mono text-zinc-400">
+              Stacking active ore buff: {activeOre.buffName || 'Awakened Will'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 3. THE 40-DAY SACRED BEAD MATRIX (40 INTERACTIVE TILES) */}

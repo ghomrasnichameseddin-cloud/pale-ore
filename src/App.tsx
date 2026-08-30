@@ -3,7 +3,11 @@ import { POSProvider, usePOS } from './POSContext';
 import { getLocalDateString } from './initialState';
 import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
-import { StrategyCodexView, StrategySubTab } from './components/StrategyCodexView';
+import { StrategyCodexView } from './components/StrategyCodexView';
+import { GoalsView } from './components/GoalsView';
+import { ProjectsView } from './components/ProjectsView';
+import { PlanningView } from './components/PlanningView';
+import { FrameworksView } from './components/FrameworksView';
 import { OracleSystemView, OracleSystemSubTab } from './components/OracleSystemView';
 import { QuestsView } from './components/QuestsView';
 import { SkillsView } from './components/SkillsView';
@@ -604,17 +608,15 @@ function AppContent() {
               {activeTab === 'quests' && <QuestsView />}
               {activeTab === 'spiritual' && <SpiritualTrackerView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
               {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
-              {(activeTab === 'strategy_codex' || activeTab === 'goals' || activeTab === 'projects' || activeTab === 'planning' || activeTab === 'frameworks') && (
-                <StrategyCodexView 
-                  initialSubTab={
-                    activeTab === 'goals' ? 'goals' :
-                    activeTab === 'projects' ? 'projects' :
-                    activeTab === 'planning' ? 'planning' :
-                    activeTab === 'frameworks' ? 'frameworks' : 'overview'
-                  }
-                  onNavigate={(tab) => setActiveTab(tab as TabId)}
-                />
+              {activeTab === 'strategy_codex' && (
+                <StrategyCodexView onNavigate={(tab) => setActiveTab(tab as TabId)} />
               )}
+              {activeTab === 'goals' && <GoalsView />}
+              {activeTab === 'projects' && <ProjectsView />}
+              {activeTab === 'planning' && (
+                <PlanningView onNavigate={(tab) => setActiveTab(tab as TabId)} />
+              )}
+              {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'seals' && <SealingPowerView />}
               {activeTab === 'shop' && <RewardShopView />}

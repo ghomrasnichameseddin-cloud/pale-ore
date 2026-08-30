@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Compass, Target, Briefcase, FolderOpen, Layers, 
@@ -10,10 +10,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
-import { GoalsView } from './GoalsView';
-import { ProjectsView } from './ProjectsView';
-import { PlanningView } from './PlanningView';
-import { FrameworksView } from './FrameworksView';
 
 export type StrategySubTab = 'overview' | 'goals' | 'projects' | 'planning' | 'frameworks';
 
@@ -23,26 +19,17 @@ interface StrategyCodexViewProps {
 }
 
 export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({ 
-  initialSubTab = 'overview', 
   onNavigate 
 }) => {
   const { state, getGoalProgress, getProjectProgress } = usePOS();
-  const [subTab, setSubTab] = useState<StrategySubTab>(initialSubTab);
   const [globalSearch, setGlobalSearch] = useState('');
   const [selectedHorizon, setSelectedHorizon] = useState<string>('All');
   const [expandedDestinyId, setExpandedDestinyId] = useState<string | null>(null);
   const [activeLoopStep, setActiveLoopStep] = useState<number>(0);
 
-  useEffect(() => {
-    if (initialSubTab) {
-      setSubTab(initialSubTab);
-    }
-  }, [initialSubTab]);
-
-  const handleTabChange = (newTab: StrategySubTab) => {
-    setSubTab(newTab);
+  const handleNavigate = (targetTab: string) => {
     if (onNavigate) {
-      onNavigate(newTab === 'overview' ? 'strategy_codex' : newTab);
+      onNavigate(targetTab);
     }
   };
 
@@ -130,7 +117,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
 
     // 3. Campaigns with 0 quests
     state.projects.forEach(p => {
-      const attachedQuests = state.quests.filter(q => q.projectId === p.id && !q.completed);
+      const attachedQuests = state.quests.filter(q => q.projectId === p.id && q.status !== 'Completed');
       if (attachedQuests.length === 0 && p.status !== 'Completed') {
         bottlenecks.push({
           id: `camp-empty-${p.id}`,
@@ -163,7 +150,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
   return (
     <div className="space-y-6" id="strategy-codex-unified-root">
       
-      {/* UNIFIED HEADER WITH SUB-NAV BAR */}
+      {/* UNIFIED HEADER */}
       <div className="border-b border-[#c5a059]/20 pb-4 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -175,66 +162,11 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
               SANCTUM_STRATEGY • Unified doctrine, long-term destinies, operational campaigns & strategic models
             </p>
           </div>
-
-          {/* QUICK HIGH-LEVEL SUMMARY BADGES */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-[#0b0d13] border border-[#c5a059]/30 text-[#e5c875] flex items-center gap-1.5 whitespace-nowrap">
-              <Target className="h-3 w-3 text-[#c5a059]" />
-              {completedGoals}/{totalGoals} DESTINIES
-            </span>
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-[#0b0d13] border border-cyan-500/30 text-cyan-300 flex items-center gap-1.5 whitespace-nowrap">
-              <Briefcase className="h-3 w-3 text-cyan-400" />
-              {completedProjects}/{totalProjects} CAMPAIGNS
-            </span>
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-[#0b0d13] border border-purple-500/30 text-purple-300 flex items-center gap-1.5 whitespace-nowrap">
-              <FolderOpen className="h-3 w-3 text-purple-400" />
-              {totalDocs} CODEX DOCS
-            </span>
-          </div>
-        </div>
-
-        {/* ENHANCED SUB-NAVIGATION TABS */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-2 pb-1 border-t border-white/5 scrollbar-thin">
-          {[
-            { id: 'overview' as const, label: 'Strategic Matrix & Synthesis', icon: Layers, count: null },
-            { id: 'goals' as const, label: 'Grand Destinies', icon: Target, count: totalGoals },
-            { id: 'projects' as const, label: 'Campaigns & Milestones', icon: Briefcase, count: totalProjects },
-            { id: 'planning' as const, label: '10-Folder Codex Vault', icon: FolderOpen, count: totalDocs },
-            { id: 'frameworks' as const, label: 'Strategic Thinking Lab', icon: Compass, count: '11 Engines' },
-          ].map(tab => {
-            const Icon = tab.icon;
-            const isActive = subTab === tab.id;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all whitespace-nowrap border cursor-pointer ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                    : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5 hover:border-[#c5a059]/30'
-                }`}
-                id={`strategy-subtab-${tab.id}`}
-              >
-                <Icon className={`h-4 w-4 ${isActive ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-                <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isActive ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40' : 'bg-zinc-900 text-zinc-400'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
         </div>
       </div>
 
-      {/* SUB-VIEW RENDERING */}
-      <div>
-        {subTab === 'overview' && (
-          <div className="space-y-6" id="strategy-synthesis-overview">
+      {/* STRATEGIC SYNTHESIS OVERVIEW */}
+      <div className="space-y-6" id="strategy-synthesis-overview">
             
             {/* EXECUTIVE STRATEGIC SYNTHESIS BANNER */}
             <div className="glass-panel rounded-2xl p-6 border border-[#c5a059]/30 bg-gradient-to-r from-[#0e121d] via-[#07080c] to-[#121624] relative overflow-hidden shadow-xl space-y-6">
@@ -278,7 +210,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                 
                 {/* 1. Grand Destinies Pillar */}
                 <div 
-                  onClick={() => setSubTab('goals')}
+                  onClick={() => handleNavigate('goals')}
                   className="p-4 bg-[#07080c]/80 hover:bg-[#141824] border border-[#c5a059]/20 hover:border-[#c5a059]/50 rounded-xl cursor-pointer transition-all space-y-3 group"
                 >
                   <div className="flex items-center justify-between">
@@ -301,7 +233,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
 
                 {/* 2. Operational Campaigns Pillar */}
                 <div 
-                  onClick={() => setSubTab('projects')}
+                  onClick={() => handleNavigate('projects')}
                   className="p-4 bg-[#07080c]/80 hover:bg-[#141824] border border-[#c5a059]/20 hover:border-[#c5a059]/50 rounded-xl cursor-pointer transition-all space-y-3 group"
                 >
                   <div className="flex items-center justify-between">
@@ -324,7 +256,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
 
                 {/* 3. Codex & SOPs Pillar */}
                 <div 
-                  onClick={() => setSubTab('planning')}
+                  onClick={() => handleNavigate('planning')}
                   className="p-4 bg-[#07080c]/80 hover:bg-[#141824] border border-[#c5a059]/20 hover:border-[#c5a059]/50 rounded-xl cursor-pointer transition-all space-y-3 group"
                 >
                   <div className="flex items-center justify-between">
@@ -347,7 +279,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
 
                 {/* 4. Strategic Models Pillar */}
                 <div 
-                  onClick={() => setSubTab('frameworks')}
+                  onClick={() => handleNavigate('frameworks')}
                   className="p-4 bg-[#07080c]/80 hover:bg-[#141824] border border-[#c5a059]/20 hover:border-[#c5a059]/50 rounded-xl cursor-pointer transition-all space-y-3 group"
                 >
                   <div className="flex items-center justify-between">
@@ -397,7 +329,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                           {b.severity.toUpperCase()} RISK
                         </span>
                         <button
-                          onClick={() => handleTabChange(b.actionTargetTab)}
+                          onClick={() => handleNavigate(b.actionTargetTab)}
                           className="text-[9px] font-mono text-cyan-400 hover:text-cyan-200 flex items-center gap-1 font-bold cursor-pointer"
                         >
                           {b.actionLabel} <ArrowRight className="h-2.5 w-2.5" />
@@ -428,7 +360,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                 </div>
 
                 <button
-                  onClick={() => handleTabChange(strategicLoopSteps[activeLoopStep].ctaTab)}
+                  onClick={() => handleNavigate(strategicLoopSteps[activeLoopStep].ctaTab)}
                   className="px-3 py-1.5 rounded-lg bg-[#3a2e12] hover:bg-[#4d3d18] border border-[#c5a059] text-[#fef08a] text-xs font-mono font-bold transition flex items-center gap-1.5 self-start md:self-auto cursor-pointer"
                 >
                   <span>Launch Phase {activeLoopStep + 1} Module</span>
@@ -475,7 +407,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => handleTabChange(strategicLoopSteps[activeLoopStep].ctaTab)}
+                  onClick={() => handleNavigate(strategicLoopSteps[activeLoopStep].ctaTab)}
                   className="text-cyan-400 hover:text-cyan-200 text-[10px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
                 >
                   OPEN {strategicLoopSteps[activeLoopStep].ctaTab.toUpperCase()} TAB <ChevronRight className="h-3 w-3" />
@@ -566,7 +498,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                                 {relatedProjects.map(proj => {
                                   const projProgress = getProjectProgress(proj.id);
                                   const projQuests = state.quests.filter(q => q.projectId === proj.id);
-                                  const completedQuests = projQuests.filter(q => q.completed).length;
+                                  const completedQuests = projQuests.filter(q => q.status === 'Completed').length;
 
                                   return (
                                     <div key={proj.id} className="p-2 rounded-lg bg-[#0b0d13] border border-cyan-500/15 flex flex-col gap-1 text-[10px] font-mono">
@@ -630,7 +562,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                       10-FOLDER CODEX KNOWLEDGE VAULT
                     </h3>
                     <button 
-                      onClick={() => setSubTab('planning')}
+                      onClick={() => handleNavigate('planning')}
                       className="text-[10px] font-mono text-[#e5c875] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       Open Codex Explorer <ArrowRight className="h-3 w-3" />
@@ -646,7 +578,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                       filteredDocs.slice(0, 8).map(doc => (
                         <div 
                           key={doc.id}
-                          onClick={() => setSubTab('planning')}
+                          onClick={() => handleNavigate('planning')}
                           className="p-3 bg-[#07080c] hover:bg-[#141824] border border-white/5 hover:border-purple-500/30 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -677,7 +609,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => setSubTab('planning')}
+                    onClick={() => handleNavigate('planning')}
                     className="px-3 py-1.5 rounded-lg bg-[#07080c] hover:bg-[#141824] border border-[#c5a059]/40 text-[#fef08a] text-[10px] font-bold shrink-0 transition flex items-center gap-1 cursor-pointer"
                   >
                     Open SOPs <ChevronRight className="h-3 w-3" />
@@ -689,28 +621,6 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
             </div>
 
           </div>
-        )}
-
-        {/* 1. GRAND DESTINIES (GOALS) */}
-        {subTab === 'goals' && (
-          <GoalsView />
-        )}
-
-        {/* 2. CAMPAIGNS (PROJECTS) */}
-        {subTab === 'projects' && (
-          <ProjectsView />
-        )}
-
-        {/* 3. CODEX & SOPS (PLANNING) */}
-        {subTab === 'planning' && (
-          <PlanningView onNavigate={onNavigate as any} />
-        )}
-
-        {/* 4. STRATEGIC DECISION FRAMEWORKS */}
-        {subTab === 'frameworks' && (
-          <FrameworksView />
-        )}
-      </div>
 
     </div>
   );
