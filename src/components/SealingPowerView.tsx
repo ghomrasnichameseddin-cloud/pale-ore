@@ -721,6 +721,7 @@ export const SealingPowerView: React.FC = () => {
     description: '',
     rarity: 'Common' as SealRarity,
     requiredLevel: 1,
+    costCoins: 100,
     costXP: 100,
     requiredQuestId: '',
     requiredSkillId: '',
@@ -773,6 +774,7 @@ export const SealingPowerView: React.FC = () => {
       description: initialDesc,
       rarity: 'Common',
       requiredLevel: Math.max(1, playerInfo.level),
+      costCoins: 200,
       costXP: 200,
       requiredQuestId: '',
       requiredSkillId: '',
@@ -792,12 +794,14 @@ export const SealingPowerView: React.FC = () => {
   const handleOpenEditModal = (seal: PowerSeal) => {
     setEditingSeal(seal);
     const linkedWeakness = weaknesses.find(w => w.sealId === seal.id);
+    const sealCost = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
     setFormData({
       name: seal.name,
       description: seal.description,
       rarity: seal.rarity,
       requiredLevel: seal.requiredLevel,
-      costXP: seal.costXP,
+      costCoins: sealCost,
+      costXP: sealCost,
       requiredQuestId: seal.requiredQuestId || '',
       requiredSkillId: seal.requiredSkillId || '',
       requiredSkillLevel: seal.requiredSkillLevel || 1,
@@ -822,6 +826,7 @@ export const SealingPowerView: React.FC = () => {
       attributeId: formData.selectedAttributeId,
       boostAmount: formData.attributeBoostAmount
     }] : [];
+    const coinCost = Number(formData.costCoins ?? formData.costXP ?? 0);
 
     if (editingSeal) {
       updateSeal(editingSeal.id, {
@@ -829,7 +834,8 @@ export const SealingPowerView: React.FC = () => {
         description: formData.description.trim(),
         rarity: formData.rarity,
         requiredLevel: Number(formData.requiredLevel),
-        costXP: Number(formData.costXP),
+        costCoins: coinCost,
+        costXP: coinCost,
         requiredQuestId: formData.requiredQuestId || null,
         requiredSkillId: formData.requiredSkillId || null,
         requiredSkillLevel: Number(formData.requiredSkillLevel),
@@ -850,7 +856,8 @@ export const SealingPowerView: React.FC = () => {
         description: formData.description.trim(),
         rarity: formData.rarity,
         requiredLevel: Number(formData.requiredLevel),
-        costXP: Number(formData.costXP),
+        costCoins: coinCost,
+        costXP: coinCost,
         requiredQuestId: formData.requiredQuestId || undefined,
         buffName: formData.buffName.trim(),
         buffDescription: formData.buffDescription.trim(),
@@ -869,7 +876,8 @@ export const SealingPowerView: React.FC = () => {
         description: formData.description.trim(),
         rarity: formData.rarity,
         requiredLevel: Number(formData.requiredLevel),
-        costXP: Number(formData.costXP),
+        costCoins: coinCost,
+        costXP: coinCost,
         requiredQuestId: formData.requiredQuestId || null,
         requiredSkillId: formData.requiredSkillId || null,
         requiredSkillLevel: Number(formData.requiredSkillLevel),
@@ -1238,7 +1246,13 @@ export const SealingPowerView: React.FC = () => {
             const isBroken = seal.status === 'Broken';
             const rarityStyle = RARITY_COLORS[seal.rarity] || RARITY_COLORS.Common;
             const meetsLevel = playerInfo.level >= seal.requiredLevel;
-            const meetsXp = seal.costXP === 0 || playerInfo.totalXp >= seal.costXP;
+            
+            const requiredCoins = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
+            const availableCoins = state.profile.coins ?? 0;
+            const availableXP = playerInfo.totalXp;
+            const coinsToDeduct = Math.min(availableCoins, requiredCoins);
+            const xpDifferenceNeeded = Math.max(0, requiredCoins - coinsToDeduct);
+            const meetsCost = requiredCoins === 0 || availableXP >= xpDifferenceNeeded;
 
             // Check linked quest & skill
             const reqQuest = seal.requiredQuestId ? state.quests.find(q => q.id === seal.requiredQuestId) : null;
@@ -1251,7 +1265,7 @@ export const SealingPowerView: React.FC = () => {
             const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
             const meetsStreak = !seal.requiredStreakDays || maxStreakInSystem >= seal.requiredStreakDays;
 
-            const canBreak = !isBroken && meetsLevel && meetsXp && meetsQuest && meetsSkill && meetsStreak;
+            const canBreak = !isBroken && meetsLevel && meetsCost && meetsQuest && meetsSkill && meetsStreak;
 
             return (
               <motion.div
@@ -1346,11 +1360,32 @@ export const SealingPowerView: React.FC = () => {
                         <span className="font-bold">{meetsLevel ? '✓ MET' : `LVL ${playerInfo.level}`}</span>
                       </div>
 
-                      {/* XP cost */}
-                      {seal.costXP > 0 && (
-                        <div className={`flex items-center justify-between p-1 rounded bg-[#07080c]/60 ${meetsXp ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                          <span>XP Sacrifice: {seal.costXP} XP</span>
-                          <span className="font-bold">{meetsXp ? '✓ READY' : `${playerInfo.totalXp} XP`}</span>
+                      {/* Unbinding Cost: Coins + XP fallback */}
+                      {requiredCoins > 0 && (
+                        <div className={`p-1.5 rounded-lg bg-[#07080c]/80 border ${
+                          meetsCost ? 'border-emerald-500/30 text-emerald-300' : 'border-rose-500/30 text-rose-300'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <span className="text-amber-400">🪙</span>
+                              <span>Cost: {requiredCoins} Coins</span>
+                            </span>
+                            <span className="font-bold">
+                              {meetsCost ? (
+                                xpDifferenceNeeded > 0 ? '✓ READY (XP DIFF)' : '✓ READY'
+                              ) : 'SHORT'}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-zinc-400 mt-0.5 flex items-center justify-between">
+                            <span>Balance: {availableCoins} Coins</span>
+                            {xpDifferenceNeeded > 0 ? (
+                              <span className="text-amber-300 font-bold">
+                                ⚡ -{xpDifferenceNeeded} XP diff ({availableXP} XP avail)
+                              </span>
+                            ) : (
+                              <span className="text-emerald-400">Paid fully by coins</span>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -1540,13 +1575,77 @@ export const SealingPowerView: React.FC = () => {
                 <p className="text-[10.5px] font-sans text-zinc-400">{selectedSealForBreak.buffDescription}</p>
               </div>
 
-              {/* COST SACRIFICE NOTICE */}
-              {selectedSealForBreak.costXP > 0 && (
-                <div className="p-3 bg-[#3a2e12]/50 border border-[#c5a059]/40 rounded-xl text-xs font-mono text-[#fef08a] flex items-center gap-2.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-[#c5a059]" />
-                  <span>Shattering these chains sacrifices {selectedSealForBreak.costXP} XP from system reserves.</span>
-                </div>
-              )}
+              {/* COST & TRANSACTION BREAKDOWN */}
+              {(() => {
+                const reqCoins = selectedSealForBreak.costCoins !== undefined ? selectedSealForBreak.costCoins : (selectedSealForBreak.costXP ?? 0);
+                const userCoins = state.profile.coins ?? 0;
+                const userXP = playerInfo.totalXp;
+                const coinsUsed = Math.min(userCoins, reqCoins);
+                const xpDiff = Math.max(0, reqCoins - coinsUsed);
+                const canAfford = reqCoins === 0 || userXP >= xpDiff;
+                const remainingCoinsAfter = Math.max(0, userCoins - coinsUsed);
+                const remainingXPAfter = Math.max(0, userXP - xpDiff);
+
+                return (
+                  <div className="p-3.5 bg-[#141824]/90 border border-[#c5a059]/40 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-1.5">
+                      <span className="text-[10px] font-mono text-[#fef08a] uppercase font-bold flex items-center gap-1.5">
+                        <span>🪙</span>
+                        <span>UNBINDING TRANSACTION BREAKDOWN</span>
+                      </span>
+                      <span className="text-xs font-mono font-bold text-amber-300">
+                        {reqCoins} Coins Required
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono">
+                      <div className="p-2 rounded-lg bg-[#07080c] border border-white/10 space-y-0.5">
+                        <div className="text-zinc-400 flex items-center justify-between">
+                          <span>Coins Payment:</span>
+                          <span className="text-amber-400 font-bold">🪙 {coinsUsed} / {reqCoins}</span>
+                        </div>
+                        <div className="text-[9px] text-zinc-500 flex justify-between">
+                          <span>Coins Balance:</span>
+                          <span>{userCoins} ➔ {remainingCoinsAfter}</span>
+                        </div>
+                      </div>
+
+                      <div className={`p-2 rounded-lg bg-[#07080c] border space-y-0.5 ${
+                        xpDiff > 0 ? 'border-amber-500/40 text-amber-200' : 'border-white/10 text-zinc-400'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span>XP Difference:</span>
+                          <span className={xpDiff > 0 ? 'text-amber-400 font-bold' : 'text-zinc-500'}>
+                            {xpDiff > 0 ? `⚡ -${xpDiff} XP` : '0 XP (None)'}
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-zinc-500 flex justify-between">
+                          <span>XP Reserves:</span>
+                          <span>{userXP} ➔ {remainingXPAfter}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {xpDiff > 0 && canAfford && (
+                      <div className="p-2 bg-amber-950/60 border border-amber-500/40 rounded-lg text-[10.5px] font-mono text-[#fef08a] flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
+                        <span>
+                          Coins are short by <strong>{xpDiff}</strong>. Sacrificing <strong>{xpDiff} XP</strong> from system reserves to fill the difference.
+                        </span>
+                      </div>
+                    )}
+
+                    {!canAfford && (
+                      <div className="p-2 bg-rose-950/70 border border-rose-500/50 rounded-lg text-[10.5px] font-mono text-rose-300 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                        <span>
+                          Insufficient resources! Short by {xpDiff - userXP} XP to fill the coin difference.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#c5a059]/20">
                 <button
@@ -1810,15 +1909,18 @@ export const SealingPowerView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Unshackling Cost XP</label>
+                    <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Unbinding Cost (Coins)</label>
                     <input
                       type="number"
                       min={0}
-                      step={50}
-                      value={formData.costXP}
-                      onChange={(e) => setFormData({ ...formData, costXP: Number(e.target.value) })}
+                      step={25}
+                      value={formData.costCoins}
+                      onChange={(e) => setFormData({ ...formData, costCoins: Number(e.target.value), costXP: Number(e.target.value) })}
                       className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-white focus:outline-none focus:border-[#c5a059]"
                     />
+                    <div className="mt-1 text-[8.5px] font-mono text-zinc-500">
+                      XP fills the difference if coins are short
+                    </div>
                   </div>
                 </div>
 

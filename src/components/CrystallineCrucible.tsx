@@ -470,8 +470,8 @@ export const CrystallineCrucible: React.FC<CrystallineCrucibleProps> = ({ onNavi
                     Chamber Requirements: <span className="text-amber-300 font-bold">{checkStatus.reason}</span>
                   </span>
                 </div>
-                <div className="text-[11px] text-zinc-400 shrink-0">
-                  Level {playerInfo.level}/{activeOre.requiredLevel} • {playerInfo.totalXp}/{activeOre.costXP} XP
+                <div className="text-[11px] text-zinc-400 shrink-0 font-mono">
+                  Level {playerInfo.level}/{activeOre.requiredLevel} • 🪙 {state.profile.coins ?? 0}/{activeOre.costCoins ?? activeOre.costXP ?? 0} Coins
                 </div>
               </div>
             )}
