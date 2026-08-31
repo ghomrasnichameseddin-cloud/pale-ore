@@ -7,9 +7,11 @@ import {
   SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
-  VisualCodexSettings, CodexThemeId
+  VisualCodexSettings, CodexThemeId,
+  AdhkarItem, AdhkarCategory, AdhkarPrayerTarget
 } from './types';
 import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
+import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
@@ -284,6 +286,16 @@ interface POSContextType {
   toggleAllPrayersInMasjid: (dateStr?: string, forceState?: boolean) => void;
   resetMasjid40Streak: (dateStr?: string) => void;
   setMasjid40Override: (streak: number) => void;
+
+  // Adhkar Management System & Sacred Protocol
+  adhkarList: AdhkarItem[];
+  addAdhkar: (item: Omit<AdhkarItem, 'id'>) => { success: boolean; message: string; adhkar: AdhkarItem };
+  updateAdhkar: (id: string, updates: Partial<AdhkarItem>) => { success: boolean; message: string };
+  deleteAdhkar: (id: string) => { success: boolean; message: string };
+  resetDefaultAdhkar: () => void;
+  incrementAdhkarRecitation: (adhkarId: string, delta: number, dateStr?: string) => void;
+  resetAdhkarRecitation: (adhkarId: string, dateStr?: string) => void;
+  getAdhkarRecitationCount: (adhkarId: string, dateStr?: string) => number;
 
   // Visual Codex (Appearance System)
   visualCodex: VisualCodexSettings;
@@ -3336,12 +3348,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         else if (seal.rarity === 'Legendary') newReqLevel = Math.max(2, Math.min(playerInfo.level + 3, 8));
         else if (seal.rarity === 'Divine') newReqLevel = Math.max(3, Math.min(playerInfo.level + 5, 12));
 
-        // Harmonize XP sacrifice with player's total XP reserves
-        let newCostXP = seal.costXP;
-        if (playerInfo.totalXp === 0) {
-          newCostXP = seal.rarity === 'Common' ? 0 : 25;
-        } else if (newCostXP > playerInfo.totalXp) {
-          newCostXP = Math.max(25, Math.round(playerInfo.totalXp * 0.3));
+        // Harmonize Coin & XP cost with player's total reserves
+        let newCostCoins = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
+        const totalPurchasingPower = (prev.profile.coins ?? 0) + playerInfo.totalXp;
+        if (totalPurchasingPower === 0) {
+          newCostCoins = seal.rarity === 'Common' ? 0 : 25;
+        } else if (newCostCoins > totalPurchasingPower) {
+          newCostCoins = Math.max(25, Math.round(totalPurchasingPower * 0.35));
         }
 
         // Harmonize streak requirement with system active streak
@@ -3359,7 +3372,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...seal,
           requiredLevel: newReqLevel,
-          costXP: newCostXP,
+          costCoins: newCostCoins,
+          costXP: newCostCoins,
           requiredStreakDays: newStreak,
           requiredQuestId: newQuestId
         };
@@ -3370,7 +3384,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sender: 'SYSTEM',
       category: 'achievement',
       title: '✦ SEAL CONDITIONS HARMONIZED',
-      content: `All elemental ore chain requirements have been harmonized to current system state (Level ${playerInfo.level}, ${playerInfo.totalXp} XP reserves, and active streaks).`,
+      content: `All elemental ore chain requirements have been harmonized to current system state (Level ${playerInfo.level}, ${state.profile.coins ?? 0} Coins, ${playerInfo.totalXp} XP reserves, and active streaks).`,
       priority: 'medium'
     });
   };
@@ -3423,33 +3437,42 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // 4. XP Cost Sacrifice Check
-    if (targetSeal.costXP > 0 && playerInfo.totalXp < targetSeal.costXP) {
+    // 4. Resource Cost Check: Coins required; if insufficient coins, XP fills the difference
+    const requiredCoins = targetSeal.costCoins !== undefined ? targetSeal.costCoins : (targetSeal.costXP ?? 0);
+    const availableCoins = state.profile.coins ?? 0;
+    const availableXP = playerInfo.totalXp;
+
+    const coinsToDeduct = Math.min(availableCoins, requiredCoins);
+    const deficitAfterCoins = Math.max(0, requiredCoins - coinsToDeduct);
+    const xpDifferenceToDeduct = deficitAfterCoins;
+
+    if (availableXP < xpDifferenceToDeduct) {
+      const totalShort = xpDifferenceToDeduct - availableXP;
       return { 
         success: false, 
-        message: `Insufficient XP reserves. Required: ${targetSeal.costXP} XP (Current Total: ${playerInfo.totalXp} XP).` 
+        message: `Insufficient resources to unbind chains. Required: ${requiredCoins} Coins. Available: ${availableCoins} Coins + ${availableXP} XP reserves (Short by ${totalShort} XP to fill the difference).` 
       };
     }
 
     const timestamp = getSystemTimestamp(state.systemDate);
 
-    // Deduct XP sacrifice if cost > 0 via a special XP History sacrifice entry
+    // Deduct XP difference if coins were insufficient
     const xpEntries: XPHistoryEntry[] = [];
-    if (targetSeal.costXP > 0) {
+    if (xpDifferenceToDeduct > 0) {
       xpEntries.push({
         id: `h-seal-shatter-${Date.now()}`,
         questId: null,
-        questName: `🔮 POWER SEAL SHATTERED: "${targetSeal.name}" (XP Sacrificed)`,
-        xp: -targetSeal.costXP,
+        questName: `⛓️ CHAINS SHATTERED: "${targetSeal.name}" (${coinsToDeduct} Coins + ${xpDifferenceToDeduct} XP difference)`,
+        xp: -xpDifferenceToDeduct,
         timestamp,
         skillIds: []
       });
-    } else {
+    } else if (requiredCoins === 0) {
       xpEntries.push({
         id: `h-seal-shatter-${Date.now()}`,
         questId: null,
-        questName: `🔮 POWER SEAL SHATTERED: "${targetSeal.name}"`,
-        xp: 100, // Bonus XP
+        questName: `⛓️ CHAINS SHATTERED: "${targetSeal.name}" (Sacred Awakening)`,
+        xp: 100, // Bonus XP for free seal
         timestamp,
         skillIds: []
       });
@@ -3463,6 +3486,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const updatedHistory = resolveRecoveredPenalties([...xpEntries, ...prev.xpHistory]);
       const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
       const level = calculatePlayerLevel(totalXp);
+      const remainingCoins = Math.max(0, (prev.profile.coins ?? 0) - coinsToDeduct);
 
       return {
         ...prev,
@@ -3470,6 +3494,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         xpHistory: updatedHistory,
         profile: {
           ...prev.profile,
+          coins: remainingCoins,
           momentum: Math.min(100, prev.profile.momentum + (targetSeal.momentumBoost || 10)),
           xp: totalXp,
           level
@@ -3477,17 +3502,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     });
 
+    const paymentSummary = xpDifferenceToDeduct > 0
+      ? `Paid ${coinsToDeduct} Coins & ${xpDifferenceToDeduct} XP (filling difference)`
+      : coinsToDeduct > 0
+        ? `Paid ${coinsToDeduct} Coins`
+        : `Sacred Awakening`;
+
     addSystemMessage({
       sender: 'SYSTEM',
       category: 'achievement',
-      title: `🔮 POWER SEAL SHATTERED: ${targetSeal.name.toUpperCase()}`,
-      content: `UNSEALED! Granted Buff: "${targetSeal.buffName}" (${targetSeal.buffDescription}). Passive system multiplier active.`,
+      title: `⛓️ CHAINS SHATTERED: ${targetSeal.name.toUpperCase()}`,
+      content: `UNCHAINED! ${paymentSummary}. Granted Buff: "${targetSeal.buffName}" (${targetSeal.buffDescription}). Passive system multiplier active.`,
       priority: 'high'
     });
 
     return { 
       success: true, 
-      message: `🔮 SEAL BROKEN! Empowered with "${targetSeal.buffName}".` 
+      message: `⛓️ CHAINS SHATTERED! ${paymentSummary}. Empowered with "${targetSeal.buffName}".` 
     };
   };
 
@@ -3537,7 +3568,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const checkCanBreakSeal = (seal: PowerSeal): { canBreak: boolean; reason?: string; progressPercent: number } => {
     const playerInfo = getPlayerLevelInfo();
     const lvlOk = playerInfo.level >= seal.requiredLevel;
-    const xpOk = seal.costXP === 0 || playerInfo.totalXp >= seal.costXP;
+    
+    const requiredCoins = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
+    const availableCoins = state.profile.coins ?? 0;
+    const availableXP = playerInfo.totalXp;
+    const coinsToDeduct = Math.min(availableCoins, requiredCoins);
+    const xpDifferenceNeeded = Math.max(0, requiredCoins - coinsToDeduct);
+    const costOk = requiredCoins === 0 || availableXP >= xpDifferenceNeeded;
     
     let questOk = true;
     let questReason = '';
@@ -3563,19 +3600,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!streakOk) streakReason = `Requires ${seal.requiredStreakDays}-day streak (Current: ${maxStreak})`;
     }
 
-    const canBreak = lvlOk && xpOk && questOk && skillOk && streakOk;
+    const canBreak = lvlOk && costOk && questOk && skillOk && streakOk;
     
     let reason = '';
     if (!lvlOk) reason = `Requires Level ${seal.requiredLevel} (Current: ${playerInfo.level})`;
-    else if (!xpOk) reason = `Requires ${seal.costXP} XP (Current: ${playerInfo.totalXp})`;
+    else if (!costOk) {
+      const totalShort = xpDifferenceNeeded - availableXP;
+      reason = `Requires ${requiredCoins} Coins (${availableCoins} Coins + ${availableXP} XP, short by ${totalShort})`;
+    }
     else if (!questOk) reason = questReason;
     else if (!skillOk) reason = skillReason;
     else if (!streakOk) reason = streakReason;
 
     // Progress computation
     const checks = [lvlOk ? 1 : Math.min(1, playerInfo.level / Math.max(1, seal.requiredLevel))];
-    if (seal.costXP > 0) {
-      checks.push(xpOk ? 1 : Math.min(1, playerInfo.totalXp / Math.max(1, seal.costXP)));
+    if (requiredCoins > 0) {
+      const totalAvailable = availableCoins + availableXP;
+      checks.push(costOk ? 1 : Math.min(1, totalAvailable / Math.max(1, requiredCoins)));
     }
     if (seal.requiredStreakDays) {
       const maxStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
@@ -3591,7 +3632,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Reward Shop & Coins Operations
   const isShopLocked = React.useMemo(() => {
     const todayStr = state.systemDate || getLocalDateString();
-    const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
+    const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT', 'RECOVERY'];
 
     // Check if there are active unfulfilled Kaffārah / Spiritual Remedy quests from Muhasabah
     const hasPendingKaffarah = (state.quests || []).some(q => 
@@ -5163,11 +5204,14 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
 
     // Conditions strictly harmonized to current system state
     const requiredLevel = customOverrides?.requiredLevel ?? Math.max(1, playerInfo.level);
-    const costXP = customOverrides?.costXP !== undefined
-      ? customOverrides.costXP
-      : (playerInfo.totalXp > 0 
-          ? Math.min(playerInfo.totalXp, Math.max(25, Math.round(playerInfo.totalXp * 0.25))) 
-          : 0);
+    const combinedPurchasingPower = (state.profile.coins ?? 0) + playerInfo.totalXp;
+    const costCoins = customOverrides?.costCoins !== undefined
+      ? customOverrides.costCoins
+      : (customOverrides?.costXP !== undefined
+          ? customOverrides.costXP
+          : (combinedPurchasingPower > 0
+              ? Math.max(25, Math.round(combinedPurchasingPower * 0.25))
+              : 0));
     const requiredStreakDays = customOverrides?.requiredStreakDays ?? (maxStreakInSystem > 0 ? Math.min(3, maxStreakInSystem) : 0);
 
     // Link to an active directive in the system if available
@@ -5192,7 +5236,8 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       rarity,
       status: 'Locked',
       requiredLevel,
-      costXP,
+      costCoins,
+      costXP: costCoins,
       requiredStreakDays,
       requiredQuestId: customOverrides?.requiredQuestId !== undefined ? customOverrides.requiredQuestId : (relatedQuest ? relatedQuest.id : undefined),
       buffName: customOverrides?.buffName || `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
@@ -6660,6 +6705,153 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     }));
   };
 
+  // Adhkar Management System & Sacred Protocol
+  const adhkarList: AdhkarItem[] = (state.customAdhkar && state.customAdhkar.length > 0)
+    ? state.customAdhkar
+    : DEFAULT_ADHKAR_LIST;
+
+  const addAdhkar = (item: Omit<AdhkarItem, 'id'>): { success: boolean; message: string; adhkar: AdhkarItem } => {
+    const newId = `adhkar-custom-${Date.now()}`;
+    const newAdhkar: AdhkarItem = {
+      ...item,
+      id: newId,
+      isCustom: true,
+      order: (adhkarList.length + 1)
+    };
+    setState(prev => {
+      const currentList = (prev.customAdhkar && prev.customAdhkar.length > 0) ? prev.customAdhkar : DEFAULT_ADHKAR_LIST;
+      return {
+        ...prev,
+        customAdhkar: [...currentList, newAdhkar]
+      };
+    });
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: `📿 SACRED ADHKĀR ADDED: ${newAdhkar.title}`,
+      content: `New ${newAdhkar.category.toUpperCase()} dhikr enrolled into the Sacred Protocol. Target: ${newAdhkar.targetCount}x recitations.`,
+      priority: 'low'
+    });
+    return { success: true, message: 'Adhkar added successfully to Sacred Protocol', adhkar: newAdhkar };
+  };
+
+  const updateAdhkar = (id: string, updates: Partial<AdhkarItem>): { success: boolean; message: string } => {
+    setState(prev => {
+      const currentList = (prev.customAdhkar && prev.customAdhkar.length > 0) ? prev.customAdhkar : DEFAULT_ADHKAR_LIST;
+      const updated = currentList.map(a => a.id === id ? { ...a, ...updates } : a);
+      return {
+        ...prev,
+        customAdhkar: updated
+      };
+    });
+    return { success: true, message: 'Adhkar updated successfully' };
+  };
+
+  const deleteAdhkar = (id: string): { success: boolean; message: string } => {
+    setState(prev => {
+      const currentList = (prev.customAdhkar && prev.customAdhkar.length > 0) ? prev.customAdhkar : DEFAULT_ADHKAR_LIST;
+      const filtered = currentList.filter(a => a.id !== id);
+      return {
+        ...prev,
+        customAdhkar: filtered
+      };
+    });
+    return { success: true, message: 'Adhkar removed from Sacred Protocol' };
+  };
+
+  const resetDefaultAdhkar = () => {
+    setState(prev => ({
+      ...prev,
+      customAdhkar: DEFAULT_ADHKAR_LIST
+    }));
+  };
+
+  const getAdhkarRecitationCount = (adhkarId: string, dateStr?: string): number => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    return (state.adhkarRecitations?.[targetDate]?.[adhkarId]) || 0;
+  };
+
+  const incrementAdhkarRecitation = (adhkarId: string, delta: number, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const currentList = (state.customAdhkar && state.customAdhkar.length > 0) ? state.customAdhkar : DEFAULT_ADHKAR_LIST;
+    const item = currentList.find(a => a.id === adhkarId);
+    if (!item) return;
+
+    const currentCount = (state.adhkarRecitations?.[targetDate]?.[adhkarId]) || 0;
+    const newCount = Math.max(0, currentCount + delta);
+    const wasCompleted = currentCount >= item.targetCount;
+    const isNowCompleted = newCount >= item.targetCount;
+    const targetTimestamp = getSystemTimestamp(targetDate);
+    const questIdentifier = `spiritual-adhkar-rec-${targetDate}-${adhkarId}`;
+
+    setState(prev => {
+      const dateRecords = prev.adhkarRecitations?.[targetDate] || {};
+      const updatedDateRecords = {
+        ...dateRecords,
+        [adhkarId]: newCount
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      let xpDelta = 0;
+      let coinsDelta = 0;
+
+      if (!wasCompleted && isNowCompleted) {
+        const xpReward = Math.min(50, Math.max(10, Math.round(item.targetCount * 2)));
+        const entry: XPHistoryEntry = {
+          id: `h-adhkar-rec-${Date.now()}-${adhkarId}`,
+          questId: questIdentifier,
+          questName: `📿 DHIKR: ${item.title} (${item.targetCount}x)`,
+          xp: xpReward,
+          timestamp: targetTimestamp,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+        xpDelta = xpReward;
+        coinsDelta = 2;
+      } else if (wasCompleted && !isNowCompleted) {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+        const xpReward = Math.min(50, Math.max(10, Math.round(item.targetCount * 2)));
+        xpDelta = -xpReward;
+        coinsDelta = -2;
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        adhkarRecitations: {
+          ...(prev.adhkarRecitations || {}),
+          [targetDate]: updatedDateRecords
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta),
+          momentum: Math.min(100, prev.profile.momentum + (isNowCompleted && !wasCompleted ? 2 : 0))
+        }
+      };
+    });
+  };
+
+  const resetAdhkarRecitation = (adhkarId: string, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setState(prev => {
+      const dateRecords = prev.adhkarRecitations?.[targetDate] || {};
+      const updatedDateRecords = { ...dateRecords, [adhkarId]: 0 };
+      return {
+        ...prev,
+        adhkarRecitations: {
+          ...(prev.adhkarRecitations || {}),
+          [targetDate]: updatedDateRecords
+        }
+      };
+    });
+  };
+
   return (
     <POSContext.Provider value={{
       state,
@@ -6835,6 +7027,14 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       toggleAllPrayersInMasjid,
       resetMasjid40Streak,
       setMasjid40Override,
+      adhkarList,
+      addAdhkar,
+      updateAdhkar,
+      deleteAdhkar,
+      resetDefaultAdhkar,
+      incrementAdhkarRecitation,
+      resetAdhkarRecitation,
+      getAdhkarRecitationCount,
       visualCodex: state.visualCodex || getStoredVisualCodexSettings(),
       updateVisualCodexSettings,
       setTheme

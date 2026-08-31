@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Crown, Swords, ShieldAlert, ArrowRight, Sparkles, CheckCircle2, Lock } from 'lucide-react';
+import { Crown, Swords, ShieldAlert } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { PlayerLevelInfo } from '../types';
 
@@ -16,7 +16,7 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
   const { state, getPlayerLevelInfo } = usePOS();
   const levelInfo: PlayerLevelInfo = getPlayerLevelInfo();
 
-  // If level < 10 and not capped, we don't show the warning banner, or show a subtle info
+  // If level < 10 and not capped, we don't show the warning banner
   const isIntermediateOrHigher = levelInfo.level >= 10 || (levelInfo.unlockedLevel && levelInfo.unlockedLevel >= 10);
   const isCapped = levelInfo.isLevelCappedByBoss;
 
@@ -29,81 +29,137 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
     q => (q.difficulty === 'Boss' || q.type === 'Boss') && q.status !== 'Completed' && !q.archived
   );
 
+  const handleViewBossQuests = () => {
+    // 1. Persist view settings to week view & Boss category filter
+    try {
+      const raw = localStorage.getItem('pale_ore_quest_view_settings');
+      const parsed = raw ? JSON.parse(raw) : {};
+      const updated = {
+        ...parsed,
+        terminalTab: 'week',
+        categoryFilter: 'Boss'
+      };
+      localStorage.setItem('pale_ore_quest_view_settings', JSON.stringify(updated));
+    } catch (e) {
+      console.error('Error saving quest view settings:', e);
+    }
+
+    // 2. Dispatch custom event so active instance updates immediately
+    window.dispatchEvent(new CustomEvent('set-quest-view-settings', {
+      detail: { terminalTab: 'week', categoryFilter: 'Boss' }
+    }));
+
+    // 3. Call navigation callback to navigate to quests view / directives & rhythms
+    if (onNavigateToQuests) {
+      onNavigateToQuests();
+    }
+
+    // 4. Smooth scroll to directives terminal
+    setTimeout(() => {
+      const el = document.getElementById('quests-list-container') || document.getElementById('directives-terminal') || document.getElementById('quests-view-root');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`p-4 sm:p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
-        isCapped
-          ? 'bg-gradient-to-r from-rose-950/80 via-red-950/60 to-zinc-950 border-rose-500/50 shadow-[0_4px_25px_rgba(244,63,94,0.15)]'
-          : 'bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-500/30'
-      }`}
+      id="boss-progression-banner"
+      className="p-4 sm:p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden shadow-xl"
+      style={{
+        backgroundColor: 'var(--bg-card, #0c0e14)',
+        borderColor: isCapped ? 'var(--accent-bright, #e5c875)' : 'var(--border-accent, rgba(197,160,89,0.3))',
+        boxShadow: isCapped 
+          ? '0 0 30px var(--glow-color, rgba(197,160,89,0.25)), inset 0 0 15px var(--glow-color, rgba(197,160,89,0.1))'
+          : '0 4px 20px var(--glow-color, rgba(197,160,89,0.1))'
+      }}
     >
+      {/* Background ambient lighting from active Visual Codex */}
+      <div 
+        className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-20"
+        style={{ background: 'var(--accent-primary, #c5a059)' }}
+      />
+      <div 
+        className="absolute bottom-0 left-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-15"
+        style={{ background: 'var(--accent-highlight, #fef08a)' }}
+      />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-        <div className="flex items-start gap-3">
-          <div className={`p-2.5 rounded-xl border shrink-0 ${
-            isCapped 
-              ? 'bg-rose-950 border-rose-500 text-rose-300 animate-pulse' 
-              : 'bg-amber-950/80 border-amber-500/40 text-amber-300'
-          }`}>
+        <div className="flex items-start gap-3.5">
+          <div 
+            className={`p-3 rounded-xl border shrink-0 transition-all ${
+              isCapped ? 'animate-pulse' : ''
+            }`}
+            style={{
+              backgroundColor: 'var(--accent-surface, rgba(197,160,89,0.15))',
+              borderColor: 'var(--border-strong, #c5a059)',
+              color: 'var(--accent-highlight, #fef08a)'
+            }}
+          >
             {isCapped ? <ShieldAlert className="h-5 w-5" /> : <Crown className="h-5 w-5" />}
           </div>
 
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
-                isCapped
-                  ? 'bg-rose-950 text-rose-200 border-rose-500/50'
-                  : 'bg-amber-950 text-amber-300 border-amber-500/40'
-              }`}>
-                {isCapped ? '⚔️ INTERMEDIATE GATE: LEVEL PROGRESSION BLOCKED' : '⚔️ INTERMEDIATE SYSTEM RANK ACTIVE'}
+              <span 
+                className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase border tracking-wider"
+                style={{
+                  backgroundColor: 'var(--accent-surface, rgba(197,160,89,0.12))',
+                  borderColor: 'var(--border-accent, rgba(197,160,89,0.3))',
+                  color: 'var(--accent-highlight, #fef08a)'
+                }}
+              >
+                {isCapped ? '⚔️ INTERMEDIATE GATE: LEVEL ADVANCEMENT BOND' : '⚔️ INTERMEDIATE SYSTEM RANK ACTIVE'}
               </span>
 
-              <span className="text-[10px] font-mono text-zinc-400">
-                Boss Quests Slain: {levelInfo.bossQuestsCompletedCount || 0} / {(levelInfo.level - 10) + (isCapped ? 1 : 0)}
+              <span className="text-[10px] font-mono text-zinc-300">
+                Boss Quests Slain: <strong className="text-[var(--accent-bright,#e5c875)]">{levelInfo.bossQuestsCompletedCount || 0}</strong> / {(levelInfo.level - 10) + (isCapped ? 1 : 0)}
               </span>
             </div>
 
             <h4 className="text-sm sm:text-base font-display font-bold text-white flex items-center gap-2">
               {isCapped ? (
-                <span className="text-rose-200">
+                <span style={{ color: 'var(--accent-highlight, #fef08a)' }}>
                   XP Threshold Reached! Slain Boss Quest Required to Advance to Level {levelInfo.level + 1}
                 </span>
               ) : (
-                <span className="text-zinc-200">
+                <span className="text-zinc-100">
                   Rank {levelInfo.rank} (Level {levelInfo.level}) • Boss Trials Mandatory for Higher Ascension
                 </span>
               )}
             </h4>
 
-            <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed max-w-3xl">
               {isCapped
-                ? 'From Intermediate Rank (Level 10+) onward, leveling up is locked until a Boss Directive (Boss Difficulty) is conquered. Slay a Boss Quest to shatter the level cap.'
-                : 'Each level advancement beyond Level 10 requires at least one completed Boss Quest. Stay battle-ready!'}
+                ? 'From Intermediate Rank (Level 10+) onward, leveling up is locked until a Boss Directive is conquered. Conquering a Boss Quest shatters the level cap and unseals ascension.'
+                : 'Each level advancement beyond Level 10 requires at least one completed Boss Quest for the week. Maintain battle readiness.'}
             </p>
           </div>
         </div>
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {onNavigateToQuests && (
-            <button
-              onClick={onNavigateToQuests}
-              className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 shadow-sm ${
-                isCapped
-                  ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-900/40'
-                  : 'bg-amber-600 hover:bg-amber-500 text-black'
-              }`}
-            >
-              <Swords className="h-4 w-4" />
-              <span>{activeBossQuests.length > 0 ? `VIEW BOSS QUESTS (${activeBossQuests.length})` : 'FIND BOSS QUESTS'}</span>
-            </button>
-          )}
+          <button
+            onClick={handleViewBossQuests}
+            id="btn-view-boss-quests"
+            className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg hover:brightness-110 active:scale-95 cursor-pointer border"
+            style={{
+              backgroundColor: 'var(--accent-primary, #c5a059)',
+              borderColor: 'var(--border-strong, #e5c875)',
+              color: 'var(--bg-void, #050608)'
+            }}
+          >
+            <Swords className="h-4 w-4" />
+            <span>{activeBossQuests.length > 0 ? `VIEW BOSS QUESTS (${activeBossQuests.length})` : 'VIEW WEEK BOSS QUESTS'}</span>
+          </button>
 
           {onOpenGuide && (
             <button
               onClick={() => onOpenGuide('system-core')}
-              className="px-2.5 py-2 bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-300 rounded-xl text-xs font-mono transition"
+              className="px-3 py-2 bg-[var(--bg-void)] hover:bg-[var(--accent-surface)] border border-[var(--border-subtle)] hover:border-[var(--border-accent)] text-zinc-300 hover:text-white rounded-xl text-xs font-mono transition cursor-pointer"
             >
               RULES
             </button>

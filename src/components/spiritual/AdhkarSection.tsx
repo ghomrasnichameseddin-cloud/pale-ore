@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sun, Moon, Sparkles, CheckCircle2, Plus, 
   Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap,
-  Bed, BookOpen, Clock
+  Bed, BookOpen, Clock, Edit2, Trash2, Search, Filter,
+  Volume2, Share2, Copy, AlertCircle, RotateCcw
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
-import { PostSalahAdhkarMap, PostSalahDhikrMode, SpiritualDailyLog } from '../../types';
-import { RubElHizbIcon } from '../IslamicRpgDecorations';
+import { AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, SpiritualDailyLog } from '../../types';
+import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
 import { SleepAdhkarModal } from './SleepAdhkarModal';
+import { AdhkarFormModal } from './AdhkarFormModal';
 
 interface AdhkarSectionProps {
   systemDate: string;
@@ -25,878 +27,762 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     toggleAdhkar, 
     incrementSalawat, 
     setSalawatCount, 
-    updateDhikrLog 
+    updateDhikrLog,
+    adhkarList,
+    addAdhkar,
+    updateAdhkar,
+    deleteAdhkar,
+    resetDefaultAdhkar,
+    incrementAdhkarRecitation,
+    resetAdhkarRecitation,
+    getAdhkarRecitationCount
   } = usePOS();
 
-  const [salawatCustomInput, setSalawatCustomInput] = useState('');
-  const [showPostSalahHadith, setShowPostSalahHadith] = useState(false);
+  // Active Category Filter
+  const [activeCategory, setActiveCategory] = useState<AdhkarCategory | 'all'>('all');
+  const [activePrayerFilter, setActivePrayerFilter] = useState<AdhkarPrayerTarget | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modals & Forms
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<AdhkarItem | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [sleepModalTab, setSleepModalTab] = useState<'dhohr' | 'night'>('night');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Quick inputs
+  const [salawatCustomInput, setSalawatCustomInput] = useState('');
 
   const adhkarSabah = spiritualLog.adhkarSabah;
   const adhkarMasa = spiritualLog.adhkarMasa;
-  const adhkarSleepDhohr = Boolean(spiritualLog.adhkarSleepDhohr);
-  const adhkarSleepNight = Boolean(spiritualLog.adhkarSleepNight);
   const salawatCount = spiritualLog.salawatCount || 0;
   const salawatTargetReached = salawatCount >= 70;
 
-  const dhikr = spiritualLog.dhikr || {
-    tasbeehAfterSalah: false,
-    postSalahAdhkar: {},
-    tasbeehCount: 0,
-    hamdCount: 0,
-    tahlilCount: 0,
-    takbirCount: 0,
-    istighfarCount: 0,
-    hawqalaCount: 0
-  };
+  // Filtered Adhkar list
+  const filteredAdhkar = useMemo(() => {
+    return adhkarList.filter(item => {
+      // Category filter
+      if (activeCategory !== 'all' && item.category !== activeCategory) {
+        return false;
+      }
+      // Prayer target sub-filter for post_salah
+      if (activeCategory === 'post_salah' && activePrayerFilter !== 'all') {
+        if (item.prayerTarget && item.prayerTarget !== 'all') {
+          if (item.prayerTarget === 'fajr_maghrib') {
+            if (activePrayerFilter !== 'fajr' && activePrayerFilter !== 'maghrib') return false;
+          } else if (item.prayerTarget !== activePrayerFilter) {
+            return false;
+          }
+        }
+      }
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesTitle = item.title.toLowerCase().includes(q);
+        const matchesArabic = item.arabicText.includes(searchQuery);
+        const matchesTrans = item.transliteration?.toLowerCase().includes(q) || false;
+        const matchesEng = item.translation.toLowerCase().includes(q);
+        const matchesSource = item.source?.toLowerCase().includes(q) || false;
+        if (!matchesTitle && !matchesArabic && !matchesTrans && !matchesEng && !matchesSource) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [adhkarList, activeCategory, activePrayerFilter, searchQuery]);
 
-  const postSalahMap = dhikr.postSalahAdhkar || {};
-  const tasbeehCount = dhikr.tasbeehCount || 0;
-  const hamdCount = dhikr.hamdCount || 0;
-  const tahlilCount = dhikr.tahlilCount || 0;
-  const takbirCount = dhikr.takbirCount || 0;
-
-  // 5 prayers list for post-salah adhkar
-  const prayersConfig: { id: keyof PostSalahAdhkarMap; nameEn: string; nameAr: string; time: string }[] = [
-    { id: 'fajr', nameEn: 'Fajr', nameAr: 'الفَجْر', time: 'Dawn' },
-    { id: 'dhuhr', nameEn: 'Dhuhr', nameAr: 'الظُّهْر', time: 'Midday' },
-    { id: 'asr', nameEn: '‘Asr', nameAr: 'العَصْر', time: 'Afternoon' },
-    { id: 'maghrib', nameEn: 'Maghrib', nameAr: 'المَغْرِب', time: 'Sunset' },
-    { id: 'isha', nameEn: '‘Ishā’', nameAr: 'العِشَاء', time: 'Night' }
-  ];
-
-  const completedPostPrayersCount = prayersConfig.filter(p => {
-    const mode = postSalahMap[p.id];
-    return mode === 'standard33' || mode === 'mini10';
-  }).length;
-
-  const handleSetPrayerAdhkar = (prayerId: keyof PostSalahAdhkarMap, mode: PostSalahDhikrMode) => {
-    const currentMode = postSalahMap[prayerId] || 'none';
-    const newMode = currentMode === mode ? 'none' : mode;
-
-    // Adjust word counters based on delta
-    let deltaTasbih = 0;
-    let deltaHamd = 0;
-    let deltaTakbir = 0;
-    let deltaTahlil = 0;
-
-    // Subtract old mode
-    if (currentMode === 'standard33') {
-      deltaTasbih -= 33;
-      deltaHamd -= 33;
-      deltaTakbir -= 33;
-      deltaTahlil -= 1;
-    } else if (currentMode === 'mini10') {
-      deltaTasbih -= 10;
-      deltaHamd -= 10;
-      deltaTakbir -= 10;
-    }
-
-    // Add new mode
-    if (newMode === 'standard33') {
-      deltaTasbih += 33;
-      deltaHamd += 33;
-      deltaTakbir += 33;
-      deltaTahlil += 1;
-    } else if (newMode === 'mini10') {
-      deltaTasbih += 10;
-      deltaHamd += 10;
-      deltaTakbir += 10;
-    }
-
-    const updatedMap: PostSalahAdhkarMap = {
-      ...postSalahMap,
-      [prayerId]: newMode
+  // Statistics
+  const categoryCounts = useMemo(() => {
+    return {
+      all: adhkarList.length,
+      morning: adhkarList.filter(a => a.category === 'morning').length,
+      evening: adhkarList.filter(a => a.category === 'evening').length,
+      post_salah: adhkarList.filter(a => a.category === 'post_salah').length,
+      sleep: adhkarList.filter(a => a.category === 'sleep').length,
+      general: adhkarList.filter(a => a.category === 'general').length,
     };
+  }, [adhkarList]);
 
-    updateDhikrLog({
-      postSalahAdhkar: updatedMap,
-      tasbeehCount: Math.max(0, tasbeehCount + deltaTasbih),
-      hamdCount: Math.max(0, hamdCount + deltaHamd),
-      takbirCount: Math.max(0, takbirCount + deltaTakbir),
-      tahlilCount: Math.max(0, tahlilCount + deltaTahlil),
-      tasbeehAfterSalah: Object.values(updatedMap).some(m => m === 'standard33' || m === 'mini10')
-    }, systemDate);
+  // Completed counts for today
+  const completedTodayCount = useMemo(() => {
+    return adhkarList.filter(item => {
+      const count = getAdhkarRecitationCount(item.id, systemDate);
+      return count >= item.targetCount;
+    }).length;
+  }, [adhkarList, getAdhkarRecitationCount, systemDate]);
+
+  const handleCopyArabic = (item: AdhkarItem) => {
+    const text = `${item.arabicText}\n\n${item.translation}\n(${item.title} - ${item.source || 'Adhkar'})`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(item.id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleSetAllPostAdhkar = (targetMode: 'standard33' | 'mini10') => {
-    const updatedMap: PostSalahAdhkarMap = {
-      fajr: targetMode,
-      dhuhr: targetMode,
-      asr: targetMode,
-      maghrib: targetMode,
-      isha: targetMode
-    };
-
-    const multiplier = targetMode === 'standard33' ? 33 : 10;
-    const tahlilInc = targetMode === 'standard33' ? 5 : 0;
-
-    updateDhikrLog({
-      postSalahAdhkar: updatedMap,
-      tasbeehCount: Math.max(0, tasbeehCount + (multiplier * 5)),
-      hamdCount: Math.max(0, hamdCount + (multiplier * 5)),
-      takbirCount: Math.max(0, takbirCount + (multiplier * 5)),
-      tahlilCount: Math.max(0, tahlilCount + tahlilInc),
-      tasbeehAfterSalah: true
-    }, systemDate);
-  };
-
-  const handleResetAllPostAdhkar = () => {
-    updateDhikrLog({
-      postSalahAdhkar: {
-        fajr: 'none',
-        dhuhr: 'none',
-        asr: 'none',
-        maghrib: 'none',
-        isha: 'none'
-      },
-      tasbeehAfterSalah: false
-    }, systemDate);
-  };
-
-  const incrementCount = (key: 'tasbeehCount' | 'hamdCount' | 'tahlilCount' | 'takbirCount', delta: number) => {
-    const currentVal = dhikr[key] || 0;
-    const nextVal = Math.max(0, currentVal + delta);
-    updateDhikrLog({ [key]: nextVal }, systemDate);
-  };
-
-  const resetWordCount = (key: 'tasbeehCount' | 'hamdCount' | 'tahlilCount' | 'takbirCount') => {
-    updateDhikrLog({ [key]: 0 }, systemDate);
-  };
-
-  const incrementAllFour = (delta: number) => {
-    updateDhikrLog({
-      tasbeehCount: Math.max(0, tasbeehCount + delta),
-      hamdCount: Math.max(0, hamdCount + delta),
-      tahlilCount: Math.max(0, tahlilCount + delta),
-      takbirCount: Math.max(0, takbirCount + delta)
-    }, systemDate);
-  };
-
-  const handleCustomSalawat = () => {
-    const parsed = parseInt(salawatCustomInput, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      incrementSalawat(parsed, systemDate);
-      setSalawatCustomInput('');
+  const handleSaveForm = (data: Omit<AdhkarItem, 'id'>) => {
+    if (editingItem) {
+      updateAdhkar(editingItem.id, data);
+      setEditingItem(null);
+    } else {
+      addAdhkar(data);
     }
   };
 
-  // Four Words Configuration
-  const fourWords = [
-    {
-      id: 'tasbeehCount' as const,
-      nameEn: 'Tasbīḥ',
-      nameAr: 'التَّسْبِيح',
-      arabicText: 'سُبْحَانَ اللهِ',
-      transliteration: 'SubḥānAllāh',
-      meaning: 'Glory be to Allah',
-      count: tasbeehCount,
-      gradient: 'from-cyan-950/40 via-[#071317] to-[#04080a]',
-      border: 'border-cyan-500/30',
-      accentColor: 'text-cyan-300',
-      badgeBg: 'bg-cyan-950/80 text-cyan-200 border-cyan-500/40',
-      btnBg: 'bg-cyan-950/60 hover:bg-cyan-900 border-cyan-500/30 text-cyan-200'
-    },
-    {
-      id: 'hamdCount' as const,
-      nameEn: 'Ḥamd',
-      nameAr: 'التَّحْمِيد',
-      arabicText: 'الحَمْدُ لِلَّهِ',
-      transliteration: 'Alḥamdulillāh',
-      meaning: 'All praise is due to Allah',
-      count: hamdCount,
-      gradient: 'from-emerald-950/40 via-[#071710] to-[#040a07]',
-      border: 'border-emerald-500/30',
-      accentColor: 'text-emerald-300',
-      badgeBg: 'bg-emerald-950/80 text-emerald-200 border-emerald-500/40',
-      btnBg: 'bg-emerald-950/60 hover:bg-emerald-900 border-emerald-500/30 text-emerald-200'
-    },
-    {
-      id: 'tahlilCount' as const,
-      nameEn: 'Tahlīl',
-      nameAr: 'التَّهْلِيل',
-      arabicText: 'لَا إِلَهَ إِلَّا اللهُ',
-      transliteration: 'Lā ilāha illAllāh',
-      meaning: 'None has right to be worshipped but Allah',
-      count: tahlilCount,
-      gradient: 'from-amber-950/40 via-[#181308] to-[#0a0804]',
-      border: 'border-amber-500/30',
-      accentColor: 'text-amber-300',
-      badgeBg: 'bg-amber-950/80 text-amber-200 border-amber-500/40',
-      btnBg: 'bg-amber-950/60 hover:bg-amber-900 border-amber-500/30 text-amber-200'
-    },
-    {
-      id: 'takbirCount' as const,
-      nameEn: 'Takbīr',
-      nameAr: 'التَّكْبِير',
-      arabicText: 'اللهُ أَكْبَرُ',
-      transliteration: 'Allāhu Akbar',
-      meaning: 'Allah is the Greatest',
-      count: takbirCount,
-      gradient: 'from-rose-950/40 via-[#19090f] to-[#0a0406]',
-      border: 'border-rose-500/30',
-      accentColor: 'text-rose-300',
-      badgeBg: 'bg-rose-950/80 text-rose-200 border-rose-500/40',
-      btnBg: 'bg-rose-950/60 hover:bg-rose-900 border-rose-500/30 text-rose-200'
-    }
-  ];
+  const handleOpenEdit = (item: AdhkarItem) => {
+    setEditingItem(item);
+    setIsFormModalOpen(true);
+  };
+
+  const handleDeleteConfirm = (id: string) => {
+    deleteAdhkar(id);
+    setDeletingItemId(null);
+  };
 
   return (
-    <div className="p-5 sm:p-6 bg-gradient-to-br from-[#110f17] via-[#0c0912] to-[#06050a] border border-violet-500/30 rounded-2xl relative overflow-hidden shadow-xl space-y-6" id="adhkar-sanctuary">
-      
-      {/* 1. HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-violet-500/20 pb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono bg-violet-950/80 text-violet-300 border border-violet-500/40 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 shadow-sm">
-              <RubElHizbIcon className="h-3 w-3 text-violet-400" />
-              <span>الأَذْكَار • ADHKĀR & REMEMBRANCE</span>
-            </span>
+    <div className="space-y-6" id="adhkar-section-root">
+      {/* SACRED PROTOCOL HEADER BANNER */}
+      <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent,#c5a059)] bg-gradient-to-r from-[var(--bg-void,#050608)] via-[var(--bg-card,#0c0e14)] to-[var(--bg-void,#050608)] relative overflow-hidden shadow-xl">
+        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+        <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" />
 
-            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
-              adhkarSabah ? 'bg-amber-950/80 text-amber-200 border-amber-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
-            }`}>
-              {adhkarSabah ? '✓ Morning Done' : 'Morning (+75 XP)'}
-            </span>
-
-            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
-              adhkarSleepDhohr ? 'bg-amber-900/80 text-amber-200 border-amber-400/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
-            }`}>
-              {adhkarSleepDhohr ? '✓ Dhohr Nap Done' : 'Dhohr Nap (+50 XP)'}
-            </span>
-
-            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
-              adhkarMasa ? 'bg-violet-950/80 text-violet-200 border-violet-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
-            }`}>
-              {adhkarMasa ? '✓ Evening Done' : 'Evening (+75 XP)'}
-            </span>
-
-            <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full font-bold transition ${
-              adhkarSleepNight ? 'bg-indigo-950/80 text-indigo-200 border-indigo-500/40' : 'bg-zinc-900/60 text-zinc-400 border-white/5'
-            }`}>
-              {adhkarSleepNight ? '✓ Night Sleep Done' : 'Night Sleep (+75 XP)'}
-            </span>
-
-            <span className="text-[10px] font-mono bg-indigo-950/80 text-indigo-300 border border-indigo-500/40 px-2.5 py-0.5 rounded-full font-bold">
-              🕌 {completedPostPrayersCount}/5 Post-Prayer Adhkār
-            </span>
-
-            {salawatTargetReached && (
-              <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold">
-                🌹 70+ Salawāt Completed (+100 XP)
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright,#fef08a)]" />
+              <span className="text-[10px] font-mono text-[var(--accent-highlight,#fef08a)] font-bold tracking-widest uppercase">
+                SACRED PROTOCOL • REMEMBRANCE SANCTUM
               </span>
-            )}
+            </div>
+            <h3 className="text-xl font-display font-extrabold text-white uppercase tracking-tight flex items-center gap-2">
+              <span>ADHKĀR & SACRED LITANIES</span>
+              <span className="text-xs font-mono font-normal text-amber-200/80 px-2 py-0.5 bg-[var(--accent-surface,#c5a059)]/20 border border-[var(--border-accent,#c5a059)]/30 rounded-full">
+                أَلاَ بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ
+              </span>
+            </h3>
+            <p className="text-xs text-zinc-300 font-sans max-w-2xl">
+              Preserve the morning, evening, post-salah, and nocturnal litanies. Add custom supplications, customize repetition counts, and illuminate the heart through continuous dhikr.
+            </p>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-            <div>
-              <h3 className="text-lg sm:text-xl font-display font-bold text-zinc-100 flex items-center gap-2">
-                <span>Morning, Evening &amp; Sleep Adhkār (Dhohr &amp; Night), Post-Prayers (/5) &amp; Salawāt ﷺ</span>
-              </h3>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed max-w-3xl mt-0.5">
-                &ldquo;The most beloved words to Allah are four: SubhanAllah, Alhamdulillah, La ilaha illallah, and Allahu Akbar.&rdquo; (Muslim) • &ldquo;Unquestionably, by the remembrance of Allah hearts are assured.&rdquo; (Ar-Ra&apos;d 13:28)
-              </p>
-            </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setIsFormModalOpen(true);
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] hover:brightness-110 text-[var(--bg-void,#050608)] font-mono font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>ENROLL NEW DHIKR</span>
+            </button>
 
             <button
-              type="button"
-              onClick={() => { setSleepModalTab('night'); setShowSleepModal(true); }}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#1b160f] to-[#120e18] hover:from-[#251e14] hover:to-[#1a1424] border border-[#c5a059]/50 text-[#fef08a] text-xs font-mono font-bold transition flex items-center gap-2 shadow-md shrink-0 cursor-pointer"
+              onClick={() => setShowResetConfirm(true)}
+              className="px-3 py-2 bg-[var(--bg-surface,#141824)] hover:bg-[var(--accent-surface,#c5a059)]/20 border border-[var(--border-subtle,rgba(197,160,89,0.2))] text-zinc-300 hover:text-white font-mono text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+              title="Reset all adhkar to authentic Sunnah defaults"
             >
-              <Moon className="h-4 w-4 text-violet-400" />
-              <span>Open Sleep Adhkār Sanctum (أذكار النوم)</span>
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>DEFAULTS</span>
             </button>
+
+            {onOpenGuide && (
+              <button
+                onClick={() => onOpenGuide('spiritual-core')}
+                className="p-2 bg-[var(--bg-surface,#141824)] hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl transition cursor-pointer"
+                title="Sacred Manual"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Sacred Stat Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle,rgba(197,160,89,0.2))] text-xs font-mono">
+          <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">TOTAL PROTOCOLS</span>
+            <span className="text-base font-bold text-white mt-0.5 block">{adhkarList.length} Sacred Items</span>
+          </div>
+          <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">COMPLETED TODAY</span>
+            <span className="text-base font-bold text-[var(--accent-highlight,#fef08a)] mt-0.5 flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              {completedTodayCount} / {adhkarList.length}
+            </span>
+          </div>
+          <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">MORNING & EVENING</span>
+            <span className="text-xs font-bold text-zinc-200 mt-1 flex items-center gap-2">
+              <span className={adhkarSabah ? 'text-amber-300' : 'text-zinc-500'}>
+                {adhkarSabah ? '🌅 Sabah Done' : '🌅 Sabah Pending'}
+              </span>
+              <span>•</span>
+              <span className={adhkarMasa ? 'text-indigo-300' : 'text-zinc-500'}>
+                {adhkarMasa ? '🌇 Masa Done' : '🌇 Masa Pending'}
+              </span>
+            </span>
+          </div>
+          <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">SALAWĀT PROPHETIC BEATS</span>
+            <span className="text-base font-bold text-emerald-400 mt-0.5 flex items-center gap-1">
+              <span>{salawatCount}x</span>
+              <span className="text-[10px] text-zinc-400">/ 70 Target</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* 2. PILLAR 1: DAILY & SLEEP ADHKAR FORTRESS (4 PILLARS) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-violet-300 uppercase tracking-wider">
-              1. Daily &amp; Sleep Adhkār Fortress (أَذْكَارُ الصَّبَاحِ وَالمَسَاءِ وَالنَّوْم)
-            </span>
-          </div>
-          <span className="text-[10px] font-mono text-zinc-400">Sunnah Shields of Day &amp; Night</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          
-          {/* 1. MORNING ADHKAR */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
+      {/* QUICK RITUAL MASTER TOGGLE CONTROLS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Morning Adhkār Quick Toggle */}
+        <div 
+          onClick={() => toggleAdhkar('sabah', systemDate)}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-md flex items-center justify-between ${
             adhkarSabah
-              ? 'bg-gradient-to-br from-[#1c160c] to-[#0d0905] border-amber-500/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-amber-500/30'
-          }`}>
-            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-500/30 text-amber-300">
-                  <Sun className="h-4 w-4" />
-                </div>
-                <div>
-                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Morning (الصَّبَاح)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">Dawn till Sunrise</span>
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-amber-300 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                +75 XP
-              </span>
+              ? 'bg-amber-950/40 border-amber-500/50 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl border ${
+              adhkarSabah ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
+            }`}>
+              <Sun className="h-5 w-5" />
             </div>
-
-            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-              Protection against all harms, whispers, and anxiety throughout the day.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => toggleAdhkar('sabah', systemDate)}
-              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                adhkarSabah
-                  ? 'bg-amber-950/80 border-amber-500/70 text-amber-100 shadow-sm'
-                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSabah ? 'text-amber-400' : 'text-zinc-600'}`} />
-              <span>{adhkarSabah ? 'MORNING DONE ✓' : 'LOG MORNING (+75 XP)'}</span>
-            </button>
+            <div>
+              <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SACRED DAWN LITANY</span>
+              <h4 className="text-sm font-display font-bold text-white">Morning Adhkār (أذكار الصباح)</h4>
+              <span className="text-[10px] font-mono text-zinc-400">After Fajr until Sunrise • +150 XP</span>
+            </div>
           </div>
-
-          {/* 2. DHOHR QAYLULAH SLEEP ADHKAR */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
-            adhkarSleepDhohr
-              ? 'bg-gradient-to-br from-[#1a140a] to-[#0a0704] border-amber-400/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-amber-400/30'
+          <div className={`h-6 w-6 rounded-lg border flex items-center justify-center transition ${
+            adhkarSabah ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40'
           }`}>
-            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-900/60 border border-amber-400/30 text-amber-200">
-                  <Clock className="h-4 w-4 text-amber-300" />
-                </div>
-                <div>
-                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Dhohr Nap (القَيْلُولَة)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">Midday Sunnah Rest</span>
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-amber-200 font-bold bg-amber-900/60 border border-amber-400/30 px-2 py-0.5 rounded-full">
-                +50 XP
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                &ldquo;Take a midday nap; devils do not take a nap.&rdquo; Recharging for Qiyam &amp; afternoon worship.
-              </p>
-              <button
-                type="button"
-                onClick={() => { setSleepModalTab('dhohr'); setShowSleepModal(true); }}
-                className="text-[10px] font-mono text-amber-300 hover:text-amber-200 underline flex items-center gap-1 cursor-pointer"
-              >
-                <BookOpen className="h-3 w-3" />
-                <span>Read authentic Qaylulah Duas →</span>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
-              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                adhkarSleepDhohr
-                  ? 'bg-amber-900/80 border-amber-400/70 text-amber-100 shadow-sm'
-                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSleepDhohr ? 'text-amber-300' : 'text-zinc-600'}`} />
-              <span>{adhkarSleepDhohr ? 'DHOHR NAP DONE ✓' : 'LOG DHOHR NAP (+50 XP)'}</span>
-            </button>
+            {adhkarSabah && <Check className="h-4 w-4 stroke-[3]" />}
           </div>
-
-          {/* 3. EVENING ADHKAR */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
-            adhkarMasa
-              ? 'bg-gradient-to-br from-[#160d1f] to-[#0a050f] border-violet-500/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-violet-500/30'
-          }`}>
-            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-violet-950/60 border border-violet-500/30 text-violet-300">
-                  <Moon className="h-4 w-4" />
-                </div>
-                <div>
-                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Evening (المَسَاء)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">&apos;Asr until Sunset</span>
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-violet-300 font-bold bg-violet-950/60 border border-violet-500/30 px-2 py-0.5 rounded-full">
-                +75 XP
-              </span>
-            </div>
-
-            <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-              Guarding soul, faith, and domicile under divine protection through the evening.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => toggleAdhkar('masa', systemDate)}
-              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                adhkarMasa
-                  ? 'bg-violet-950/80 border-violet-500/70 text-violet-100 shadow-sm'
-                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarMasa ? 'text-violet-400' : 'text-zinc-600'}`} />
-              <span>{adhkarMasa ? 'EVENING DONE ✓' : 'LOG EVENING (+75 XP)'}</span>
-            </button>
-          </div>
-
-          {/* 4. NIGHT SLEEP ADHKAR */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
-            adhkarSleepNight
-              ? 'bg-gradient-to-br from-[#120e24] to-[#080614] border-indigo-500/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-indigo-500/30'
-          }`}>
-            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-indigo-950/60 border border-indigo-500/30 text-indigo-300">
-                  <Bed className="h-4 w-4 text-indigo-300" />
-                </div>
-                <div>
-                  <span className="font-display font-bold text-zinc-100 text-xs sm:text-sm block">Night Sleep (النَّوْم)</span>
-                  <span className="text-[10px] font-mono text-zinc-400">Bedtime Fortress</span>
-                </div>
-              </div>
-              <span className="text-[9px] font-mono text-indigo-300 font-bold bg-indigo-950/60 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                +75 XP
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                Ayat al-Kursi, 3 Quls with Nafth, Tasbīḥ Fāṭimah (33/33/34), and Du‘a al-Fiṭrah.
-              </p>
-              <button
-                type="button"
-                onClick={() => { setSleepModalTab('night'); setShowSleepModal(true); }}
-                className="text-[10px] font-mono text-indigo-300 hover:text-indigo-200 underline flex items-center gap-1 cursor-pointer"
-              >
-                <BookOpen className="h-3 w-3" />
-                <span>Read authentic Night Duas →</span>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => toggleAdhkar('sleepNight', systemDate)}
-              className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                adhkarSleepNight
-                  ? 'bg-indigo-950/80 border-indigo-500/70 text-indigo-100 shadow-sm'
-                  : 'bg-[#07050c] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-3.5 w-3.5 ${adhkarSleepNight ? 'text-indigo-400' : 'text-zinc-600'}`} />
-              <span>{adhkarSleepNight ? 'NIGHT SLEEP DONE ✓' : 'LOG NIGHT SLEEP (+75 XP)'}</span>
-            </button>
-          </div>
-
         </div>
-      </div>
 
-      {/* 3. PILLAR 2: POST-PRAYER ADHKAR /5 (STANDARD 33x VS MINI 10x) */}
-      <div className="space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
-              <span>2. Post-Prayer Adhkār (أَذْكَارُ أَدْبَارِ الصَّلَوَاتِ المَكْتُوبَة)</span>
-              <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full text-[10px]">
-                {completedPostPrayersCount} / 5 Prayers
-              </span>
+        {/* Evening Adhkār Quick Toggle */}
+        <div 
+          onClick={() => toggleAdhkar('masa', systemDate)}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-md flex items-center justify-between ${
+            adhkarMasa
+              ? 'bg-indigo-950/40 border-indigo-500/50 shadow-indigo-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl border ${
+              adhkarMasa ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-white/10 text-zinc-400'
+            }`}>
+              <Moon className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase text-indigo-300/80 font-bold block">SACRED SUNSET LITANY</span>
+              <h4 className="text-sm font-display font-bold text-white">Evening Adhkār (أذكار المساء)</h4>
+              <span className="text-[10px] font-mono text-zinc-400">After ‘Asr until Maghrib • +150 XP</span>
+            </div>
+          </div>
+          <div className={`h-6 w-6 rounded-lg border flex items-center justify-center transition ${
+            adhkarMasa ? 'bg-indigo-500 border-indigo-400 text-black' : 'border-zinc-700 bg-black/40'
+          }`}>
+            {adhkarMasa && <Check className="h-4 w-4 stroke-[3]" />}
+          </div>
+        </div>
+
+        {/* Salawāt Quick Dial */}
+        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heart className={`h-4 w-4 ${salawatTargetReached ? 'text-rose-400 fill-rose-400' : 'text-rose-400'}`} />
+              <span className="text-xs font-mono font-bold text-white uppercase">SALAWĀT (70+ TARGET)</span>
+            </div>
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+              salawatTargetReached ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'text-zinc-400'
+            }`}>
+              {salawatCount} / 70
             </span>
           </div>
 
-          {/* BATCH ACTION CONTROLS */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 pt-1">
             <button
-              onClick={() => handleSetAllPostAdhkar('standard33')}
-              className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-200 text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-sm"
-              title="Set all 5 prayers to 33-33-33-1 Standard Sunnah"
+              onClick={() => incrementSalawat(1, systemDate)}
+              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition"
             >
-              <Sparkles className="h-3 w-3 text-emerald-400" />
-              <span>All 5 Standard (33x)</span>
+              +1
+            </button>
+            <button
+              onClick={() => incrementSalawat(10, systemDate)}
+              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition"
+            >
+              +10
+            </button>
+            <button
+              onClick={() => incrementSalawat(33, systemDate)}
+              className="flex-1 py-1.5 bg-emerald-950/60 hover:bg-emerald-800/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-lg transition"
+            >
+              +33
+            </button>
+            <button
+              onClick={() => setSalawatCount(0, systemDate)}
+              className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-white/5"
+              title="Reset Salawat Count"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTER & CLASSIFICATION TABS CONTROL BAR */}
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3">
+          {/* Classification Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[var(--bg-void,#050608)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
+            <button
+              onClick={() => { setActiveCategory('all'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'all'
+                  ? 'bg-[var(--accent-primary,#c5a059)] text-black shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span>ALL ADHKĀR</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.all}</span>
             </button>
 
             <button
-              onClick={() => handleSetAllPostAdhkar('mini10')}
-              className="px-2.5 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-sm"
-              title="Set all 5 prayers to 10-10-10 Mini Sunnah (150 on tongue, 1500 on scale)"
+              onClick={() => { setActiveCategory('morning'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'morning'
+                  ? 'bg-amber-500 text-black shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
             >
-              <Zap className="h-3 w-3 text-cyan-400" />
-              <span>All 5 Mini (10x)</span>
+              <Sun className="h-3.5 w-3.5" />
+              <span>MORNING (صباح)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.morning}</span>
             </button>
 
-            {completedPostPrayersCount > 0 && (
+            <button
+              onClick={() => { setActiveCategory('evening'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'evening'
+                  ? 'bg-indigo-500 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Moon className="h-3.5 w-3.5" />
+              <span>EVENING (مساء)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.evening}</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveCategory('post_salah'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'post_salah'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>POST-SALAH (بعد الصلاة)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.post_salah}</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveCategory('sleep'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'sleep'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Bed className="h-3.5 w-3.5" />
+              <span>SLEEP (النوم)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep}</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveCategory('general'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'general'
+                  ? 'bg-cyan-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Award className="h-3.5 w-3.5" />
+              <span>GENERAL (عام)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.general}</span>
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative min-w-[240px]">
+            <Search className="h-3.5 w-3.5 text-[var(--accent-bright,#fef08a)] absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="Search by title, arabic, or meaning..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[var(--bg-void,#050608)] border border-[var(--border-subtle,rgba(197,160,89,0.25))] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--accent-primary,#c5a059)] font-sans"
+            />
+            {searchQuery && (
               <button
-                onClick={handleResetAllPostAdhkar}
-                className="px-2 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 text-[10px] font-mono transition"
-                title="Reset all 5 prayer adhkars"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-zinc-500 hover:text-white text-xs"
               >
-                Reset
+                ✕
               </button>
             )}
           </div>
         </div>
 
-        {/* POST-PRAYER BANNER & HADITH EXPLANATION */}
-        <div className="p-4 bg-gradient-to-r from-[#0d1c15] via-[#091510] to-[#060e0a] border border-emerald-500/40 rounded-2xl space-y-3 shadow-md">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-display font-bold text-zinc-100">
-                  Choose Standard (33x) or Mini (10x) for each Obligatory Prayer
-                </span>
-                <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/30 px-2 py-0.2 rounded-full">
-                  +20 XP/Standard • +12 XP/Mini • +25 XP if 5/5
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
-                Log the remembrance recited immediately after completing each obligatory prayer: <strong>Standard</strong> (33 Tasbih, 33 Hamd, 33 Takbir + 1 Tahlil) or <strong>Mini</strong> (10 Tasbih, 10 Hamd, 10 Takbir).
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowPostSalahHadith(!showPostSalahHadith)}
-              className="text-[11px] font-mono text-emerald-300 hover:text-emerald-200 flex items-center gap-1 shrink-0 self-start md:self-auto bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-500/30"
-            >
-              <HelpCircle className="h-3.5 w-3.5" />
-              <span>{showPostSalahHadith ? 'Hide Hadith Proofs' : 'View Authentic Hadith Proofs'}</span>
-            </button>
-          </div>
-
-          {/* HADITH PROOFS ACCORDION */}
-          <AnimatePresence>
-            {showPostSalahHadith && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="pt-3 border-t border-emerald-500/20 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-zinc-300 font-sans"
-              >
-                <div className="p-3 bg-[#06100b] border border-emerald-500/30 rounded-xl space-y-1.5">
-                  <span className="text-[11px] font-mono font-bold text-emerald-300 uppercase block">
-                    ✨ 1. The Standard Version (33-33-33-1)
-                  </span>
-                  <p className="text-zinc-400 italic">
-                    &ldquo;Whoever glorifies Allah thirty-three times after every prayer, praises Allah thirty-three times, and magnifies Allah thirty-three times, making ninety-nine, and completes the hundred with: <em>Lā ilāha illAllāh waḥdahu lā sharīka lah...</em>, his sins will be forgiven even if they were like the foam of the sea.&rdquo; (Sahih Muslim 597)
-                  </p>
-                </div>
-
-                <div className="p-3 bg-[#061014] border border-cyan-500/30 rounded-xl space-y-1.5">
-                  <span className="text-[11px] font-mono font-bold text-cyan-300 uppercase block">
-                    ⚡ 2. The Mini Version (10-10-10)
-                  </span>
-                  <p className="text-zinc-400 italic">
-                    &ldquo;Two qualities, no Muslim preserves them except that he enters Paradise... He glorifies Allah 10 times, praises Him 10 times, and magnifies Him 10 times after every prayer. That is 150 on the tongue, and 1,500 on the Scale!&rdquo; (Sunan Abi Dawud 5065, Tirmidhi 3410, Sahih)
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* 5 PRAYERS TILES GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {prayersConfig.map(prayer => {
-            const currentMode = postSalahMap[prayer.id] || 'none';
-            const isStandard = currentMode === 'standard33';
-            const isMini = currentMode === 'mini10';
-            const isCompleted = isStandard || isMini;
-
-            return (
-              <div
-                key={prayer.id}
-                className={`p-3.5 rounded-2xl border transition flex flex-col justify-between space-y-3 ${
-                  isStandard
-                    ? 'bg-gradient-to-b from-[#0e2117] to-[#06110b] border-emerald-500/60 shadow-md'
-                    : isMini
-                    ? 'bg-gradient-to-b from-[#091e24] to-[#040f12] border-cyan-500/60 shadow-md'
-                    : 'bg-[#090810] border-white/10 hover:border-white/20'
+        {/* Sub-Filter for Post-Salah by Prayer */}
+        {activeCategory === 'post_salah' && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center gap-2 p-2.5 bg-[var(--accent-surface,#c5a059)]/10 border border-[var(--border-accent,#c5a059)]/30 rounded-xl"
+          >
+            <span className="text-[10px] font-mono text-[var(--accent-highlight,#fef08a)] uppercase font-bold flex items-center gap-1">
+              <Clock className="h-3 w-3" /> PRAYER TARGET:
+            </span>
+            {[
+              { id: 'all', label: 'All Prayers' },
+              { id: 'fajr', label: 'Fajr (Dawn)' },
+              { id: 'dhuhr', label: 'Dhuhr (Midday)' },
+              { id: 'asr', label: '‘Asr (Afternoon)' },
+              { id: 'maghrib', label: 'Maghrib (Sunset)' },
+              { id: 'isha', label: '‘Ishā’ (Night)' }
+            ].map(p => (
+              <button
+                key={p.id}
+                onClick={() => setActivePrayerFilter(p.id as AdhkarPrayerTarget | 'all')}
+                className={`px-2.5 py-1 text-[11px] font-mono rounded-lg transition ${
+                  activePrayerFilter === p.id
+                    ? 'bg-emerald-500 text-black font-bold shadow-sm'
+                    : 'bg-black/40 text-zinc-300 hover:text-white border border-white/5'
                 }`}
               >
-                {/* PRAYER TITLE */}
-                <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                  <div>
-                    <span className="font-display font-bold text-zinc-100 text-sm block">
-                      {prayer.nameEn} ({prayer.nameAr})
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-500">{prayer.time}</span>
-                  </div>
-
-                  {isCompleted ? (
-                    <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                      isStandard ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
-                    }`}>
-                      {isStandard ? '33x ✓' : '10x ✓'}
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-mono text-zinc-500">Pending</span>
-                  )}
-                </div>
-
-                {/* SUMMARY OF ADHKAR RECITED */}
-                <div className="text-[11px] font-sans text-center py-1">
-                  {isStandard ? (
-                    <span className="text-emerald-300 font-medium">33 Tasbīḥ + 33 Ḥamd + 33 Takbīr + 1 Tahlīl</span>
-                  ) : isMini ? (
-                    <span className="text-cyan-300 font-medium">10 Tasbīḥ + 10 Ḥamd + 10 Takbīr</span>
-                  ) : (
-                    <span className="text-zinc-500">Select standard or mini</span>
-                  )}
-                </div>
-
-                {/* INTERACTIVE TOGGLE BUTTONS */}
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
-                  <button
-                    onClick={() => handleSetPrayerAdhkar(prayer.id, 'standard33')}
-                    className={`py-1.5 px-1 rounded-xl text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 border ${
-                      isStandard
-                        ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
-                        : 'bg-zinc-900/80 hover:bg-emerald-950/60 text-zinc-300 border-white/10 hover:border-emerald-500/30'
-                    }`}
-                  >
-                    {isStandard && <Check className="h-3 w-3" />}
-                    <span>33x Std</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSetPrayerAdhkar(prayer.id, 'mini10')}
-                    className={`py-1.5 px-1 rounded-xl text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 border ${
-                      isMini
-                        ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
-                        : 'bg-zinc-900/80 hover:bg-cyan-950/60 text-zinc-300 border-white/10 hover:border-cyan-500/30'
-                    }`}
-                  >
-                    {isMini && <Check className="h-3 w-3" />}
-                    <span>10x Mini</span>
-                  </button>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. PILLAR 3: 70+ SALAWAT UPON PROPHET MUHAMMAD ﷺ */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-rose-300 uppercase tracking-wider">
-              3. Ṣalāt ‘ala ar-Rasūl ﷺ (الصَّلَاةُ عَلَى النَّبِيِّ ﷺ)
-            </span>
-          </div>
-          <span className="text-[10px] font-mono text-rose-300 font-bold">Target: 70+ Blessings Daily</span>
-        </div>
-
-        <div className="p-5 bg-gradient-to-r from-[#1f1015] via-[#150a0e] to-[#0c0508] border border-rose-500/40 rounded-2xl relative overflow-hidden shadow-md space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-300">
-                  <Heart className="h-5 w-5 text-rose-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-display font-bold text-base text-zinc-100">
-                      70+ Prophetic Salawāt (الصَّلَاةُ وَالسَّلَامُ عَلَى النَّبِيّ)
-                    </h4>
-                    <span className="text-xs font-display text-rose-300">«اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّد»</span>
-                  </div>
-                  <p className="text-xs text-zinc-400 font-sans">
-                    &ldquo;Whoever sends blessings upon me once, Allah sends blessings upon him tenfold, removes ten sins, and raises him ten degrees.&rdquo; (An-Nasa&apos;i)
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="text-right">
-                <span className="text-2xl font-display font-bold text-rose-200">{salawatCount}</span>
-                <span className="text-xs text-zinc-400 font-mono"> / 70+</span>
-              </div>
-              <div className="w-28 bg-zinc-900 rounded-full h-3 overflow-hidden border border-white/10">
-                <div 
-                  className="bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-400 h-full transition-all duration-300"
-                  style={{ width: `${Math.min(100, (salawatCount / 70) * 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* INCREMENT BUTTONS */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-rose-500/20">
-            <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold mr-1">Add Blessings:</span>
-            {[+1, +10, +33, +70].map(val => (
-              <button
-                key={val}
-                onClick={() => incrementSalawat(val, systemDate)}
-                className="px-3.5 py-1.5 rounded-xl bg-[#0c0609] hover:bg-rose-950/80 border border-rose-500/30 hover:border-rose-400 text-rose-200 text-xs font-mono font-bold transition flex items-center gap-1 shadow-sm"
-              >
-                <Plus className="h-3 w-3" />
-                <span>{val}</span>
+                {p.label}
               </button>
             ))}
-
-            <div className="flex items-center gap-1.5 ml-auto">
-              <input
-                type="number"
-                min="1"
-                value={salawatCustomInput}
-                onChange={(e) => setSalawatCustomInput(e.target.value)}
-                placeholder="Custom #"
-                className="w-20 bg-[#070406] border border-rose-500/30 rounded-lg px-2 py-1 text-xs text-rose-200 font-mono focus:outline-none focus:border-rose-400"
-                onKeyDown={(e) => e.key === 'Enter' && handleCustomSalawat()}
-              />
-              {salawatCustomInput && (
-                <button
-                  onClick={handleCustomSalawat}
-                  className="px-2.5 py-1 bg-rose-900 text-rose-100 rounded-lg text-xs font-mono font-bold hover:bg-rose-800"
-                >
-                  Add
-                </button>
-              )}
-
-              <button
-                onClick={() => setSalawatCount(0, systemDate)}
-                className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/5 text-xs transition"
-                title="Reset Salawat counter"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
+          </motion.div>
+        )}
       </div>
 
-      {/* 5. PILLAR 4: TASBIH + HAMD + TAHLIL + TAKBIR (THE FOUR BELOVED WORDS) */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-[#c5a059] uppercase tracking-wider">
-              4. The 4 Beloved Words: Tasbīḥ + Ḥamd + Tahlīl + Takbīr (البَاقِيَاتُ الصَّالِحَات)
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono text-zinc-400">Batch increment:</span>
+      {/* ADHKAR CARDS GRID */}
+      <div className="grid grid-cols-1 gap-4">
+        {filteredAdhkar.length === 0 ? (
+          <div className="p-8 text-center bg-[var(--bg-card,#0c0e14)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-2xl space-y-3">
+            <RubElHizbIcon className="h-8 w-8 text-zinc-600 mx-auto" />
+            <p className="text-sm font-mono text-zinc-400">No sacred litanies match the active filters or search decree.</p>
             <button
-              onClick={() => incrementAllFour(33)}
-              className="px-2.5 py-1 rounded-lg bg-[#14121a] hover:bg-[#201d2a] border border-[#c5a059]/40 text-[#fef08a] text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-sm"
+              onClick={() => { setActiveCategory('all'); setSearchQuery(''); setActivePrayerFilter('all'); }}
+              className="px-4 py-2 bg-[var(--accent-surface,#c5a059)]/20 border border-[var(--border-accent,#c5a059)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono rounded-xl hover:bg-[var(--accent-surface,#c5a059)]/40 transition"
             >
-              <Plus className="h-3 w-3" />
-              <span>+33 to All 4 Words</span>
-            </button>
-            <button
-              onClick={() => incrementAllFour(10)}
-              className="px-2.5 py-1 rounded-lg bg-[#10141a] hover:bg-[#1a222c] border border-cyan-500/40 text-cyan-200 text-[10px] font-mono font-bold transition flex items-center gap-1 shadow-sm"
-            >
-              <Plus className="h-3 w-3" />
-              <span>+10 to All 4</span>
+              CLEAR ALL FILTERS
             </button>
           </div>
-        </div>
+        ) : (
+          filteredAdhkar.map((item) => {
+            const currentCount = getAdhkarRecitationCount(item.id, systemDate);
+            const isCompleted = currentCount >= item.targetCount;
+            const progressPercent = Math.min(100, Math.round((currentCount / item.targetCount) * 100));
 
-        {/* 4 CARDS GRID: TASBIH, HAMD, TAHLIL, TAKBIR */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {fourWords.map(word => {
             return (
-              <div
-                key={word.id}
-                className={`p-4 rounded-2xl border ${word.border} bg-gradient-to-b ${word.gradient} flex flex-col justify-between space-y-3 transition-all hover:scale-[1.01]`}
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden shadow-lg ${
+                  isCompleted
+                    ? 'bg-gradient-to-r from-[var(--bg-card,#0c0e14)] via-[var(--accent-surface,#c5a059)]/10 to-[var(--bg-card,#0c0e14)] border-[var(--accent-bright,#fef08a)]/60 shadow-[0_0_20px_var(--glow-color,rgba(197,160,89,0.15))]'
+                    : 'bg-[var(--bg-card,#0c0e14)] hover:border-[var(--border-strong,#c5a059)] border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+                }`}
               >
-                {/* CARD TOP */}
-                <div className="border-b border-white/5 pb-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${word.badgeBg}`}>
-                      {word.nameEn} ({word.nameAr})
-                    </span>
-                    <button
-                      onClick={() => resetWordCount(word.id)}
-                      className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300"
-                      title="Reset counter"
-                    >
-                      Reset
-                    </button>
+                {/* Visual Glow Ambient */}
+                {isCompleted && (
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-[var(--accent-primary,#c5a059)]/10 rounded-full blur-2xl pointer-events-none" />
+                )}
+
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 relative z-10">
+                  {/* Left Metadata & Header */}
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase border ${
+                        item.category === 'morning'
+                          ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                          : item.category === 'evening'
+                          ? 'bg-indigo-950 text-indigo-300 border-indigo-500/40'
+                          : item.category === 'post_salah'
+                          ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                          : item.category === 'sleep'
+                          ? 'bg-purple-950 text-purple-300 border-purple-500/40'
+                          : 'bg-zinc-900 text-zinc-300 border-zinc-700'
+                      }`}>
+                        {item.category.replace('_', ' ')}
+                      </span>
+
+                      {item.prayerTarget && item.category === 'post_salah' && (
+                        <span className="text-[10px] font-mono bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md">
+                          🕌 {item.prayerTarget.toUpperCase()}
+                        </span>
+                      )}
+
+                      {item.isCustom && (
+                        <span className="text-[10px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-md">
+                          CUSTOM
+                        </span>
+                      )}
+
+                      {item.source && (
+                        <span className="text-[10px] font-mono text-zinc-400">
+                          📜 {item.source}
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="text-base font-display font-extrabold text-white flex items-center gap-2">
+                      <span>{item.title}</span>
+                      {isCompleted && (
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-bold animate-pulse">
+                          <Check className="h-3 w-3" /> FULFILLED
+                        </span>
+                      )}
+                    </h4>
+
+                    {/* Arabic Text Display */}
+                    {item.arabicText && (
+                      <div className="p-4 bg-[var(--bg-void,#050608)]/90 border border-[var(--border-accent,#c5a059)]/30 rounded-xl my-2">
+                        <p 
+                          dir="rtl"
+                          className="font-arabic text-lg sm:text-xl text-right text-amber-100/90 leading-loose tracking-wide select-all"
+                        >
+                          {item.arabicText}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Transliteration */}
+                    {item.transliteration && (
+                      <p className="text-xs font-mono text-[var(--accent-highlight,#fef08a)] italic">
+                        "{item.transliteration}"
+                      </p>
+                    )}
+
+                    {/* English Meaning */}
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      {item.translation}
+                    </p>
+
+                    {/* Virtue / Reward Note */}
+                    {item.virtue && (
+                      <div className="text-[11px] text-[var(--accent-bright,#fef08a)]/90 bg-[var(--accent-surface,#c5a059)]/10 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-lg p-2 flex items-start gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright,#fef08a)] shrink-0 mt-0.5" />
+                        <span><strong>Virtue:</strong> {item.virtue}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="text-center py-2 space-y-0.5">
-                    <h5 className="text-xl font-display font-bold text-white tracking-wide">
-                      {word.arabicText}
-                    </h5>
-                    <span className="text-[11px] font-sans italic text-zinc-400 block">
-                      {word.transliteration}
-                    </span>
-                    <span className="text-[10px] text-zinc-500 font-sans block">
-                      &ldquo;{word.meaning}&rdquo;
-                    </span>
-                  </div>
-                </div>
-
-                {/* COUNTER DISPLAY */}
-                <div className="text-center py-1 bg-black/30 rounded-xl border border-white/5">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className={`text-2xl font-display font-bold ${word.accentColor}`}>
-                      {word.count}
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-500">recitations</span>
-                  </div>
-                  {word.count >= 33 && (
-                    <span className="text-[9px] font-mono text-emerald-400 block">
-                      ✓ {Math.floor(word.count / 33)} complete set{Math.floor(word.count / 33) > 1 ? 's' : ''} (+{Math.min(75, Math.floor(word.count / 33) * 25)} XP)
-                    </span>
-                  )}
-                </div>
-
-                {/* INCREMENT CONTROLS */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="grid grid-cols-4 gap-1">
-                    {[+1, +10, +33, +100].map(val => (
+                  {/* Right: Digital Interactive Counter Beads */}
+                  <div className="flex flex-col sm:flex-row lg:flex-col items-center lg:items-end gap-3 w-full lg:w-auto shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-[var(--border-subtle,rgba(197,160,89,0.2))]">
+                    {/* Action icons row */}
+                    <div className="flex items-center gap-1 self-end">
                       <button
-                        key={val}
-                        onClick={() => incrementCount(word.id, val)}
-                        className={`py-1 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-0.5 ${word.btnBg}`}
+                        onClick={() => handleCopyArabic(item)}
+                        className="p-1.5 text-zinc-400 hover:text-[var(--accent-bright,#fef08a)] hover:bg-white/5 rounded-lg transition"
+                        title="Copy Arabic & Meaning"
                       >
-                        <Plus className="h-2.5 w-2.5" />
-                        <span>{val}</span>
+                        {copiedId === item.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                       </button>
-                    ))}
+
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition"
+                        title="Edit Dhikr Specs"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => setDeletingItemId(item.id)}
+                        className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition"
+                        title="Remove from Sacred Protocol"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Digital Counter Display */}
+                    <div className="bg-[var(--bg-void,#050608)] border border-[var(--border-accent,#c5a059)]/40 rounded-2xl p-3 flex flex-col items-center gap-2 min-w-[160px] shadow-inner">
+                      <div className="text-[9px] font-mono uppercase text-zinc-400 font-bold tracking-wider">
+                        RECITATIONS BEATS
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => incrementAdhkarRecitation(item.id, -1, systemDate)}
+                          disabled={currentCount <= 0}
+                          className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none text-zinc-300 hover:text-white flex items-center justify-center font-bold text-sm transition cursor-pointer"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+
+                        <div className="text-center">
+                          <div className={`text-2xl font-mono font-extrabold transition-all ${
+                            isCompleted ? 'text-[var(--accent-highlight,#fef08a)] drop-shadow-[0_0_8px_var(--glow-color)]' : 'text-white'
+                          }`}>
+                            {currentCount}
+                          </div>
+                          <div className="text-[10px] font-mono text-zinc-400">
+                            / {item.targetCount} Target
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => incrementAdhkarRecitation(item.id, 1, systemDate)}
+                          className="h-9 w-9 rounded-xl bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] hover:brightness-110 text-[var(--bg-void,#050608)] flex items-center justify-center font-bold text-base transition shadow-md cursor-pointer active:scale-95"
+                        >
+                          <Plus className="h-4 w-4 stroke-[3]" />
+                        </button>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden border border-white/5 mt-1">
+                        <div 
+                          className="bg-gradient-to-r from-[var(--accent-primary,#c5a059)] to-[var(--accent-bright,#fef08a)] h-full transition-all duration-300"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+
+                      {/* Quick Bulk Complete & Reset */}
+                      <div className="flex items-center gap-2 pt-1 w-full">
+                        <button
+                          onClick={() => incrementAdhkarRecitation(item.id, item.targetCount - currentCount, systemDate)}
+                          className="flex-1 py-1 bg-[var(--accent-surface,#c5a059)]/20 hover:bg-[var(--accent-surface,#c5a059)]/40 border border-[var(--border-accent,#c5a059)]/30 text-[10px] font-mono text-[var(--accent-highlight,#fef08a)] font-bold rounded-lg transition text-center"
+                        >
+                          FULFILL ({item.targetCount}x)
+                        </button>
+                        <button
+                          onClick={() => resetAdhkarRecitation(item.id, systemDate)}
+                          className="p-1 text-zinc-500 hover:text-zinc-300 rounded hover:bg-white/5"
+                          title="Reset count for today"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-
-                  <button
-                    onClick={() => incrementCount(word.id, -1)}
-                    disabled={word.count <= 0}
-                    className="w-full py-1 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 disabled:opacity-20 text-[10px] font-mono text-zinc-400 transition flex items-center justify-center gap-1 border border-white/5"
-                  >
-                    <Minus className="h-2.5 w-2.5" />
-                    <span>Undo 1</span>
-                  </button>
                 </div>
-
-              </div>
+              </motion.div>
             );
-          })}
-        </div>
-
+          })
+        )}
       </div>
 
-      {/* SLEEP ADHKAR SANCTUM MODAL (DHOHR & NIGHT) */}
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {deletingItemId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[var(--bg-card,#0c0e14)] border border-rose-500/40 rounded-2xl p-5 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-300">
+                  <AlertCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-display font-bold text-white uppercase">REMOVE SACRED LITANY?</h4>
+                  <p className="text-xs text-zinc-400">This dhikr will be archived from your active Sacred Protocol.</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  onClick={() => setDeletingItemId(null)}
+                  className="px-3.5 py-2 text-xs font-mono text-zinc-300 hover:text-white rounded-xl hover:bg-white/5"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={() => handleDeleteConfirm(deletingItemId)}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
+                >
+                  CONFIRM DELETION
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* RESET TO DEFAULTS CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-[var(--bg-card,#0c0e14)] border border-[var(--border-accent,#c5a059)] rounded-2xl p-5 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[var(--accent-surface,#c5a059)]/20 border border-[var(--border-accent,#c5a059)] text-[var(--accent-highlight,#fef08a)]">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-display font-bold text-white uppercase">RESTORE AUTHENTIC DEFAULTS?</h4>
+                  <p className="text-xs text-zinc-400">Restore the pristine library of Sunnah morning, evening, post-salah, and nocturnal litanies.</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="px-3.5 py-2 text-xs font-mono text-zinc-300 hover:text-white rounded-xl hover:bg-white/5"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={() => {
+                    resetDefaultAdhkar();
+                    setShowResetConfirm(false);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] text-[var(--bg-void,#050608)] font-mono font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
+                >
+                  RESTORE DEFAULTS
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADHKAR FORM MODAL (ADD / EDIT) */}
+      <AdhkarFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSaveForm}
+        initialItem={editingItem}
+      />
+
+      {/* SLEEP ADHKAR MODAL */}
       <SleepAdhkarModal
         isOpen={showSleepModal}
         onClose={() => setShowSleepModal(false)}
-        initialTab={sleepModalTab}
         systemDate={systemDate}
+        initialTab={sleepModalTab}
       />
-
     </div>
   );
 };

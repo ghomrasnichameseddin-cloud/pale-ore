@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { usePOS, isQuestArchived } from '../POSContext';
 import { Quest, QuestDifficulty, QuestType, QuestRecurrence } from '../types';
 import { 
@@ -180,6 +180,20 @@ export const ActiveDirectives: React.FC = () => {
   const setSortBy = (val: QuestViewSettings['sortBy']) => updateViewSettings({ sortBy: val });
   const setSortOrder = (val: QuestViewSettings['sortOrder']) => updateViewSettings({ sortOrder: val });
   const setTerminalTab = (val: QuestViewSettings['terminalTab']) => updateViewSettings({ terminalTab: val });
+
+  // Listen for navigation requests (e.g. from BossProgressionBanner)
+  useEffect(() => {
+    const handleCustomViewSettings = (e: Event) => {
+      const customEvent = e as CustomEvent<Partial<QuestViewSettings>>;
+      if (customEvent.detail) {
+        updateViewSettings(customEvent.detail);
+      }
+    };
+    window.addEventListener('set-quest-view-settings', handleCustomViewSettings);
+    return () => {
+      window.removeEventListener('set-quest-view-settings', handleCustomViewSettings);
+    };
+  }, []);
 
   const resetFilters = () => {
     updateViewSettings({

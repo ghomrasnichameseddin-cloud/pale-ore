@@ -877,8 +877,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         Specialized restorative directives assigned during Recovery Mode to help operators rebuild momentum safely.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
+                        <div>• <strong>Shop Lock:</strong> Mandatory to complete before the Reward Shop vault unlocks.</div>
                         <div>• <strong>View Isolation:</strong> Displayed alongside Penalty quests while standard quests are filtered out.</div>
-                        <div>• <strong>Deactivation:</strong> Must be completed to deactivate Recovery Mode.</div>
+                        <div>• <strong>Deactivation:</strong> Must be completed to restore momentum and deactivate Recovery Mode.</div>
                       </div>
                     </div>
 

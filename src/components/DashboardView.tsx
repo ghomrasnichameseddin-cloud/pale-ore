@@ -879,6 +879,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
           )}
 
+          {/* BOSS PROGRESSION GATE BANNER */}
+          <BossProgressionBanner onNavigateToQuests={() => onNavigate?.('quests')} />
+
           {/* ACTIVE OPERATIONAL DIRECTIVES TERMINAL BOARD */}
           <div className="glass-panel rounded-2xl p-5 space-y-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-xl" id="dashboard-active-directives">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />

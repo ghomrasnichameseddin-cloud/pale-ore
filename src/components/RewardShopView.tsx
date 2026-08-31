@@ -59,7 +59,7 @@ export const RewardShopView: React.FC = () => {
   const inventory = state.inventory || [];
 
   const todayStr = systemDate;
-  const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT'];
+  const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT', 'RECOVERY'];
   const baseQuests = (state.quests || []).filter(q => {
     if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (state.profile.recoveryMode) {
@@ -285,7 +285,7 @@ export const RewardShopView: React.FC = () => {
               REWARD VAULT RESTRICTED
             </h3>
             <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-              Guild discipline requires resolving <span className="text-[#fef08a] font-bold">today's required directives (Main, Boss, Penalty & Habit)</span> before claiming treasures or purchasing new vouchers.
+              Guild discipline requires resolving <span className="text-[#fef08a] font-bold">today's required directives (Main, Boss, Penalty, Habit & Recovery)</span> before claiming treasures or purchasing new vouchers.
             </p>
           </div>
 

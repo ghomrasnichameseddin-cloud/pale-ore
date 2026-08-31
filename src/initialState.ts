@@ -1,5 +1,6 @@
 import { POSState, PowerSeal, ShopItem, SpiritualDailyLog } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
+import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
@@ -154,6 +155,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Common',
     status: 'Locked',
     requiredLevel: 1,
+    costCoins: 0,
     costXP: 0,
     buffName: 'Unchained Inertia',
     buffDescription: '+10% XP gain on all completed directives and +5 base momentum floor.',
@@ -171,6 +173,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Rare',
     status: 'Locked',
     requiredLevel: 2,
+    costCoins: 50,
     costXP: 50,
     buffName: 'Clarity Matrix',
     buffDescription: '+15% XP on Main Directives and +2 Focus attribute level boost.',
@@ -187,6 +190,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Epic',
     status: 'Locked',
     requiredLevel: 3,
+    costCoins: 120,
     costXP: 120,
     buffName: 'Overclocked Neural Nexus',
     buffDescription: '+20% XP multiplier on all directives, +3 Agility, and -25% penalty impact.',
@@ -203,6 +207,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Legendary',
     status: 'Locked',
     requiredLevel: 5,
+    costCoins: 250,
     costXP: 250,
     buffName: 'Sovereign Command',
     buffDescription: '+30% XP boost across all categories and +4 Wisdom & Strength boost.',
@@ -222,6 +227,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Divine',
     status: 'Locked',
     requiredLevel: 7,
+    costCoins: 500,
     costXP: 500,
     buffName: 'Celestial Fortitude',
     buffDescription: '+40% total XP multiplier, +4 to Faith, Wisdom and Strength, and permanent immunity to recovery debuffs.',
@@ -242,6 +248,7 @@ export const DEFAULT_SEALS: PowerSeal[] = [
     rarity: 'Forbidden',
     status: 'Locked',
     requiredLevel: 10,
+    costCoins: 800,
     costXP: 800,
     buffName: 'Tesseract Transcendence',
     buffDescription: '+60% total XP multiplier, +5 to All Attributes, and absolute immunity to spiritual decay.',
@@ -349,6 +356,8 @@ export const INITIAL_STATE: POSState = {
     }
   ],
   spiritualLogs: {},
+  customAdhkar: DEFAULT_ADHKAR_LIST,
+  adhkarRecitations: {},
   visualCodex: {
     theme: 'imperial-gold',
     ornamentation: 'standard',

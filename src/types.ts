@@ -236,7 +236,8 @@ export interface PowerSeal {
   brokenAt?: string | null;
   requiredLevel: number;
   requiredRank?: string;
-  costXP: number;
+  costCoins?: number; // Primary coin cost required to unbind/shatter the chain
+  costXP?: number; // Fallback / legacy cost (XP fills the difference if coins insufficient)
   requiredQuestId?: string | null;
   requiredSkillId?: string | null;
   requiredSkillLevel?: number;
@@ -399,6 +400,28 @@ export interface QuranLog {
 }
 
 export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';
+
+export type AdhkarCategory = 'morning' | 'evening' | 'post_salah' | 'postSalah' | 'sleep' | 'general';
+export type AdhkarPrayerTarget = 'all' | 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'fajr_maghrib';
+
+export interface AdhkarItem {
+  id: string;
+  title: string;
+  titleAr?: string;
+  arabic?: string;
+  arabicText?: string;
+  transliteration?: string;
+  translation: string;
+  category: AdhkarCategory;
+  prayerTarget?: AdhkarPrayerTarget; // For post_salah: 'all' | 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'fajr_maghrib'
+  targetCount: number; // e.g. 1, 3, 7, 10, 33, 100
+  virtue?: string; // Hadith benefit
+  source?: string;
+  hadithSource?: string; // e.g. "Sahih al-Bukhari 6306"
+  recommendedTime?: string;
+  isCustom?: boolean;
+  order?: number;
+}
 
 export interface PostSalahAdhkarMap {
   fajr?: PostSalahDhikrMode;
@@ -570,6 +593,8 @@ export interface POSState {
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
   masjid40Covenant?: Masjid40DayCovenant;
   visualCodex?: VisualCodexSettings;
+  customAdhkar?: AdhkarItem[];
+  adhkarRecitations?: Record<string, Record<string, number>>;
 }
 
 export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';
