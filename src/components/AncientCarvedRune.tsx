@@ -77,6 +77,7 @@ export type RuneShape = 'octagram' | 'tablet' | 'diamond' | 'round';
 export type StoneVariant = 'basalt' | 'meteorite' | 'iron' | 'obsidian';
 export type GlowIntensity = 'none' | 'subtle' | 'radiant';
 export type RuneSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'hero' | number;
+export type RuneVisualState = 'dormant' | 'awakened' | 'active' | 'corroded' | 'mastered';
 
 export interface AncientCarvedRuneProps {
   /** The character, ligature, or symbol carved into the stone (e.g. 'ف', 'ش', '﷽', '۞', '💎') */
@@ -93,6 +94,8 @@ export interface AncientCarvedRuneProps {
   secondaryColor?: string;
   /** Glow intensity from within the carved trench */
   glowIntensity?: GlowIntensity;
+  /** Visual state of the carved rune: dormant | awakened | active | corroded | mastered */
+  visualState?: RuneVisualState;
   /** Size preset or numeric pixel dimension */
   size?: RuneSize;
   /** Whether to render hairline stress fractures and weathered fissures */
@@ -190,6 +193,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
   conduitColor,
   secondaryColor,
   glowIntensity = 'subtle',
+  visualState,
   size = 'md',
   showCracks = true,
   showRivets = true,
@@ -236,15 +240,55 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
 
   const mat = STONE_PALETTES[stoneVariant] || STONE_PALETTES.basalt;
 
-  // Glow filter parameters
+  // Visual State Resolution
+  // 1. Dormant: dark, barely visible carving, zero glow
+  // 2. Awakened: engraving becomes visible, crisp relief, zero inner glow
+  // 3. Active: subtle colored glow inside the carving
+  // 4. Corroded: cracks, damaged carving, and weaker/flickering glow
+  // 5. Mastered: polished engraving with stronger illumination and radiant luster
+  const effectiveGlowIntensity: GlowIntensity = visualState
+    ? (visualState === 'dormant' || visualState === 'awakened' ? 'none' : visualState === 'mastered' ? 'radiant' : 'subtle')
+    : glowIntensity;
+
   const glowOpacities = {
     none: 0,
-    subtle: 0.45,
-    radiant: 0.85
+    subtle: visualState === 'corroded' ? 0.22 : 0.45,
+    radiant: visualState === 'mastered' ? 0.95 : 0.85
   };
-  const glowAlpha = glowOpacities[glowIntensity];
+  const glowAlpha = glowOpacities[effectiveGlowIntensity];
 
-  const tooltip = title || (categoryRune ? `${categoryRune.sigilTitle}` : `Carved Inscription: ${resolvedGlyph}`);
+  const effectiveShowCracks = visualState === 'corroded' ? true : visualState === 'dormant' || visualState === 'mastered' ? false : showCracks;
+  const effectiveShowWeathering = visualState === 'corroded' ? true : visualState === 'mastered' ? false : showWeathering;
+
+  const tooltip = title || (categoryRune 
+    ? `${categoryRune.sigilTitle}${visualState ? ` [${visualState.toUpperCase()}]` : ''}` 
+    : `Carved Inscription: ${resolvedGlyph}${visualState ? ` [${visualState.toUpperCase()}]` : ''}`);
+
+  // Visual state filter adjustments
+  const stateContainerFilter = visualState === 'dormant'
+    ? 'brightness(0.65) contrast(0.85)'
+    : visualState === 'corroded'
+    ? 'contrast(1.15) saturate(0.85)'
+    : visualState === 'mastered'
+    ? 'brightness(1.08) contrast(1.15)'
+    : undefined;
+
+  // Mineral and inlay color adaptations per visual state
+  const mineralConduitColor = visualState === 'dormant'
+    ? '#1c202a'
+    : visualState === 'awakened'
+    ? '#64748b'
+    : resolvedConduitColor;
+
+  const mineralSecondaryColor = visualState === 'dormant'
+    ? '#2a2f3d'
+    : visualState === 'awakened'
+    ? '#cbd5e1'
+    : visualState === 'mastered'
+    ? '#ffffff'
+    : resolvedSecondaryColor;
+
+  const mineralOpacity = visualState === 'dormant' ? 0.35 : visualState === 'awakened' ? 0.75 : 1.0;
 
   // Base 100x100 coordinate geometry
   return (
@@ -252,7 +296,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
       className={`relative inline-flex items-center justify-center shrink-0 select-none group ${
         interactive ? 'cursor-pointer transition-transform hover:scale-105 active:scale-95' : ''
       } ${className}`}
-      style={{ width: pixelSize, height: pixelSize }}
+      style={{ width: pixelSize, height: pixelSize, filter: stateContainerFilter }}
       title={tooltip}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -274,7 +318,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
 
           {/* 2. Top-Left Rim Bevel Gleam */}
           <linearGradient id={`bevel-rim-${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={mat.bevelHighlight} />
+            <stop offset="0%" stopColor={visualState === 'mastered' ? '#ffffff' : mat.bevelHighlight} stopOpacity={visualState === 'mastered' ? '0.7' : '1'} />
             <stop offset="45%" stopColor="rgba(255,255,255,0.06)" />
             <stop offset="70%" stopColor="rgba(0,0,0,0.7)" />
             <stop offset="100%" stopColor={mat.bevelShadow} />
@@ -288,16 +332,16 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             <feComposite in="shadowFlood" in2="shadowBlur" operator="in" result="deepShadow" />
 
             {/* Inner Conduit Smolder */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <>
-                <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="conduitBlur" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation={visualState === 'mastered' ? '2.8' : '2.2'} result="conduitBlur" />
                 <feFlood floodColor={resolvedConduitColor} floodOpacity={glowAlpha} result="conduitFlood" />
                 <feComposite in="conduitFlood" in2="conduitBlur" operator="in" result="conduitGlow" />
               </>
             )}
 
             <feMerge>
-              {glowIntensity !== 'none' && <feMergeNode in="conduitGlow" />}
+              {effectiveGlowIntensity !== 'none' && <feMergeNode in="conduitGlow" />}
               <feMergeNode in="deepShadow" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
@@ -482,7 +526,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* --- PASS 3: CONDUIT ENERGY GLOW IN THE CARVED GROOVE --- */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <rect x="22" y="22" width="56" height="56" rx="3" stroke={resolvedConduitColor} strokeWidth="1.8" fill="none" style={{ filter: `drop-shadow(0 0 3px ${resolvedConduitColor})` }} />
                 <rect x="22" y="22" width="56" height="56" rx="3" transform="rotate(45 50 50)" stroke={resolvedConduitColor} strokeWidth="1.8" fill="none" style={{ filter: `drop-shadow(0 0 3px ${resolvedConduitColor})` }} />
@@ -497,24 +541,24 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* --- PASS 4: INLAID GOLD MINERAL CHISEL RIM --- */}
-            <g>
+            <g opacity={mineralOpacity}>
               {/* Dual Rub El Hizb Squares */}
-              <rect x="22" y="22" width="56" height="56" rx="3" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
-              <rect x="22" y="22" width="56" height="56" rx="3" transform="rotate(45 50 50)" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
+              <rect x="22" y="22" width="56" height="56" rx="3" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
+              <rect x="22" y="22" width="56" height="56" rx="3" transform="rotate(45 50 50)" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
               {/* Twin Fortress Pillars */}
-              <line x1="26" y1="28" x2="26" y2="76" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.9" />
-              <line x1="74" y1="28" x2="74" y2="76" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.9" />
+              <line x1="26" y1="28" x2="26" y2="76" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.9" />
+              <line x1="74" y1="28" x2="74" y2="76" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.9" />
               {/* Pillar capitols and plinths */}
-              <line x1="22" y1="76" x2="30" y2="76" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="70" y1="76" x2="78" y2="76" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="22" y1="28" x2="30" y2="28" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="70" y1="28" x2="78" y2="28" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="22" y1="76" x2="30" y2="76" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="70" y1="76" x2="78" y2="76" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="22" y1="28" x2="30" y2="28" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="70" y1="28" x2="78" y2="28" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
               {/* Apex Beacon Pyramid */}
-              <polygon points="50,12 57,21 43,21" fill={resolvedSecondaryColor} opacity="0.9" stroke="#040507" strokeWidth="0.8" />
+              <polygon points="50,12 57,21 43,21" fill={mineralSecondaryColor} opacity="0.9" stroke="#040507" strokeWidth="0.8" />
               {/* Dot Starburst Diamond */}
-              <polygon points="50,22 53.5,25.5 50,29 46.5,25.5" fill="#fef08a" stroke="#040507" strokeWidth="0.6" />
+              <polygon points="50,22 53.5,25.5 50,29 46.5,25.5" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
               {/* Central Letter ف Face */}
-              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="40" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="40" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ف
               </text>
             </g>
@@ -548,7 +592,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* PASS 3: CONDUIT ENERGY GLOW */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <path d="M 18,50 Q 50,20 82,50 Q 50,80 18,50 Z" stroke={resolvedConduitColor} strokeWidth="2.2" fill="none" style={{ filter: `drop-shadow(0 0 4px ${resolvedConduitColor})` }} />
                 <path d="M 44,28 Q 41,20 44,14 Q 47,20 44,28 Z" fill={resolvedSecondaryColor} style={{ filter: `drop-shadow(0 0 3px ${resolvedConduitColor})` }} />
@@ -561,20 +605,20 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* PASS 4: INLAID CRIMSON MINERAL CHISEL RIM */}
-            <g>
-              <circle cx="50" cy="50" r="39" stroke={resolvedConduitColor} strokeWidth="1.2" strokeDasharray="14 5" strokeOpacity="0.7" fill="none" />
-              <path d="M 18,50 Q 50,20 82,50 Q 50,80 18,50 Z" stroke={resolvedConduitColor} strokeWidth="1.4" strokeOpacity="0.85" fill="#1b050d" fillOpacity="0.4" />
+            <g opacity={mineralOpacity}>
+              <circle cx="50" cy="50" r="39" stroke={mineralConduitColor} strokeWidth="1.2" strokeDasharray="14 5" strokeOpacity="0.7" fill="none" />
+              <path d="M 18,50 Q 50,20 82,50 Q 50,80 18,50 Z" stroke={mineralConduitColor} strokeWidth="1.4" strokeOpacity="0.85" fill="#1b050d" fillOpacity="0.4" />
               {/* Triple Chiseled Flame Embers */}
-              <path d="M 44,28 Q 41,20 44,14 Q 47,20 44,28 Z" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.6" />
-              <path d="M 50,23 Q 47,15 50,9 Q 53,15 50,23 Z" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.6" />
-              <path d="M 56,28 Q 53,20 56,14 Q 59,20 56,28 Z" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.6" />
+              <path d="M 44,28 Q 41,20 44,14 Q 47,20 44,28 Z" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
+              <path d="M 50,23 Q 47,15 50,9 Q 53,15 50,23 Z" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
+              <path d="M 56,28 Q 53,20 56,14 Q 59,20 56,28 Z" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
               {/* Radial Containment Spurs */}
-              <line x1="22" y1="22" x2="27" y2="27" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="78" y1="22" x2="73" y2="27" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="22" y1="78" x2="27" y2="73" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="78" y1="78" x2="73" y2="73" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="22" y1="22" x2="27" y2="27" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="78" y1="22" x2="73" y2="27" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="22" y1="78" x2="27" y2="73" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="78" y1="78" x2="73" y2="73" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" />
               {/* Central Letter ش Face */}
-              <text x="50" y="59" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="40" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="50" y="59" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="40" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ش
               </text>
             </g>
@@ -612,7 +656,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* PASS 3: CONDUIT ENERGY GLOW */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <polygon points="50,11 89,50 50,89 11,50" stroke={resolvedConduitColor} strokeWidth="2.2" fill="none" style={{ filter: `drop-shadow(0 0 4px ${resolvedConduitColor})` }} />
                 <line x1="50" y1="14" x2="50" y2="58" stroke={resolvedConduitColor} strokeWidth="2.4" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${resolvedConduitColor})` }} />
@@ -627,20 +671,20 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* PASS 4: INLAID CYAN MINERAL CHISEL RIM */}
-            <g>
-              <polygon points="50,11 89,50 50,89 11,50" stroke={resolvedConduitColor} strokeWidth="1.4" strokeOpacity="0.85" fill="#04121a" fillOpacity="0.5" />
-              <polygon points="50,21 79,50 50,79 21,50" stroke={resolvedSecondaryColor} strokeWidth="1.0" strokeDasharray="4 2" strokeOpacity="0.75" fill="none" />
+            <g opacity={mineralOpacity}>
+              <polygon points="50,11 89,50 50,89 11,50" stroke={mineralConduitColor} strokeWidth="1.4" strokeOpacity="0.85" fill="#04121a" fillOpacity="0.5" />
+              <polygon points="50,21 79,50 50,79 21,50" stroke={mineralSecondaryColor} strokeWidth="1.0" strokeDasharray="4 2" strokeOpacity="0.75" fill="none" />
               {/* Piercing Spear Line */}
-              <line x1="50" y1="14" x2="50" y2="58" stroke={resolvedSecondaryColor} strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="50" y1="14" x2="50" y2="58" stroke={mineralSecondaryColor} strokeWidth="1.8" strokeLinecap="round" />
               {/* Sound-Seal Nodes */}
-              <circle cx="50" cy="13" r="2.8" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.8" />
-              <circle cx="87" cy="50" r="2.8" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.8" />
-              <circle cx="50" cy="87" r="2.8" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.8" />
-              <circle cx="13" cy="50" r="2.8" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.8" />
+              <circle cx="50" cy="13" r="2.8" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.8" />
+              <circle cx="87" cy="50" r="2.8" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.8" />
+              <circle cx="50" cy="87" r="2.8" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.8" />
+              <circle cx="13" cy="50" r="2.8" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.8" />
               {/* Acoustic Dampening Crosshairs */}
-              <line x1="28" y1="50" x2="72" y2="50" stroke={resolvedConduitColor} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6" />
+              <line x1="28" y1="50" x2="72" y2="50" stroke={mineralConduitColor} strokeWidth="1" strokeDasharray="3 3" strokeOpacity="0.6" />
               {/* Central Letter ل Face */}
-              <text x="49" y="57" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="42" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="49" y="57" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="42" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ل
               </text>
             </g>
@@ -683,7 +727,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* PASS 3: CONDUIT ENERGY GLOW */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <path
                   d="M 50,25 C 42,13 18,17 18,38 C 18,59 50,81 50,81 C 50,81 82,59 82,38 C 82,17 58,13 50,25 Z"
@@ -701,24 +745,24 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* PASS 4: INLAID PURPLE MINERAL CHISEL RIM */}
-            <g>
+            <g opacity={mineralOpacity}>
               <path
                 d="M 50,25 C 42,13 18,17 18,38 C 18,59 50,81 50,81 C 50,81 82,59 82,38 C 82,17 58,13 50,25 Z"
-                stroke={resolvedConduitColor}
+                stroke={mineralConduitColor}
                 strokeWidth="1.5"
                 strokeOpacity="0.85"
                 fill="#180724"
                 fillOpacity="0.45"
               />
               {/* Inscribed Octagonal Sanctum Chamber */}
-              <polygon points="42,29 58,29 69,40 69,54 58,65 42,65 31,54 31,40" stroke={resolvedSecondaryColor} strokeWidth="0.9" strokeDasharray="4 2" strokeOpacity="0.75" fill="none" />
+              <polygon points="42,29 58,29 69,40 69,54 58,65 42,65 31,54 31,40" stroke={mineralSecondaryColor} strokeWidth="0.9" strokeDasharray="4 2" strokeOpacity="0.75" fill="none" />
               {/* Twin Illuminated Gemstone Jewels */}
-              <polygon points="44,18 47.5,21.5 44,25 40.5,21.5" fill="#e9d5ff" stroke="#040507" strokeWidth="0.6" />
-              <polygon points="56,18 59.5,21.5 56,25 52.5,21.5" fill="#e9d5ff" stroke="#040507" strokeWidth="0.6" />
+              <polygon points="44,18 47.5,21.5 44,25 40.5,21.5" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
+              <polygon points="56,18 59.5,21.5 56,25 52.5,21.5" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
               {/* Inner Diamond Core Guideline */}
-              <polygon points="50,40 57,47 50,54 43,47" stroke={resolvedConduitColor} strokeWidth="0.8" fill="none" opacity="0.6" />
+              <polygon points="50,40 57,47 50,54 43,47" stroke={mineralConduitColor} strokeWidth="0.8" fill="none" opacity="0.6" />
               {/* Central Letter ق Face */}
-              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="38" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="38" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ق
               </text>
             </g>
@@ -760,7 +804,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* PASS 3: CONDUIT ENERGY GLOW */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <line x1="18" y1="34" x2="82" y2="34" stroke={resolvedConduitColor} strokeWidth="2.4" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${resolvedConduitColor})` }} />
                 <path d="M 14,56 Q 22,64 30,56 Z" fill={resolvedSecondaryColor} style={{ filter: `drop-shadow(0 0 3px ${resolvedConduitColor})` }} />
@@ -772,26 +816,26 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* PASS 4: INLAID JADE MINERAL CHISEL RIM */}
-            <g>
+            <g opacity={mineralOpacity}>
               {/* Balance Beam */}
-              <line x1="18" y1="34" x2="82" y2="34" stroke={resolvedConduitColor} strokeWidth="1.8" strokeLinecap="round" strokeOpacity="0.9" />
-              <line x1="50" y1="20" x2="50" y2="56" stroke={resolvedConduitColor} strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.8" />
+              <line x1="18" y1="34" x2="82" y2="34" stroke={mineralConduitColor} strokeWidth="1.8" strokeLinecap="round" strokeOpacity="0.9" />
+              <line x1="50" y1="20" x2="50" y2="56" stroke={mineralConduitColor} strokeWidth="1.4" strokeLinecap="round" strokeOpacity="0.8" />
               {/* Pivot Ring & Plumb Weight */}
-              <circle cx="50" cy="22" r="3.6" stroke={resolvedSecondaryColor} strokeWidth="1.4" fill="none" />
-              <polygon points="50,56 53,60 50,64 47,60" fill={resolvedSecondaryColor} stroke="#040507" strokeWidth="0.6" />
+              <circle cx="50" cy="22" r="3.6" stroke={mineralSecondaryColor} strokeWidth="1.4" fill="none" />
+              <polygon points="50,56 53,60 50,64 47,60" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
               {/* Scale Pans */}
-              <path d="M 14,56 Q 22,64 30,56 Z" fill="#042017" fillOpacity="0.6" stroke={resolvedSecondaryColor} strokeWidth="1.3" />
-              <line x1="22" y1="34" x2="16" y2="56" stroke={resolvedSecondaryColor} strokeWidth="1.0" opacity="0.85" />
-              <line x1="22" y1="34" x2="28" y2="56" stroke={resolvedSecondaryColor} strokeWidth="1.0" opacity="0.85" />
-              <polygon points="22,53 24.5,56 22,59 19.5,56" fill="#a7f3d0" stroke="#040507" strokeWidth="0.5" />
+              <path d="M 14,56 Q 22,64 30,56 Z" fill="#042017" fillOpacity="0.6" stroke={mineralSecondaryColor} strokeWidth="1.3" />
+              <line x1="22" y1="34" x2="16" y2="56" stroke={mineralSecondaryColor} strokeWidth="1.0" opacity="0.85" />
+              <line x1="22" y1="34" x2="28" y2="56" stroke={mineralSecondaryColor} strokeWidth="1.0" opacity="0.85" />
+              <polygon points="22,53 24.5,56 22,59 19.5,56" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.5" />
 
-              <path d="M 70,56 Q 78,64 86,56 Z" fill="#042017" fillOpacity="0.6" stroke={resolvedSecondaryColor} strokeWidth="1.3" />
-              <line x1="78" y1="34" x2="72" y2="56" stroke={resolvedSecondaryColor} strokeWidth="1.0" opacity="0.85" />
-              <line x1="78" y1="34" x2="84" y2="56" stroke={resolvedSecondaryColor} strokeWidth="1.0" opacity="0.85" />
-              <polygon points="78,53 80.5,56 78,59 75.5,56" fill="#a7f3d0" stroke="#040507" strokeWidth="0.5" />
+              <path d="M 70,56 Q 78,64 86,56 Z" fill="#042017" fillOpacity="0.6" stroke={mineralSecondaryColor} strokeWidth="1.3" />
+              <line x1="78" y1="34" x2="72" y2="56" stroke={mineralSecondaryColor} strokeWidth="1.0" opacity="0.85" />
+              <line x1="78" y1="34" x2="84" y2="56" stroke={mineralSecondaryColor} strokeWidth="1.0" opacity="0.85" />
+              <polygon points="78,53 80.5,56 78,59 75.5,56" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.5" />
 
               {/* Central Letter ح Face */}
-              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="39" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="50" y="58" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="39" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ح
               </text>
             </g>
@@ -827,7 +871,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             </g>
 
             {/* PASS 3: CONDUIT ENERGY GLOW */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <g opacity={glowAlpha}>
                 <circle cx="50" cy="50" r="38" stroke={resolvedConduitColor} strokeWidth="2.0" fill="none" style={{ filter: `drop-shadow(0 0 4px ${resolvedConduitColor})` }} />
                 <polygon points="34,25 66,25 50,49" stroke={resolvedConduitColor} strokeWidth="1.8" fill="none" style={{ filter: `drop-shadow(0 0 3px ${resolvedConduitColor})` }} />
@@ -840,25 +884,25 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             )}
 
             {/* PASS 4: INLAID INDIGO MINERAL CHISEL RIM */}
-            <g>
-              <circle cx="50" cy="50" r="38" stroke={resolvedConduitColor} strokeWidth="1.3" strokeOpacity="0.8" fill="#090a1f" fillOpacity="0.45" />
-              <circle cx="50" cy="50" r="31" stroke={resolvedSecondaryColor} strokeWidth="0.9" strokeDasharray="4 4" strokeOpacity="0.65" fill="none" />
+            <g opacity={mineralOpacity}>
+              <circle cx="50" cy="50" r="38" stroke={mineralConduitColor} strokeWidth="1.3" strokeOpacity="0.8" fill="#090a1f" fillOpacity="0.45" />
+              <circle cx="50" cy="50" r="31" stroke={mineralSecondaryColor} strokeWidth="0.9" strokeDasharray="4 4" strokeOpacity="0.65" fill="none" />
               {/* Hourglass Geometry */}
-              <polygon points="34,25 66,25 50,49" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
-              <polygon points="50,49 66,73 34,73" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
+              <polygon points="34,25 66,25 50,49" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
+              <polygon points="50,49 66,73 34,73" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.8" fill="none" />
               {/* Astrolabe Solar Calibration Ticks */}
-              <line x1="50" y1="12" x2="50" y2="18" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="50" y1="82" x2="50" y2="88" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="12" y1="50" x2="18" y2="50" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="82" y1="50" x2="88" y2="50" stroke={resolvedSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="23" y1="23" x2="27" y2="27" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
-              <line x1="77" y1="23" x2="73" y2="27" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
-              <line x1="23" y1="77" x2="27" y2="73" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
-              <line x1="77" y1="77" x2="73" y2="73" stroke={resolvedSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+              <line x1="50" y1="12" x2="50" y2="18" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="50" y1="82" x2="50" y2="88" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="12" y1="50" x2="18" y2="50" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="82" y1="50" x2="88" y2="50" stroke={mineralSecondaryColor} strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="23" y1="23" x2="27" y2="27" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+              <line x1="77" y1="23" x2="73" y2="27" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+              <line x1="23" y1="77" x2="27" y2="73" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+              <line x1="77" y1="77" x2="73" y2="73" stroke={mineralSecondaryColor} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
               {/* Crown Zenith Star Dot */}
-              <polygon points="63,20 65,23 68,23 66,26 67,29 63,27 59,29 60,26 58,23 61,23" fill="#c7d2fe" stroke="#040507" strokeWidth="0.6" />
+              <polygon points="63,20 65,23 68,23 66,26 67,29 63,27 59,29 60,26 58,23 61,23" fill={mineralSecondaryColor} stroke="#040507" strokeWidth="0.6" />
               {/* Central Letter ض Face */}
-              <text x="50" y="57" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="38" fill={resolvedSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
+              <text x="50" y="57" textAnchor="middle" dominantBaseline="middle" className="font-serif font-black" fontSize="38" fill={mineralSecondaryColor} stroke="#07090e" strokeWidth="0.8" style={{ textShadow: '0 -1px 1px rgba(0,0,0,0.95), 0 1px 1px rgba(255,255,255,0.2)' }}>
                 ض
               </text>
             </g>
@@ -868,18 +912,18 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
         {/* UNIVERSAL SACRED GEOMETRY (For custom glyphs or unmapped categories) */}
         {!detectedCategory && (
           <g opacity="0.8">
-            <circle cx="50" cy="50" r="31" stroke={resolvedConduitColor} strokeWidth="0.8" strokeDasharray="2 4" strokeOpacity="0.45" />
-            <line x1="50" y1="12" x2="50" y2="18" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
-            <line x1="50" y1="82" x2="50" y2="88" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
-            <line x1="12" y1="50" x2="18" y2="50" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
-            <line x1="82" y1="50" x2="88" y2="50" stroke={resolvedConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
+            <circle cx="50" cy="50" r="31" stroke={mineralConduitColor} strokeWidth="0.8" strokeDasharray="2 4" strokeOpacity="0.45" />
+            <line x1="50" y1="12" x2="50" y2="18" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
+            <line x1="50" y1="82" x2="50" y2="88" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
+            <line x1="12" y1="50" x2="18" y2="50" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
+            <line x1="82" y1="50" x2="88" y2="50" stroke={mineralConduitColor} strokeWidth="1.2" strokeOpacity="0.6" strokeLinecap="round" />
           </g>
         )}
 
         {/* ---------------------------------------------------- */}
         {/* LAYER 3: WEATHERING, CRACKS & CHIPPING               */}
         {/* ---------------------------------------------------- */}
-        {showCracks && (
+        {effectiveShowCracks && (
           <g opacity="0.8">
             {/* Primary Stress Fracture */}
             <path
@@ -897,7 +941,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
               strokeLinecap="round"
             />
             {/* Conduit energy fissure seep */}
-            {glowIntensity !== 'none' && (
+            {effectiveGlowIntensity !== 'none' && (
               <path
                 d="M 67.5,17 L 63.2,24.2 L 66.2,32.2 L 60.2,38.2"
                 stroke={resolvedConduitColor}
@@ -918,11 +962,34 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
               stroke={mat.crackHighlight}
               strokeWidth="0.4"
             />
+
+            {/* Extra deep fracture branches when corroded */}
+            {visualState === 'corroded' && (
+              <g>
+                <path
+                  d="M 16,34 L 25,37 L 31,44 L 38,42"
+                  stroke="#020304"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 16.5,34.5 L 25.5,37.5 L 31.5,44.5"
+                  stroke={mat.crackHighlight}
+                  strokeWidth="0.5"
+                />
+                <path
+                  d="M 78,64 L 72,70 L 65,68 L 58,74"
+                  stroke="#020304"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
           </g>
         )}
 
         {/* Chiseled Corner Wear / Edge Chips */}
-        {showWeathering && (
+        {effectiveShowWeathering && (
           <g>
             <polygon points="17,21 21,17 19,23" fill="#040507" opacity="0.9" />
             <line x1="17" y1="21" x2="21" y2="17" stroke={mat.bevelHighlight} strokeWidth="0.6" strokeOpacity="0.4" />
@@ -930,6 +997,15 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
             <circle cx="27.4" cy="36.4" r="0.4" fill={mat.crackHighlight} />
             <circle cx="73" cy="62" r="0.9" fill="#000000" opacity="0.8" />
             <circle cx="73.4" cy="62.4" r="0.4" fill={mat.crackHighlight} />
+          </g>
+        )}
+
+        {/* Mastered Polished Gleam Accents */}
+        {visualState === 'mastered' && (
+          <g className="select-none pointer-events-none">
+            <circle cx="50" cy="12" r="2.2" fill="#ffffff" opacity="0.85" filter="blur(0.5px)" />
+            <circle cx="88" cy="50" r="1.8" fill="#ffffff" opacity="0.75" filter="blur(0.5px)" />
+            <circle cx="12" cy="50" r="1.8" fill="#ffffff" opacity="0.75" filter="blur(0.5px)" />
           </g>
         )}
 
@@ -974,7 +1050,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
                 className="select-none pointer-events-none"
                 fontSize={fontPixelSize * (100 / pixelSize) * 0.82}
                 style={{
-                  filter: glowIntensity !== 'none'
+                  filter: effectiveGlowIntensity !== 'none'
                     ? `drop-shadow(0 2px 4px rgba(0,0,0,0.95)) drop-shadow(0 0 6px ${resolvedConduitColor})`
                     : `drop-shadow(0 2px 4px rgba(0,0,0,0.95))`
                 }}
@@ -1014,7 +1090,7 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
                 {resolvedGlyph}
               </text>
               {/* CONDUIT ENERGY GLOW */}
-              {glowIntensity !== 'none' && (
+              {effectiveGlowIntensity !== 'none' && (
                 <text
                   x="50"
                   y="57.5"
@@ -1039,7 +1115,8 @@ export const AncientCarvedRune: React.FC<AncientCarvedRuneProps> = ({
                 dominantBaseline="middle"
                 className="font-serif font-black select-none pointer-events-none"
                 fontSize={fontPixelSize * (100 / pixelSize)}
-                fill={resolvedSecondaryColor}
+                fill={mineralSecondaryColor}
+                opacity={mineralOpacity}
                 stroke="#07090e"
                 strokeWidth="0.8"
                 style={{

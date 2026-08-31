@@ -7,7 +7,8 @@ import {
   RuneShape,
   StoneVariant,
   GlowIntensity,
-  RuneSize
+  RuneSize,
+  RuneVisualState
 } from './AncientCarvedRune';
 
 export {
@@ -16,7 +17,8 @@ export {
   type RuneShape,
   type StoneVariant,
   type GlowIntensity,
-  type RuneSize
+  type RuneSize,
+  type RuneVisualState
 };
 
 export interface SlipRuneData {
@@ -164,6 +166,7 @@ interface SlipRuneProps {
   showCharOnly?: boolean;
   stoneVariant?: StoneVariant;
   shape?: RuneShape;
+  visualState?: RuneVisualState;
 }
 
 export const SlipRune: React.FC<SlipRuneProps> = ({
@@ -173,7 +176,8 @@ export const SlipRune: React.FC<SlipRuneProps> = ({
   showRuneGlow = true,
   showCharOnly = false,
   stoneVariant = 'basalt',
-  shape = 'octagram'
+  shape = 'octagram',
+  visualState
 }) => {
   const rune = SLIP_RUNES[category] || SLIP_RUNES.Obligations;
 
@@ -202,6 +206,7 @@ export const SlipRune: React.FC<SlipRuneProps> = ({
       className={className}
       showCracks={true}
       showWeathering={true}
+      visualState={visualState}
     />
   );
 };
