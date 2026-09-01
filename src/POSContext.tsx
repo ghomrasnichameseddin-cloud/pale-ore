@@ -1,16 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
-  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, PowerSeal, QuestFolder, QuestList,
+  Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, QuestFolder, QuestList,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
-  MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness, SealRarity,
+  MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness,
   SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget
 } from './types';
-import { INITIAL_STATE, DEFAULT_SEALS, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
+import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 
@@ -124,20 +124,6 @@ interface POSContextType {
   
   // XP Actions
   addXp: (amount: number, reason?: string, skillIds?: string[]) => void;
-
-  // Power Seals CRUD & System Actions
-  addSeal: (seal: Omit<PowerSeal, 'id' | 'status' | 'brokenAt' | 'createdAt'>) => string;
-  updateSeal: (id: string, updates: Partial<PowerSeal>) => void;
-  deleteSeal: (id: string) => void;
-  breakSeal: (id: string) => { success: boolean; message: string };
-  relockSeal: (id: string) => void;
-  resetSealsToDefault: () => void;
-  restoreMissingDefaultSeals: () => void;
-  calibrateSealsToSystemState: () => void;
-  setActiveOreId: (oreId: string) => void;
-  getActiveOre: () => PowerSeal | null;
-  getTotalOreXpMultiplier: () => number;
-  checkCanBreakSeal: (seal: PowerSeal) => { canBreak: boolean; reason?: string; progressPercent: number };
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -236,12 +222,6 @@ interface POSContextType {
   addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
   updateWeakness: (id: string, updates: Partial<Weakness>) => void;
   deleteWeakness: (id: string) => void;
-  unbindWeaknessFromSeal: (weaknessId: string) => void;
-  convertWeaknessToSeal: (
-    weaknessId: string, 
-    customRarity?: SealRarity, 
-    customOverrides?: Partial<PowerSeal>
-  ) => { success: boolean; sealId?: string; message: string };
   getTodayMuhasabahStats: () => {
     todayEarnedXP: number;
     todayLostXP: number;
@@ -252,7 +232,6 @@ interface POSContextType {
     todaySlipsCount: number;
     todayHasanatCount: number;
     activeWeaknessesCount: number;
-    sealedWeaknessesCount: number;
     pendingKaffarahCount: number;
     pendingKaffarahQuests: Quest[];
     mizanTilt: number;
@@ -712,22 +691,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const completedBossCount = getCompletedBossQuestsCount(reconciledQuests, reconciledXpHistory);
           const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
-          const rawSeals: PowerSeal[] = (parsed.seals && parsed.seals.length > 0) ? parsed.seals : DEFAULT_SEALS;
-          const activeSealIds = new Set(rawSeals.map((s: PowerSeal) => s.id));
-          const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) ? parsed.weaknesses : (INITIAL_STATE.weaknesses || []);
-          
-          // Reconcile weaknesses whose bound seal was deleted
-          const reconciledWeaknesses = rawWeaknesses.map((w: Weakness) => {
-            if (w.sealId && !activeSealIds.has(w.sealId)) {
-              return {
-                ...w,
-                status: 'Active' as const,
-                sealId: null,
-                occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
-              };
-            }
-            return w;
-          });
+          const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) 
+            ? parsed.weaknesses.map((w: any) => ({
+                id: w.id,
+                name: w.name,
+                category: w.category || 'Obligations',
+                occurrenceCount: w.occurrenceCount || 0,
+                status: w.status === 'Sealed' ? 'Active' : (w.status || 'Active'),
+                triggerCause: w.triggerCause || '',
+                createdAt: w.createdAt || new Date().toISOString()
+              }))
+            : (INITIAL_STATE.weaknesses || []);
 
           // Robustly merge to guarantee all schema properties are defined
           return {
@@ -741,8 +715,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               coins: parsed.profile?.coins ?? 150,
               focusShields: parsed.profile?.focusShields ?? 0
             },
-            seals: rawSeals,
-            weaknesses: reconciledWeaknesses,
+            weaknesses: rawWeaknesses,
             shopItems: (parsed.shopItems && parsed.shopItems.length > 0) ? parsed.shopItems : DEFAULT_SHOP_ITEMS,
             inventory: parsed.inventory || [],
             goals: parsed.goals || [],
@@ -776,31 +749,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
-
-  // Auto-heal any orphaned weakness whose linked seal was deleted
-  useEffect(() => {
-    const activeSealIds = new Set((state.seals || []).map(s => s.id));
-    const hasOrphans = (state.weaknesses || []).some(w => w.sealId && !activeSealIds.has(w.sealId));
-    if (hasOrphans) {
-      setState(prev => {
-        const currentSealIds = new Set((prev.seals || []).map(s => s.id));
-        return {
-          ...prev,
-          weaknesses: (prev.weaknesses || []).map(w => {
-            if (w.sealId && !currentSealIds.has(w.sealId)) {
-              return {
-                ...w,
-                status: 'Active' as const,
-                sealId: null,
-                occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
-              };
-            }
-            return w;
-          })
-        };
-      });
-    }
-  }, [state.seals]);
 
   const addPlanningDocument = (path: string, name: string, content: string): string => {
     const id = `pdoc-${Date.now()}`;
@@ -1102,7 +1050,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const prevPlayerLevelRef = useRef<number | null>(null);
   const prevSkillLevelsRef = useRef<Record<string, number>>({});
   const prevAttributeLevelsRef = useRef<Record<string, number>>({});
-  const prevSealsStatusRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     // 1. Player Level Up Check
@@ -1158,24 +1105,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     prevAttributeLevelsRef.current = newAttrLevels;
 
-    // 4. Power Seal Shatter Check
-    const newSealStatuses: Record<string, string> = {};
-    (state.seals || []).forEach(seal => {
-      const prevStatus = prevSealsStatusRef.current[seal.id];
-      if (prevStatus !== undefined && prevStatus !== 'Broken' && seal.status === 'Broken') {
-        addSystemMessage({
-          sender: 'OPERATOR',
-          category: 'achievement',
-          title: `🔮 POWER SEAL SHATTERED: ${seal.name}`,
-          content: `Arcane seal broken! "${seal.name}" (${seal.rarity}) is unsealed. Activated Buff: ${seal.buffName} (${seal.buffDescription})!`,
-          priority: 'high'
-        });
-      }
-      newSealStatuses[seal.id] = seal.status;
-    });
-    prevSealsStatusRef.current = newSealStatuses;
-
-  }, [state.profile.xp, state.xpHistory, state.seals, state.skills]);
+  }, [state.profile.xp, state.xpHistory, state.skills]);
 
   const startFocusSession = (questId: string | null = null, workTime = 25, restTime = 5, estimatedCycles?: number) => {
     let questName = "General Deep Focus Session";
@@ -1827,24 +1757,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         divider = 2;
       }
 
-      // Base level is what is in state, we add the earned levels & broken seal attribute boosts
+      // Base level is what is in state, we add the earned levels
       const baseLevel = attr.level;
       const extraLevels = Math.floor(relatedCount / divider);
-      
-      const brokenSealAttributeBoost = (state.seals || [])
-        .filter(s => s.status === 'Broken')
-        .flatMap(s => s.attributeBoosts || [])
-        .filter(b => b.attributeId === attr.id)
-        .reduce((sum, b) => sum + b.boostAmount, 0);
-
-      const level = baseLevel + extraLevels + brokenSealAttributeBoost;
+      const level = baseLevel + extraLevels;
       const progress = Math.round(((relatedCount % divider) / divider) * 100);
 
       return {
         ...attr,
         baseLevel,
         earnedBonus: extraLevels,
-        sealBoost: brokenSealAttributeBoost,
         total: level,
         level,
         progress
@@ -2432,13 +2354,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : Math.max(0, questToComplete.xp);
 
     let earnedXp = Math.round(baseQuestXp * habitXpMultiplier * questPerkXpMultiplier);
-
-    // Calculate Power Seal XP Bonus Multiplier
-    const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
-    const sealXpMultiplier = brokenSeals.reduce((acc, s) => acc * (s.xpBonusMultiplier || 1.0), 1.0);
-    if (sealXpMultiplier > 1.0) {
-      earnedXp = Math.round(earnedXp * sealXpMultiplier);
-    }
 
     // Create XP History entry
     const xpHistoryId = `h-${Date.now()}`;
@@ -3233,401 +3148,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       attributes: prev.attributes.map(a => a.id === id ? { ...a, level } : a)
     }));
   };
-
-  // POWER SEALS CRUD & ACTIONS
-  const addSeal = (seal: Omit<PowerSeal, 'id' | 'status' | 'brokenAt' | 'createdAt'>): string => {
-    const id = `seal-${Date.now()}`;
-    const newSeal: PowerSeal = {
-      ...seal,
-      id,
-      status: 'Locked',
-      createdAt: new Date().toISOString()
-    };
-    setState(prev => ({
-      ...prev,
-      seals: [...(prev.seals || []), newSeal]
-    }));
-    addSystemMessage({
-      sender: 'OPERATOR',
-      category: 'log',
-      title: 'Power Seal Formed',
-      content: `Constructed new ${seal.rarity} Power Seal "${seal.name}". Seal is currently locked.`,
-      priority: 'low'
-    });
-    return id;
-  };
-
-  const updateSeal = (id: string, updates: Partial<PowerSeal>) => {
-    setState(prev => ({
-      ...prev,
-      seals: (prev.seals || []).map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
-  };
-
-  const deleteSeal = (id: string) => {
-    setState(prev => {
-      const remainingSeals = (prev.seals || []).filter(s => s.id !== id);
-      const remainingSealIds = new Set(remainingSeals.map(s => s.id));
-      
-      const updatedWeaknesses = (prev.weaknesses || []).map(w => {
-        if (w.sealId === id || (w.sealId && !remainingSealIds.has(w.sealId))) {
-          return {
-            ...w,
-            status: 'Active' as const,
-            sealId: null,
-            occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
-          };
-        }
-        return w;
-      });
-
-      return {
-        ...prev,
-        seals: remainingSeals,
-        weaknesses: updatedWeaknesses
-      };
-    });
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'log',
-      title: '⛓️ ELEMENTAL ORE DELETED',
-      content: 'Elemental ore deleted. Any bound Chains of the Nafs have been liberated and restored to 5/5 slips, ready to be bound again.',
-      priority: 'medium'
-    });
-  };
-
-  const relockSeal = (id: string) => {
-    setState(prev => ({
-      ...prev,
-      seals: (prev.seals || []).map(s => s.id === id ? { ...s, status: 'Locked' as const, brokenAt: null } : s)
-    }));
-  };
-
-  const resetSealsToDefault = () => {
-    setState(prev => ({
-      ...prev,
-      seals: DEFAULT_SEALS
-    }));
-  };
-
-  const restoreMissingDefaultSeals = () => {
-    setState(prev => {
-      const existingIds = new Set((prev.seals || []).map(s => s.id));
-      const missing = DEFAULT_SEALS.filter(ds => !existingIds.has(ds.id));
-      if (missing.length === 0) return prev;
-      return {
-        ...prev,
-        seals: [...(prev.seals || []), ...missing]
-      };
-    });
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'log',
-      title: '✦ DEFAULT ORES RESTORED',
-      content: 'Missing default elemental ores have been restored to your sanctum.',
-      priority: 'low'
-    });
-  };
-
-  const calibrateSealsToSystemState = () => {
-    const playerInfo = getPlayerLevelInfo();
-    const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
-
-    setState(prev => ({
-      ...prev,
-      seals: (prev.seals || []).map(seal => {
-        if (seal.status === 'Broken') return seal;
-
-        // Harmonize required level with realistic player progression
-        let newReqLevel = seal.requiredLevel;
-        if (seal.rarity === 'Common') newReqLevel = Math.max(1, playerInfo.level);
-        else if (seal.rarity === 'Rare') newReqLevel = Math.max(1, Math.min(playerInfo.level + 1, 3));
-        else if (seal.rarity === 'Epic') newReqLevel = Math.max(1, Math.min(playerInfo.level + 2, 5));
-        else if (seal.rarity === 'Legendary') newReqLevel = Math.max(2, Math.min(playerInfo.level + 3, 8));
-        else if (seal.rarity === 'Divine') newReqLevel = Math.max(3, Math.min(playerInfo.level + 5, 12));
-
-        // Harmonize Coin & XP cost with player's total reserves
-        let newCostCoins = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
-        const totalPurchasingPower = (prev.profile.coins ?? 0) + playerInfo.totalXp;
-        if (totalPurchasingPower === 0) {
-          newCostCoins = seal.rarity === 'Common' ? 0 : 25;
-        } else if (newCostCoins > totalPurchasingPower) {
-          newCostCoins = Math.max(25, Math.round(totalPurchasingPower * 0.35));
-        }
-
-        // Harmonize streak requirement with system active streak
-        let newStreak = seal.requiredStreakDays;
-        if (newStreak && newStreak > maxStreakInSystem + 3) {
-          newStreak = Math.max(1, maxStreakInSystem + 1);
-        }
-
-        // Validate linked quest requirement
-        let newQuestId = seal.requiredQuestId;
-        if (newQuestId && !prev.quests.some(q => q.id === newQuestId)) {
-          newQuestId = undefined;
-        }
-
-        return {
-          ...seal,
-          requiredLevel: newReqLevel,
-          costCoins: newCostCoins,
-          costXP: newCostCoins,
-          requiredStreakDays: newStreak,
-          requiredQuestId: newQuestId
-        };
-      })
-    }));
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'achievement',
-      title: '✦ SEAL CONDITIONS HARMONIZED',
-      content: `All elemental ore chain requirements have been harmonized to current system state (Level ${playerInfo.level}, ${state.profile.coins ?? 0} Coins, ${playerInfo.totalXp} XP reserves, and active streaks).`,
-      priority: 'medium'
-    });
-  };
-
-  const breakSeal = (id: string): { success: boolean; message: string } => {
-    const targetSeal = (state.seals || []).find(s => s.id === id);
-    if (!targetSeal) return { success: false, message: 'Seal not found in system manifest.' };
-    if (targetSeal.status === 'Broken') return { success: false, message: 'Seal is already shattered!' };
-
-    const playerInfo = getPlayerLevelInfo();
-    // 1. Level Requirement Check
-    if (playerInfo.level < targetSeal.requiredLevel) {
-      return { 
-        success: false, 
-        message: `Requires Level ${targetSeal.requiredLevel}+ (Current: Level ${playerInfo.level}). Complete more directives to level up.` 
-      };
-    }
-
-    // 2. Quest Requirement Check
-    if (targetSeal.requiredQuestId) {
-      const reqQuest = state.quests.find(q => q.id === targetSeal.requiredQuestId);
-      if (reqQuest && reqQuest.status !== 'Completed') {
-        return { 
-          success: false, 
-          message: `Requires completion of directive "${reqQuest.name}".` 
-        };
-      }
-    }
-
-    // 3. Skill Requirement Check
-    if (targetSeal.requiredSkillId && targetSeal.requiredSkillLevel) {
-      const skillInfo = getSkillXpAndLevel(targetSeal.requiredSkillId);
-      const reqSkill = state.skills.find(s => s.id === targetSeal.requiredSkillId);
-      if (skillInfo.level < targetSeal.requiredSkillLevel) {
-        return { 
-          success: false, 
-          message: `Requires Level ${targetSeal.requiredSkillLevel}+ in skill "${reqSkill?.name || 'Required Skill'}".` 
-        };
-      }
-    }
-
-    // 3.5. Required Habit Streak Check
-    if (targetSeal.requiredStreakDays) {
-      const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
-      if (maxStreakInSystem < targetSeal.requiredStreakDays) {
-        return {
-          success: false,
-          message: `Requires a ${targetSeal.requiredStreakDays}-day habit streak (Highest Active/Best Streak: ${maxStreakInSystem} days).`
-        };
-      }
-    }
-
-    // 4. Resource Cost Check: Coins required; if insufficient coins, XP fills the difference
-    const requiredCoins = targetSeal.costCoins !== undefined ? targetSeal.costCoins : (targetSeal.costXP ?? 0);
-    const availableCoins = state.profile.coins ?? 0;
-    const availableXP = playerInfo.totalXp;
-
-    const coinsToDeduct = Math.min(availableCoins, requiredCoins);
-    const deficitAfterCoins = Math.max(0, requiredCoins - coinsToDeduct);
-    const xpDifferenceToDeduct = deficitAfterCoins;
-
-    if (availableXP < xpDifferenceToDeduct) {
-      const totalShort = xpDifferenceToDeduct - availableXP;
-      return { 
-        success: false, 
-        message: `Insufficient resources to unbind chains. Required: ${requiredCoins} Coins. Available: ${availableCoins} Coins + ${availableXP} XP reserves (Short by ${totalShort} XP to fill the difference).` 
-      };
-    }
-
-    const timestamp = getSystemTimestamp(state.systemDate);
-
-    // Deduct XP difference if coins were insufficient
-    const xpEntries: XPHistoryEntry[] = [];
-    if (xpDifferenceToDeduct > 0) {
-      xpEntries.push({
-        id: `h-seal-shatter-${Date.now()}`,
-        questId: null,
-        questName: `⛓️ CHAINS SHATTERED: "${targetSeal.name}" (${coinsToDeduct} Coins + ${xpDifferenceToDeduct} XP difference)`,
-        xp: -xpDifferenceToDeduct,
-        timestamp,
-        skillIds: []
-      });
-    } else if (requiredCoins === 0) {
-      xpEntries.push({
-        id: `h-seal-shatter-${Date.now()}`,
-        questId: null,
-        questName: `⛓️ CHAINS SHATTERED: "${targetSeal.name}" (Sacred Awakening)`,
-        xp: 100, // Bonus XP for free seal
-        timestamp,
-        skillIds: []
-      });
-    }
-
-    setState(prev => {
-      const updatedSeals = (prev.seals || []).map(s => 
-        s.id === id ? { ...s, status: 'Broken' as const, brokenAt: timestamp } : s
-      );
-
-      const updatedHistory = resolveRecoveredPenalties([...xpEntries, ...prev.xpHistory]);
-      const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
-      const level = calculatePlayerLevel(totalXp);
-      const remainingCoins = Math.max(0, (prev.profile.coins ?? 0) - coinsToDeduct);
-
-      return {
-        ...prev,
-        seals: updatedSeals,
-        xpHistory: updatedHistory,
-        profile: {
-          ...prev.profile,
-          coins: remainingCoins,
-          momentum: Math.min(100, prev.profile.momentum + (targetSeal.momentumBoost || 10)),
-          xp: totalXp,
-          level
-        }
-      };
-    });
-
-    const paymentSummary = xpDifferenceToDeduct > 0
-      ? `Paid ${coinsToDeduct} Coins & ${xpDifferenceToDeduct} XP (filling difference)`
-      : coinsToDeduct > 0
-        ? `Paid ${coinsToDeduct} Coins`
-        : `Sacred Awakening`;
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'achievement',
-      title: `⛓️ CHAINS SHATTERED: ${targetSeal.name.toUpperCase()}`,
-      content: `UNCHAINED! ${paymentSummary}. Granted Buff: "${targetSeal.buffName}" (${targetSeal.buffDescription}). Passive system multiplier active.`,
-      priority: 'high'
-    });
-
-    return { 
-      success: true, 
-      message: `⛓️ CHAINS SHATTERED! ${paymentSummary}. Empowered with "${targetSeal.buffName}".` 
-    };
-  };
-
-  const setActiveOreId = (oreId: string) => {
-    setState(prev => ({
-      ...prev,
-      profile: {
-        ...prev.profile,
-        activeOreId: oreId
-      }
-    }));
-  };
-
-  const getActiveOre = (): PowerSeal | null => {
-    const seals = state.seals || [];
-    if (seals.length === 0) return null;
-    
-    // 1. If user explicitly set an active ore
-    if (state.profile.activeOreId) {
-      const explicit = seals.find(s => s.id === state.profile.activeOreId);
-      if (explicit) return explicit;
-    }
-
-    // 2. Default to highest-tier broken (ignited) seal
-    const rarityRank: Record<string, number> = {
-      Forbidden: 6,
-      Divine: 5,
-      Legendary: 4,
-      Epic: 3,
-      Rare: 2,
-      Common: 1
-    };
-    const brokenSeals = seals.filter(s => s.status === 'Broken');
-    if (brokenSeals.length > 0) {
-      return [...brokenSeals].sort((a, b) => (rarityRank[b.rarity] || 0) - (rarityRank[a.rarity] || 0))[0];
-    }
-
-    // 3. Fallback to the first seal in manifest
-    return seals[0];
-  };
-
-  const getTotalOreXpMultiplier = (): number => {
-    const brokenSeals = (state.seals || []).filter(s => s.status === 'Broken');
-    return brokenSeals.reduce((acc, s) => acc * (s.xpBonusMultiplier || 1.0), 1.0);
-  };
-
-  const checkCanBreakSeal = (seal: PowerSeal): { canBreak: boolean; reason?: string; progressPercent: number } => {
-    const playerInfo = getPlayerLevelInfo();
-    const lvlOk = playerInfo.level >= seal.requiredLevel;
-    
-    const requiredCoins = seal.costCoins !== undefined ? seal.costCoins : (seal.costXP ?? 0);
-    const availableCoins = state.profile.coins ?? 0;
-    const availableXP = playerInfo.totalXp;
-    const coinsToDeduct = Math.min(availableCoins, requiredCoins);
-    const xpDifferenceNeeded = Math.max(0, requiredCoins - coinsToDeduct);
-    const costOk = requiredCoins === 0 || availableXP >= xpDifferenceNeeded;
-    
-    let questOk = true;
-    let questReason = '';
-    if (seal.requiredQuestId) {
-      const q = state.quests.find(item => item.id === seal.requiredQuestId);
-      questOk = q ? q.status === 'Completed' : false;
-      if (!questOk) questReason = `Requires directive "${q?.name || 'Required Quest'}"`;
-    }
-    
-    let skillOk = true;
-    let skillReason = '';
-    if (seal.requiredSkillId && seal.requiredSkillLevel) {
-      const sInfo = getSkillXpAndLevel(seal.requiredSkillId);
-      skillOk = sInfo.level >= seal.requiredSkillLevel;
-      if (!skillOk) skillReason = `Requires Skill Level ${seal.requiredSkillLevel}`;
-    }
-
-    let streakOk = true;
-    let streakReason = '';
-    if (seal.requiredStreakDays) {
-      const maxStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
-      streakOk = maxStreak >= seal.requiredStreakDays;
-      if (!streakOk) streakReason = `Requires ${seal.requiredStreakDays}-day streak (Current: ${maxStreak})`;
-    }
-
-    const canBreak = lvlOk && costOk && questOk && skillOk && streakOk;
-    
-    let reason = '';
-    if (!lvlOk) reason = `Requires Level ${seal.requiredLevel} (Current: ${playerInfo.level})`;
-    else if (!costOk) {
-      const totalShort = xpDifferenceNeeded - availableXP;
-      reason = `Requires ${requiredCoins} Coins (${availableCoins} Coins + ${availableXP} XP, short by ${totalShort})`;
-    }
-    else if (!questOk) reason = questReason;
-    else if (!skillOk) reason = skillReason;
-    else if (!streakOk) reason = streakReason;
-
-    // Progress computation
-    const checks = [lvlOk ? 1 : Math.min(1, playerInfo.level / Math.max(1, seal.requiredLevel))];
-    if (requiredCoins > 0) {
-      const totalAvailable = availableCoins + availableXP;
-      checks.push(costOk ? 1 : Math.min(1, totalAvailable / Math.max(1, requiredCoins)));
-    }
-    if (seal.requiredStreakDays) {
-      const maxStreak = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
-      checks.push(streakOk ? 1 : Math.min(1, maxStreak / seal.requiredStreakDays));
-    }
-    const avgProgress = checks.reduce((a, b) => a + b, 0) / checks.length;
-    const progressPercent = Math.round(avgProgress * 100);
-
-    return { canBreak, reason, progressPercent };
-  };
-
 
   // Reward Shop & Coins Operations
   const isShopLocked = React.useMemo(() => {
@@ -5155,127 +4675,6 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     }));
   };
 
-  const unbindWeaknessFromSeal = (weaknessId: string) => {
-    setState(prev => {
-      const targetWeakness = (prev.weaknesses || []).find(w => w.id === weaknessId);
-      if (!targetWeakness) return prev;
-      const linkedSealId = targetWeakness.sealId;
-      
-      return {
-        ...prev,
-        seals: linkedSealId ? (prev.seals || []).filter(s => s.id !== linkedSealId) : prev.seals,
-        weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? {
-          ...w,
-          status: 'Active' as const,
-          sealId: null,
-          occurrenceCount: Math.max(w.occurrenceCount || 0, 5)
-        } : w)
-      };
-    });
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'log',
-      title: '⛓️ CHAIN UNBOUND',
-      content: 'The chain has been unbound from its elemental ore and is ready to be forged or bound again.',
-      priority: 'low'
-    });
-  };
-
-  const convertWeaknessToSeal = (
-    weaknessId: string, 
-    customRarity?: SealRarity,
-    customOverrides?: Partial<PowerSeal>
-  ) => {
-    const weakness = (state.weaknesses || []).find(w => w.id === weaknessId);
-    if (!weakness) {
-      return { success: false, message: 'Weakness not found' };
-    }
-
-    // Check if it's already bound to a seal that currently exists
-    const existingSeal = (state.seals || []).find(s => s.id === weakness.sealId);
-    if (existingSeal && weakness.status === 'Sealed' && !customOverrides) {
-      return { success: false, message: `Already bound to Power Seal: ${existingSeal.name}` };
-    }
-
-    const playerInfo = getPlayerLevelInfo();
-    const runeInfo = SLIP_RUNES[weakness.category] || SLIP_RUNES.Obligations;
-    const maxStreakInSystem = state.quests.reduce((max, q) => Math.max(max, q.streakCount || 0, q.bestStreak || 0), 0);
-
-    // Conditions strictly harmonized to current system state
-    const requiredLevel = customOverrides?.requiredLevel ?? Math.max(1, playerInfo.level);
-    const combinedPurchasingPower = (state.profile.coins ?? 0) + playerInfo.totalXp;
-    const costCoins = customOverrides?.costCoins !== undefined
-      ? customOverrides.costCoins
-      : (customOverrides?.costXP !== undefined
-          ? customOverrides.costXP
-          : (combinedPurchasingPower > 0
-              ? Math.max(25, Math.round(combinedPurchasingPower * 0.25))
-              : 0));
-    const requiredStreakDays = customOverrides?.requiredStreakDays ?? (maxStreakInSystem > 0 ? Math.min(3, maxStreakInSystem) : 0);
-
-    // Link to an active directive in the system if available
-    const relatedQuest = state.quests.find(q => 
-      q.status === 'Active' && (
-        (weakness.category === 'Obligations' && (q.name.toLowerCase().includes('prayer') || q.name.toLowerCase().includes('fajr') || q.name.toLowerCase().includes('salah') || q.name.toLowerCase().includes('quran'))) ||
-        (weakness.category === 'Wasted Potential' && (q.type === 'Main' || q.name.toLowerCase().includes('focus') || q.name.toLowerCase().includes('deep work'))) ||
-        (weakness.category === 'Desires' && (q.name.toLowerCase().includes('fasting') || q.name.toLowerCase().includes('workout') || q.name.toLowerCase().includes('detox') || q.name.toLowerCase().includes('discipline'))) ||
-        (weakness.category === 'Speech' && (q.name.toLowerCase().includes('silence') || q.name.toLowerCase().includes('adhkar') || q.name.toLowerCase().includes('dhikr'))) ||
-        (weakness.category === 'Heart' && (q.name.toLowerCase().includes('reflection') || q.name.toLowerCase().includes('gratitude') || q.name.toLowerCase().includes('tahajjud'))) ||
-        (weakness.category === 'Rights' && (q.name.toLowerCase().includes('family') || q.name.toLowerCase().includes('charity') || q.name.toLowerCase().includes('sadaqah')))
-      )
-    );
-
-    const sealId = `seal-weakness-${Date.now()}`;
-    const rarity: SealRarity = customOverrides?.rarity || customRarity || (weakness.occurrenceCount >= 8 ? 'Epic' : weakness.occurrenceCount >= 5 ? 'Rare' : 'Common');
-    
-    const newSeal: PowerSeal = {
-      id: sealId,
-      name: customOverrides?.name || `Chain of ${weakness.name}`,
-      description: customOverrides?.description || `A heavy chain forged to shatter the behavioral cycle of "${weakness.name}". Root cause: "${weakness.triggerCause}". Rooted in ${runeInfo.name} (${runeInfo.arabicTitle}). Execute sustained discipline to break this chain and earn permanent multiplier bonuses.`,
-      rarity,
-      status: 'Locked',
-      requiredLevel,
-      costCoins,
-      costXP: costCoins,
-      requiredStreakDays,
-      requiredQuestId: customOverrides?.requiredQuestId !== undefined ? customOverrides.requiredQuestId : (relatedQuest ? relatedQuest.id : undefined),
-      buffName: customOverrides?.buffName || `Liberation: ${weakness.name.replace(/^Weakness:\s*/i, '')}`,
-      buffDescription: customOverrides?.buffDescription || `+15% XP on Recovery directives, +10 Momentum floor, and resilient mastery against ${weakness.category} slips (+2 ${runeInfo.attributeName} Boost).`,
-      xpBonusMultiplier: customOverrides?.xpBonusMultiplier || 1.15,
-      momentumBoost: customOverrides?.momentumBoost || 10,
-      attributeBoosts: customOverrides?.attributeBoosts || [{ attributeId: runeInfo.attributeId, boostAmount: 2 }],
-      runeSymbol: customOverrides?.runeSymbol || runeInfo.runeChar,
-      colorTheme: customOverrides?.colorTheme || runeInfo.themeColor,
-      createdAt: getSystemTimestamp(state.systemDate)
-    };
-
-    setState(prev => {
-      // Remove any previously linked seal with old sealId if one existed
-      const filteredSeals = (prev.seals || []).filter(s => s.id !== weakness.sealId);
-      return {
-        ...prev,
-        seals: [...filteredSeals, newSeal],
-        weaknesses: (prev.weaknesses || []).map(w => w.id === weaknessId ? { 
-          ...w, 
-          status: 'Sealed' as const, 
-          sealId,
-          occurrenceCount: 0 // Reset the meters of chains of nafs to 0 upon seal formation
-        } : w)
-      };
-    });
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'achievement',
-      title: `⛓️ WEAKNESS SEAL FORGED: ${newSeal.name}`,
-      content: `The persistent weakness has been bound into a Power Seal. Chain meter reset to 0/5. Fulfill its discipline requirements to shatter the chain and claim permanent multiplier bonuses.`,
-      priority: 'high'
-    });
-
-    return { success: true, sealId, message: `Weakness successfully bound to Power Seal: ${newSeal.name}` };
-  };
-
   const getTodayMuhasabahStats = () => {
     const currentSysDate = state.systemDate || getLocalDateString();
     const todayEntries = (state.muhasabahEntries || []).filter(e => e.date === currentSysDate);
@@ -5294,7 +4693,6 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
 
     const weaknesses = state.weaknesses || [];
     const activeWeaknessesCount = weaknesses.filter(w => w.status === 'Active').length;
-    const sealedWeaknessesCount = weaknesses.filter(w => w.status === 'Sealed' || w.sealId).length;
 
     // Completed Hasanaat count today (positive completed quests + focus cycles logged today)
     const questsDoneToday = (state.quests || []).filter(q => {
@@ -5340,7 +4738,6 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       todaySlipsCount: todayEntries.length,
       todayHasanatCount,
       activeWeaknessesCount,
-      sealedWeaknessesCount,
       pendingKaffarahCount: pendingKaffarah.length,
       pendingKaffarahQuests: pendingKaffarah,
       mizanTilt,
@@ -6927,18 +6324,6 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       equipSkillTitle,
       updateAttributeBase,
       addXp,
-      addSeal,
-      updateSeal,
-      deleteSeal,
-      breakSeal,
-      relockSeal,
-      resetSealsToDefault,
-      restoreMissingDefaultSeals,
-      calibrateSealsToSystemState,
-      setActiveOreId,
-      getActiveOre,
-      getTotalOreXpMultiplier,
-      checkCanBreakSeal,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,
@@ -7007,8 +6392,6 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       addWeakness,
       updateWeakness,
       deleteWeakness,
-      unbindWeaknessFromSeal,
-      convertWeaknessToSeal,
       getTodayMuhasabahStats,
       recalibrateMizan,
       getSpiritualLog,

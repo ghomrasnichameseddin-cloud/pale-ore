@@ -149,7 +149,6 @@ export interface Attribute {
   icon?: string;
   baseLevel?: number;
   earnedBonus?: number;
-  sealBoost?: number;
   total?: number;
 }
 
@@ -172,7 +171,6 @@ export interface UserProfile {
   titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
   fatigueLevel?: number; // 0 to 100
   lastFatigueUpdateDate?: string;
-  activeOreId?: string; // Currently focused or resonating ore in the Crystalline Crucible
 }
 
 export interface XPHistoryEntry {
@@ -222,36 +220,6 @@ export interface PlanningDocument {
   linkedReviews?: string[]; // Review IDs
   linkedAttributes?: string[]; // Attribute IDs
   updatedAt: string;
-}
-
-export type SealRarity = 'Common' | 'Rare' | 'Epic' | 'Legendary' | 'Divine' | 'Forbidden';
-export type SealStatus = 'Locked' | 'Unsealing' | 'Broken';
-
-export interface PowerSeal {
-  id: string;
-  name: string;
-  description: string;
-  rarity: SealRarity;
-  status: SealStatus;
-  brokenAt?: string | null;
-  requiredLevel: number;
-  requiredRank?: string;
-  costCoins?: number; // Primary coin cost required to unbind/shatter the chain
-  costXP?: number; // Fallback / legacy cost (XP fills the difference if coins insufficient)
-  requiredQuestId?: string | null;
-  requiredSkillId?: string | null;
-  requiredSkillLevel?: number;
-  requiredStreakDays?: number;
-  buffName: string;
-  buffDescription: string;
-  xpBonusMultiplier?: number; // e.g. 1.15 (+15%)
-  momentumBoost?: number;
-  attributeBoosts?: { attributeId: string; boostAmount: number }[];
-  unlockedFeatures?: string[];
-  runeSymbol?: string;
-  colorTheme?: string;
-  carvedFacets?: number; // Cleaved and polished facet count toward full crystalline emergence
-  createdAt: string;
 }
 
 export type ShopItemCategory = 'Real Life Reward' | 'System Perk' | 'Custom Personal';
@@ -331,7 +299,7 @@ export interface MuhasabahEntry {
   weaknessName?: string | null;
 }
 
-export type WeaknessStatus = 'Active' | 'Under Control' | 'Overcome' | 'Sealed';
+export type WeaknessStatus = 'Active' | 'Under Control' | 'Overcome';
 
 export interface Weakness {
   id: string;
@@ -343,7 +311,6 @@ export interface Weakness {
   lastOccurrenceDate: string;
   status: WeaknessStatus;
   correctiveStrategy?: string; // What the operator will do when triggered
-  sealId?: string | null; // Linked PowerSeal ID if converted to a Seal
   createdAt: string;
 }
 
@@ -574,7 +541,6 @@ export interface POSState {
   lists: QuestList[];
   skills: Skill[];
   attributes: Attribute[];
-  seals?: PowerSeal[];
   shopItems?: ShopItem[];
   inventory?: RedeemedReward[];
   profile: UserProfile;

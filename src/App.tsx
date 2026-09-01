@@ -11,7 +11,6 @@ import { FrameworksView } from './components/FrameworksView';
 import { OracleSystemView, OracleSystemSubTab } from './components/OracleSystemView';
 import { QuestsView } from './components/QuestsView';
 import { SkillsView } from './components/SkillsView';
-import { SealingPowerView } from './components/SealingPowerView';
 import { RewardShopView } from './components/RewardShopView';
 import { MuhasabahView } from './components/MuhasabahView';
 import { SpiritualTrackerView } from './components/SpiritualTrackerView';
@@ -31,7 +30,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'seals' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -102,7 +101,6 @@ function AppContent() {
       title: 'MASTERY & PROGRESSION',
       items: [
         { id: 'skills', label: 'Skills & Competencies', icon: Award, desc: 'Core mastery & competency tracks' },
-        { id: 'seals', label: 'Ores & Chains', icon: Pickaxe, desc: 'Shatter chains on luminescent ores for passive multipliers' },
         { id: 'shop', label: 'Imperial Vault', icon: ShoppingBag, desc: 'Channel gold dinars into bounties & perks' }
       ]
     },
@@ -618,7 +616,6 @@ function AppContent() {
               )}
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
-              {activeTab === 'seals' && <SealingPowerView />}
               {activeTab === 'shop' && <RewardShopView />}
               {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance') && (
                 <OracleSystemView 

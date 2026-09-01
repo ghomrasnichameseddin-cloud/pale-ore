@@ -15,7 +15,6 @@ import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 import { MuhasabahModal } from './MuhasabahModal';
 import { BossProgressionBanner } from './BossProgressionBanner';
-import { CrystallineCrucible, OreXpChannelingBadge } from './CrystallineCrucible';
 
 interface DashboardViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
@@ -610,9 +609,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             )}
           </div>
 
-          {/* THE CRYSTALLINE CRUCIBLE: ACTIVE ORE RESONANCE & STRUCTURAL GEOMETRY */}
-          <CrystallineCrucible onNavigateToCodex={() => onNavigate?.('seals')} />
-
           {/* ATTRIBUTES MATRIX PREVIEW CARD */}
           <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden space-y-4 shadow-xl" id="dashboard-attributes-matrix">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
@@ -699,7 +695,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               const totalVal = selectedAttr.total ?? selectedAttr.level;
               const baseVal = selectedAttr.baseLevel ?? 10;
               const bonusVal = selectedAttr.earnedBonus ?? 0;
-              const sealVal = selectedAttr.sealBoost ?? 0;
 
               // Find matching skills
               const relatedSkills = state.skills.filter(s => {
@@ -735,7 +730,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   </div>
 
                   {/* FORMULA BREAKDOWN GRID */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+                  <div className="grid grid-cols-3 gap-2 text-center font-mono">
                     <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
                       <span className="text-[9px] text-zinc-400 uppercase block">STARTING BASELINE</span>
                       <span className="text-sm font-bold text-[var(--accent-bright)]">{baseVal}</span>
@@ -743,10 +738,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
                       <span className="text-[9px] text-zinc-400 uppercase block">DECREE EARNED</span>
                       <span className="text-sm font-bold text-emerald-400">+{bonusVal}</span>
-                    </div>
-                    <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
-                      <span className="text-[9px] text-zinc-400 uppercase block">CHAIN BOOST</span>
-                      <span className="text-sm font-bold text-[var(--accent-highlight)]">+{sealVal}</span>
                     </div>
                     <div className="p-2 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg">
                       <span className="text-[9px] text-[var(--accent-highlight)] font-bold uppercase block">TOTAL POWER</span>
@@ -1047,7 +1038,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             }`}>
                               {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
                             </span>
-                            {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
                           </div>
                         );
                       })()}

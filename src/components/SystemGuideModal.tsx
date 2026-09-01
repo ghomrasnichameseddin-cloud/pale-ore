@@ -72,7 +72,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'mastery',
-      title: '7. Skills, Seals & Ores Classification',
+      title: '7. Skills Tree & Class Jobs',
       icon: Award,
       badge: 'PROGRESSION',
       color: 'text-amber-300',
@@ -93,7 +93,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'shop-rewards',
-      title: '10. Luminescent Ore Shop',
+      title: '10. Luminescent Reward Shop',
       icon: ShoppingBag,
       badge: 'REWARDS',
       color: 'text-[#e5c875]',
@@ -241,7 +241,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <span>🏆 MASTERY</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
-                      Level up skills, unseal latent Power Seals for passive multipliers, and spend earned coins in the Reward Shop.
+                      Level up skills, equip custom class titles, and spend earned coins in the Reward Shop.
                     </p>
                   </div>
                 </div>
@@ -305,15 +305,15 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Scale className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-amber-300 block">Muhāsabah Chamber</span>
-                        <span className="text-[11px] text-zinc-400">Self-accountability ledger, bounded XP friction (−500 cap), restitution quests & weakness seals.</span>
+                        <span className="text-[11px] text-zinc-400">Self-accountability ledger, bounded XP friction (−500 cap), and restitution quests.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('seals')} className="p-3 bg-[#0d1017]/80 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                    <div onClick={() => handleNavigate('skills')} className="p-3 bg-[#0d1017]/80 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <Award className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-purple-300 block">Skills, Seals & Ores</span>
-                        <span className="text-[11px] text-zinc-400">Level skill trees, shatter ancient Pale Ore chains, equip custom career job perks.</span>
+                        <span className="font-bold text-purple-300 block">Skills Mastery & Jobs</span>
+                        <span className="text-[11px] text-zinc-400">Level skill trees, practice disciplines, equip custom career job perks.</span>
                       </div>
                     </div>
 
@@ -396,7 +396,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="text-[9px] bg-purple-950 text-purple-400 px-2 py-0.5 rounded">Lvl 40–59</span>
                       </div>
                       <div className="text-xs text-zinc-200 font-sans font-semibold">Advanced Specialist</div>
-                      <p className="text-zinc-400 text-[10px] font-sans">High-velocity delivery, multiple seal advancements, and a refined strategic operating rhythm.</p>
+                      <p className="text-zinc-400 text-[10px] font-sans">High-velocity delivery, advanced skill mastery, and a refined strategic operating rhythm.</p>
                     </div>
 
                     {/* A-Rank */}
@@ -652,42 +652,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </ul>
                   </div>
                 </div>
-
-                {/* 5. POWER SEAL 10 EVOLUTIONARY TIERS */}
-                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
-                      <Sparkles className="h-4 w-4 text-purple-400" />
-                      <span>5. POWER SEAL 10-TIER PROGRESSION</span>
-                    </div>
-                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
-                      LEVEL_GATED_UNSEALING
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    Shatter internal seals as your System Level rises to unlock passive permanent multipliers and attribute boosts:
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 font-mono text-[11px]">
-                    <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-0.5">
-                      <span className="text-zinc-300 font-bold block text-[10px]">SEALS 1 – 3 (Lvl 1 – 5)</span>
-                      <p className="text-zinc-400 font-sans text-[10px]">Restless Mind, Fragmented Focus, Sluggish Starter.</p>
-                    </div>
-                    <div className="p-2.5 bg-zinc-950 border border-cyan-500/20 rounded-lg space-y-0.5">
-                      <span className="text-cyan-300 font-bold block text-[10px]">SEALS 4 – 6 (Lvl 8 – 18)</span>
-                      <p className="text-zinc-400 font-sans text-[10px]">Hesitation, Lone Wolf, Shallow Roots.</p>
-                    </div>
-                    <div className="p-2.5 bg-zinc-950 border border-amber-500/20 rounded-lg space-y-0.5">
-                      <span className="text-amber-300 font-bold block text-[10px]">SEALS 7 – 9 (Lvl 22 – 35)</span>
-                      <p className="text-zinc-400 font-sans text-[10px]">Diminishing Returns, Imposter Shadow, Burnout Horizon.</p>
-                    </div>
-                    <div className="p-2.5 bg-zinc-950 border border-rose-500/30 rounded-lg space-y-0.5">
-                      <span className="text-rose-400 font-bold block text-[10px]">SEAL 10 (Lvl 50)</span>
-                      <p className="text-rose-200 font-sans text-[10px]">Crown of the Apex Architect (Ultimate Transcendence).</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -700,7 +664,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     3. Attribute Matrix & Precision Mathematical Engine
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    How core stats are dynamically computed using baseline levels, quest completion evidence, and seal multipliers.
+                    How core stats are dynamically computed using baseline levels, quest completion evidence, and skill practice.
                   </p>
                 </div>
 
@@ -712,11 +676,11 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
                   <div className="p-3 bg-zinc-950 border border-white/10 rounded-lg text-center text-sm sm:text-base font-extrabold text-white">
                     <div>
-                      <span className="text-amber-300">Total Level</span> = <span className="text-zinc-300">Base Baseline</span> + <span className="text-emerald-400">Earned Bonus</span> + <span className="text-purple-400">Seal & Class Boost</span>
+                      <span className="text-amber-300">Total Level</span> = <span className="text-zinc-300">Base Baseline</span> + <span className="text-emerald-400">Earned Bonus</span> + <span className="text-purple-400">Class Boost</span>
                     </div>
                   </div>
                   <p className="text-xs font-sans text-zinc-300 leading-relaxed">
-                    Each attribute has a configurable base baseline (e.g. 10), plus earned bonus levels calculated from completed quest evidence and skill practice, plus passive seal boosts.
+                    Each attribute has a configurable base baseline (e.g. 10), plus earned bonus levels calculated from completed quest evidence and skill practice.
                   </p>
                 </div>
 
@@ -1046,7 +1010,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    <strong>The Anti-Distraction Principle:</strong> Daily effort is never spent on arbitrary tasks. Every quest completed feeds progress directly up the cascade to achieve lifetime destinies, level the 8 core attributes, and unseal ancient Pale Ores.
+                    <strong>The Anti-Distraction Principle:</strong> Daily effort is never spent on arbitrary tasks. Every quest completed feeds progress directly up the cascade to achieve lifetime destinies, level the 8 core attributes, and build lasting capability.
                   </p>
                 </div>
 
@@ -1452,10 +1416,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                 <div className="border-b border-white/10 pb-3">
                   <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                     <Award className="h-5 w-5 text-pink-400" />
-                    7. Skills Mastery, Power Seals & Ores Classification
+                    7. Skills Mastery & Class Titles
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Leveling skill competencies, unsealing ancient Ore cores for permanent stat multipliers, and equipping class titles.
+                    Leveling skill competencies, logging practice sessions, and equipping custom class jobs and perks.
                   </p>
                 </div>
 
@@ -1465,92 +1429,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <p className="text-zinc-300 font-sans">
                       Organize skills into Primary and Secondary parent-child trees. Practice logs grant skill XP and boost mastery.
                     </p>
-                  </div>
-
-                  {/* ORES CLASSIFICATION MATRIX */}
-                  <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
-                        <span>💎 PALE ORE CLASSIFICATION & POWER SEALS MATRIX</span>
-                      </div>
-                      <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded uppercase">
-                        SEAL_TIERS_CLASSIFIED
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-zinc-300 font-sans">
-                      Power Seals bind ancient Pale Ore cores wrapped in heavy chains. As your operator level grows, shatter the chains to unlock permanent passive multipliers and stat boosts:
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 font-mono text-[11px] pt-1">
-                      {/* Common / Iron */}
-                      <div className="p-3 bg-zinc-950 border border-zinc-500/30 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-zinc-300 font-bold">⚙️ Slothful Iron Ore</span>
-                          <span className="text-[9px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">Lvl 1 • Common</span>
-                        </div>
-                        <p className="text-zinc-400 text-[10px] font-sans">Unrefined magnetic iron core bound in rusted chains.</p>
-                        <div className="text-cyan-400 text-[10px] pt-1 border-t border-white/5">
-                          ✦ +10% XP Multiplier<br />
-                          ✦ +5 Base Momentum Floor<br />
-                          ✦ +1 Discipline Boost
-                        </div>
-                      </div>
-
-                      {/* Rare / Cobalt */}
-                      <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-purple-300 font-bold">🪨 Cobalt Focus Ore</span>
-                          <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded">Lvl 3 • Rare</span>
-                        </div>
-                        <p className="text-zinc-400 text-[10px] font-sans">Heavy luminescent cobalt core encased in steel chains.</p>
-                        <div className="text-purple-400 text-[10px] pt-1 border-t border-white/5">
-                          ✦ +15% XP on Main Directives<br />
-                          ✦ +2 Focus Stat Level Boost
-                        </div>
-                      </div>
-
-                      {/* Epic / Mithril */}
-                      <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-emerald-300 font-bold">💎 Mithril Surge Ore</span>
-                          <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded">Lvl 5 • Epic</span>
-                        </div>
-                        <p className="text-zinc-400 text-[10px] font-sans">Luminous silver-etched mithril ore chunk.</p>
-                        <div className="text-emerald-400 text-[10px] pt-1 border-t border-white/5">
-                          ✦ +20% Total XP Multiplier<br />
-                          ✦ +3 Agility Stat Boost<br />
-                          ✦ -25% Penalty Impact Reduction
-                        </div>
-                      </div>
-
-                      {/* Legendary / Auric */}
-                      <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-amber-300 font-bold">🪙 Auric Sovereign Ore</span>
-                          <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded">Lvl 8 • Legendary</span>
-                        </div>
-                        <p className="text-zinc-400 text-[10px] font-sans">Radiant golden adamantine ore vein in forged gold chains.</p>
-                        <div className="text-amber-400 text-[10px] pt-1 border-t border-white/5">
-                          ✦ +30% Total XP Multiplier<br />
-                          ✦ +4 Wisdom & +4 Strength Boost
-                        </div>
-                      </div>
-
-                      {/* Divine / Obsidian Void */}
-                      <div className="p-3 bg-zinc-950 border border-rose-500/30 rounded-xl space-y-1 sm:col-span-2 lg:col-span-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-rose-300 font-bold">🌌 Obsidian Void Ore</span>
-                          <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded">Lvl 12 • Divine</span>
-                        </div>
-                        <p className="text-zinc-400 text-[10px] font-sans">Primordial obsidian void ore pulsing with cosmic energy.</p>
-                        <div className="text-rose-400 text-[10px] pt-1 border-t border-white/5">
-                          ✦ +50% Total XP Multiplier<br />
-                          ✦ +5 Boost to ALL 8 Attributes<br />
-                          ✦ Debuff Immunity
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* CLASS TITLES, JOBS & DYNAMIC PERK EVALUATOR ENGINE */}
@@ -1800,7 +1678,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="p-3 bg-zinc-950/90 rounded border border-white/5 space-y-1">
                       <span className="text-purple-400 font-bold block text-[11px]">2. FAITH ATTRIBUTE GROWTH</span>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        Consistent daily spiritual completions directly drive the growth of your <strong>Faith (الإِيمَان)</strong> attribute stat and unlock spiritual seal milestones.
+                        Consistent daily spiritual completions directly drive the growth of your <strong>Faith (الإِيمَان)</strong> attribute stat and overall character momentum.
                       </p>
                     </div>
 
@@ -2213,46 +2091,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Full Audit Accounting & 0 XP Balance Floor</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
                         Every non-exempt Muhāsabah audit is logged in full severity (e.g. Critical slips deduct −500 XP and −200 Coins each). Total player XP is safeguarded with a strict <code>0 XP</code> floor to prevent negative balances.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CHAINS OF THE NAFS & POWER SEALS */}
-                <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <div className="font-mono font-bold text-purple-300 uppercase flex items-center gap-2 text-xs">
-                      <Sparkles className="h-4 w-4 text-purple-400" />
-                      <span>CHAINS OF THE NAFS (BEHAVIORAL WEAKNESSES) & POWER SEALS</span>
-                    </div>
-                    <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded uppercase">
-                      5_LINK_FORGE_ENGINE
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    Instead of treating repeated slips as isolated failures, the system tracks <strong>Chains of the Nafs</strong> through an iron 5-link progression meter:
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                    <div className="p-3 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                      <span className="text-amber-400 font-bold block text-[11px]">1. 5-LINK ACCUMULATION</span>
-                      <p className="text-zinc-400 font-sans text-[11px]">
-                        Every recurrence of a linked slip fills 1 link of the 5-part iron chain meter.
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-950 border border-purple-500/30 rounded-lg space-y-1">
-                      <span className="text-purple-300 font-bold block text-[11px]">2. IMPERIAL SEAL FORGING</span>
-                      <p className="text-zinc-400 font-sans text-[11px]">
-                        At 5/5 slips, click <strong>"FORGE INTO POWER SEAL"</strong> to bind the behavioral pattern into a heavy chained Power Seal in the Seals tab.
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-950 border border-emerald-500/30 rounded-lg space-y-1">
-                      <span className="text-emerald-400 font-bold block text-[11px]">3. SHATTER & CONQUER</span>
-                      <p className="text-zinc-400 font-sans text-[11px]">
-                        Shatter the sealed chains through sustained discipline to unlock permanent passive attribute bonuses and XP multipliers!
                       </p>
                     </div>
                   </div>

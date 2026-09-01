@@ -8,7 +8,6 @@ import {
   Archive, ArchiveRestore
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { OreXpChannelingBadge } from './CrystallineCrucible';
 
 export const getCategoryDetails = (type: string) => {
   const t = (type || '').toLowerCase();
@@ -1681,7 +1680,6 @@ export const ActiveDirectives: React.FC = () => {
                 <span className={`text-[10px] font-mono font-bold ml-1 ${isPenalty ? 'text-rose-400 font-bold' : 'text-emerald-400/90'}`}>
                   {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
                 </span>
-                {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
               </div>
             );
           })()}
@@ -2068,7 +2066,6 @@ export const ActiveDirectives: React.FC = () => {
                     }`}>
                       {isPenalty ? `${penaltyVal} XP` : `+${quest.xp} XP`}
                     </span>
-                    {!isPenalty && <OreXpChannelingBadge baseXp={quest.xp} />}
                   </div>
                 );
               })()}

@@ -4,11 +4,10 @@ import { MuhasabahCategory, MuhasabahSeverity, Weakness, MuhasabahEntry, WeeklyM
 import { MuhasabahModal } from './MuhasabahModal';
 import { DailyBalanceScale } from './DailyBalanceScale';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
-import { ORE_COMPLEXITY_INFO, RARITY_ORE_THEMES } from './SealingPowerView';
 import { AncientCarvedRune } from './AncientCarvedRune';
 import { 
   Scale, Shield, Flame, Heart, MessageSquare, Clock, AlertTriangle, 
-  Sparkles, Plus, Search, Filter, Pickaxe, CheckCircle2, 
+  Sparkles, Plus, Search, Filter, CheckCircle2, 
   ChevronRight, Lock, Trash2, Eye, EyeOff, HeartHandshake, Coins, Zap, ShieldAlert,
   ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info,
   FileText, BookOpen, CalendarDays, History, Check, ArrowRight
@@ -45,9 +44,8 @@ interface MuhasabahViewProps {
 export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpenGuide }) => {
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
-    convertWeaknessToSeal, deleteWeakness, updateWeakness, unbindWeaknessFromSeal,
-    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary,
-    getActiveOre, getTotalOreXpMultiplier
+    deleteWeakness, updateWeakness,
+    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
   } = usePOS();
 
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
@@ -73,7 +71,6 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [selectedEntryDetail, setSelectedEntryDetail] = useState<MuhasabahEntry | null>(null);
   const [prefillWeaknessId, setPrefillWeaknessId] = useState<string | undefined>(undefined);
   const [prefillCategory, setPrefillCategory] = useState<MuhasabahCategory | undefined>(undefined);
-  const [sealForgeMessage, setSealForgeMessage] = useState<string | null>(null);
 
   const stats = getTodayMuhasabahStats();
   const entries = state.muhasabahEntries || [];
@@ -278,32 +275,12 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]') || q.type === 'Recovery')
   );
 
-  // Active Ore & Shackle Strain Telemetry (Pillar 4)
-  const activeOre = getActiveOre();
-  const totalMultiplier = getTotalOreXpMultiplier();
-  const activeOreTheme = activeOre ? (RARITY_ORE_THEMES[activeOre.rarity] || RARITY_ORE_THEMES.Common) : RARITY_ORE_THEMES.Common;
-  const activeOreComplexity = activeOre ? (ORE_COMPLEXITY_INFO[activeOre.rarity] || ORE_COMPLEXITY_INFO.Common) : ORE_COMPLEXITY_INFO.Common;
-
   const activeWeaknesses = weaknesses.filter(w => w.status === 'Active');
-  const boundWeaknesses = weaknesses.filter(w => w.status === 'Sealed');
-  const shackleStrainScore = Math.min(100, (activeWeaknesses.length * 15) + (activeKaffarahQuests.length * 10));
-  const corrosionPenaltyPercent = shackleStrainScore === 0 ? 0 : Math.min(25, Math.max(3, Math.floor(shackleStrainScore * 0.25)));
 
   const handleOpenAuditModal = (weaknessId?: string, cat?: MuhasabahCategory) => {
     setPrefillWeaknessId(weaknessId);
     setPrefillCategory(cat);
     setIsModalOpen(true);
-  };
-
-  const handleForgeSeal = (weaknessId: string) => {
-    const res = convertWeaknessToSeal(weaknessId);
-    if (res.success) {
-      setSealForgeMessage(`✨ ${res.message}`);
-      setTimeout(() => setSealForgeMessage(null), 5000);
-    } else {
-      setSealForgeMessage(`⚠️ ${res.message || 'Could not forge seal'}`);
-      setTimeout(() => setSealForgeMessage(null), 5000);
-    }
   };
 
   const confirmDeleteEntry = () => {
@@ -861,179 +838,6 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         </div>
       </div>
 
-      {/* SEAL FORGE SUCCESS BANNER */}
-      <AnimatePresence>
-        {sealForgeMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/50 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-xl"
-          >
-            <div className="flex items-center gap-2.5">
-              <Pickaxe className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>{sealForgeMessage}</span>
-            </div>
-            {onNavigate && (
-              <button
-                onClick={() => onNavigate('seals')}
-                className="px-3 py-1 rounded bg-emerald-900/80 hover:bg-emerald-800 text-white text-[11px] font-bold transition flex items-center gap-1 shrink-0"
-              >
-                View Ores & Chains
-                <ChevronRight className="h-3 w-3" />
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* SHACKLE STRAIN & ORE CORROSION TELEMETRY (PILLAR 4) */}
-      <div 
-        id="shackle-strain-ore-corrosion-panel"
-        className="p-5 sm:p-6 bg-gradient-to-r from-[#0e090b] via-[#090b10] to-[#120d14] border border-rose-500/30 rounded-2xl relative overflow-hidden shadow-xl space-y-4"
-      >
-        <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#ef4444" />
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-500/20 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="relative shrink-0">
-              <AncientCarvedRune
-                glyph={activeOre?.runeSymbol || '🪨'}
-                size={48}
-                shape="octagram"
-                stoneVariant={corrosionPenaltyPercent > 0 ? 'iron' : 'meteorite'}
-                conduitColor={corrosionPenaltyPercent > 0 ? '#ef4444' : activeOreTheme.veinColor}
-                secondaryColor={corrosionPenaltyPercent > 0 ? '#fca5a5' : '#fef08a'}
-                glowIntensity={corrosionPenaltyPercent > 0 ? 'none' : 'subtle'}
-                showCracks={true}
-              />
-              {corrosionPenaltyPercent > 0 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 border border-black flex items-center justify-center text-[9px] font-bold text-white animate-pulse">
-                  !
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-mono tracking-wider uppercase font-bold px-2 py-0.5 rounded border ${
-                  corrosionPenaltyPercent > 0
-                    ? 'bg-rose-950/80 border-rose-500/50 text-rose-300'
-                    : 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
-                }`}>
-                  {corrosionPenaltyPercent > 0 ? 'CORROSION DETECTED' : 'CRYSTALLINE EQUILIBRIUM'}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  BOUND CRUCIBLE ORE: {activeOre?.name} ({activeOre?.rarity})
-                </span>
-              </div>
-              <h3 className="text-base font-display font-bold text-white mt-0.5 flex items-center gap-2">
-                <span>Shackle Strain & Ore Corrosion Matrix</span>
-                <span className="text-xs font-mono font-normal text-zinc-400">
-                  (مَصْفُوفَةُ إِجْهَادِ القُيُودِ وَصَدَأِ النَّفْس)
-                </span>
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <span className="text-[10px] font-mono text-zinc-400 block uppercase">Crucible Vein Impurity</span>
-              <span className={`text-base font-mono font-bold flex items-center justify-end gap-1 ${
-                corrosionPenaltyPercent > 0 ? 'text-rose-400' : 'text-emerald-400'
-              }`}>
-                {corrosionPenaltyPercent > 0 ? `-${corrosionPenaltyPercent}% XP Vein Dampening` : '100% Facet Luster (Zero Rust)'}
-              </span>
-            </div>
-
-            {onNavigate && (
-              <button
-                type="button"
-                onClick={() => onNavigate('dashboard')}
-                className="px-3 py-2 bg-[#181219] hover:bg-[#221824] border border-rose-500/40 rounded-xl text-xs font-mono text-rose-300 font-bold flex items-center gap-1.5 transition shrink-0 shadow-md cursor-pointer"
-              >
-                <span>VIEW CRUCIBLE</span>
-                <ChevronRight className="h-3.5 w-3.5 text-rose-400" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* 3 METRIC CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Card 1: Shackle Strain Gauge */}
-          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-zinc-400 flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-rose-400" />
-                <span>Total Shackle Tension</span>
-              </span>
-              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                {shackleStrainScore}% Strain
-              </span>
-            </div>
-            
-            <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden p-0.5 border border-white/5">
-              <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  shackleStrainScore > 50 
-                    ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' 
-                    : shackleStrainScore > 0 
-                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-                      : 'bg-emerald-400'
-                }`}
-                style={{ width: `${Math.max(6, shackleStrainScore)}%` }}
-              />
-            </div>
-            <p className="text-[10px] font-mono text-zinc-400">
-              {activeWeaknesses.length} unsealed weaknesses & {activeKaffarahQuests.length} pending penances tighten chains.
-            </p>
-          </div>
-
-          {/* Card 2: Facet Corrosion State */}
-          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-zinc-400 flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                <span>Facet Luster & Corrosion</span>
-              </span>
-              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                {corrosionPenaltyPercent > 0 ? `${corrosionPenaltyPercent}% Dulled Facets` : 'Pristine Core'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-mono">
-              <span>Vein Status:</span>
-              <span className={`font-bold ${corrosionPenaltyPercent > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
-                {corrosionPenaltyPercent > 0 ? 'Dross Encrusted (Tawbah Needed)' : 'Sanctified & Polished'}
-              </span>
-            </div>
-            <p className="text-[10px] font-mono text-zinc-400">
-              Settling Kaffārah restitutions and forging seals burns away the tarnish.
-            </p>
-          </div>
-
-          {/* Card 3: Forging Equilibrium */}
-          <div className="p-3.5 rounded-2xl bg-[#080509] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-mono">
-              <span className="text-zinc-400 flex items-center gap-1.5">
-                <Pickaxe className="h-3.5 w-3.5 text-[#c5a059]" />
-                <span>Chains Bound into Seals</span>
-              </span>
-              <span className="font-bold text-[#fef08a]">
-                {boundWeaknesses.length} / {weaknesses.length} Neutralized
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] font-mono text-zinc-300">
-              <span>Awakened Crucible Yield:</span>
-              <span className="text-[#fef08a] font-bold">+{Math.round((totalMultiplier - 1.0) * 100)}% Total</span>
-            </div>
-            <p className="text-[10px] font-mono text-zinc-400">
-              Binding a weakness into a Power Seal permanently converts strain into bonus XP.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* 3. MAIN DUAL-COLUMN WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: ACTIVE KAFFĀRAH RESTITUTIONS & CHAINS OF THE NAFS */}
@@ -1109,7 +913,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             )}
           </div>
 
-          {/* CHAINS OF THE NAFS (BEHAVIORAL WEAKNESSES) CARD */}
+          {/* RECURRING VULNERABILITIES & WEAKNESSES CARD */}
           <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">
@@ -1118,17 +922,17 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </div>
                 <div>
                   <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
-                    CHAINS OF THE NAFS ({weaknesses.length})
+                    VULNERABILITIES & WEAKNESSES ({weaknesses.length})
                   </h3>
                   <span className="text-[10px] font-mono text-zinc-400">
-                    Behavioral patterns to bind into Imperial Power Seals
+                    Behavioral patterns & root triggers
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => handleOpenAuditModal()}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-xs transition"
-                title="Add slip or chain"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-xs transition cursor-pointer"
+                title="Add slip or weakness"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -1137,43 +941,46 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             {weaknesses.length > 0 ? (
               <div className="space-y-3">
                 {weaknesses.map(weakness => {
-                  const linkedSeal = (state.seals || []).find(s => s.id === weakness.sealId);
-                  const isSealed = Boolean(linkedSeal && weakness.status === 'Sealed');
-                  const isReadyToForge = !isSealed && weakness.occurrenceCount >= 5;
                   const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
+                  const isOvercome = weakness.status === 'Overcome';
 
                   return (
                     <div 
                       key={weakness.id}
                       className={`p-3.5 rounded-xl border transition ${
-                        isSealed
+                        isOvercome
                           ? 'bg-emerald-950/15 border-emerald-500/30'
-                          : isReadyToForge
-                            ? 'bg-amber-950/25 border-amber-500/50 shadow-md shadow-amber-950/30'
-                            : 'bg-[#090b10] border-white/10'
+                          : 'bg-[#090b10] border-white/10'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-xs text-zinc-100 font-mono truncate">
                           {weakness.name}
                         </span>
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                          isSealed 
-                            ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
-                            : isReadyToForge
-                              ? 'bg-amber-950/60 border-amber-500/40 text-amber-300 animate-pulse font-bold'
-                              : 'bg-black/40 border-white/10 text-zinc-400'
-                        }`}>
-                          {isSealed ? 'Bound to Ore' : isReadyToForge ? 'Ready to Bind' : weakness.status}
-                        </span>
+                        <button
+                          onClick={() => {
+                            const nextStatus = weakness.status === 'Active' ? 'Under Control' : weakness.status === 'Under Control' ? 'Overcome' : 'Active';
+                            updateWeakness(weakness.id, { status: nextStatus });
+                          }}
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded border cursor-pointer transition ${
+                            weakness.status === 'Overcome'
+                              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
+                              : weakness.status === 'Under Control'
+                                ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
+                                : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+                          }`}
+                          title="Click to toggle status"
+                        >
+                          {weakness.status}
+                        </button>
                       </div>
 
-                      {/* Iron Chain Link Meter */}
+                      {/* Slip Frequency Meter */}
                       <div className="my-2">
                         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                          <span>Chain Links:</span>
-                          <span className={`font-bold ${isSealed ? 'text-emerald-400' : 'text-zinc-200'}`}>
-                            {isSealed ? `${weakness.occurrenceCount} / 5 Slips (Bound)` : `${weakness.occurrenceCount} / 5 Slips`}
+                          <span>Recorded Frequency:</span>
+                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                            {weakness.occurrenceCount} Slips Logged
                           </span>
                         </div>
                         <div className="grid grid-cols-5 gap-1">
@@ -1182,7 +989,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                               key={idx}
                               className={`h-1.5 rounded-full transition ${
                                 idx <= weakness.occurrenceCount
-                                  ? idx >= 5 ? 'bg-amber-400 shadow-sm shadow-amber-400' : 'bg-zinc-300'
+                                  ? idx >= 5 ? 'bg-rose-400 shadow-sm shadow-rose-400' : 'bg-amber-400'
                                   : 'bg-zinc-800'
                               }`}
                             />
@@ -1190,75 +997,27 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                         </div>
                       </div>
 
-                      {/* Shackle Strain & Corrosion Impact */}
-                      <div className="flex items-center justify-between text-[10px] font-mono px-2 py-1 rounded bg-black/40 border border-white/5 my-2">
-                        <span className="text-zinc-400 flex items-center gap-1">
-                          <Lock className="h-3 w-3 text-zinc-500" />
-                          <span>Shackle Strain:</span>
-                        </span>
-                        <span className={isSealed ? 'text-emerald-400 font-bold' : weakness.occurrenceCount >= 4 ? 'text-rose-400 font-bold' : 'text-amber-300 font-bold'}>
-                          {isSealed ? '0% (Forged & Bound)' : `+${10 + weakness.occurrenceCount * 2}% Tension`}
-                        </span>
-                      </div>
-
-                      <p className="text-[10px] font-mono text-zinc-400 line-clamp-1 mb-2.5">
-                        Trigger: {weakness.triggerCause}
-                      </p>
+                      {weakness.triggerCause && (
+                        <p className="text-[10px] font-mono text-zinc-400 line-clamp-1 mb-2.5">
+                          Trigger: {weakness.triggerCause}
+                        </p>
+                      )}
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-2">
-                        {isReadyToForge ? (
-                          <div className="w-full flex flex-col gap-1.5">
-                            <button
-                              onClick={() => handleForgeSeal(weakness.id)}
-                              className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-[#c5a059] text-black font-display text-[11px] font-bold tracking-wider hover:brightness-110 active:scale-98 transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
-                            >
-                              <Pickaxe className="h-3.5 w-3.5" />
-                              FORGE INTO POWER SEAL
-                            </button>
-                            <button
-                              onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
-                              className="w-full py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-mono text-zinc-400 hover:text-zinc-200 transition text-center cursor-pointer"
-                            >
-                              + Record Another Slip
-                            </button>
-                          </div>
-                        ) : isSealed ? (
-                          <div className="w-full flex items-center gap-1.5">
-                            <button
-                              onClick={() => onNavigate && onNavigate('seals')}
-                              className="flex-1 py-1 px-2 rounded bg-emerald-950/40 hover:bg-emerald-950/70 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 transition text-center flex items-center justify-center gap-1 cursor-pointer"
-                              title="View bound elemental ore in sanctum"
-                            >
-                              <span className="truncate">Bound: {linkedSeal?.name || 'Power Seal'} ⛓️</span>
-                              <ArrowRight className="h-3 w-3 shrink-0" />
-                            </button>
-                            <button
-                              onClick={() => unbindWeaknessFromSeal(weakness.id)}
-                              className="px-2.5 py-1 rounded bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/30 text-[9.5px] font-mono text-rose-300 hover:text-rose-100 transition cursor-pointer shrink-0"
-                              title="Unbind chain from ore"
-                            >
-                              Unbind
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-full flex items-center gap-1.5">
-                            <button
-                              onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
-                              className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 transition text-center cursor-pointer"
-                            >
-                              + Record Slip
-                            </button>
-                            <button
-                              onClick={() => handleForgeSeal(weakness.id)}
-                              className="px-3 py-1 rounded bg-gradient-to-r from-[#3a2e12] to-[#8a6d2b] hover:to-[#c5a059] border border-[#c5a059]/50 text-[10px] font-mono text-[#fef08a] transition font-bold cursor-pointer shrink-0 flex items-center gap-1"
-                              title="Bind into Power Seal now"
-                            >
-                              <Pickaxe className="h-3 w-3" />
-                              <span>Bind Seal</span>
-                            </button>
-                          </div>
-                        )}
+                        <button
+                          onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
+                          className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 transition text-center cursor-pointer"
+                        >
+                          + Record Slip
+                        </button>
+                        <button
+                          onClick={() => deleteWeakness(weakness.id)}
+                          className="p-1 rounded bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-300 transition cursor-pointer shrink-0"
+                          title="Delete weakness"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -1267,7 +1026,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             ) : (
               <div className="text-center py-5 px-3 rounded-xl bg-[#07090e] border border-white/5">
                 <p className="text-[11px] text-zinc-500 font-mono">
-                  No behavioral chains recorded yet. Record recurring slips to forge protective Power Seals.
+                  No behavioral weaknesses recorded yet. Record recurring slips to track patterns and build self-discipline.
                 </p>
               </div>
             )}
@@ -2183,7 +1942,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 {generatedSummary.topWeaknessCategories && generatedSummary.topWeaknessCategories.length > 0 && (
                   <div className="p-3.5 rounded-xl bg-[#07090e] border border-white/10 space-y-2">
                     <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                      <Pickaxe className="h-3.5 w-3.5 text-amber-400" />
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
                       <span>PRIMARY WEAKNESS VULNERABILITY REALMS</span>
                     </span>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
