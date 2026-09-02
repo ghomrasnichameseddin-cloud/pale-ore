@@ -27,6 +27,11 @@ import {
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
 } from './utils/perkEvaluator';
 import { SLIP_RUNES } from './components/SlipRune';
+import { 
+  analyzeSinRecurrence, 
+  SEVERITY_BASE_CONSEQUENCES, 
+  getRecurringSinsRegistry 
+} from './utils/muhasabahRecurrence';
 
 interface POSContextType {
   state: POSState;
@@ -197,6 +202,7 @@ interface POSContextType {
   isShopLocked: boolean;
 
   // Muhāsabah (Self-Accountability) Operations
+  healSpiritualHp: (amount: number, reason?: string) => void;
   addMuhasabahEntry: (entry: {
     title: string;
     description?: string;
@@ -208,10 +214,23 @@ interface POSContextType {
     reflection?: string;
     createCorrectiveQuest?: boolean;
     correctiveQuestName?: string;
+    kaffarahType?: 'Sadaqah' | 'Quran' | 'Prayer' | 'Detox' | 'Service' | 'Focus';
     recoveryPercentage?: number;
     weaknessId?: string | null;
     weaknessName?: string | null;
-  }) => { success: boolean; entryId: string; xpDeducted: number; rawPenalty: number; capReached: boolean; message: string };
+  }) => { 
+    success: boolean; 
+    entryId: string; 
+    xpDeducted: number; 
+    hpDeducted: number;
+    coinsDeducted: number;
+    rawPenalty: number; 
+    recurrenceMultiplier?: number;
+    recurrenceCadence?: string;
+    isRecurring?: boolean;
+    capReached: boolean; 
+    message: string 
+  };
   updateMuhasabahEntry: (id: string, updates: Partial<MuhasabahEntry>) => void;
   deleteMuhasabahEntry: (id: string) => void;
   clearAllMuhasabahEntries: () => void;
@@ -227,6 +246,10 @@ interface POSContextType {
     todayLostXP: number;
     todayNetXP: number;
     todayLostCoins: number;
+    todayLostHp: number;
+    currentHp: number;
+    maxHp: number;
+    todayRecurringSlipsCount: number;
     dailyCapRemaining: number;
     totalEntriesCount: number;
     todaySlipsCount: number;
@@ -2248,16 +2271,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // Preserve full XP history and total earned XP so checked/completed quest XP never diminishes upon deletion
+      const currentXpHistory = prev.xpHistory || [];
+      const totalXp = currentXpHistory.reduce((sum, h) => sum + h.xp, 0);
+      const level = calculatePlayerLevel(Math.max(prev.profile.xp || 0, totalXp));
+
       return {
         ...prev,
         quests: remainingQuests,
-        xpHistory: prev.xpHistory.filter(h => h.questId !== id),
+        xpHistory: currentXpHistory, // Keep history intact so earned XP, skills, and stats remain permanent
         profile: {
           ...prev.profile,
+          xp: Math.max(prev.profile.xp || 0, totalXp),
+          level,
           recoveryMode: newRecoveryMode
         }
       };
     });
+
+    if (activeFocusSession?.questId === id) {
+      stopFocusSession();
+    }
   };
 
   const archiveQuest = (id: string) => {
@@ -2486,6 +2520,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xp: totalXp,
           level,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
+          hp: Math.min(prev.profile.maxHp ?? 100, (prev.profile.hp ?? 100) + (isKaffarahQuest ? 35 : 2)),
+          maxHp: prev.profile.maxHp ?? 100,
           momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
           recoveryMode: newRecoveryMode,
           fatigueLevel: newFatigue,
@@ -4018,13 +4054,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     weaknessName?: string | null;
   }) => {
     const isExempt = Boolean(entry.isExempt);
-    const rawPenalty = isExempt ? 0 : (SEVERITY_XP_PENALTIES[entry.severity] || 200);
-    const coinFine = isExempt ? 0 : (SEVERITY_COIN_FINES[entry.severity] || 25);
-    const momentumLoss = isExempt ? 0 : (SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35);
     const currentSysDate = state.systemDate || getLocalDateString();
-    
-    const xpToDeduct = rawPenalty;
-    const capReached = false;
+
+    // 1. Analyze recurrence pattern (intra-day, everyday, every two days, etc.)
+    const recurrence = isExempt ? null : analyzeSinRecurrence({
+      title: entry.title,
+      category: entry.category,
+      severity: entry.severity,
+      weaknessId: entry.weaknessId,
+      weaknessName: entry.weaknessName,
+      targetDate: currentSysDate,
+      allEntries: state.muhasabahEntries || [],
+      weaknesses: state.weaknesses || []
+    });
+
+    const baseConsequences = SEVERITY_BASE_CONSEQUENCES[entry.severity] || SEVERITY_BASE_CONSEQUENCES.Moderate;
+    const baseHp = isExempt ? 0 : baseConsequences.baseHp;
+    const baseCoins = isExempt ? 0 : baseConsequences.baseCoins;
+    const baseXp = isExempt ? 0 : (SEVERITY_XP_PENALTIES[entry.severity] || 200);
+
+    const actualMultiplier = recurrence?.multiplier || 1.0;
+    const hpLoss = isExempt ? 0 : (recurrence ? recurrence.escalatedHpLoss : baseHp);
+    const coinFine = isExempt ? 0 : (recurrence ? recurrence.escalatedCoinFine : baseCoins);
+    const xpToDeduct = isExempt ? 0 : (recurrence ? recurrence.escalatedXpPenalty : baseXp);
+    const momentumLoss = isExempt ? 0 : (SEVERITY_MOMENTUM_PENALTIES[entry.severity] || 35);
+    const rawPenalty = isExempt ? 0 : baseXp;
 
     const defaultTemplate = DEFAULT_KAFFARAH_TEMPLATES[entry.category];
     const kaffarahType = entry.kaffarahType || defaultTemplate.type;
@@ -4035,7 +4089,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let recoveryPercent = entry.recoveryPercentage ?? 20; // Default 20%
     if (recoveryPercent < 10) recoveryPercent = 10;
     if (recoveryPercent > 30) recoveryPercent = 30;
-    const recoveredXP = isExempt ? 0 : Math.max(25, Math.round(rawPenalty * (recoveryPercent / 100)));
+    const recoveredXP = isExempt ? 0 : Math.max(25, Math.round(xpToDeduct * (recoveryPercent / 100)));
 
     // By default for non-exempt Muhasabah, create a Kaffārah restitution quest
     const shouldCreateQuest = !isExempt && entry.createCorrectiveQuest !== false;
@@ -4048,14 +4102,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setState(prev => {
       // 1. Calculate new XP and history entry (total XP is floored at 0)
-      const actualDeducted = rawPenalty;
+      const actualDeducted = xpToDeduct;
       
       let updatedXpHistory = [...prev.xpHistory];
       if (actualDeducted > 0) {
         const historyEntry: XPHistoryEntry = {
           id: `xph-muhasabah-${newEntryId}`,
           questId: null,
-          questName: `[MUHĀSABAH AUDIT] ${entry.category}: ${entry.title}`,
+          questName: `[MUHĀSABAH AUDIT] ${entry.category}: ${entry.title}${recurrence?.isRecurring ? ` (${recurrence.cadenceLabel})` : ''}`,
           xp: -actualDeducted,
           timestamp: getSystemTimestamp(currentSysDate),
           skillIds: []
@@ -4067,7 +4121,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedXpHistory);
       const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
-      // 2. Deduct Coins & Slash Momentum
+      // 2. Deduct HP (Soul Vitality) & Coins (Treasury Fine) & Slash Momentum
+      const currentHp = prev.profile.hp ?? 100;
+      const maxHp = prev.profile.maxHp ?? 100;
+      const nextHp = Math.max(0, currentHp - hpLoss);
+      const isHpCritical = nextHp <= 20;
+
       const currentCoins = prev.profile.coins ?? 150;
       const nextCoins = Math.max(0, currentCoins - coinFine);
       const currentMomentum = prev.profile.momentum || 0;
@@ -4079,7 +4138,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const kaffarahQuest: Quest = {
           id: createdQuestId,
           name: createdQuestName,
-          description: `Solemn Kaffārah Restitution for Muhāsabah Slip: "${entry.title}" (${entry.category} • ${entry.severity}).\n• Root Cause: ${entry.cause}\n• Restitution Action: ${kaffarahTitle}\n• Note: Resolving this quest fulfills your penance, restores spiritual equilibrium, and unlocks Imperial Shop rewards.`,
+          description: `Solemn Kaffārah Restitution for Muhāsabah Slip: "${entry.title}" (${entry.category} • ${entry.severity}).\n• Root Cause: ${entry.cause}\n• Recurrence Cadence: ${recurrence?.cadenceLabel || 'Isolated'}\n• Restitution Action: ${kaffarahTitle}\n• Note: Resolving this quest fulfills your penance, heals Soul Vitality (+35 HP), and restores spiritual equilibrium.`,
           type: 'Recovery',
           difficulty: entry.severity === 'Critical' || entry.severity === 'Severe' ? 'Hard' : entry.severity === 'Major' ? 'Normal' : 'Easy',
           xp: recoveredXP,
@@ -4113,11 +4172,22 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const nextCount = w.occurrenceCount + 1;
             const isNowActive = nextCount >= 5 ? 'Active' : w.status;
             targetWeaknessName = w.name;
+            const hist = Array.isArray(w.historyDates) ? [...w.historyDates, currentSysDate] : [currentSysDate];
             return {
               ...w,
               occurrenceCount: nextCount,
               lastOccurrenceDate: currentSysDate,
-              status: isNowActive
+              status: isNowActive,
+              recurrenceCadence: recurrence?.cadence || w.recurrenceCadence,
+              recurrenceCadenceLabel: recurrence?.cadenceLabel,
+              averageIntervalDays: recurrence?.averageIntervalDays || w.averageIntervalDays,
+              escalationTier: recurrence?.escalationTier || 1,
+              currentHpPenalty: hpLoss,
+              currentCoinPenalty: coinFine,
+              currentXpPenalty: actualDeducted,
+              consecutiveDaysCount: (recurrence?.consecutiveDailyStreak || 0) + (recurrence?.cadence === 'daily' ? 1 : 0),
+              sameDayCount: (recurrence?.sameDayCount || 0) + 1,
+              historyDates: hist
             };
           }
           return w;
@@ -4135,11 +4205,22 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const isNowActive = nextCount >= 5 ? 'Active' : w.status;
           targetWeaknessId = w.id;
           targetWeaknessName = w.name;
+          const hist = Array.isArray(w.historyDates) ? [...w.historyDates, currentSysDate] : [currentSysDate];
           updatedWeaknesses[existingWeaknessIndex] = {
             ...w,
             occurrenceCount: nextCount,
             lastOccurrenceDate: currentSysDate,
-            status: isNowActive
+            status: isNowActive,
+            recurrenceCadence: recurrence?.cadence || w.recurrenceCadence,
+            recurrenceCadenceLabel: recurrence?.cadenceLabel,
+            averageIntervalDays: recurrence?.averageIntervalDays || w.averageIntervalDays,
+            escalationTier: recurrence?.escalationTier || 1,
+            currentHpPenalty: hpLoss,
+            currentCoinPenalty: coinFine,
+            currentXpPenalty: actualDeducted,
+            consecutiveDaysCount: (recurrence?.consecutiveDailyStreak || 0) + (recurrence?.cadence === 'daily' ? 1 : 0),
+            sameDayCount: (recurrence?.sameDayCount || 0) + 1,
+            historyDates: hist
           };
         } else {
           targetWeaknessId = `weakness-${Date.now()}`;
@@ -4153,7 +4234,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             lastOccurrenceDate: currentSysDate,
             status: 'Under Control',
             correctiveStrategy: entry.reflection || 'Guard against triggers with vigilant awareness.',
-            createdAt: getSystemTimestamp(currentSysDate)
+            createdAt: getSystemTimestamp(currentSysDate),
+            recurrenceCadence: recurrence?.cadence || 'isolated',
+            recurrenceCadenceLabel: recurrence?.cadenceLabel,
+            escalationTier: recurrence?.escalationTier || 1,
+            currentHpPenalty: hpLoss,
+            currentCoinPenalty: coinFine,
+            currentXpPenalty: actualDeducted,
+            consecutiveDaysCount: 0,
+            sameDayCount: 1,
+            historyDates: [currentSysDate]
           };
           updatedWeaknesses.push(newWeakness);
         }
@@ -4184,7 +4274,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exemptionReason: entry.exemptionReason?.trim() || undefined,
         rawPenalty,
         xpDeducted: actualDeducted,
+        hpDeducted: hpLoss,
+        baseHpLoss: baseHp,
         coinsDeducted: coinFine,
+        baseCoinsDeducted: baseCoins,
+        recurrenceMultiplier: actualMultiplier,
+        recurrenceCadence: recurrence?.cadence || 'isolated',
+        recurrenceCadenceLabel: recurrence?.cadenceLabel,
+        recurrenceTier: recurrence?.escalationTier || 1,
         momentumLost: momentumLoss,
         cause: entry.cause.trim(),
         reflection: entry.reflection?.trim() || '',
@@ -4210,13 +4307,33 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           priority: 'medium'
         });
       } else {
-        addSystemMessage({
-          sender: 'OPERATOR',
-          category: 'alert',
-          title: `⚖️ MUHĀSABAH AUDIT: ${entry.category.toUpperCase()} (${entry.severity})`,
-          content: `Reflected on "${entry.title}". In-app consequences: −${actualDeducted} XP, −${coinFine} Coins fine, ${momentumLoss >= 100 ? 'Momentum zeroed' : `−${momentumLoss}% Momentum`}. Pinned Kaffārah Restitution: "${kaffarahTitle}".`,
-          priority: 'high'
-        });
+        if (recurrence?.isRecurring) {
+          addSystemMessage({
+            sender: 'OPERATOR',
+            category: 'alert',
+            title: `🚨 RECURRING SIN PENALTY AMPLIFIED: ${entry.title}`,
+            content: `Recurrence pattern: ${recurrence.cadenceLabel}. Recurrence multiplier ${actualMultiplier.toFixed(2)}x (+${Math.round((actualMultiplier - 1) * 100)}%) automatically applied! Penalties amplified: −${hpLoss} HP (Soul Vitality) & −${coinFine} Coins fine deducted. Urgent Kaffārah restitution activated.`,
+            priority: 'high'
+          });
+        } else {
+          addSystemMessage({
+            sender: 'OPERATOR',
+            category: 'alert',
+            title: `⚖️ MUHĀSABAH AUDIT: ${entry.category.toUpperCase()} (${entry.severity})`,
+            content: `Reflected on "${entry.title}". In-app consequences: −${hpLoss} HP, −${actualDeducted} XP, −${coinFine} Coins fine, ${momentumLoss >= 100 ? 'Momentum zeroed' : `−${momentumLoss}% Momentum`}. Pinned Kaffārah Restitution: "${kaffarahTitle}".`,
+            priority: 'high'
+          });
+        }
+
+        if (isHpCritical) {
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'warning',
+            title: `⚠️ CRITICAL SOUL VITALITY (${nextHp}/${maxHp} HP)`,
+            content: `Repeated spiritual slips have critically wounded Soul Vitality (${nextHp} HP remaining). Complete pending Kaffārah immediately to heal!`,
+            priority: 'high'
+          });
+        }
       }
 
       return {
@@ -4227,10 +4344,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         xpHistory: updatedXpHistory,
         profile: {
           ...prev.profile,
+          hp: nextHp,
+          maxHp,
           xp: totalXp,
           level: gatedLevel.level,
           coins: nextCoins,
-          momentum: nextMomentum
+          momentum: nextMomentum,
+          recoveryMode: nextHp === 0 ? true : prev.profile.recoveryMode
         }
       };
     });
@@ -4240,6 +4360,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         success: true,
         entryId: newEntryId,
         xpDeducted: 0,
+        hpDeducted: 0,
         coinsDeducted: 0,
         rawPenalty: 0,
         capReached: false,
@@ -4251,11 +4372,46 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       success: true,
       entryId: newEntryId,
       xpDeducted: xpToDeduct,
+      hpDeducted: hpLoss,
       coinsDeducted: coinFine,
       rawPenalty,
+      recurrenceMultiplier: actualMultiplier,
+      recurrenceCadence: recurrence?.cadence,
+      isRecurring: Boolean(recurrence?.isRecurring),
       capReached: false,
-      message: `Muhāsabah audit committed: −${xpToDeduct} XP & −${coinFine} Coins fine deducted. Kaffārah restitution quest issued.`
+      message: recurrence?.isRecurring
+        ? `Recurring sin recorded (${recurrence.cadenceLabel}). Amplified penalties deducted: −${hpLoss} HP & −${coinFine} Coins fine (${actualMultiplier.toFixed(2)}x escalation).`
+        : `Muhāsabah audit committed: −${hpLoss} HP, −${xpToDeduct} XP & −${coinFine} Coins fine deducted. Kaffārah restitution quest issued.`
     };
+  };
+
+  const healSpiritualHp = (amount: number, reason?: string) => {
+    setState(prev => {
+      const currentHp = prev.profile.hp ?? 100;
+      const maxHp = prev.profile.maxHp ?? 100;
+      const nextHp = Math.min(maxHp, currentHp + Math.max(1, amount));
+      if (nextHp === currentHp) return prev;
+
+      if (reason) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: '🌿 SOUL VITALITY REPLENISHED',
+          content: `${reason}: +${amount} HP restored (Soul Vitality: ${nextHp}/${maxHp} HP).`,
+          priority: 'medium'
+        });
+      }
+
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          hp: nextHp,
+          maxHp,
+          recoveryMode: nextHp > 0 ? prev.profile.recoveryMode : false
+        }
+      };
+    });
   };
 
   const updateMuhasabahEntry = (id: string, updates: Partial<MuhasabahEntry>) => {
@@ -4680,6 +4836,10 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     const todayEntries = (state.muhasabahEntries || []).filter(e => e.date === currentSysDate);
     const todayLostXP = todayEntries.reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
     const todayLostCoins = todayEntries.reduce((sum, e) => sum + (e.coinsDeducted || 0), 0);
+    const todayLostHp = todayEntries.reduce((sum, e) => sum + (e.hpDeducted || 0), 0);
+    const todayRecurringSlipsCount = todayEntries.filter(e => (e.recurrenceMultiplier || 1) > 1.0).length;
+    const currentHp = state.profile.hp ?? 100;
+    const maxHp = state.profile.maxHp ?? 100;
     
     const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
     const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
@@ -4733,6 +4893,10 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       todayLostXP,
       todayNetXP,
       todayLostCoins,
+      todayLostHp,
+      currentHp,
+      maxHp,
+      todayRecurringSlipsCount,
       dailyCapRemaining,
       totalEntriesCount: (state.muhasabahEntries || []).length,
       todaySlipsCount: todayEntries.length,
@@ -6383,6 +6547,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       isShopLocked,
       updateBatterySettings,
       toggleBatterySaverMode,
+      healSpiritualHp,
       addMuhasabahEntry,
       updateMuhasabahEntry,
       deleteMuhasabahEntry,

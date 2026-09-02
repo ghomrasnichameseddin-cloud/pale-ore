@@ -182,7 +182,9 @@ export const INITIAL_STATE: POSState = {
     lastFocusDate: '',
     jobId: 'job-cyber-architect',
     equippedTitleId: 'title-novice-operator',
-    focusShields: 0
+    focusShields: 0,
+    hp: 100,
+    maxHp: 100
   },
   xpHistory: [],
   systemDate: getLocalDateString(),

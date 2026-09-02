@@ -167,6 +167,8 @@ export interface UserProfile {
   jobId?: string;
   equippedTitleId?: string;
   focusShields?: number; // count of streak protection shields
+  hp?: number; // 0 to 100+ Spiritual Health / Soul Vitality (clamped at maxHp)
+  maxHp?: number; // Max health points (default 100)
   jobLevels?: Record<string, number>; // mapping of jobId -> level (1-7)
   titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
   fatigueLevel?: number; // 0 to 100
@@ -272,6 +274,37 @@ export type MuhasabahSeverity =
   | 'Severe'     // -400 XP
   | 'Critical';  // -500 XP
 
+export type RecurrenceCadence = 
+  | 'same_day'      // More than once in a single day (intra-day relapse)
+  | 'daily'         // Everyday (consecutive days)
+  | 'every_2_days'  // Every two days (48h biphasic cycle)
+  | 'semi_weekly'   // Every 3-4 days
+  | 'weekly'        // Every 5-7 days
+  | 'isolated';     // First occurrence or spaced > 7 days
+
+export interface RecurrenceAnalysis {
+  cadence: RecurrenceCadence;
+  cadenceLabel: string;
+  cadenceDescription: string;
+  sameDayCount: number;
+  consecutiveDailyStreak: number;
+  lastOccurrenceDate: string | null;
+  daysSinceLastOccurrence: number | null;
+  averageIntervalDays: number | null;
+  totalPastOccurrences: number;
+  escalationTier: number; // 1 (Base), 2 (Escalated), 3 (Severe), 4 (Critical), 5 (Terminal)
+  multiplier: number; // e.g. 1.0x, 1.35x, 1.5x, 1.75x, 2.0x, 2.5x...
+  baseHpLoss: number;
+  escalatedHpLoss: number;
+  baseCoinFine: number;
+  escalatedCoinFine: number;
+  baseXpPenalty: number;
+  escalatedXpPenalty: number;
+  isRecurring: boolean;
+  matchedOccurrencesCount?: number;
+  reason?: string;
+}
+
 export interface MuhasabahEntry {
   id: string;
   date: string; // YYYY-MM-DD
@@ -284,7 +317,10 @@ export interface MuhasabahEntry {
   exemptionReason?: string;
   xpDeducted: number; // Actual XP deducted (respecting 500/day cap and available XP)
   rawPenalty: number; // 100, 200, 300, 400, 500
-  coinsDeducted?: number; // Real fine / charity obligation deducted
+  hpDeducted?: number; // Spiritual vitality lost (escalated for recurring sins)
+  baseHpLoss?: number; // Base HP loss before escalation
+  coinsDeducted?: number; // Real fine / charity obligation deducted (escalated for recurring sins)
+  baseCoinsDeducted?: number; // Base coin fine before escalation
   momentumLost?: number; // % momentum lost
   cause: string; // Root trigger / environment / emotional state
   reflection?: string; // Honest personal takeaway
@@ -297,6 +333,13 @@ export interface MuhasabahEntry {
   recoveredXP?: number;
   weaknessId?: string | null; // ID of linked weakness
   weaknessName?: string | null;
+  recurrenceCadence?: RecurrenceCadence;
+  recurrenceCadenceLabel?: string;
+  recurrenceMultiplier?: number;
+  recurrenceTier?: number;
+  isRecurring?: boolean;
+  multiplier?: number;
+  escalationTier?: number;
 }
 
 export type WeaknessStatus = 'Active' | 'Under Control' | 'Overcome';
@@ -312,6 +355,17 @@ export interface Weakness {
   status: WeaknessStatus;
   correctiveStrategy?: string; // What the operator will do when triggered
   createdAt: string;
+  recurrenceCadence?: RecurrenceCadence;
+  recurrenceCadenceLabel?: string;
+  averageIntervalDays?: number;
+  escalationTier?: number;
+  penaltyMultiplier?: number;
+  currentHpPenalty?: number;
+  currentCoinPenalty?: number;
+  currentXpPenalty?: number;
+  consecutiveDaysCount?: number;
+  sameDayCount?: number;
+  historyDates?: string[];
 }
 
 export interface PrayerCheck {

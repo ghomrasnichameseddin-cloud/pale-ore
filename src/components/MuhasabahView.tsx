@@ -10,7 +10,7 @@ import {
   Sparkles, Plus, Search, Filter, CheckCircle2, 
   ChevronRight, Lock, Trash2, Eye, EyeOff, HeartHandshake, Coins, Zap, ShieldAlert,
   ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info,
-  FileText, BookOpen, CalendarDays, History, Check, ArrowRight
+  FileText, BookOpen, CalendarDays, History, Check, ArrowRight, Repeat
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -514,6 +514,11 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         equilibriumStatus={stats.equilibriumStatus}
         isSpiritualLocked={stats.isSpiritualLocked}
         pendingKaffarahCount={stats.pendingKaffarahCount}
+        currentHp={stats.currentHp}
+        maxHp={stats.maxHp}
+        todayLostHp={stats.todayLostHp}
+        todayLostCoins={todayLostCoins}
+        todayRecurringSlipsCount={stats.todayRecurringSlipsCount}
         onOpenAuditModal={() => handleOpenAuditModal()}
         onViewRemedies={() => {
           const el = document.getElementById('active-kaffarah-section');
@@ -996,6 +1001,19 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           ))}
                         </div>
                       </div>
+
+                      {/* Recurrence Cadence & Escalation Status */}
+                      {weakness.recurrenceCadence && (
+                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/40 border border-rose-500/30 text-[10.5px] font-mono flex items-center justify-between">
+                          <span className="text-rose-300 font-bold flex items-center gap-1.5">
+                            <Repeat className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                            {weakness.recurrenceCadence}
+                          </span>
+                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9.5px]">
+                            Tier {weakness.escalationTier || 1} • {((weakness.penaltyMultiplier || 1.0)).toFixed(2)}x Penalties
+                          </span>
+                        </div>
+                      )}
 
                       {weakness.triggerCause && (
                         <p className="text-[10px] font-mono text-zinc-400 line-clamp-1 mb-2.5">
@@ -1552,6 +1570,14 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                                       }`}>
                                         {entry.severity}
                                       </span>
+
+                                      {/* RECURRING SLIP ESCALATION BADGE */}
+                                      {entry.isRecurring && (
+                                        <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-rose-950/90 text-rose-300 border border-rose-500/60 flex items-center gap-1 shadow-sm">
+                                          <Repeat className="h-3 w-3 text-rose-400 animate-pulse" />
+                                          {entry.recurrenceCadence || 'Recurring Loop'}
+                                        </span>
+                                      )}
                                     </div>
 
                                     <h4 className="font-bold text-xs sm:text-sm text-zinc-100 tracking-wide break-words">
@@ -1580,14 +1606,29 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                                     </span>
                                   ) : (
                                     <>
-                                      <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">
-                                        −{entry.xpDeducted || entry.rawPenalty} XP
-                                      </span>
+                                      <div className="flex items-center gap-1">
+                                        {entry.hpDeducted !== undefined && entry.hpDeducted > 0 && (
+                                          <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-500/40 flex items-center gap-1">
+                                            <Heart className="h-3 w-3 text-rose-400" />
+                                            −{entry.hpDeducted} HP
+                                          </span>
+                                        )}
+                                        <span className="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/30">
+                                          −{entry.xpDeducted || entry.rawPenalty} XP
+                                        </span>
+                                      </div>
                                       {entry.coinsDeducted ? (
-                                        <span className="text-[10px] font-mono text-amber-400 bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-500/20">
+                                        <span className="text-[10px] font-mono text-amber-300 bg-amber-950/50 px-1.5 py-0.2 rounded border border-amber-500/30 font-bold flex items-center gap-1">
+                                          <Coins className="h-2.5 w-2.5 text-amber-400" />
                                           −{entry.coinsDeducted} Coins
                                         </span>
                                       ) : null}
+                                      {entry.isRecurring && (
+                                        <span className="text-[9px] font-mono text-rose-200 bg-rose-900/80 px-1.5 py-0.2 rounded-full border border-rose-400/50 font-bold flex items-center gap-0.5">
+                                          <Repeat className="h-2.5 w-2.5" />
+                                          {entry.multiplier ? `${entry.multiplier.toFixed(2)}x Escalated` : 'Escalated'}
+                                        </span>
+                                      )}
                                     </>
                                   )}
                                 </div>

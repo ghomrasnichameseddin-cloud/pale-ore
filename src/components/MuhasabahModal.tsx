@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePOS } from '../POSContext';
 import { MuhasabahCategory, MuhasabahSeverity } from '../types';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 import { 
   X, AlertTriangle, Shield, ShieldCheck, CheckCircle2, Flame, Heart, 
   MessageSquare, Sparkles, Scale, BookOpen, Clock, ArrowRight,
-  Lock, Coins, Zap, ShieldAlert, HeartHandshake, EyeOff, Radio
+  Lock, Coins, Zap, ShieldAlert, HeartHandshake, EyeOff, Radio,
+  Repeat, Activity, TrendingUp, History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { analyzeSinRecurrence, SEVERITY_BASE_CONSEQUENCES } from '../utils/muhasabahRecurrence';
+import { getLocalDateString } from '../initialState';
 
 interface MuhasabahModalProps {
   isOpen: boolean;
@@ -204,9 +207,38 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
   }, [prefillCategory]);
 
   const stats = getTodayMuhasabahStats();
+  const currentSysDate = state.systemDate || getLocalDateString();
   const consequence = SEVERITY_CONSEQUENCES[severity];
-  const actualXpDeduction = isExempt ? 0 : consequence.xpPenalty;
-  const coinFine = isExempt ? 0 : consequence.coinFine;
+  const baseConsequences = SEVERITY_BASE_CONSEQUENCES[severity] || SEVERITY_BASE_CONSEQUENCES.Moderate;
+
+  // Recurrence Analysis: analyzes whether this sin is recurring (more than once a day, everyday, every two days, etc.)
+  const recurrenceAnalysis = useMemo(() => {
+    if (isExempt || !title.trim()) return null;
+    const selectedWeakness = weaknesses.find(w => w.id === selectedWeaknessId);
+    return analyzeSinRecurrence({
+      title: title.trim(),
+      category,
+      severity,
+      weaknessId: selectedWeaknessId || null,
+      weaknessName: selectedWeakness?.name || null,
+      targetDate: currentSysDate,
+      allEntries: state.muhasabahEntries || [],
+      weaknesses: state.weaknesses || []
+    });
+  }, [title, category, severity, selectedWeaknessId, weaknesses, state.systemDate, state.muhasabahEntries, isExempt, currentSysDate]);
+
+  const baseHpLoss = isExempt ? 0 : baseConsequences.baseHp;
+  const baseCoinFine = isExempt ? 0 : baseConsequences.baseCoins;
+  const baseXpPenalty = isExempt ? 0 : consequence.xpPenalty;
+
+  const actualMultiplier = recurrenceAnalysis?.multiplier || 1.0;
+  const actualHpLoss = isExempt ? 0 : (recurrenceAnalysis ? recurrenceAnalysis.escalatedHpLoss : baseHpLoss);
+  const actualCoinFine = isExempt ? 0 : (recurrenceAnalysis ? recurrenceAnalysis.escalatedCoinFine : baseCoinFine);
+  const actualXpDeduction = isExempt ? 0 : (recurrenceAnalysis ? recurrenceAnalysis.escalatedXpPenalty : baseXpPenalty);
+
+  const currentHp = stats.currentHp ?? (state.profile.hp ?? 100);
+  const maxHp = stats.maxHp ?? (state.profile.maxHp ?? 100);
+  const projectedHp = Math.max(0, currentHp - actualHpLoss);
 
   if (!isOpen) return null;
 
@@ -429,6 +461,99 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
             )}
           </div>
 
+          {/* RECURRING SIN DETECTION & AUTOMATIC PENALTY ESCALATION BANNER */}
+          {recurrenceAnalysis && recurrenceAnalysis.isRecurring && !isExempt && (
+            <motion.div 
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3.5 rounded-xl border border-rose-500/60 bg-gradient-to-br from-rose-950/40 via-red-950/20 to-black/60 shadow-lg shadow-rose-950/20 space-y-2.5"
+              id="muhasabah-recurring-sin-banner"
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-400 animate-pulse">
+                    <Repeat className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-rose-300 uppercase tracking-wider">
+                        {recurrenceAnalysis.cadenceLabel}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-900/60 border border-rose-500/40 text-rose-200 font-bold">
+                        {recurrenceAnalysis.multiplier.toFixed(2)}x Escalation
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-zinc-400 font-mono">
+                      Tier {recurrenceAnalysis.escalationTier} Behavioral Pattern • {recurrenceAnalysis.matchedOccurrencesCount} matches detected
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block">
+                    Penalties Amplified
+                  </span>
+                  <span className="text-xs font-mono font-bold text-rose-200">
+                    +{Math.round((recurrenceAnalysis.multiplier - 1) * 100)}% compounding
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-rose-200/90 leading-relaxed font-sans">
+                {recurrenceAnalysis.reason}
+              </p>
+
+              {/* Consequence Escalation Grid */}
+              <div className="grid grid-cols-3 gap-2 pt-1 border-t border-rose-500/20 text-xs font-mono">
+                <div className="p-2 rounded-lg bg-black/40 border border-rose-500/30">
+                  <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <Heart className="h-3 w-3 text-rose-400" />
+                    <span>HP Loss</span>
+                  </div>
+                  <div className="text-sm font-bold text-rose-400 flex items-baseline gap-1 mt-0.5">
+                    <span>−{actualHpLoss} HP</span>
+                    <span className="text-[10px] line-through text-zinc-500">−{baseHpLoss}</span>
+                  </div>
+                  <span className="text-[9px] text-rose-300/80">Soul Vitality drain</span>
+                </div>
+
+                <div className="p-2 rounded-lg bg-black/40 border border-amber-500/30">
+                  <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <Coins className="h-3 w-3 text-amber-400" />
+                    <span>Treasury Fine</span>
+                  </div>
+                  <div className="text-sm font-bold text-amber-400 flex items-baseline gap-1 mt-0.5">
+                    <span>−{actualCoinFine} 🪙</span>
+                    <span className="text-[10px] line-through text-zinc-500">−{baseCoinFine}</span>
+                  </div>
+                  <span className="text-[9px] text-amber-300/80">Imperial Coin fine</span>
+                </div>
+
+                <div className="p-2 rounded-lg bg-black/40 border border-red-500/30">
+                  <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                    <Flame className="h-3 w-3 text-orange-400" />
+                    <span>Discipline XP</span>
+                  </div>
+                  <div className="text-sm font-bold text-orange-400 flex items-baseline gap-1 mt-0.5">
+                    <span>−{actualXpDeduction} XP</span>
+                    <span className="text-[10px] line-through text-zinc-500">−{baseXpPenalty}</span>
+                  </div>
+                  <span className="text-[9px] text-orange-300/80">Friction penalty</span>
+                </div>
+              </div>
+
+              {/* Health Bar Forecast */}
+              <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 bg-black/30 px-2.5 py-1.5 rounded-lg border border-white/5">
+                <span className="flex items-center gap-1">
+                  <Activity className="h-3 w-3 text-cyan-400" />
+                  Soul Health Forecast:
+                </span>
+                <span className="font-bold text-zinc-200">
+                  {currentHp} HP ➔ <span className={projectedHp <= 20 ? 'text-rose-400 font-extrabold' : 'text-amber-400'}>{projectedHp} / {maxHp} HP</span>
+                </span>
+              </div>
+            </motion.div>
+          )}
+
           {/* STEP 2: WEIGH SEVERITY & CONSEQUENCES */}
           <div>
             <label className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider flex items-center justify-between mb-2">
@@ -437,14 +562,17 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                 Determine Consequence Weight (Wazn)
               </span>
               <span className="text-xs text-rose-400 font-bold font-mono">
-                −{actualXpDeduction} XP & −{consequence.coinFine} Coins
+                {isExempt ? '0 Penalty' : `−${actualHpLoss} HP • −${actualCoinFine} Coins • −${actualXpDeduction} XP`}
               </span>
             </label>
 
             <div className="grid grid-cols-5 gap-1.5">
               {(Object.keys(SEVERITY_CONSEQUENCES) as MuhasabahSeverity[]).map(sevKey => {
                 const s = SEVERITY_CONSEQUENCES[sevKey];
+                const baseC = SEVERITY_BASE_CONSEQUENCES[sevKey];
                 const isSelected = severity === sevKey;
+                const previewHp = Math.round(baseC.baseHp * actualMultiplier);
+                const previewCoins = Math.round(baseC.baseCoins * actualMultiplier);
                 return (
                   <button
                     key={sevKey}
@@ -457,8 +585,8 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                     }`}
                   >
                     <span className="text-xs font-bold">{s.label}</span>
-                    <span className="text-[10px] opacity-80">−{s.xpPenalty} XP</span>
-                    <span className="text-[9px] text-[var(--accent-bright)]">−{s.coinFine} Coins</span>
+                    <span className="text-[10px] text-rose-400 font-semibold">−{previewHp} HP</span>
+                    <span className="text-[9px] text-[var(--accent-bright)]">−{previewCoins} 🪙</span>
                   </button>
                 );
               })}
@@ -467,13 +595,17 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
             {/* Consequence Impact Preview Strip */}
             <div className="mt-2.5 p-2.5 rounded-xl bg-[#090b10] border border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 text-rose-400">
-                  <Flame className="h-3.5 w-3.5" />
-                  <span>−{consequence.xpPenalty} XP</span>
+                <div className="flex items-center gap-1 text-rose-400 font-bold">
+                  <Heart className="h-3.5 w-3.5" />
+                  <span>−{actualHpLoss} HP</span>
                 </div>
                 <div className="flex items-center gap-1 text-[var(--accent-bright)]">
                   <Coins className="h-3.5 w-3.5" />
-                  <span>−{consequence.coinFine} Coins Fine</span>
+                  <span>−{actualCoinFine} Coins Fine</span>
+                </div>
+                <div className="flex items-center gap-1 text-orange-400">
+                  <Flame className="h-3.5 w-3.5" />
+                  <span>−{actualXpDeduction} XP</span>
                 </div>
                 <div className="flex items-center gap-1 text-cyan-400">
                   <Zap className="h-3.5 w-3.5" />
@@ -568,7 +700,12 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
               id="confirm-muhasabah-audit-btn"
             >
               <Scale className="h-4 w-4" />
-              {isExempt ? 'RECORD LAWFUL EXEMPTION (0 PENALTY)' : `COMMIT AUDIT (−${actualXpDeduction} XP, −${consequence.coinFine} Coins)`}
+              {isExempt 
+                ? 'RECORD LAWFUL EXEMPTION (0 PENALTY)' 
+                : recurrenceAnalysis?.isRecurring 
+                  ? `COMMIT AUDIT (−${actualHpLoss} HP, −${actualCoinFine} 🪙, −${actualXpDeduction} XP • ${recurrenceAnalysis.multiplier.toFixed(2)}x)` 
+                  : `COMMIT AUDIT (−${actualHpLoss} HP, −${actualCoinFine} 🪙, −${actualXpDeduction} XP)`
+              }
             </button>
           </div>
         </form>

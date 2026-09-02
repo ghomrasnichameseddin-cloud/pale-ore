@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen } from 'lucide-react';
+import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen, Heart, Coins, Repeat } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 interface DailyBalanceScaleProps {
@@ -13,6 +13,11 @@ interface DailyBalanceScaleProps {
   equilibriumStatus: 'Radiant Balance' | 'Blessed Equilibrium' | 'Neutral Ground' | 'Spiritual Deficit' | 'Severe Nafs Warning';
   isSpiritualLocked: boolean;
   pendingKaffarahCount: number;
+  currentHp?: number;
+  maxHp?: number;
+  todayLostHp?: number;
+  todayLostCoins?: number;
+  todayRecurringSlipsCount?: number;
   onOpenAuditModal: () => void;
   onViewRemedies?: () => void;
   onOpenGuide?: () => void;
@@ -28,6 +33,11 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
   equilibriumStatus,
   isSpiritualLocked,
   pendingKaffarahCount,
+  currentHp,
+  maxHp,
+  todayLostHp = 0,
+  todayLostCoins = 0,
+  todayRecurringSlipsCount = 0,
   onOpenAuditModal,
   onViewRemedies,
   onOpenGuide
@@ -552,8 +562,27 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
               −{todayLostXP}
               <span className="text-xs font-mono text-rose-300/80 font-normal">XP Lost</span>
             </div>
-            <p className="text-[11px] text-zinc-400 font-mono mt-1 leading-relaxed">
-              Delayed obligations, tongue slips, feed drift, appetites, and neglect.
+
+            {/* Penalties Strip: HP and Coins and Recurring */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-rose-500/20 text-xs font-mono">
+              <span className="text-rose-400 font-bold flex items-center gap-1 bg-rose-950/70 px-2 py-0.5 rounded border border-rose-500/30">
+                <Heart className="h-3 w-3 text-rose-400" />
+                −{todayLostHp} HP
+              </span>
+              <span className="text-amber-300 font-bold flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
+                <Coins className="h-3 w-3 text-amber-400" />
+                −{todayLostCoins} Coins
+              </span>
+              {todayRecurringSlipsCount > 0 && (
+                <span className="text-[10px] text-rose-200 font-bold flex items-center gap-1 bg-rose-900/90 px-2 py-0.5 rounded-full border border-rose-400/60 shadow-sm animate-pulse">
+                  <Repeat className="h-2.5 w-2.5 text-rose-300" />
+                  {todayRecurringSlipsCount} Recurring Loop{todayRecurringSlipsCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            <p className="text-[11px] text-zinc-400 font-mono mt-2 leading-relaxed">
+              Delayed obligations, tongue slips, feed drift, appetites, and recurring lapses.
             </p>
           </div>
 
