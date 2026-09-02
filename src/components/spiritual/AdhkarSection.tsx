@@ -4,13 +4,14 @@ import {
   Sun, Moon, Sparkles, CheckCircle2, Plus, 
   Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap,
   Bed, BookOpen, Clock, Edit2, Trash2, Search, Filter,
-  Volume2, Share2, Copy, AlertCircle, RotateCcw
+  Volume2, Share2, Copy, AlertCircle, RotateCcw, Shield
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, SpiritualDailyLog } from '../../types';
 import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
 import { SleepAdhkarModal } from './SleepAdhkarModal';
 import { AdhkarFormModal } from './AdhkarFormModal';
+import { PostSalahAdhkarModal } from './PostSalahAdhkarModal';
 
 interface AdhkarSectionProps {
   systemDate: string;
@@ -49,6 +50,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [sleepModalTab, setSleepModalTab] = useState<'dhohr' | 'night'>('night');
+  const [showPostSalahModal, setShowPostSalahModal] = useState(false);
+  const [selectedPostPrayer, setSelectedPostPrayer] = useState<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'>('fajr');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -57,18 +60,32 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
 
   const adhkarSabah = spiritualLog.adhkarSabah;
   const adhkarMasa = spiritualLog.adhkarMasa;
+  const adhkarSleepDhohr = spiritualLog.adhkarSleepDhohr;
+  const adhkarSleepNight = spiritualLog.adhkarSleepNight;
   const salawatCount = spiritualLog.salawatCount || 0;
   const salawatTargetReached = salawatCount >= 70;
+
+  const postMap = spiritualLog.dhikr?.postSalahAdhkar || {};
+  const completedPostPrayersCount = (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter(p => {
+    const mode = postMap[p];
+    return mode === 'standard33' || mode === 'mini10';
+  }).length;
 
   // Filtered Adhkar list
   const filteredAdhkar = useMemo(() => {
     return adhkarList.filter(item => {
       // Category filter
-      if (activeCategory !== 'all' && item.category !== activeCategory) {
-        return false;
+      if (activeCategory !== 'all') {
+        if (activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah') {
+          if (item.category !== 'post_salah' && (item.category as string) !== 'postSalah') return false;
+        } else if (activeCategory === 'sleep') {
+          if (item.category !== 'sleep' && item.category !== 'sleep_dhohr' && item.category !== 'sleep_night') return false;
+        } else if (item.category !== activeCategory) {
+          return false;
+        }
       }
       // Prayer target sub-filter for post_salah
-      if (activeCategory === 'post_salah' && activePrayerFilter !== 'all') {
+      if ((activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah') && activePrayerFilter !== 'all') {
         if (item.prayerTarget && item.prayerTarget !== 'all') {
           if (item.prayerTarget === 'fajr_maghrib') {
             if (activePrayerFilter !== 'fajr' && activePrayerFilter !== 'maghrib') return false;
@@ -99,8 +116,10 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       all: adhkarList.length,
       morning: adhkarList.filter(a => a.category === 'morning').length,
       evening: adhkarList.filter(a => a.category === 'evening').length,
-      post_salah: adhkarList.filter(a => a.category === 'post_salah').length,
-      sleep: adhkarList.filter(a => a.category === 'sleep').length,
+      post_salah: adhkarList.filter(a => a.category === 'post_salah' || (a.category as string) === 'postSalah').length,
+      sleep_dhohr: adhkarList.filter(a => a.category === 'sleep_dhohr').length,
+      sleep_night: adhkarList.filter(a => a.category === 'sleep_night').length,
+      sleep: adhkarList.filter(a => a.category === 'sleep' || a.category === 'sleep_dhohr' || a.category === 'sleep_night').length,
       general: adhkarList.filter(a => a.category === 'general').length,
     };
   }, [adhkarList]);
@@ -234,69 +253,263 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       </div>
 
       {/* QUICK RITUAL MASTER TOGGLE CONTROLS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Morning Adhkār Quick Toggle */}
         <div 
-          onClick={() => toggleAdhkar('sabah', systemDate)}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-md flex items-center justify-between ${
+          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
             adhkarSabah
               ? 'bg-amber-950/40 border-amber-500/50 shadow-amber-950/20'
               : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${
-              adhkarSabah ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
-            }`}>
-              <Sun className="h-5 w-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl border ${
+                adhkarSabah ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
+              }`}>
+                <Sun className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SACRED DAWN LITANY</span>
+                <h4 className="text-sm font-display font-bold text-white">Morning Adhkār (أذكار الصباح)</h4>
+                <span className="text-[10px] font-mono text-zinc-400">After Fajr until Sunrise • +75 XP</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SACRED DAWN LITANY</span>
-              <h4 className="text-sm font-display font-bold text-white">Morning Adhkār (أذكار الصباح)</h4>
-              <span className="text-[10px] font-mono text-zinc-400">After Fajr until Sunrise • +150 XP</span>
-            </div>
+            <button
+              onClick={() => toggleAdhkar('sabah', systemDate)}
+              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
+                adhkarSabah ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+              }`}
+            >
+              {adhkarSabah && <Check className="h-4 w-4 stroke-[3]" />}
+            </button>
           </div>
-          <div className={`h-6 w-6 rounded-lg border flex items-center justify-center transition ${
-            adhkarSabah ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40'
-          }`}>
-            {adhkarSabah && <Check className="h-4 w-4 stroke-[3]" />}
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+            <span className={adhkarSabah ? 'text-amber-300 font-bold' : 'text-zinc-500'}>
+              {adhkarSabah ? '✓ Dawn Shield Completed' : 'Pending Recitation'}
+            </span>
+            <button
+              onClick={() => { setActiveCategory('morning'); }}
+              className="text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer"
+            >
+              <span>View Adhkār</span>
+            </button>
           </div>
         </div>
 
         {/* Evening Adhkār Quick Toggle */}
         <div 
-          onClick={() => toggleAdhkar('masa', systemDate)}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-md flex items-center justify-between ${
+          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
             adhkarMasa
               ? 'bg-indigo-950/40 border-indigo-500/50 shadow-indigo-950/20'
               : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${
-              adhkarMasa ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-white/10 text-zinc-400'
-            }`}>
-              <Moon className="h-5 w-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl border ${
+                adhkarMasa ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-white/10 text-zinc-400'
+              }`}>
+                <Moon className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono uppercase text-indigo-300/80 font-bold block">SACRED SUNSET LITANY</span>
+                <h4 className="text-sm font-display font-bold text-white">Evening Adhkār (أذكار المساء)</h4>
+                <span className="text-[10px] font-mono text-zinc-400">After ‘Asr until Maghrib • +75 XP</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase text-indigo-300/80 font-bold block">SACRED SUNSET LITANY</span>
-              <h4 className="text-sm font-display font-bold text-white">Evening Adhkār (أذكار المساء)</h4>
-              <span className="text-[10px] font-mono text-zinc-400">After ‘Asr until Maghrib • +150 XP</span>
-            </div>
+            <button
+              onClick={() => toggleAdhkar('masa', systemDate)}
+              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
+                adhkarMasa ? 'bg-indigo-500 border-indigo-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+              }`}
+            >
+              {adhkarMasa && <Check className="h-4 w-4 stroke-[3]" />}
+            </button>
           </div>
-          <div className={`h-6 w-6 rounded-lg border flex items-center justify-center transition ${
-            adhkarMasa ? 'bg-indigo-500 border-indigo-400 text-black' : 'border-zinc-700 bg-black/40'
-          }`}>
-            {adhkarMasa && <Check className="h-4 w-4 stroke-[3]" />}
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+            <span className={adhkarMasa ? 'text-indigo-300 font-bold' : 'text-zinc-500'}>
+              {adhkarMasa ? '✓ Sunset Shield Completed' : 'Pending Recitation'}
+            </span>
+            <button
+              onClick={() => { setActiveCategory('evening'); }}
+              className="text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer"
+            >
+              <span>View Adhkār</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Noon Sleep / Qaylūlah Adhkār */}
+        <div 
+          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            adhkarSleepDhohr
+              ? 'bg-amber-950/30 border-amber-500/50 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl border ${
+                adhkarSleepDhohr ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
+              }`}>
+                <Sun className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SUNNAH MIDDAY REST</span>
+                <h4 className="text-sm font-display font-bold text-white">Noon Sleep / Qaylūlah (القيلولة)</h4>
+                <span className="text-[10px] font-mono text-zinc-400">Midday Nap Sunnah • +50 XP</span>
+              </div>
+            </div>
+            <button
+              onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
+                adhkarSleepDhohr ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+              }`}
+            >
+              {adhkarSleepDhohr && <Check className="h-4 w-4 stroke-[3]" />}
+            </button>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+            <span className={adhkarSleepDhohr ? 'text-amber-300 font-bold' : 'text-zinc-500'}>
+              {adhkarSleepDhohr ? '✓ Qaylūlah Shield Done' : 'Midday Rest Adhkār'}
+            </span>
+            <button
+              onClick={() => {
+                setSleepModalTab('dhohr');
+                setShowSleepModal(true);
+              }}
+              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+            >
+              <BookOpen className="h-3 w-3" />
+              <span>Read 4 Adhkār</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Night Bedtime Fortress Adhkār */}
+        <div 
+          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            adhkarSleepNight
+              ? 'bg-purple-950/40 border-purple-500/50 shadow-purple-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl border ${
+                adhkarSleepNight ? 'bg-purple-500/20 border-purple-500 text-purple-300' : 'bg-white/5 border-white/10 text-zinc-400'
+              }`}>
+                <Bed className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono uppercase text-purple-300/80 font-bold block">NOCTURNAL BEDTIME FORTRESS</span>
+                <h4 className="text-sm font-display font-bold text-white">Night Sleep Adhkār (نوم الليل)</h4>
+                <span className="text-[10px] font-mono text-zinc-400">Bedtime Protection Shield • +75 XP</span>
+              </div>
+            </div>
+            <button
+              onClick={() => toggleAdhkar('sleepNight', systemDate)}
+              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
+                adhkarSleepNight ? 'bg-purple-500 border-purple-400 text-white' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+              }`}
+            >
+              {adhkarSleepNight && <Check className="h-4 w-4 stroke-[3]" />}
+            </button>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+            <span className={adhkarSleepNight ? 'text-purple-300 font-bold' : 'text-zinc-500'}>
+              {adhkarSleepNight ? '✓ Night Fortress Done' : '7 Bedtime Protections'}
+            </span>
+            <button
+              onClick={() => {
+                setSleepModalTab('night');
+                setShowSleepModal(true);
+              }}
+              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+            >
+              <Shield className="h-3 w-3" />
+              <span>Read 7 Adhkār</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Post-Salah Adhkār Master Card */}
+        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">5 OBLIGATORY FARĀ&apos;IḌ</span>
+                <h4 className="text-sm font-display font-bold text-white">Post-Salah Adhkār (بعد الصلاة)</h4>
+              </div>
+            </div>
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+              completedPostPrayersCount === 5 
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' 
+                : 'bg-zinc-800 text-zinc-400'
+            }`}>
+              {completedPostPrayersCount}/5 Prayers
+            </span>
+          </div>
+
+          {/* 5 Prayers Mini Badges */}
+          <div className="grid grid-cols-5 gap-1 pt-1">
+            {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(p => {
+              const mode = postMap[p];
+              return (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setSelectedPostPrayer(p);
+                    setShowPostSalahModal(true);
+                  }}
+                  className={`py-1 rounded text-[10px] font-mono font-bold border transition text-center cursor-pointer ${
+                    mode === 'standard33'
+                      ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
+                      : mode === 'mini10'
+                      ? 'bg-teal-950 border-teal-500 text-teal-300'
+                      : 'bg-black/30 border-white/5 text-zinc-500 hover:text-zinc-300'
+                  }`}
+                  title={`${p.toUpperCase()}: ${mode || 'Pending'}`}
+                >
+                  <span className="block uppercase">{p.slice(0, 3)}</span>
+                  <span className="text-[8px] opacity-80">{mode === 'standard33' ? '33x' : mode === 'mini10' ? '10x' : '—'}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+            <span className="text-zinc-400">
+              {completedPostPrayersCount === 5 ? 'All 5 Sealed (+25 Bonus)' : '33-33-33-1 Tasbīḥ'}
+            </span>
+            <button
+              onClick={() => {
+                setSelectedPostPrayer('fajr');
+                setShowPostSalahModal(true);
+              }}
+              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+            >
+              <span>Open Fortress</span>
+              <BookOpen className="h-3 w-3" />
+            </button>
           </div>
         </div>
 
         {/* Salawāt Quick Dial */}
-        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-2">
+        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Heart className={`h-4 w-4 ${salawatTargetReached ? 'text-rose-400 fill-rose-400' : 'text-rose-400'}`} />
-              <span className="text-xs font-mono font-bold text-white uppercase">SALAWĀT (70+ TARGET)</span>
+              <div className="p-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300">
+                <Heart className={`h-4 w-4 ${salawatTargetReached ? 'text-rose-400 fill-rose-400' : 'text-rose-400'}`} />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold text-rose-400 uppercase">PROPHETIC BLESSINGS</span>
+                <h4 className="text-sm font-display font-bold text-white">Salawāt upon Prophet ﷺ</h4>
+              </div>
             </div>
             <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
               salawatTargetReached ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'text-zinc-400'
@@ -308,29 +521,34 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           <div className="flex items-center gap-1.5 pt-1">
             <button
               onClick={() => incrementSalawat(1, systemDate)}
-              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition"
+              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
             >
               +1
             </button>
             <button
               onClick={() => incrementSalawat(10, systemDate)}
-              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition"
+              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
             >
               +10
             </button>
             <button
               onClick={() => incrementSalawat(33, systemDate)}
-              className="flex-1 py-1.5 bg-emerald-950/60 hover:bg-emerald-800/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-lg transition"
+              className="flex-1 py-1.5 bg-emerald-950/60 hover:bg-emerald-800/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
             >
               +33
             </button>
             <button
               onClick={() => setSalawatCount(0, systemDate)}
-              className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-white/5"
+              className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-white/5 cursor-pointer"
               title="Reset Salawat Count"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono text-zinc-400">
+            <span>اللَّهُمَّ صَلِّ عَلَى مُحَمَّد</span>
+            <span className="text-zinc-400">{salawatTargetReached ? '✓ Daily Goal Met' : `${Math.max(0, 70 - salawatCount)} left`}</span>
           </div>
         </div>
       </div>
@@ -381,7 +599,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             <button
               onClick={() => { setActiveCategory('post_salah'); setActivePrayerFilter('all'); }}
               className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                activeCategory === 'post_salah'
+                activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah'
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
@@ -392,16 +610,29 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             </button>
 
             <button
-              onClick={() => { setActiveCategory('sleep'); setActivePrayerFilter('all'); }}
+              onClick={() => { setActiveCategory('sleep_dhohr'); setActivePrayerFilter('all'); }}
               className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                activeCategory === 'sleep'
+                activeCategory === 'sleep_dhohr'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Sun className="h-3.5 w-3.5" />
+              <span>NOON SLEEP (القيلولة)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep_dhohr}</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveCategory('sleep_night'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'sleep_night'
                   ? 'bg-purple-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Bed className="h-3.5 w-3.5" />
-              <span>SLEEP (النوم)</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep}</span>
+              <span>NIGHT SLEEP (نوم الليل)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep_night}</span>
             </button>
 
             <button
@@ -782,6 +1013,14 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         onClose={() => setShowSleepModal(false)}
         systemDate={systemDate}
         initialTab={sleepModalTab}
+      />
+
+      {/* POST-SALAH ADHKAR MODAL */}
+      <PostSalahAdhkarModal
+        isOpen={showPostSalahModal}
+        onClose={() => setShowPostSalahModal(false)}
+        systemDate={systemDate}
+        initialPrayer={selectedPostPrayer}
       />
     </div>
   );

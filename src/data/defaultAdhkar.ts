@@ -294,33 +294,154 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
   },
 
   // ==========================================
-  // 4. SLEEP ADHKAR (أذكار النوم)
+  // 4. NOON SLEEP / QAYLULAH ADHKAR (أذكار نوم القيلولة والظهيرة)
   // ==========================================
   {
-    id: 'adhkar-sleep-1',
-    title: 'Tasbīḥ Fāṭimah (Bedtime Sanctuary)',
-    titleAr: 'تَسْبِيحُ فَاطِمَةَ عِنْدَ النَّوْمِ (٣٣-٣٣-٣٤)',
-    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٤)',
-    transliteration: 'SubḥānAllāh (33 times), Alḥamdulillāh (33 times), Allāhu Akbar (34 times)',
-    translation: 'Glory be to Allah (33), Praise be to Allah (33), Allah is the Greatest (34).',
-    category: 'sleep',
-    targetCount: 100,
-    virtue: 'The Prophet ﷺ taught this to ‘Ali and Fatimah, declaring it better for them than having a servant for strength and energy.',
-    hadithSource: 'Sahih al-Bukhari 3705, Sahih Muslim 2727',
+    id: 'adhkar-sleep-dhohr-1',
+    title: 'Surrender in Sleep (Bismika Allāhumma Amūtu wa Aḥyā)',
+    titleAr: 'تَسْلِيمُ النَّفْسِ عِنْدَ القَيْلُولَةِ: بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
+    arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا.',
+    transliteration: 'Bismika Allāhumma amūtu wa aḥyā.',
+    translation: 'In Your Name, O Allah, I die and I live.',
+    category: 'sleep_dhohr',
+    targetCount: 1,
+    virtue: 'The standard Sunnah upon laying down for midday sleep (Qaylūlah) to sanctify the rest.',
+    hadithSource: 'Sahih al-Bukhari 6312, Sahih Muslim 2711',
     order: 1
   },
   {
-    id: 'adhkar-sleep-2',
-    title: 'Du‘a al-Fiṭrah (Consecration of the Soul)',
-    titleAr: 'دُعَاءُ الفِطْرَةِ عِنْدَ النَّوْمِ',
+    id: 'adhkar-sleep-dhohr-2',
+    title: 'Resting upon the Right Side (Bismika Rabbī Waḍa‘tu Janbī)',
+    titleAr: 'الاضْطِجَاعُ عَلَى الشِّقِّ الأَيْمَنِ: بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي',
+    arabic: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ.',
+    transliteration: 'Bismika Rabbī waḍa‘tu janbī wa bika arfa‘uh, in amsakta nafsī farḥamhā, wa in arsaltahā faḥfaẓhā bimā taḥfaẓu bihī ‘ibādakaṣ-ṣāliḥīn.',
+    translation: 'In Your Name, my Lord, I lay down my side and by You I raise it up. If You hold my soul, have mercy upon it; and if You release it, protect it as You protect Your righteous servants.',
+    category: 'sleep_dhohr',
+    targetCount: 1,
+    virtue: 'Authentic protection over the spirit and physical rest during afternoon sleep.',
+    hadithSource: 'Sahih al-Bukhari 6320, Sahih Muslim 2714',
+    order: 2
+  },
+  {
+    id: 'adhkar-sleep-dhohr-3',
+    title: 'Āyat al-Kursī for Midday Nap (Surah Al-Baqarah 2:255)',
+    titleAr: 'آيَةُ الكُرْسِيِّ حِرْزُ القَيْلُولَةِ',
+    arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ...',
+    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm, lā ta’khuḏhuhū sinatuw-wa lā nawm...',
+    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+    category: 'sleep_dhohr',
+    targetCount: 1,
+    virtue: 'Guarantees that a guardian angel from Allah protects you and no devil comes near you until you awake.',
+    hadithSource: 'Sahih al-Bukhari 2311',
+    order: 3
+  },
+  {
+    id: 'adhkar-sleep-dhohr-4',
+    title: 'Awakening from Qaylūlah Supplication',
+    titleAr: 'دُعَاءُ الاسْتِيقَاظِ مِنَ القَيْلُولَةِ لِصَلَاةِ العَصْرِ',
+    arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ.',
+    transliteration: 'Al-ḥamdu lillāhillaḏhī aḥyānā ba‘da mā amātanā wa ilayhin-nushūr.',
+    translation: 'All praise is for Allah Who gave us life after He caused us to die, and unto Him is the resurrection.',
+    category: 'sleep_dhohr',
+    targetCount: 1,
+    virtue: 'Revives the spiritual consciousness upon awakening, readying the believer for the ‘Asr prayer and afternoon vigor.',
+    hadithSource: 'Sahih al-Bukhari 6312',
+    order: 4
+  },
+
+  // ==========================================
+  // 5. NIGHT BEDTIME FORTRESS ADHKAR (أذكار نوم الليل وحصن المسلم)
+  // ==========================================
+  {
+    id: 'adhkar-sleep-night-1',
+    title: 'The 3 Protective Surahs (Mu‘awwiḏhāt x3 with Nafth into Hands)',
+    titleAr: 'المُعَوِّذَاتُ الثَّلَاثُ مَعَ النَّفْثِ وَالمَسْحِ (٣ مَرَّاتٍ)',
+    arabic: 'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ: قُلْ هُوَ اللَّهُ أَحَدٌ... قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ... قُلْ أَعُوذُ بِرَبِّ النَّاسِ... (يَنْفُثُ فِي كَفَّيْهِ وَيَمْسَحُ جَسَدَهُ ٣ مَرَّاتٍ).',
+    transliteration: 'Recite Surah Al-Ikhlāṣ, Surah Al-Falaq, and Surah An-Nās, blowing into cupped hands and wiping over the body 3 times starting with head and face.',
+    translation: 'The nightly prophetic sunnah of cupping hands, lightly blowing into them with recitations of the 3 Quls, then wiping as much of the body as possible (3 times).',
+    category: 'sleep_night',
+    targetCount: 3,
+    virtue: 'A complete nocturnal shield against spiritual harms, night terrors, envy, and evil spirits.',
+    hadithSource: 'Sahih al-Bukhari 5017, Sahih Muslim 2192',
+    order: 1
+  },
+  {
+    id: 'adhkar-sleep-night-2',
+    title: 'Āyat al-Kursī (Nocturnal Divine Protector - 2:255)',
+    titleAr: 'آيَةُ الكُرْسِيِّ حَارِسُ اللَّيْلِ الأَعْظَم',
+    arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ...',
+    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm...',
+    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+    category: 'sleep_night',
+    targetCount: 1,
+    virtue: 'Whoever recites it when going to bed, a protector from Allah remains with him, and no devil can approach him until morning.',
+    hadithSource: 'Sahih al-Bukhari 2311',
+    order: 2
+  },
+  {
+    id: 'adhkar-sleep-night-3',
+    title: 'Last Two Verses of Surah Al-Baqarah (2:285-286)',
+    titleAr: 'خَوَاتِيمُ سُورَةِ البَقَرَةِ (٢٨٥ - ٢٨٦): كَفَتَاهُ',
+    arabic: 'آمَنَ الرَّسُولُ بِمَا أُنزِلَ إِلَيْهِ مِن رَّبِّهِ وَالْمُؤْمِنُونَ ۚ كُلٌّ آمَنَ بِاللَّهِ وَمَلَائِكَتِهِ وَكُتُبِهِ وَرُسُلِهِ...',
+    transliteration: 'Āmanar-Rasūlu bimā unzila ilayhi mir-Rabbihī wal-mu’minūn...',
+    translation: 'The Messenger has believed in what was revealed to him from his Lord, and so have the believers...',
+    category: 'sleep_night',
+    targetCount: 1,
+    virtue: 'The Prophet ﷺ said: "Whoever recites the last two verses of Surah Al-Baqarah at night, they will suffice him (against every evil and night calamity)."',
+    hadithSource: 'Sahih al-Bukhari 5009, Sahih Muslim 807',
+    order: 3
+  },
+  {
+    id: 'adhkar-sleep-night-4',
+    title: 'Tasbīḥ Fāṭimah (Bedtime Strength: 33-33-34)',
+    titleAr: 'تَسْبِيحُ فَاطِمَةَ الزَّهْرَاءِ (٣٣ - ٣٣ - ٣٤)',
+    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٤).',
+    transliteration: 'SubḥānAllāh (33 times), Alḥamdulillāh (33 times), Allāhu Akbar (34 times)',
+    translation: 'Glory be to Allah (33), Praise be to Allah (33), Allah is the Greatest (34).',
+    category: 'sleep_night',
+    targetCount: 100,
+    virtue: 'The Prophet ﷺ taught this to ‘Ali and Fatimah, declaring it better for them than a servant for physical and mental energy.',
+    hadithSource: 'Sahih al-Bukhari 3705, Sahih Muslim 2727',
+    order: 4
+  },
+  {
+    id: 'adhkar-sleep-night-5',
+    title: 'Du‘a al-Fiṭrah (The Grand Bedtime Covenant)',
+    titleAr: 'دُعَاءُ الفِطْرَةِ عِنْدَ النَّوْمِ: اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ',
     arabic: 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ، رَغْبَةً وَرَهْبَةً إِلَيْكَ، لَا مَلْجَأَ وَلَا مَنْجَا مِنْكَ إِلَّا إِلَيْكَ، آمَنْتُ بِكِتَابِكَ الَّذِي أَنْزَلْتَ، وَبِنَبِيِّكَ الَّذِي أَرْسَلْتَ.',
     transliteration: 'Allāhumma aslamtu nafsī ilayk, wa fawwaḍtu amrī ilayk, wa wajjahtu wajhī ilayk, wa alja’tu ẓahrī ilayk, raghbatan wa rahbatan ilayk, lā malja’a wa lā manjā minka illā ilayk, āmantu bi Kitābikal-ladhī anzalt, wa bi Nabiyyikal-ladhī arsalt.',
     translation: 'O Allah, I have surrendered myself to You, entrusted my affairs to You, turned my face towards You, and leaned my back against You in desire and awe of You. There is no sanctuary or escape from You except to You. I believe in Your Book which You revealed, and in Your Prophet whom You sent.',
-    category: 'sleep',
+    category: 'sleep_night',
     targetCount: 1,
-    virtue: 'If you recite this before sleeping and die during that night, you die upon the pure natural religion (al-Fitrah).',
+    virtue: 'The Prophet ﷺ commanded Al-Bara’ ibn ‘Azib: "Make this your very last utterance before sleep; if you die that night, you die upon the pure primordial faith (Fiṭrah)."',
     hadithSource: 'Sahih al-Bukhari 247, Sahih Muslim 2710',
-    order: 2
+    order: 5
+  },
+  {
+    id: 'adhkar-sleep-night-6',
+    title: 'Refuge from the Day of Resurrection (x3)',
+    titleAr: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ (٣ مَرَّاتٍ)',
+    arabic: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.',
+    transliteration: 'Allāhumma qinī ‘adhābaka yawma tab‘athu ‘ibādak (3 times with right hand under cheek).',
+    translation: 'O Allah, protect me from Your punishment on the Day You resurrect Your servants.',
+    category: 'sleep_night',
+    targetCount: 3,
+    virtue: 'Recited 3 times whenever the Prophet ﷺ lay down to sleep upon his right cheek.',
+    hadithSource: 'Sunan Abi Dawud 5045, Jami‘ at-Tirmidhi 3398',
+    order: 6
+  },
+  {
+    id: 'adhkar-sleep-night-7',
+    title: 'Surah Al-Mulk (The Savior from Grave Torment)',
+    titleAr: 'سُورَةُ المُلْكِ (المَانِعَةُ المُنْجِيَةُ مِنْ عَذَابِ القَبْرِ)',
+    arabic: 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ ۝ الَّذِي خَلَقَ الْمَوْتَ وَالْحَيَاةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا ۚ وَهُوَ الْعَزِيزُ الْغَفُورُ...',
+    transliteration: 'Tabārakal-ladhī biyadihil-mulku wa Huwa ‘alā kulli shay’in Qadīr...',
+    translation: 'Blessed is He in Whose hand is dominion, and He is over all things competent...',
+    category: 'sleep_night',
+    targetCount: 1,
+    virtue: 'Thirty verses that intercede for their reciter until forgiven, protecting him from the trials of the grave.',
+    hadithSource: 'Jami‘ at-Tirmidhi 2891, Sahih al-Jami‘ 3643',
+    order: 7
   },
 
   // ==========================================

@@ -4,17 +4,19 @@ import {
   CheckCircle2, Sparkles, Scale, Clock, Moon, Sun, Award, ChevronLeft, 
   ChevronRight, RefreshCw, AlertTriangle, BookOpen, ShieldCheck, Heart, 
   Plus, Minus, Flame, ArrowUpRight, Check, Compass, Shield, HelpCircle,
-  Calendar, Layers, Zap
+  Calendar, Layers, Zap, Bed
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { getHijriDate } from '../utils/hijriCalendar';
 import { RubElHizbIcon, GeometricDivider, ArabesqueCorner } from './IslamicRpgDecorations';
-import { SpiritualDailyLog, PrayerCheck } from '../types';
+import { SpiritualDailyLog, PrayerCheck, PostSalahDhikrMode } from '../types';
 import { SiamFastingSection } from './spiritual/SiamFastingSection';
 import { SunnahPrayersSection } from './spiritual/SunnahPrayersSection';
 import { AdhkarSection } from './spiritual/AdhkarSection';
 import { SacredProtocolScorecard } from './spiritual/SacredProtocolScorecard';
 import { Masjid40DayTracker } from './spiritual/Masjid40DayTracker';
+import { PostSalahAdhkarModal } from './spiritual/PostSalahAdhkarModal';
+import { SleepAdhkarModal } from './spiritual/SleepAdhkarModal';
 
 interface SpiritualTrackerViewProps {
   onOpenMuhasabahAudit?: () => void;
@@ -43,12 +45,18 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     incrementSalawat,
     toggleFasting,
     updateSunnahPrayers,
+    updateDhikrLog,
+    updateQuranLog,
     getTodayMuhasabahStats,
     getMasjid40Stats
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'salaat' | 'masjid40' | 'sunnah' | 'siam' | 'adhkar' | 'audit'>('overview');
   const [showScorecardModal, setShowScorecardModal] = useState(false);
+  const [selectedPostPrayer, setSelectedPostPrayer] = useState<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'>('fajr');
+  const [isPostAdhkarModalOpen, setIsPostAdhkarModalOpen] = useState(false);
+  const [sleepModalTab, setSleepModalTab] = useState<'dhohr' | 'night'>('night');
+  const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
 
   const currentLog: SpiritualDailyLog = getSpiritualLog(systemDate);
   const hijriInfo = getHijriDate(systemDate);
@@ -60,6 +68,15 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     const mode = postMap[p];
     return mode === 'standard33' || mode === 'mini10';
   }).length;
+
+  const handleSetPostSalah = (prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', mode: PostSalahDhikrMode) => {
+    updateDhikrLog({
+      postSalahAdhkar: {
+        ...postMap,
+        [prayerId]: mode
+      }
+    }, systemDate);
+  };
 
   const shiftDate = (days: number) => {
     try {
@@ -590,6 +607,53 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                           <span className="text-[10px] text-amber-300 shrink-0 ml-1">+{prayer.sunnahXp} XP</span>
                         </button>
 
+                        {/* Post-Salah Adhkār Row */}
+                        <div className="pt-2 border-t border-white/5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                              <span className="text-[11px] font-mono font-bold text-zinc-300">
+                                Post-Salah Adhkār (أذكار بعد الصلاة)
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedPostPrayer(prayer.id);
+                                setIsPostAdhkarModalOpen(true);
+                              }}
+                              className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
+                            >
+                              <span>Read</span>
+                              <ArrowUpRight className="h-3 w-3" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postMap[prayer.id] === 'standard33'
+                                  ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                            >
+                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                              <span>Standard 33x (+20)</span>
+                            </button>
+                            <button
+                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postMap[prayer.id] === 'mini10'
+                                  ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                            >
+                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
+                              <span>Mini 10x (+12)</span>
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
                   );
@@ -753,72 +817,189 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
               {/* BOX C: ADHKAR & SALAWAT QUICK CARD */}
               <div className="p-5 bg-gradient-to-br from-[#190e14] via-[#120a0f] to-[#0a0709] border border-rose-500/30 rounded-2xl space-y-4 flex flex-col justify-between shadow-lg">
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-rose-950/80 border border-rose-500/40 text-rose-300">
                         <Heart className="h-4 w-4" />
                       </div>
                       <div>
-                        <h4 className="font-display font-bold text-sm text-zinc-100">Adhkār &amp; Salawāt</h4>
-                        <span className="text-[10px] font-mono text-rose-400">الأَذْكَار وَالصَّلَاة عَلَى النَّبِيّ</span>
+                        <h4 className="font-display font-bold text-sm text-zinc-100">Adhkār &amp; Prophetic Shields</h4>
+                        <span className="text-[10px] font-mono text-rose-400">حُصُونُ الأَذْكَارِ وَالصَّلَاةُ عَلَى النَّبِيّ</span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => setActiveTab('adhkar')}
-                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
+                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
                     >
-                      <span>Full Hub</span>
+                      <span>Adhkār Hub</span>
                       <ArrowUpRight className="h-3 w-3" />
                     </button>
                   </div>
 
+                  {/* 4 PROPHETIC TIME-LITANIES */}
                   <div className="space-y-2">
+                    {/* Morning & Evening Grid */}
                     <div className="grid grid-cols-2 gap-2">
+                      {/* Morning Adhkar */}
                       <button
                         onClick={() => toggleAdhkar('sabah', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                        className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold transition flex items-center justify-between cursor-pointer ${
                           currentLog.adhkarSabah
-                            ? 'bg-amber-950/80 border-amber-500/50 text-amber-200'
+                            ? 'bg-amber-950/80 border-amber-500/50 text-amber-200 shadow-sm'
                             : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        {currentLog.adhkarSabah ? '✓ Morning' : 'Morning (+75)'}
+                        <span className="flex items-center gap-1">
+                          <Sun className="h-3.5 w-3.5 text-amber-400" />
+                          <span>Morning (صباح)</span>
+                        </span>
+                        <span className="text-[9px] opacity-90">{currentLog.adhkarSabah ? '✓ (+75)' : '+75'}</span>
                       </button>
 
-                      <button
-                        onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
-                          currentLog.adhkarSleepDhohr
-                            ? 'bg-amber-900/80 border-amber-400/50 text-amber-200'
-                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        {currentLog.adhkarSleepDhohr ? '✓ Dhohr Nap' : 'Dhohr Nap (+50)'}
-                      </button>
-
+                      {/* Evening Adhkar */}
                       <button
                         onClick={() => toggleAdhkar('masa', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                        className={`py-2 px-2.5 rounded-xl border text-[10px] font-mono font-bold transition flex items-center justify-between cursor-pointer ${
                           currentLog.adhkarMasa
-                            ? 'bg-violet-950/80 border-violet-500/50 text-violet-200'
+                            ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200 shadow-sm'
                             : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        {currentLog.adhkarMasa ? '✓ Evening' : 'Evening (+75)'}
+                        <span className="flex items-center gap-1">
+                          <Moon className="h-3.5 w-3.5 text-indigo-400" />
+                          <span>Evening (مساء)</span>
+                        </span>
+                        <span className="text-[9px] opacity-90">{currentLog.adhkarMasa ? '✓ (+75)' : '+75'}</span>
                       </button>
+                    </div>
 
-                      <button
-                        onClick={() => toggleAdhkar('sleepNight', systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
-                          currentLog.adhkarSleepNight
-                            ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
-                            : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        {currentLog.adhkarSleepNight ? '✓ Night Sleep' : 'Night Sleep (+75)'}
-                      </button>
+                    {/* Dhohr Nap vs Night Bedtime Distinct Dual Section */}
+                    <div className="grid grid-cols-2 gap-2 pt-0.5">
+                      {/* Noon Sleep / Qaylulah Card */}
+                      <div className={`p-2 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
+                        currentLog.adhkarSleepDhohr
+                          ? 'bg-amber-950/40 border-amber-500/40'
+                          : 'bg-zinc-950/60 border-white/5'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+                            className="flex items-center gap-1 text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 text-left cursor-pointer"
+                          >
+                            <Sun className="h-3 w-3 text-amber-400 shrink-0" />
+                            <span className="truncate">Noon Nap (قيلولة)</span>
+                          </button>
+                          <span className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer ${
+                            currentLog.adhkarSleepDhohr ? 'bg-amber-500 border-amber-400 text-black font-bold' : 'border-zinc-700 bg-black/40'
+                          }`}
+                          onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+                          >
+                            {currentLog.adhkarSleepDhohr && '✓'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                          <span className="text-[9px] font-mono text-zinc-500">+50 XP</span>
+                          <button
+                            onClick={() => {
+                              setSleepModalTab('dhohr');
+                              setIsSleepModalOpen(true);
+                            }}
+                            className="text-[9px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                          >
+                            <span>Read 4</span>
+                            <BookOpen className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Night Bedtime Sleep Card */}
+                      <div className={`p-2 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
+                        currentLog.adhkarSleepNight
+                          ? 'bg-purple-950/40 border-purple-500/40'
+                          : 'bg-zinc-950/60 border-white/5'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => toggleAdhkar('sleepNight', systemDate)}
+                            className="flex items-center gap-1 text-[10px] font-mono font-bold text-purple-300 hover:text-purple-200 text-left cursor-pointer"
+                          >
+                            <Bed className="h-3 w-3 text-purple-400 shrink-0" />
+                            <span className="truncate">Night Sleep (ليل)</span>
+                          </button>
+                          <span className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer ${
+                            currentLog.adhkarSleepNight ? 'bg-purple-500 border-purple-400 text-white font-bold' : 'border-zinc-700 bg-black/40'
+                          }`}
+                          onClick={() => toggleAdhkar('sleepNight', systemDate)}
+                          >
+                            {currentLog.adhkarSleepNight && '✓'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                          <span className="text-[9px] font-mono text-zinc-500">+75 XP</span>
+                          <button
+                            onClick={() => {
+                              setSleepModalTab('night');
+                              setIsSleepModalOpen(true);
+                            }}
+                            className="text-[9px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                          >
+                            <span>Read 7</span>
+                            <Shield className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5 POST-SALAH ADHKĀR INTERACTIVE STRIP */}
+                    <div className="p-2.5 bg-[#07090e] border border-white/10 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <div className="flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-emerald-400" />
+                          <span className="font-bold text-zinc-200">Post-Salah 5/5:</span>
+                          <span className={`font-bold ml-1 ${completedPostPrayersCount === 5 ? 'text-emerald-400' : 'text-amber-300'}`}>
+                            {completedPostPrayersCount}/5
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedPostPrayer('fajr');
+                            setIsPostAdhkarModalOpen(true);
+                          }}
+                          className="text-[10px] text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <span>Open Reader</span>
+                          <BookOpen className="h-3 w-3" />
+                        </button>
+                      </div>
+
+                      {/* 5 Prayer Pills */}
+                      <div className="grid grid-cols-5 gap-1">
+                        {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(p => {
+                          const mode = postMap[p];
+                          return (
+                            <button
+                              key={p}
+                              onClick={() => {
+                                setSelectedPostPrayer(p);
+                                setIsPostAdhkarModalOpen(true);
+                              }}
+                              className={`py-1 rounded text-[9px] font-mono font-bold border transition text-center cursor-pointer ${
+                                mode === 'standard33'
+                                  ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
+                                  : mode === 'mini10'
+                                  ? 'bg-teal-950 border-teal-500 text-teal-300'
+                                  : 'bg-black/40 border-white/5 text-zinc-500 hover:text-zinc-300'
+                              }`}
+                              title={`${p.toUpperCase()}: ${mode === 'standard33' ? 'Standard 33x Done' : mode === 'mini10' ? 'Mini 10x Done' : 'Click to Read & Log'}`}
+                            >
+                              <span className="block uppercase">{p.slice(0, 3)}</span>
+                              <span className="text-[8px] opacity-80">{mode === 'standard33' ? '33x ✓' : mode === 'mini10' ? '10x ✓' : '—'}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Salawat Quick Increment */}
@@ -830,15 +1011,21 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => incrementSalawat(1, systemDate)}
-                          className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200 text-xs font-mono font-bold transition"
+                          className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200 text-xs font-mono font-bold transition cursor-pointer"
                         >
                           +1
                         </button>
                         <button
                           onClick={() => incrementSalawat(10, systemDate)}
-                          className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200 text-xs font-mono font-bold transition"
+                          className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200 text-xs font-mono font-bold transition cursor-pointer"
                         >
                           +10
+                        </button>
+                        <button
+                          onClick={() => incrementSalawat(33, systemDate)}
+                          className="px-2 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-200 text-xs font-mono font-bold transition cursor-pointer"
+                        >
+                          +33
                         </button>
                       </div>
                     </div>
@@ -846,10 +1033,147 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 </div>
 
                 <div className="text-[10px] font-mono text-zinc-400 border-t border-white/5 pt-2 flex items-center justify-between">
-                  <span>Post-Salah Tasbīḥ: {completedPostPrayersCount}/5</span>
+                  <span>Authentic Adhkār Fortress</span>
+                  <span className="text-emerald-400 font-bold">{completedPostPrayersCount === 5 ? '✓ 5/5 Sealed (+25 Bonus)' : `${5 - completedPostPrayersCount} to complete`}</span>
                 </div>
               </div>
 
+            </div>
+
+            {/* QUR'AN TILĀWAH, TADABBUR & MEMORIZATION COCKPIT */}
+            <div className="p-5 bg-gradient-to-r from-[#0c141d] via-[#091017] to-[#070b10] border border-cyan-500/30 rounded-2xl relative overflow-hidden shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-cyan-400" />
+                    <h4 className="font-display font-bold text-base text-zinc-100">
+                      Qur&apos;ān Tilāwah &amp; Tadabbur Sanctum (تِلَاوَةُ القُرْآنِ وَتَدَبُّرُهُ)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-zinc-400 font-sans">
+                    Pillar 7: Daily pages (+5 XP/page up to 100 XP), Full Juz (+100 XP), Tadabbur Reflection (+40 XP), and Hifdh Revision (+50 XP).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full">
+                    {currentLog.quran?.pagesRead || 0} Pages Read Today
+                  </span>
+                </div>
+              </div>
+
+              {/* CONTROLS ROW */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1. Pages Quick Dial */}
+                <div className="p-3 bg-[#07090e] border border-white/10 rounded-xl space-y-2">
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase block font-bold">DAILY TILĀWAH PAGES</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold font-mono text-cyan-400">
+                      {currentLog.quran?.pagesRead || 0} <span className="text-xs text-zinc-500 font-normal">pages</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateQuranLog({ pagesRead: Math.max(0, (currentLog.quran?.pagesRead || 0) - 1) }, systemDate)}
+                        className="px-2 py-1 bg-white/5 hover:bg-white/10 text-zinc-300 rounded text-xs font-mono font-bold cursor-pointer"
+                      >
+                        -1
+                      </button>
+                      <button
+                        onClick={() => updateQuranLog({ pagesRead: (currentLog.quran?.pagesRead || 0) + 1 }, systemDate)}
+                        className="px-2 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 rounded text-xs font-mono font-bold cursor-pointer"
+                      >
+                        +1
+                      </button>
+                      <button
+                        onClick={() => updateQuranLog({ pagesRead: (currentLog.quran?.pagesRead || 0) + 5 }, systemDate)}
+                        className="px-2 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 rounded text-xs font-mono font-bold cursor-pointer"
+                      >
+                        +5
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Full Juz Completed */}
+                <button
+                  onClick={() => updateQuranLog({ juzRead: currentLog.quran?.juzRead ? undefined : 1 }, systemDate)}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between space-y-1.5 cursor-pointer ${
+                    currentLog.quran?.juzRead
+                      ? 'bg-emerald-950/80 border-emerald-500/60 shadow-sm'
+                      : 'bg-[#07090e] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">FULL JUZ COMPLETED</span>
+                    <span className={`h-4 w-4 rounded border flex items-center justify-center text-[9px] ${
+                      currentLog.quran?.juzRead ? 'bg-emerald-500 border-emerald-400 text-black font-bold' : 'border-zinc-700'
+                    }`}>
+                      {currentLog.quran?.juzRead && '✓'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-mono font-bold ${currentLog.quran?.juzRead ? 'text-emerald-300' : 'text-zinc-300'}`}>
+                      {currentLog.quran?.juzRead ? 'Juz Completed ✓' : 'Complete 1 Juz'}
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-400">+100 XP</span>
+                  </div>
+                </button>
+
+                {/* 3. Tadabbur Reflection Note Toggle */}
+                <button
+                  onClick={() => {
+                    const existing = currentLog.quran?.tadabburNotes;
+                    updateQuranLog({ 
+                      tadabburNotes: existing ? '' : 'Reflected upon the divine verses with presence and contemplation.' 
+                    }, systemDate);
+                  }}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between space-y-1.5 cursor-pointer ${
+                    Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0)
+                      ? 'bg-amber-950/80 border-amber-500/60 shadow-sm'
+                      : 'bg-[#07090e] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">TADABBUR CONTEMPLATION</span>
+                    <span className={`h-4 w-4 rounded border flex items-center justify-center text-[9px] ${
+                      Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'bg-amber-500 border-amber-400 text-black font-bold' : 'border-zinc-700'
+                    }`}>
+                      {Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) && '✓'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-mono font-bold ${Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'text-amber-300' : 'text-zinc-300'}`}>
+                      {Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'Tadabbur Recorded ✓' : 'Log Tadabbur'}
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-400">+40 XP</span>
+                  </div>
+                </button>
+
+                {/* 4. Hifdh Revision */}
+                <button
+                  onClick={() => updateQuranLog({ memorizationReviewed: !currentLog.quran?.memorizationReviewed }, systemDate)}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between space-y-1.5 cursor-pointer ${
+                    currentLog.quran?.memorizationReviewed
+                      ? 'bg-indigo-950/80 border-indigo-500/60 shadow-sm'
+                      : 'bg-[#07090e] border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase font-bold text-zinc-400">HIFDH &amp; REVISION</span>
+                    <span className={`h-4 w-4 rounded border flex items-center justify-center text-[9px] ${
+                      currentLog.quran?.memorizationReviewed ? 'bg-indigo-500 border-indigo-400 text-white font-bold' : 'border-zinc-700'
+                    }`}>
+                      {currentLog.quran?.memorizationReviewed && '✓'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-mono font-bold ${currentLog.quran?.memorizationReviewed ? 'text-indigo-300' : 'text-zinc-300'}`}>
+                      {currentLog.quran?.memorizationReviewed ? 'Hifdh Reviewed ✓' : 'Review Hifdh'}
+                    </span>
+                    <span className="text-[10px] font-mono text-indigo-400">+50 XP</span>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* 3. KHUSHU' & HEART PRESENCE GAUGE */}
@@ -1039,6 +1363,53 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                           <span className="truncate max-w-[200px]">✨ {prayer.sunnahLabel}</span>
                           <span className="text-[10px] text-amber-300 shrink-0 ml-1">+{prayer.sunnahXp} XP</span>
                         </button>
+
+                        {/* Post-Salah Adhkār Row */}
+                        <div className="pt-2 border-t border-white/5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                              <span className="text-[11px] font-mono font-bold text-zinc-300">
+                                Post-Salah Adhkār (أذكار بعد الصلاة)
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setSelectedPostPrayer(prayer.id);
+                                setIsPostAdhkarModalOpen(true);
+                              }}
+                              className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
+                            >
+                              <span>Read</span>
+                              <ArrowUpRight className="h-3 w-3" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postMap[prayer.id] === 'standard33'
+                                  ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                            >
+                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                              <span>Standard 33x (+20)</span>
+                            </button>
+                            <button
+                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postMap[prayer.id] === 'mini10'
+                                  ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                            >
+                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
+                              <span>Mini 10x (+12)</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1100,6 +1471,22 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* POST-SALAH ADHKĀR MODAL */}
+      <PostSalahAdhkarModal
+        isOpen={isPostAdhkarModalOpen}
+        onClose={() => setIsPostAdhkarModalOpen(false)}
+        systemDate={systemDate}
+        initialPrayer={selectedPostPrayer}
+      />
+
+      {/* SLEEP ADHKĀR MODAL */}
+      <SleepAdhkarModal
+        isOpen={isSleepModalOpen}
+        onClose={() => setIsSleepModalOpen(false)}
+        systemDate={systemDate}
+        initialTab={sleepModalTab}
+      />
 
     </div>
   );
