@@ -561,10 +561,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </div>
               </div>
 
-              {/* 10/10 GAUGE BADGE */}
-              <div className="flex items-center gap-4 shrink-0">
-                <div className="flex items-center gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
-                  <div className="text-right">
+              {/* 10/10 GAUGE BADGE & ACTIONS */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex items-center justify-between sm:justify-end gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
+                  <div className="text-left sm:text-right">
                     <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">WEEKLY JUDGMENT</span>
                     <span className="text-[10px] font-mono text-[var(--accent-bright)]">{isNearTen ? 'Full Mark (10/10)' : 'Refinement Target'}</span>
                   </div>
@@ -581,44 +581,44 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setShowRefineDrawer(!showRefineDrawer)}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer"
                   >
                     <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
-                    <span>{showRefineDrawer ? 'HIDE PLAN' : '⚡ REFINE 10/10'}</span>
+                    <span>{showRefineDrawer ? 'HIDE' : '⚡ REFINE'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleInstantFridaySealAndReset}
-                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[var(--accent-primary)] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md"
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[var(--accent-primary)] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer truncate"
                     title="Snapshot weekly 10/10 audit to Codex & reset slips ledger clean for the new week"
                     id="one-click-friday-seal-btn"
                   >
-                    <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                    <span>⚡ 1-CLICK JUMU'AH SEAL</span>
+                    <Check className="h-3.5 w-3.5 stroke-[2.5] shrink-0" />
+                    <span className="truncate">1-CLICK SEAL</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleOpenWeeklySummaryGenerator}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center gap-1.5 active:scale-95"
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     id="full-friday-audit-modal-btn"
                   >
-                    <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
+                    <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
                     <span>FULL AUDIT</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowSavedArchivesModal(true)}
-                    className="px-3 py-1.5 rounded-lg bg-black/60 hover:bg-zinc-800 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 text-xs font-mono transition flex items-center gap-1.5 active:scale-95"
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-black/60 hover:bg-zinc-800 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 text-xs font-mono transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     id="view-saved-archives-btn"
                   >
-                    <History className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <History className="h-3.5 w-3.5 text-[#c5a059] shrink-0" />
                     <span>ARCHIVES ({savedSummaries.length})</span>
                   </button>
                 </div>

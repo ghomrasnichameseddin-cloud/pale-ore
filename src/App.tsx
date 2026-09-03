@@ -21,12 +21,13 @@ import { SpiderwebGraph } from './components/SpiderwebGraph';
 import { LuminescentOreLogo } from './components/LuminescentOreLogo';
 import { SystemGuideModal } from './components/SystemGuideModal';
 import { RubElHizbIcon } from './components/IslamicRpgDecorations';
+import { scanAllDelayedItems } from './utils/delayedTaskScanner';
 import { 
   Activity, Target, Briefcase, Award, BarChart3, Settings, 
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -53,6 +54,9 @@ function AppContent() {
   
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
   const delayedDirectivesCount = (state.messages || []).filter(m => m.category === 'delayed' && !m.read).length;
+  const delayedScan = scanAllDelayedItems(state);
+  const totalOverdueCount = delayedScan.totalDelayedCount;
+  const activeQuestsCount = (state.quests || []).filter(q => q.status === 'Active').length;
 
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -130,55 +134,75 @@ function AppContent() {
     >
       
       {/* MOBILE TOP NAVIGATION BAR */}
-      <div className="md:hidden glass-panel border-b border-[var(--border-subtle)] px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-void)]/90">
-        <div className="flex items-center gap-2">
-          <LuminescentOreLogo className="h-7 w-7" />
-          <h1 className="font-display text-sm font-bold tracking-widest text-[var(--accent-highlight)]">PALE ORE</h1>
-          <span className="text-[9px] font-mono bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-            <RubElHizbIcon className="h-2.5 w-2.5" />
-            LVL {playerInfo.level}
-          </span>
+      <div className="md:hidden glass-panel border-b border-[var(--border-subtle)] px-2.5 sm:px-4 py-2.5 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-void)]/95 backdrop-blur-md shadow-md" id="mobile-top-bar">
+        {/* BRAND LOGO (IDENTICAL TO PC SIDEBAR LOGO) */}
+        <div 
+          onClick={() => setActiveTab('dashboard')}
+          className="flex items-center gap-2.5 min-w-0 cursor-pointer select-none shrink-0"
+          title="Return to Command Center"
+        >
+          <LuminescentOreLogo className="h-8 w-8 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="font-display text-base font-black tracking-widest text-[var(--accent-highlight)] truncate leading-none">PALE ORE</h1>
+            <p className="text-[9px] font-mono text-[var(--accent-bright)] tracking-widest mt-1 flex items-center gap-1 leading-none">
+              <RubElHizbIcon className="h-2 w-2 shrink-0" /> PROGRESS_OS v2.6
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Vault Dinars counter */}
+          <button
+            onClick={() => setActiveTab('shop')}
+            className="px-2 py-1 bg-[var(--accent-surface)]/80 border border-[var(--border-accent)] rounded-lg text-[10px] font-mono font-bold text-[var(--accent-highlight)] flex items-center gap-1 cursor-pointer active:scale-95 transition"
+            title="Imperial Vault Dinars"
+          >
+            <span>🪙 {state.profile.coins ?? 150}</span>
+          </button>
+
+          {/* Guide */}
           <button
             onClick={() => setIsGuideModalOpen(true)}
-            className="p-1.5 bg-[var(--bg-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] rounded hover:border-[var(--border-strong)]"
+            className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center bg-[var(--bg-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] rounded-lg hover:border-[var(--border-strong)] active:scale-95 transition cursor-pointer"
             title="System Manual & Guide"
           >
             <BookOpen className="h-4 w-4" />
           </button>
 
+          {/* Focus Timer */}
           <button
             onClick={() => setIsFocusModalOpen(true)}
-            className="p-1.5 bg-[var(--bg-surface)] border border-cyan-500/30 text-cyan-400 rounded relative"
+            className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center bg-[var(--bg-surface)] border border-cyan-500/30 text-cyan-400 rounded-lg relative active:scale-95 transition cursor-pointer"
             title="Focus Timer"
           >
             <Timer className="h-4 w-4" />
             {activeFocusSession && (
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping" />
             )}
           </button>
 
+          {/* System Inbox */}
           <button
             onClick={() => setIsInboxModalOpen(true)}
-            className="p-1.5 bg-[var(--bg-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] rounded relative"
-            title="System Inbox & Notifications"
+            className="p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center bg-[var(--bg-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] rounded-lg relative active:scale-95 transition cursor-pointer"
+            title="Sacred Communiqués & Overdue Tasks"
           >
             <Inbox className="h-4 w-4" />
-            {delayedDirectivesCount > 0 ? (
-              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping" title={`${delayedDirectivesCount} delayed directives!`} />
+            {totalOverdueCount > 0 ? (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping" title={`${totalOverdueCount} overdue directives!`} />
             ) : unreadMessagesCount > 0 ? (
               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-[var(--accent-bright)] animate-ping" />
             ) : null}
           </button>
 
+          {/* Menu Drawer Toggle */}
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-zinc-400 hover:text-[var(--accent-bright)] p-1 ml-1"
+            className="text-zinc-300 hover:text-[var(--accent-bright)] p-1.5 sm:p-2 min-w-[32px] min-h-[32px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center rounded-lg bg-[var(--bg-surface)] border border-white/10 active:scale-95 transition ml-0.5 cursor-pointer"
             id="mobile-menu-toggle"
+            title="Toggle Codex Menu"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
       </div>
@@ -190,19 +214,61 @@ function AppContent() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden fixed top-[53px] inset-x-0 bg-[var(--bg-void)]/98 backdrop-blur-xl border-b border-[var(--border-subtle)] z-30 p-4 space-y-4 max-h-[85vh] overflow-y-auto"
+            className="md:hidden fixed top-[54px] inset-x-0 bg-[#07080c]/98 backdrop-blur-2xl border-b border-[var(--border-subtle)] z-40 p-4 space-y-4 max-h-[calc(100vh-120px)] overflow-y-auto shadow-2xl"
             id="mobile-navigation-drawer"
           >
+            {/* Operator Signature Quick Banner */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[var(--accent-surface)] to-[var(--bg-void)] border border-[var(--border-accent)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)]">
+                    <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-display font-bold text-white uppercase tracking-wide">
+                      {activeTitle.name ? `${activeTitle.badge} ${activeTitle.name}` : 'SOLE PROGRESSOR'}
+                    </div>
+                    <div className="text-[10px] font-mono text-[var(--accent-bright)]">
+                      [{activeTitle.badge}] {activeTitle.name} • {playerInfo.rank}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono font-bold text-emerald-400">
+                    🔥 {state.profile.momentum}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Mini XP progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[9px] font-mono text-zinc-400">
+                  <span>LVL {playerInfo.level} ({playerInfo.totalXp} XP)</span>
+                  <span className="text-[var(--accent-bright)]">{playerInfo.xpUntilNextLevel} XP to Next</span>
+                </div>
+                <div className="w-full bg-black/50 rounded-full h-1.5 overflow-hidden border border-white/5">
+                  <div 
+                    className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all"
+                    style={{ width: `${playerInfo.progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* NAVIGATION MODULE CATEGORIES */}
             {navCategories.map(cat => (
               <div key={cat.title} className="space-y-1.5">
                 <div className="text-[9px] font-mono font-bold text-[var(--accent-bright)] tracking-widest uppercase px-1 flex items-center gap-1.5">
-                  <RubElHizbIcon className="h-2.5 w-2.5" />
+                  <RubElHizbIcon className="h-2 w-2 text-[var(--accent-bright)]" />
                   {cat.title}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {cat.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
+                    const isQuests = item.id === 'quests';
+                    const hasOverdue = isQuests && totalOverdueCount > 0;
+
                     return (
                       <button
                         key={item.id}
@@ -210,9 +276,9 @@ function AppContent() {
                           setActiveTab(item.id as TabId);
                           setMobileMenuOpen(false);
                         }}
-                        className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition-all ${
+                        className={`p-2.5 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer ${
                           isActive 
-                            ? 'bg-[var(--bg-card)] border-[var(--border-accent)] text-[var(--accent-highlight)] font-bold shadow-[0_0_12px_var(--glow-color)]' 
+                            ? 'bg-[var(--accent-surface)] border-[var(--border-accent)] text-[var(--accent-highlight)] font-bold shadow-[0_0_12px_var(--glow-color)]' 
                             : 'bg-[var(--bg-surface)] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/15'
                         }`}
                       >
@@ -220,9 +286,13 @@ function AppContent() {
                           <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
                           <span className="text-xs font-sans font-medium truncate">{item.label}</span>
                         </div>
-                        {item.id === 'shop' && isShopLocked && (
-                          <Lock className="h-3 w-3 text-rose-400 shrink-0 ml-auto" />
-                        )}
+                        {hasOverdue ? (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-amber-950 text-amber-300 border border-amber-500/50 shrink-0 animate-pulse">
+                            {totalOverdueCount}
+                          </span>
+                        ) : item.id === 'shop' && isShopLocked ? (
+                          <Lock className="h-3 w-3 text-rose-400 shrink-0" />
+                        ) : null}
                       </button>
                     );
                   })}
@@ -233,36 +303,36 @@ function AppContent() {
             {/* Quick clock & Date Picker in mobile menu */}
             <div className="pt-2 border-t border-[var(--border-subtle)] flex flex-col gap-2">
               <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
-                <span className="flex items-center gap-1 text-[var(--accent-bright)]">
+                <span className="flex items-center gap-1 text-[var(--accent-bright)] font-bold">
                   <Clock className="h-3 w-3 text-[var(--accent-bright)]" />
                   SYS TIME
                 </span>
                 <span className="text-zinc-200 font-bold">{systemTime.toLocaleTimeString()}</span>
               </div>
 
-              {/* SIMPLIFIED MOBILE DATE CONTROLLER */}
-              <div className="flex flex-col gap-1.5 w-full bg-[var(--bg-surface)] border border-[var(--border-accent)] rounded-lg p-2">
+              {/* TOUCH-OPTIMIZED MOBILE DATE CONTROLLER */}
+              <div className="flex flex-col gap-2 w-full bg-[var(--bg-surface)] border border-[var(--border-accent)] rounded-xl p-2.5">
                 <div className="flex items-center justify-between text-[10px] font-mono">
                   <div className="flex items-center gap-1.5 text-[var(--accent-bright)] font-bold">
                     <Calendar className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
-                    <span>SYS DATE</span>
+                    <span>SANCTUM DATE ENGINE</span>
                   </div>
                   <button
                     onClick={syncWithRealClock}
-                    className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase font-bold flex items-center gap-1 transition ${
+                    className={`text-[9px] font-mono px-2.5 py-1 rounded-lg border uppercase font-bold flex items-center gap-1.5 transition cursor-pointer ${
                       isRealTodaySynced 
                         ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40' 
                         : 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] hover:bg-[var(--accent-surface-hover)]'
                     }`}
                   >
                     <RefreshCw className={`h-2.5 w-2.5 ${isRealTodaySynced ? '' : 'animate-spin'}`} />
-                    {isRealTodaySynced ? 'TODAY' : 'SYNC TODAY'}
+                    {isRealTodaySynced ? 'TODAY SYNCED' : 'SYNC TODAY'}
                   </button>
                 </div>
-                <div className="flex items-center justify-between gap-1 bg-[var(--bg-void)] p-1 rounded border border-white/5">
+                <div className="flex items-center justify-between gap-2 bg-[var(--bg-void)] p-1.5 rounded-lg border border-white/5">
                   <button 
                     onClick={() => shiftDate(-1)} 
-                    className="p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-[var(--accent-bright)] rounded transition shrink-0"
+                    className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-[var(--accent-bright)] rounded-lg border border-white/5 transition shrink-0 active:scale-95 cursor-pointer"
                     title="Previous Day"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -272,11 +342,11 @@ function AppContent() {
                     value={systemDate || ''}
                     onChange={(e) => e.target.value && setSystemDate(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="bg-transparent text-[var(--accent-bright)] font-mono font-bold text-xs text-center focus:outline-none focus:ring-1 focus:ring-[var(--border-accent)] rounded px-1 py-0.5 cursor-pointer w-full"
+                    className="bg-transparent text-[var(--accent-bright)] font-mono font-bold text-xs text-center focus:outline-none focus:ring-1 focus:ring-[var(--border-accent)] rounded px-2 py-2 cursor-pointer w-full h-[40px]"
                   />
                   <button 
                     onClick={() => shiftDate(1)} 
-                    className="p-1.5 hover:bg-zinc-800 text-zinc-400 hover:text-[var(--accent-bright)] rounded transition shrink-0"
+                    className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-[var(--accent-bright)] rounded-lg border border-white/5 transition shrink-0 active:scale-95 cursor-pointer"
                     title="Next Day"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -595,7 +665,7 @@ function AppContent() {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full" id="pos-main-content">
+        <main className="flex-1 p-3 sm:p-4 md:p-8 pb-28 md:pb-8 overflow-y-auto max-w-7xl mx-auto w-full" id="pos-main-content">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -631,8 +701,8 @@ function AppContent() {
           </AnimatePresence>
         </main>
 
-        {/* SYSTEM PERSISTENT FOOTER BAR */}
-        <footer className="border-t border-[var(--border-subtle)] bg-[#07080c] px-4 py-2 text-[10px] font-mono text-zinc-500 flex items-center justify-between gap-2 z-30 shrink-0" id="pos-system-footer">
+        {/* SYSTEM PERSISTENT FOOTER BAR (Desktop) */}
+        <footer className="hidden md:flex border-t border-[var(--border-subtle)] bg-[#07080c] px-4 py-2 text-[10px] font-mono text-zinc-500 items-center justify-between gap-2 z-30 shrink-0" id="pos-system-footer">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
             <span className="text-zinc-400 font-medium tracking-wider flex items-center gap-1.5">
@@ -644,6 +714,113 @@ function AppContent() {
             <span className="text-[9px] text-[var(--accent-bright)] uppercase tracking-widest font-mono">PALE ORE PROGRESS_OS</span>
           </div>
         </footer>
+
+        {/* SACRED MOBILE BOTTOM NAVIGATION BAR */}
+        <nav 
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07080c]/96 backdrop-blur-2xl border-t border-[var(--border-subtle)] pb-safe px-2 py-1.5 flex items-center justify-around shadow-[0_-8px_30px_rgba(0,0,0,0.85)]"
+          id="mobile-bottom-dock"
+        >
+          {/* 1. Command */}
+          <button
+            onClick={() => {
+              setActiveTab('dashboard');
+              setMobileMenuOpen(false);
+            }}
+            className={`flex-1 py-1 px-1 flex flex-col items-center justify-center gap-1 rounded-xl transition cursor-pointer active:scale-95 ${
+              activeTab === 'dashboard'
+                ? 'text-[var(--accent-highlight)]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg transition ${activeTab === 'dashboard' ? 'bg-[var(--accent-surface)] border border-[var(--border-accent)]' : ''}`}>
+              <LayoutGrid className={`h-4 w-4 ${activeTab === 'dashboard' ? 'text-[var(--accent-bright)]' : ''}`} />
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-tight">Command</span>
+          </button>
+
+          {/* 2. Directives */}
+          <button
+            onClick={() => {
+              setActiveTab('quests');
+              setMobileMenuOpen(false);
+            }}
+            className={`flex-1 py-1 px-1 flex flex-col items-center justify-center gap-1 rounded-xl transition cursor-pointer active:scale-95 relative ${
+              activeTab === 'quests'
+                ? 'text-[var(--accent-highlight)]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg transition relative ${activeTab === 'quests' ? 'bg-[var(--accent-surface)] border border-[var(--border-accent)]' : ''}`}>
+              <Swords className={`h-4 w-4 ${activeTab === 'quests' ? 'text-[var(--accent-bright)]' : ''}`} />
+              {totalOverdueCount > 0 ? (
+                <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-amber-500 text-black font-mono font-black text-[9px] flex items-center justify-center animate-pulse">
+                  {totalOverdueCount}
+                </span>
+              ) : activeQuestsCount > 0 ? (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[var(--accent-bright)]" />
+              ) : null}
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-tight">Directives</span>
+          </button>
+
+          {/* 3. Sacred Protocol */}
+          <button
+            onClick={() => {
+              setActiveTab('spiritual');
+              setMobileMenuOpen(false);
+            }}
+            className={`flex-1 py-1 px-1 flex flex-col items-center justify-center gap-1 rounded-xl transition cursor-pointer active:scale-95 ${
+              activeTab === 'spiritual'
+                ? 'text-[var(--accent-highlight)]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg transition ${activeTab === 'spiritual' ? 'bg-[var(--accent-surface)] border border-[var(--border-accent)]' : ''}`}>
+              <Moon className={`h-4 w-4 ${activeTab === 'spiritual' ? 'text-[var(--accent-bright)]' : ''}`} />
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-tight">Protocol</span>
+          </button>
+
+          {/* 4. Mīzān */}
+          <button
+            onClick={() => {
+              setActiveTab('muhasabah');
+              setMobileMenuOpen(false);
+            }}
+            className={`flex-1 py-1 px-1 flex flex-col items-center justify-center gap-1 rounded-xl transition cursor-pointer active:scale-95 ${
+              activeTab === 'muhasabah'
+                ? 'text-[var(--accent-highlight)]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg transition ${activeTab === 'muhasabah' ? 'bg-[var(--accent-surface)] border border-[var(--border-accent)]' : ''}`}>
+              <Scale className={`h-4 w-4 ${activeTab === 'muhasabah' ? 'text-[var(--accent-bright)]' : ''}`} />
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-tight">Mīzān</span>
+          </button>
+
+          {/* 5. Codex Matrix / Menu */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`flex-1 py-1 px-1 flex flex-col items-center justify-center gap-1 rounded-xl transition cursor-pointer active:scale-95 relative ${
+              mobileMenuOpen
+                ? 'text-[var(--accent-highlight)]'
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <div className={`p-1 rounded-lg transition relative ${mobileMenuOpen ? 'bg-[var(--accent-surface)] border border-[var(--border-accent)]' : ''}`}>
+              {mobileMenuOpen ? (
+                <X className="h-4 w-4 text-[var(--accent-bright)]" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
+              {unreadMessagesCount > 0 && !mobileMenuOpen && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              )}
+            </div>
+            <span className="text-[10px] font-mono font-bold tracking-tight">Codex</span>
+          </button>
+        </nav>
       </div>
 
       {/* FOCUS TIMER OVERLAY WIDGET / MODAL */}
@@ -655,12 +832,12 @@ function AppContent() {
       {/* GLOBAL SYSTEM INBOX MODAL OVERLAY */}
       <AnimatePresence>
         {isInboxModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="max-w-2xl w-full"
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.95 }}
+              className="max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-xl overflow-hidden"
             >
               <SystemMessageBox 
                 onClose={() => setIsInboxModalOpen(false)} 

@@ -394,7 +394,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* PROFILE TERMINAL CARD */}
-          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[var(--border-accent)] bg-[var(--bg-card)]/90 shadow-xl" id="profile-card">
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 relative overflow-hidden border border-[var(--border-accent)] bg-[var(--bg-card)]/90 shadow-xl" id="profile-card">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-5 w-5" />
             <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-5 w-5" />
 
@@ -408,7 +408,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-[10px] font-mono text-[var(--accent-bright)] tracking-widest uppercase font-bold flex items-center gap-1.5">
                   <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" /> OPERATOR SACRED SIGNATURE
                 </span>
-                <h3 className={`font-display text-3xl font-extrabold uppercase tracking-tight transition-all mt-1 ${
+                <h3 className={`font-display text-2xl sm:text-3xl font-extrabold uppercase tracking-tight transition-all mt-1 ${
                   isRecoveryActive
                     ? 'text-[var(--accent-bright)] drop-shadow-[0_0_20px_var(--glow-color)] animate-pulse'
                     : 'text-white'
@@ -420,39 +420,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <div className="flex flex-wrap items-center gap-2 mt-3">
                   {/* RECOVERY TITLE BADGE - GLOWS WHEN ACTIVE, DIMS WHEN INACTIVE */}
                   {isRecoveryActive ? (
-                    <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_var(--glow-color)] animate-pulse">
+                    <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_var(--glow-color)] animate-pulse">
                       <Shield className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
                       [RECOVERY] RECOVERING OPERATOR
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono font-bold bg-[var(--bg-void)]/60 border border-white/5 text-zinc-600 px-3 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
+                    <span className="text-[10px] font-mono font-bold bg-[var(--bg-void)]/60 border border-white/5 text-zinc-600 px-2.5 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
                       <Shield className="h-3.5 w-3.5 text-zinc-600" />
                       [RECOVERY] RECOVERING OPERATOR (INACTIVE)
                     </span>
                   )}
 
-                  <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
                     [{activeTitle.badge}] {activeTitle.name}
                   </span>
 
-                  <span className="text-[10px] font-mono font-bold bg-[var(--bg-card)] border border-[var(--border-accent)] text-zinc-200 px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[10px] font-mono font-bold bg-[var(--bg-card)] border border-[var(--border-accent)] text-zinc-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     {renderTopicIcon(activeJob.iconName || 'Shield', 'h-3.5 w-3.5')}
                     DISCIPLINE: {activeJob.name}
                   </span>
 
                   <button
                     onClick={() => setIsJobTitleModalOpen(true)}
-                    className="text-[10px] font-mono font-bold bg-[var(--bg-void)] hover:bg-[var(--accent-surface)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] text-zinc-300 hover:text-[var(--accent-highlight)] px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-mono font-bold bg-[var(--bg-void)] hover:bg-[var(--accent-surface)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] text-zinc-300 hover:text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sliders className="h-3 w-3 text-[var(--accent-bright)]" /> CAREER & TITLES
                   </button>
                 </div>
               </div>
 
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SANCTUM RANK</span>
-                <p className="text-xl font-display font-bold text-[var(--accent-bright)] tracking-wide uppercase mt-0.5">
+                <p className="text-lg sm:text-xl font-display font-bold text-[var(--accent-bright)] tracking-wide uppercase mt-0.5">
                   {levelInfo.rank}
                 </p>
                 <div className="text-[10px] font-mono text-zinc-300 mt-1">
@@ -461,16 +461,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* LEVEL & XP PROGRESSION HUD */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
+            {/* LEVEL & XP PROGRESSION HUD: Ergonomic 2x2 on Mobile, 5-col on Desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
               {/* Level indicator */}
-              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col justify-between">
+              <div className="col-span-1 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
                 <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SYS_LEVEL</span>
-                <span className="text-2xl font-display font-bold text-white mt-1">LVL {levelInfo.level}</span>
+                <span className="text-xl sm:text-2xl font-display font-bold text-white mt-1">LVL {levelInfo.level}</span>
+              </div>
+
+              {/* Momentum Indicator */}
+              <div className="col-span-1 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
+                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-300 uppercase font-bold">
+                  <span className="text-[var(--accent-bright)]">MOMENTUM</span>
+                  <Flame className={`h-3.5 w-3.5 ${state.profile.momentum > 50 ? 'text-[var(--accent-bright)] animate-pulse' : 'text-zinc-500'}`} />
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-bold text-white mt-0.5">
+                  {state.profile.momentum}%
+                </div>
+                <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden mt-1 border border-white/5">
+                  <div 
+                    className={`h-full transition-all duration-300 ${
+                      state.profile.momentum > 75 ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-highlight)]' : state.profile.momentum > 40 ? 'bg-[var(--accent-primary)]' : 'bg-zinc-600'
+                    }`}
+                    style={{ width: `${state.profile.momentum}%` }}
+                  />
+                </div>
               </div>
 
               {/* XP progress */}
-              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 lg:col-span-2 flex flex-col justify-between">
+              <div className="col-span-2 lg:col-span-2 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
                 <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase font-bold">
                   <span className="text-[var(--accent-bright)]">DIVINE_XP</span>
                   <span className="text-[var(--accent-bright)] font-bold">{levelInfo.totalXp} XP</span>
@@ -489,35 +508,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Momentum Indicator */}
-              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col justify-between">
-                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-300 uppercase font-bold">
-                  <span className="text-[var(--accent-bright)]">MOMENTUM</span>
-                  <Flame className={`h-3.5 w-3.5 ${state.profile.momentum > 50 ? 'text-[var(--accent-bright)] animate-pulse' : 'text-zinc-500'}`} />
-                </div>
-                <div className="text-2xl font-display font-bold text-white mt-0.5">
-                  {state.profile.momentum}%
-                </div>
-                <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden mt-1 border border-white/5">
-                  <div 
-                    className={`h-full transition-all duration-300 ${
-                      state.profile.momentum > 75 ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-highlight)]' : state.profile.momentum > 40 ? 'bg-[var(--accent-primary)]' : 'bg-zinc-600'
-                    }`}
-                    style={{ width: `${state.profile.momentum}%` }}
-                  />
-                </div>
-              </div>
-
               {/* Coins & Reward Shop Card */}
               <div 
                 onClick={() => onNavigate?.('shop')}
-                className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
+                className="col-span-2 sm:col-span-2 lg:col-span-1 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
               >
                 <div className="flex justify-between items-center text-[10px] font-mono text-[var(--accent-highlight)] uppercase font-bold">
                   <span>VAULT DINARS</span>
                   <ShoppingBag className="h-3.5 w-3.5 text-[var(--accent-bright)] group-hover:scale-110 transition" />
                 </div>
-                <div className="text-2xl font-mono font-extrabold text-[var(--accent-highlight)] mt-0.5">
+                <div className="text-xl sm:text-2xl font-mono font-extrabold text-[var(--accent-highlight)] mt-0.5">
                   {state.profile.coins ?? 150} 🪙
                 </div>
                 <div className="text-[9px] font-mono text-[var(--accent-bright)] font-bold mt-1 flex items-center gap-1">
@@ -869,9 +869,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
           )}
-
-          {/* BOSS PROGRESSION GATE BANNER */}
-          <BossProgressionBanner onNavigateToQuests={() => onNavigate?.('quests')} />
 
           {/* ACTIVE OPERATIONAL DIRECTIVES TERMINAL BOARD */}
           <div className="glass-panel rounded-2xl p-5 space-y-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-xl" id="dashboard-active-directives">

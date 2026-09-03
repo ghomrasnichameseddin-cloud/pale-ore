@@ -57,7 +57,7 @@ export const FocusTimerOverlay: React.FC<FocusTimerOverlayProps> = ({ isOpenModa
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 50, scale: 0.9 }}
-          className="fixed bottom-5 right-5 z-50 glass-panel border border-[#c5a059]/40 p-3 rounded-xl shadow-[0_0_25px_rgba(197,160,89,0.2)] flex items-center gap-3 bg-[#0b0d13]/95 backdrop-blur-md"
+          className="fixed bottom-20 md:bottom-5 right-3 md:right-5 z-40 glass-panel border border-[#c5a059]/40 p-2.5 sm:p-3 rounded-xl shadow-[0_0_25px_rgba(197,160,89,0.25)] flex items-center gap-2.5 sm:gap-3 bg-[#0b0d13]/98 backdrop-blur-md max-w-[calc(100vw-24px)]"
           id="focus-compact-pill"
         >
           <button 
@@ -118,12 +118,12 @@ export const FocusTimerOverlay: React.FC<FocusTimerOverlayProps> = ({ isOpenModa
 
       {/* FULL FOCUS TIMER MODAL OVERLAY */}
       {((session && !isMinimized) || isOpenModal) && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-panel border border-[#c5a059]/40 bg-[#0b0d13] rounded-2xl p-6 md:p-8 max-w-xl w-full shadow-[0_0_50px_rgba(197,160,89,0.18)] relative space-y-6 overflow-hidden"
+            className="glass-panel border border-[#c5a059]/40 bg-[#0b0d13] rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 md:p-8 max-w-xl w-full shadow-[0_0_50px_rgba(197,160,89,0.18)] relative space-y-4 sm:space-y-6 overflow-hidden max-h-[90vh] sm:max-h-none overflow-y-auto"
             id="focus-timer-modal"
           >
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-5 w-5" color="#c5a059" />
@@ -188,7 +188,7 @@ export const FocusTimerOverlay: React.FC<FocusTimerOverlayProps> = ({ isOpenModa
                 </div>
 
                 {/* CIRCULAR TIMER DISPLAY */}
-                <div className="relative w-60 h-60 mx-auto flex items-center justify-center">
+                <div className="relative w-48 h-48 sm:w-60 sm:h-60 mx-auto flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"

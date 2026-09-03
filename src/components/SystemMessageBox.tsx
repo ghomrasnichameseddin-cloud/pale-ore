@@ -235,7 +235,9 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
   };
 
   return (
-    <div className={`glass-panel rounded-xl border border-[#c5a059]/30 bg-[#0b0d13]/98 relative overflow-hidden shadow-2xl ${compact ? 'p-3.5' : 'p-5'} space-y-3.5`} id="system-message-box-root">
+    <div className={`glass-panel rounded-t-2xl sm:rounded-xl border border-[#c5a059]/30 bg-[#0b0d13]/98 relative overflow-hidden shadow-2xl ${compact ? 'p-3.5' : 'p-4 sm:p-5'} space-y-3.5 w-full`} id="system-message-box-root">
+      {/* Mobile Top Sheet Handle */}
+      <div className="w-12 h-1 bg-[#c5a059]/30 rounded-full mx-auto sm:hidden -mt-1 mb-1" />
       <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
       
       {/* HEADER BAR: ULTRA-CLEAN & BALANCED */}
@@ -587,7 +589,7 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
 
       {/* STREAMLINED FILTER + BATCH ACTIONS BAR */}
       <div className="flex items-center justify-between gap-2 border-b border-[#c5a059]/20 pb-2.5 flex-wrap">
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
           {[
             { id: 'all', label: `ALL (${messages.length})` },
             { id: 'unread', label: `UNREAD (${unreadCount})` },
@@ -604,7 +606,7 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setFilterCategory(tab.id as any)}
-                className={`text-[10px] font-mono px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
+                className={`text-[10px] font-mono px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 shrink-0 ${
                   isSelected
                     ? isDelayedTab
                       ? 'bg-amber-950 border border-amber-500/80 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.3)]'

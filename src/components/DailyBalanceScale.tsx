@@ -199,43 +199,9 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
       )}
 
       {/* 3. THE SCALE VISUAL & STATS DOCK */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center relative z-10">
-        {/* Left Side: Positive Deeds Tray Card */}
-        <div className="lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#08150f] to-[#040a07] border border-emerald-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
-          
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">
-                Positive Deeds
-              </span>
-            </div>
-            <span className="text-[11px] font-mono text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/40">
-              {todayHasanatCount} Deeds Today
-            </span>
-          </div>
-
-          <div className="my-3">
-            <div className="text-3xl sm:text-4xl font-display font-bold text-emerald-400 flex items-baseline gap-1.5">
-              +{todayEarnedXP}
-              <span className="text-xs font-mono text-emerald-300/80 font-normal">XP Earned</span>
-            </div>
-            <p className="text-[11px] text-zinc-400 font-mono mt-1 leading-relaxed">
-              Prayers, Quran recitation, focus sessions, and completed directives.
-            </p>
-          </div>
-
-          <div className="pt-2.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-300/80">
-            <span className="flex items-center gap-1">
-              <ArrowDownRight className="h-3.5 w-3.5 text-emerald-400" /> Positive Weight
-            </span>
-            <span className="text-emerald-400 font-bold">Good Routines</span>
-          </div>
-        </div>
-
-        {/* Center: High-Fidelity SVG Balance Scale Graphic */}
-        <div className="lg:col-span-6 flex flex-col items-center justify-center py-2 px-1">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-center relative z-10">
+        {/* Center: High-Fidelity SVG Balance Scale Graphic (Shows on top on mobile) */}
+        <div className="order-1 lg:order-2 lg:col-span-6 flex flex-col items-center justify-center py-2 px-1">
           {/* Top Dial Indicator / Header */}
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 flex items-center gap-1">
@@ -541,8 +507,42 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
           </div>
         </div>
 
+        {/* Positive Deeds Tray Card */}
+        <div className="order-2 lg:order-1 lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#08150f] to-[#040a07] border border-emerald-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
+          
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">
+                Positive Deeds
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/40">
+              {todayHasanatCount} Deeds Today
+            </span>
+          </div>
+
+          <div className="my-3">
+            <div className="text-3xl sm:text-4xl font-display font-bold text-emerald-400 flex items-baseline gap-1.5">
+              +{todayEarnedXP}
+              <span className="text-xs font-mono text-emerald-300/80 font-normal">XP Earned</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 font-mono mt-1 leading-relaxed">
+              Prayers, Quran recitation, focus sessions, and completed directives.
+            </p>
+          </div>
+
+          <div className="pt-2.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px] font-mono text-emerald-300/80">
+            <span className="flex items-center gap-1">
+              <ArrowDownRight className="h-3.5 w-3.5 text-emerald-400" /> Positive Weight
+            </span>
+            <span className="text-emerald-400 font-bold">Good Routines</span>
+          </div>
+        </div>
+
         {/* Right Side: Audited Slips Tray Card */}
-        <div className="lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#18090b] to-[#0d0405] border border-rose-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
+        <div className="order-3 lg:order-3 lg:col-span-3 rounded-2xl bg-gradient-to-b from-[#18090b] to-[#0d0405] border border-rose-500/30 p-4 sm:p-5 flex flex-col justify-between shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-xl pointer-events-none" />
 
           <div className="flex items-center justify-between mb-2">

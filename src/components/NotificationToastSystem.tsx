@@ -156,7 +156,7 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md w-full px-4 pointer-events-none">
+    <div className="fixed top-16 sm:top-4 right-0 sm:right-4 left-0 sm:left-auto max-w-md mx-auto sm:mx-0 z-50 px-3 sm:px-4 pointer-events-none">
       <AnimatePresence>
         {activeToast && (
           <motion.div
