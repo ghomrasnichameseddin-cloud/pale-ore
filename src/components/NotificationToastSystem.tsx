@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { SystemMessage } from '../types';
-import { Award, Bell, ShieldAlert, Terminal, MessageSquare, AlertTriangle, X, Inbox, Sparkles, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { 
+  Award, Bell, ShieldAlert, Terminal, MessageSquare, AlertTriangle, 
+  X, Inbox, Sparkles, ChevronRight, Volume2, VolumeX, Clock, 
+  Laptop, Smartphone, CheckCircle2, CalendarPlus 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundSystem } from '../utils/soundEffects';
+import { getNotificationPermission, sendNativeNotification } from '../utils/nativeNotifications';
+import { snoozeEntity } from '../utils/delayedTaskScanner';
 
 interface NotificationToastSystemProps {
   onOpenInbox?: () => void;
 }
 
 export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = ({ onOpenInbox }) => {
-  const { state, markSystemMessageRead } = usePOS();
+  const { 
+    state, markSystemMessageRead, updateQuest, updateGoal, updateProject, addSystemMessage 
+  } = usePOS();
   const [activeToast, setActiveToast] = useState<SystemMessage | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [isMuted, setIsMuted] = useState(soundSystem.getMuted());
@@ -54,6 +62,8 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
 
   const getCategoryIcon = (category: SystemMessage['category']) => {
     switch (category) {
+      case 'delayed':
+        return <Clock className="h-5 w-5 text-amber-400 shrink-0 animate-pulse" />;
       case 'achievement':
         return <Award className="h-5 w-5 text-amber-400 shrink-0 animate-bounce" />;
       case 'alert':
@@ -70,6 +80,8 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
 
   const getCategoryBorder = (category: SystemMessage['category']) => {
     switch (category) {
+      case 'delayed':
+        return 'border-amber-500/80 shadow-[0_0_24px_rgba(245,158,11,0.35)] bg-[#0d0905]/98 text-amber-100';
       case 'achievement':
         return 'border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-zinc-950/95';
       case 'alert':
@@ -101,6 +113,48 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
     }
   };
 
+  const handleQuickComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activeToast || !activeToast.entityId) return;
+
+    if (activeToast.entityType === 'quest') {
+      updateQuest(activeToast.entityId, { status: 'Completed', completedAt: new Date().toISOString() });
+    } else if (activeToast.entityType === 'goal') {
+      updateGoal(activeToast.entityId, { status: 'Completed' });
+    } else if (activeToast.entityType === 'project') {
+      updateProject(activeToast.entityId, { status: 'Completed' });
+    }
+
+    soundSystem.playNotification('achievement');
+    markSystemMessageRead(activeToast.id);
+    setActiveToast(null);
+  };
+
+  const handleQuickSnooze = (e: React.MouseEvent, days: number = 1) => {
+    e.stopPropagation();
+    if (!activeToast || !activeToast.entityId || !activeToast.entityType) return;
+
+    const newDate = snoozeEntity(
+      activeToast.entityType as any,
+      activeToast.entityId,
+      days,
+      state,
+      { updateQuest, updateGoal, updateProject }
+    );
+
+    soundSystem.playNotification('note');
+    markSystemMessageRead(activeToast.id);
+    setActiveToast(null);
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'note',
+      title: `Directive Rescheduled (+${days}d)`,
+      content: `"${activeToast.title}" postponed to ${newDate}. Maintain focus and pace.`,
+      priority: 'low'
+    });
+  };
+
   return (
     <div className="fixed top-4 right-4 z-50 max-w-md w-full px-4 pointer-events-none">
       <AnimatePresence>
@@ -118,10 +172,20 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
                   {getCategoryIcon(activeToast.category)}
                 </div>
                 <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-white/10 text-zinc-300">
                       {activeToast.sender}
                     </span>
+                    {activeToast.category === 'delayed' && (
+                      <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-amber-950/90 text-amber-300 border border-amber-500/40">
+                        {activeToast.daysDelayed ? `${activeToast.daysDelayed}D OVERDUE` : 'DELAYED DIRECTIVE'}
+                      </span>
+                    )}
+                    {activeToast.entityType && (
+                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
+                        {activeToast.entityType}
+                      </span>
+                    )}
                     <span className="text-[9px] font-mono text-zinc-500">
                       {new Date(activeToast.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -155,17 +219,41 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
             </div>
 
             {/* ACTION FOOTER */}
-            <div className="flex items-center justify-between pt-1 border-t border-white/10 text-xs">
-              <span className="text-[10px] font-mono text-zinc-400">
-                SYSTEM MESSAGE DISPATCHED
-              </span>
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs flex-wrap">
+              {activeToast.category === 'delayed' && activeToast.entityId ? (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleQuickComplete}
+                    className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    DONE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleQuickSnooze(e, 1)}
+                    className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-amber-950/90 hover:bg-amber-900 border border-amber-500/50 text-amber-200 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <CalendarPlus className="h-3 w-3 text-amber-400" />
+                    +1D SNOOZE
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[9px] font-mono text-zinc-400 flex items-center gap-1.5">
+                  <Laptop className="h-3 w-3 text-cyan-400" />
+                  <Smartphone className="h-3 w-3 text-emerald-400" />
+                  <span>PC & MOBILE SYNC</span>
+                </span>
+              )}
+
               <button
                 type="button"
                 onClick={handleOpenInboxClick}
-                className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
+                className="text-xs font-mono font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition cursor-pointer ml-auto"
               >
                 <Inbox className="h-3.5 w-3.5" />
-                OPEN MESSAGE BOX
+                OPEN BOX
                 <ChevronRight className="h-3 w-3" />
               </button>
             </div>

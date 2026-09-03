@@ -8,11 +8,14 @@ import {
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
-  AdhkarItem, AdhkarCategory, AdhkarPrayerTarget
+  AdhkarItem, AdhkarCategory, AdhkarPrayerTarget,
+  NotificationSettings
 } from './types';
 import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
+import { sendNativeNotification } from './utils/nativeNotifications';
+import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
 
 export const getSystemTimestamp = (systemDateStr?: string): string => {
   const dateStr = systemDateStr || getLocalDateString();
@@ -36,12 +39,14 @@ import {
 interface POSContextType {
   state: POSState;
   
-  // System Messages
+  // System Messages & PC/Mobile Notifications
   addSystemMessage: (msg: Omit<SystemMessage, 'id' | 'timestamp' | 'read'>) => string;
   markSystemMessageRead: (id: string) => void;
   markAllSystemMessagesRead: () => void;
   deleteSystemMessage: (id: string) => void;
   clearAllSystemMessages: () => void;
+  updateNotificationSettings: (updates: Partial<NotificationSettings>) => void;
+  scanDelayedTasks: (forceNotify?: boolean) => Promise<{ addedCount: number; scanResult: DelayedScanResult }>;
 
   // Pomodoro Focus Timer
   activeFocusSession: ActiveFocusSession | null;
@@ -964,6 +969,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       messages: [newMsg, ...(prev.messages || [])]
     }));
+
+    // Trigger Native OS (PC Action Center / macOS / Android Tray) Notification
+    if (state.notificationSettings?.enableDesktopNotifications !== false) {
+      sendNativeNotification({
+        title: msg.title,
+        body: msg.content,
+        soundCategory: msg.category,
+        tag: `pos-msg-${msg.category}-${Date.now()}`,
+        data: {
+          msgId: id,
+          category: msg.category,
+          entityType: msg.entityType,
+          entityId: msg.entityId
+        }
+      }).catch(() => {});
+    }
+
     return id;
   };
 
@@ -994,6 +1016,62 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       messages: []
     }));
   };
+
+  const updateNotificationSettings = (updates: Partial<NotificationSettings>) => {
+    setState(prev => {
+      const current = prev.notificationSettings || {
+        enableDesktopNotifications: true,
+        enableSound: true,
+        enableVibration: true,
+        notifyDelayedQuests: true,
+        notifyDelayedGoals: true,
+        notifyDelayedProjects: true,
+        notifyMuhasabahDeficit: true,
+        lastDelayedCheckDate: ''
+      };
+      return {
+        ...prev,
+        notificationSettings: {
+          ...current,
+          ...updates
+        }
+      };
+    });
+  };
+
+  const scanDelayedTasks = async (forceNotify: boolean = true) => {
+    return generateDelayedNotifications(state, addSystemMessage, { forceNotify });
+  };
+
+  // Automated scan for delayed quests, goals, and projects on app startup or system date advance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const lastCheck = state.notificationSettings?.lastDelayedCheckDate;
+      const currentSysDate = state.systemDate || getLocalDateString();
+      if (lastCheck !== currentSysDate) {
+        generateDelayedNotifications(state, addSystemMessage, { forceNotify: false })
+          .then(({ addedCount }) => {
+            setState(prev => ({
+              ...prev,
+              notificationSettings: {
+                ...(prev.notificationSettings || {
+                  enableDesktopNotifications: true,
+                  enableSound: true,
+                  enableVibration: true,
+                  notifyDelayedQuests: true,
+                  notifyDelayedGoals: true,
+                  notifyDelayedProjects: true,
+                  notifyMuhasabahDeficit: true
+                }),
+                lastDelayedCheckDate: currentSysDate
+              }
+            }));
+          })
+          .catch(() => {});
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [state.systemDate]);
 
   useEffect(() => {
     if (!activeFocusSession) return;
@@ -6421,6 +6499,8 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       markAllSystemMessagesRead,
       deleteSystemMessage,
       clearAllSystemMessages,
+      updateNotificationSettings,
+      scanDelayedTasks,
       activeFocusSession,
       startFocusSession,
       pauseFocusSession,

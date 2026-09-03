@@ -54,24 +54,25 @@ class SoundSystem {
           osc.start(now + index * 0.08);
           osc.stop(now + index * 0.08 + 0.4);
         });
-      } else if (category === 'warning') {
-        // Low Caution Double Beep
-        [329.63, 293.66].forEach((freq, index) => {
+      } else if (category === 'warning' || category === 'delayed') {
+        // Urgent Caution descending sequence for warnings and delayed directives
+        const freqs = category === 'delayed' ? [440, 392, 329.63] : [329.63, 293.66];
+        freqs.forEach((freq, index) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
 
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(freq, now + index * 0.15);
+          osc.frequency.setValueAtTime(freq, now + index * 0.14);
 
-          gain.gain.setValueAtTime(0.01, now + index * 0.15);
-          gain.gain.exponentialRampToValueAtTime(0.18, now + index * 0.15 + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.15 + 0.2);
+          gain.gain.setValueAtTime(0.01, now + index * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.2, now + index * 0.14 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.14 + 0.22);
 
           osc.connect(gain);
           gain.connect(ctx.destination);
 
-          osc.start(now + index * 0.15);
-          osc.stop(now + index * 0.15 + 0.25);
+          osc.start(now + index * 0.14);
+          osc.stop(now + index * 0.14 + 0.26);
         });
       } else if (category === 'log') {
         // Futuristic Sub-pulse

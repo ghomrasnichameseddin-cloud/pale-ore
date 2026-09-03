@@ -52,6 +52,7 @@ function AppContent() {
   } = usePOS();
   
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
+  const delayedDirectivesCount = (state.messages || []).filter(m => m.category === 'delayed' && !m.read).length;
 
   const playerInfo = getPlayerLevelInfo();
   const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
@@ -162,12 +163,14 @@ function AppContent() {
           <button
             onClick={() => setIsInboxModalOpen(true)}
             className="p-1.5 bg-[var(--bg-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] rounded relative"
-            title="System Inbox"
+            title="System Inbox & Notifications"
           >
             <Inbox className="h-4 w-4" />
-            {unreadMessagesCount > 0 && (
+            {delayedDirectivesCount > 0 ? (
+              <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping" title={`${delayedDirectivesCount} delayed directives!`} />
+            ) : unreadMessagesCount > 0 ? (
               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-[var(--accent-bright)] animate-ping" />
-            )}
+            ) : null}
           </button>
 
           <button 
@@ -659,7 +662,21 @@ function AppContent() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="max-w-2xl w-full"
             >
-              <SystemMessageBox onClose={() => setIsInboxModalOpen(false)} />
+              <SystemMessageBox 
+                onClose={() => setIsInboxModalOpen(false)} 
+                onNavigateToQuest={() => {
+                  setActiveTab('quests');
+                  setIsInboxModalOpen(false);
+                }}
+                onNavigateToGoal={() => {
+                  setActiveTab('goals');
+                  setIsInboxModalOpen(false);
+                }}
+                onNavigateToProject={() => {
+                  setActiveTab('projects');
+                  setIsInboxModalOpen(false);
+                }}
+              />
             </motion.div>
           </div>
         )}

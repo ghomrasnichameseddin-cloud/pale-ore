@@ -215,6 +215,16 @@ export const INITIAL_STATE: POSState = {
       priority: 'medium'
     }
   ],
+  notificationSettings: {
+    enableDesktopNotifications: true,
+    enableSound: true,
+    enableVibration: true,
+    notifyDelayedQuests: true,
+    notifyDelayedGoals: true,
+    notifyDelayedProjects: true,
+    notifyMuhasabahDeficit: true,
+    lastDelayedCheckDate: ''
+  },
   batterySettings: {
     batterySaverMode: true,
     autoEcoLowBattery: true,

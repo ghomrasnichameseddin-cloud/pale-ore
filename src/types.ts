@@ -186,13 +186,29 @@ export interface XPHistoryEntry {
 
 export interface SystemMessage {
   id: string;
-  sender: 'SYSTEM' | 'OPERATOR' | 'FOCUS_BOT' | 'PROGRESS_ENGINE';
-  category: 'alert' | 'achievement' | 'log' | 'note' | 'warning';
+  sender: 'SYSTEM' | 'OPERATOR' | 'FOCUS_BOT' | 'PROGRESS_ENGINE' | 'ORACLE' | 'DECREE_WATCH' | 'SANCTUM_GUARDIAN';
+  category: 'alert' | 'achievement' | 'log' | 'note' | 'warning' | 'delayed';
   title: string;
   content: string;
   timestamp: string;
   read: boolean;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  entityType?: 'quest' | 'goal' | 'project' | 'covenant' | 'muhasabah';
+  entityId?: string;
+  entityName?: string;
+  daysDelayed?: number;
+  dueDate?: string;
+}
+
+export interface NotificationSettings {
+  enableDesktopNotifications: boolean;
+  enableSound: boolean;
+  enableVibration: boolean;
+  notifyDelayedQuests: boolean;
+  notifyDelayedGoals: boolean;
+  notifyDelayedProjects: boolean;
+  notifyMuhasabahDeficit: boolean;
+  lastDelayedCheckDate?: string;
 }
 
 export interface ActiveFocusSession {
@@ -606,6 +622,7 @@ export interface POSState {
   deletedJobIds?: string[];
   deletedTitleIds?: string[];
   messages?: SystemMessage[];
+  notificationSettings?: NotificationSettings;
   batterySettings?: BatterySettings;
   muhasabahEntries?: MuhasabahEntry[];
   weaknesses?: Weakness[];
