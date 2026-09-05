@@ -565,7 +565,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   />
                 </div>
                 <span className="text-[9px] font-mono text-rose-300/80 mt-1 block">
-                  {muhasabahStats.todayLostHp > 0 ? `−${muhasabahStats.todayLostHp} HP today` : 'No HP loss today'}
+                  {muhasabahStats.todayLostHp > 0 ? `−${muhasabahStats.todayLostHp} HP today` : 'No HP loss today'} • +5 max HP / level
                 </span>
               </div>
             </div>

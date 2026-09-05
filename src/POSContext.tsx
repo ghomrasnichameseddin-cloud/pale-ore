@@ -400,6 +400,8 @@ const calculatePlayerLevel = (totalXp: number): number => {
   return Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2);
 };
 
+const getMaxHpForLevel = (level: number): number => 100 + Math.max(0, level - 1) * 5;
+
 export const INTERMEDIATE_RANK_LEVEL_THRESHOLD = 10; // D-Rank and above
 
 export const getCompletedBossQuestsCount = (quests: Quest[] = [], xpHistory: XPHistoryEntry[] = []): number => {
@@ -2753,6 +2755,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                            questToComplete.difficulty === 'Hard' ? 18 : 25;
       const currentFatigue = prev.profile.fatigueLevel || 0;
       const newFatigue = Math.min(100, currentFatigue + addedFatigue);
+      const previousLevel = prev.profile.level || 1;
+      const previousMaxHp = prev.profile.maxHp ?? getMaxHpForLevel(previousLevel);
+      const levelUpHpGain = Math.max(0, level - previousLevel) * 5;
+      const nextMaxHp = Math.max(previousMaxHp, getMaxHpForLevel(level));
+      const nextHp = Math.min(nextMaxHp, (prev.profile.hp ?? previousMaxHp) + levelUpHpGain);
 
       const completionMessage = `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
 
@@ -2778,8 +2785,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           timeCredits: newLeisureBalance,
           totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedTimeCredits,
-          hp: Math.min(prev.profile.maxHp ?? 100, (prev.profile.hp ?? 100) + (isKaffarahQuest ? 35 : 2)),
-          maxHp: prev.profile.maxHp ?? 100,
+          hp: Math.min(nextMaxHp, nextHp + (isKaffarahQuest ? 35 : 2)),
+          maxHp: nextMaxHp,
           momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
           recoveryMode: newRecoveryMode,
           fatigueLevel: newFatigue,
@@ -4692,7 +4699,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // 2. Deduct HP (Soul Vitality) & Coins (Treasury Fine) & Slash Momentum
       const currentHp = prev.profile.hp ?? 100;
-      const maxHp = prev.profile.maxHp ?? 100;
+      const maxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(prev.profile.level || 1));
       const nextHp = Math.max(0, currentHp - hpLoss);
       const isHpCritical = nextHp <= 20;
 
@@ -4957,7 +4964,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const healSpiritualHp = (amount: number, reason?: string) => {
     setState(prev => {
       const currentHp = prev.profile.hp ?? 100;
-      const maxHp = prev.profile.maxHp ?? 100;
+      const maxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(prev.profile.level || 1));
       const nextHp = Math.min(maxHp, currentHp + Math.max(1, amount));
       if (nextHp === currentHp) return prev;
 
@@ -5409,7 +5416,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     const todayLostHp = todayEntries.reduce((sum, e) => sum + (e.hpDeducted || 0), 0);
     const todayRecurringSlipsCount = todayEntries.filter(e => (e.recurrenceMultiplier || 1) > 1.0).length;
     const currentHp = state.profile.hp ?? 100;
-    const maxHp = state.profile.maxHp ?? 100;
+    const maxHp = Math.max(state.profile.maxHp ?? 100, getMaxHpForLevel(state.profile.level || 1));
     
     const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
     const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);

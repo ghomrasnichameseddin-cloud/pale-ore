@@ -1954,22 +1954,37 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <ul className="text-[10.5px] space-y-1 font-mono text-zinc-300">
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Minor Slips (اللَّمَم):</strong> −50 to −100 XP (fleeting distractions, brief procrastination, idle chatter).</span>
+                          <span><strong>Minor Slips (اللَّمَم):</strong> −150 XP (fleeting distractions, brief procrastination, idle chatter).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Moderate Lapses (الغَفْلَة):</strong> −150 to −200 XP (doomscrolling feeds, broken promises, skipping workouts).</span>
+                          <span><strong>Moderate Lapses (الغَفْلَة):</strong> −300 XP (doomscrolling feeds, broken promises, skipping workouts).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Major Breaches (الكَبَائِر):</strong> −300 XP (delayed/missed Fajr or prayers, giving in to desires/triggers).</span>
+                          <span><strong>Major Breaches (الكَبَائِر):</strong> −500 XP (delayed/missed Fajr or prayers, giving in to desires/triggers).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Critical Failures (الجُرْم):</strong> −400 to −500 XP (severe relapse, complete breakdown of daily discipline).</span>
+                          <span><strong>Critical Failures (الجُرْم):</strong> −1000 XP (severe relapse, complete breakdown of daily discipline).</span>
                         </li>
                       </ul>
                     </div>
+                  </div>
+
+                  <div className="p-4 bg-rose-950/20 border border-rose-500/40 rounded-xl space-y-2">
+                    <div className="font-mono font-bold text-rose-300 uppercase flex items-center gap-2 text-xs">
+                      <Heart className="h-4 w-4 text-rose-400" /> SOUL VITALITY / HP RECOVERY LOOP
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      HP is an in-app recovery signal, not a measure of faith or divine judgment. Every level raises maximum Soul Vitality by <strong className="text-rose-300">+5 HP</strong>: <code>Max HP = 100 + 5 × (Level − 1)</code>. A level-up also restores the new capacity increment.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                      <div className="p-2 bg-black/30 rounded border border-rose-500/20"><strong className="text-rose-300 block">LOSS</strong><span className="text-zinc-400">Muhāsabah severity and recurrence deduct HP.</span></div>
+                      <div className="p-2 bg-black/30 rounded border border-emerald-500/20"><strong className="text-emerald-300 block">RESTORE</strong><span className="text-zinc-400">Complete the linked Kaffārah quest for +35 HP.</span></div>
+                      <div className="p-2 bg-black/30 rounded border border-cyan-500/20"><strong className="text-cyan-300 block">PROGRESS</strong><span className="text-zinc-400">Ordinary completed directives restore +2 HP; level-ups add capacity.</span></div>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 font-mono">At 0 HP, recovery mode activates. The practical route back is restitution, then consistent completion.</p>
                   </div>
 
                   {/* 5 EQUILIBRIUM TIERS & TILT ANGLES */}

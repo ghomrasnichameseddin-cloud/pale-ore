@@ -217,7 +217,7 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
             />
           </div>
           <p className="text-[10px] text-zinc-500 font-mono mt-1.5">
-            {todayLostHp > 0 ? `Today: −${todayLostHp} HP. Complete restitution to recover.` : 'No HP loss today. HP is a recovery cue, not a judgment of faith.'}
+            {todayLostHp > 0 ? `Today: −${todayLostHp} HP. Complete restitution to recover.` : 'No HP loss today. Level-ups raise capacity by +5 HP.'}
           </p>
         </div>
       )}
