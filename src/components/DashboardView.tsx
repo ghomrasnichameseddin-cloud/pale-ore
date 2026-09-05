@@ -25,7 +25,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     state, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
     isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate,
     toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getGoalProgress,
-    getProjectProgress, addQuest, getSkillXpAndLevel, getTodayMuhasabahStats
+    getProjectProgress, addQuest, getSkillXpAndLevel, getTodayMuhasabahStats, restartAttribute
   } = usePOS();
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
@@ -73,6 +73,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [directiveSort, setDirectiveSortState] = useState<'XP' | 'TIME' | 'NAME' | 'DIFFICULTY'>(initialSettings.sort);
   const [directiveGroupBy, setDirectiveGroupByState] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>(initialSettings.groupBy);
   const [selectedAttributeName, setSelectedAttributeName] = useState<string | null>(null);
+  const [confirmRestartAttr, setConfirmRestartAttr] = useState(false);
 
   const saveSettingsToStorage = (typeVal: string, sortVal: string, groupVal: string) => {
     try {
@@ -650,11 +651,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 const baseVal = attr.baseLevel ?? 10;
                 const bonusVal = attr.earnedBonus ?? (totalVal - baseVal);
                 const isSelected = selectedAttributeName === attr.name;
+                const ptsInto = attr.pointsIntoLevel ?? 0;
+                const ptsNeeded = attr.pointsRequiredForNextLevel ?? 14;
+                const pct = attr.progress ?? 0;
 
                 return (
                   <div 
                     key={attr.name} 
-                    onClick={() => setSelectedAttributeName(isSelected ? null : attr.name)}
+                    onClick={() => {
+                      setSelectedAttributeName(isSelected ? null : attr.name);
+                      setConfirmRestartAttr(false);
+                    }}
                     className={`p-3 rounded-xl border transition cursor-pointer space-y-1.5 ${
                       isSelected
                         ? 'bg-[var(--accent-surface)] border-[var(--accent-bright)] shadow-[0_0_15px_var(--glow-color)] ring-1 ring-[var(--border-accent)]'
@@ -674,13 +681,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden border border-white/5">
                       <div 
                         className="bg-gradient-to-r from-[var(--border-strong)] to-[var(--accent-bright)] h-full rounded-full transition-all duration-300 shadow-[0_0_8px_var(--glow-color)]" 
-                        style={{ width: `${Math.min(100, (totalVal / 50) * 100)}%` }}
+                        style={{ width: `${pct}%` }}
                       />
                     </div>
 
                     <div className="flex justify-between text-[9px] font-mono text-zinc-400 pt-0.5">
                       <span>BASE {baseVal}</span>
-                      <span className="text-[var(--accent-highlight)] font-bold">BONUS +{bonusVal}</span>
+                      <span className="text-zinc-300">{ptsInto}/{ptsNeeded} PTS</span>
+                      <span className="text-[var(--accent-highlight)] font-bold">+{bonusVal}</span>
                     </div>
                   </div>
                 );
@@ -695,6 +703,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               const totalVal = selectedAttr.total ?? selectedAttr.level;
               const baseVal = selectedAttr.baseLevel ?? 10;
               const bonusVal = selectedAttr.earnedBonus ?? 0;
+              const ptsInto = selectedAttr.pointsIntoLevel ?? 0;
+              const ptsNeeded = selectedAttr.pointsRequiredForNextLevel ?? 14;
+              const pct = selectedAttr.progress ?? 0;
 
               // Find matching skills
               const relatedSkills = state.skills.filter(s => {
@@ -722,7 +733,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       </div>
                     </div>
                     <button 
-                      onClick={() => setSelectedAttributeName(null)}
+                      onClick={() => {
+                        setSelectedAttributeName(null);
+                        setConfirmRestartAttr(false);
+                      }}
                       className="text-zinc-500 hover:text-white text-xs font-mono cursor-pointer"
                     >
                       ✕ CLOSE
@@ -730,19 +744,63 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   </div>
 
                   {/* FORMULA BREAKDOWN GRID */}
-                  <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
                     <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
-                      <span className="text-[9px] text-zinc-400 uppercase block">STARTING BASELINE</span>
+                      <span className="text-[9px] text-zinc-400 uppercase block">BASE</span>
                       <span className="text-sm font-bold text-[var(--accent-bright)]">{baseVal}</span>
                     </div>
                     <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
-                      <span className="text-[9px] text-zinc-400 uppercase block">DECREE EARNED</span>
+                      <span className="text-[9px] text-zinc-400 uppercase block">EARNED</span>
                       <span className="text-sm font-bold text-emerald-400">+{bonusVal}</span>
                     </div>
-                    <div className="p-2 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg">
-                      <span className="text-[9px] text-[var(--accent-highlight)] font-bold uppercase block">TOTAL POWER</span>
-                      <span className="text-sm font-extrabold text-white">{totalVal}</span>
+                    <div className="p-2 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg">
+                      <span className="text-[9px] text-zinc-400 uppercase block">NEXT LEVEL</span>
+                      <span className="text-xs font-bold text-[#fef08a]">{ptsInto} / {ptsNeeded} PTS ({pct}%)</span>
                     </div>
+                    <div className="p-2 bg-[var(--accent-surface)] border border-[var(--border-accent)] rounded-lg">
+                      <span className="text-[9px] text-[var(--accent-highlight)] font-bold uppercase block">TOTAL LEVEL</span>
+                      <span className="text-sm font-extrabold text-white">LVL {totalVal}</span>
+                    </div>
+                  </div>
+
+                  {/* DYNAMIC SCALING NOTICE */}
+                  <div className="p-2.5 bg-black/40 border border-white/5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] font-mono">
+                    <div className="text-zinc-400">
+                      <span className="text-[#fef08a] font-bold">DYNAMIC SCALING: </span>
+                      Leveling requirements increase with every level up. Advancing to LVL {totalVal + 1} requires {ptsNeeded} pts from completed deeds.
+                    </div>
+                    
+                    {confirmRestartAttr ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-rose-400 text-[9px]">RESET TO LVL 1?</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRestartAttr(false)}
+                          className="px-2 py-0.5 text-[9px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded cursor-pointer"
+                        >
+                          CANCEL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            restartAttribute(selectedAttr.id);
+                            setConfirmRestartAttr(false);
+                          }}
+                          className="px-2 py-0.5 text-[9px] bg-rose-950 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded cursor-pointer font-bold"
+                        >
+                          CONFIRM
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRestartAttr(true)}
+                        className="px-2.5 py-1 text-[9px] bg-rose-950/30 hover:bg-rose-950 border border-rose-500/30 text-rose-300 rounded-lg transition cursor-pointer font-mono shrink-0"
+                        title="Restart this attribute back to Level 1"
+                      >
+                        RESTART ATTRIBUTE
+                      </button>
+                    )}
                   </div>
 
                   {/* LINKED SKILLS & DIRECTIVES QUICK ACTION */}

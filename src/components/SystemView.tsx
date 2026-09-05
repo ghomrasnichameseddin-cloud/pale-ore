@@ -12,7 +12,7 @@ import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDe
 export const SystemView: React.FC = () => {
   const { 
     state, exportData, importData, resetAllData, resetLevelAndXp, 
-    clearAllQuests, resetBaselineAttributes, updateAttributeBase, 
+    clearAllQuests, resetBaselineAttributes, updateAttributeBase, restartAttribute,
     getAttributes, updateBatterySettings, toggleBatterySaverMode
   } = usePOS();
 
@@ -571,26 +571,51 @@ export const SystemView: React.FC = () => {
             <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Directly calibrate baseline values. Completed trials layer atop automatically.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[360px] overflow-y-auto pr-1">
             {state.attributes.map((attr) => {
               const fullyCalculated = currentAttributes.find(a => a.id === attr.id);
               return (
-                <div key={attr.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl space-y-2">
+                <div key={attr.id} className="p-3 bg-[#07080c] border border-[#c5a059]/20 rounded-xl space-y-2.5">
                   <div className="flex justify-between items-center text-xs font-mono">
                     <span className="text-zinc-200 font-bold uppercase">{attr.name}</span>
-                    <span className="text-[#fef08a] font-bold">TOTAL: LVL {fullyCalculated?.level}</span>
+                    <span className="text-[#fef08a] font-bold">LVL {fullyCalculated?.level || 1}</span>
+                  </div>
+
+                  {/* Progress & Points Scaling */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-mono text-zinc-400">
+                      <span>PROGRESS</span>
+                      <span>{fullyCalculated?.pointsIntoLevel ?? 0} / {fullyCalculated?.pointsRequiredForNextLevel ?? 14} PTS ({fullyCalculated?.progress ?? 0}%)</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden border border-white/5">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#c5a059] to-[#fef08a] rounded-full transition-all duration-300"
+                        style={{ width: `${fullyCalculated?.progress ?? 0}%` }}
+                      />
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-[9px] font-mono text-zinc-400 uppercase shrink-0">BASELINE:</label>
-                    <input 
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={attr.level}
-                      onChange={(e) => updateAttributeBase(attr.id, Number(e.target.value))}
-                      className="w-16 bg-[#0b0d13] border border-[#c5a059]/30 rounded px-1.5 py-0.5 text-xs text-center text-white focus:outline-none focus:border-[#c5a059]"
-                    />
+                  <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[9px] font-mono text-zinc-400 uppercase shrink-0">BASE:</label>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={attr.level}
+                        onChange={(e) => updateAttributeBase(attr.id, Number(e.target.value))}
+                        className="w-14 bg-[#0b0d13] border border-[#c5a059]/30 rounded px-1.5 py-0.5 text-xs text-center text-white focus:outline-none focus:border-[#c5a059]"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => restartAttribute(attr.id)}
+                      className="px-2 py-0.5 text-[9px] font-mono bg-rose-950/40 hover:bg-rose-950 border border-rose-500/30 text-rose-300 rounded transition-colors cursor-pointer"
+                      title="Restart this specific attribute to Level 1"
+                    >
+                      RESTART
+                    </button>
                   </div>
                 </div>
               );
@@ -676,26 +701,28 @@ export const SystemView: React.FC = () => {
 
               {/* Reset Baseline Attributes */}
               <div className="bg-[#07080c] border border-[#c5a059]/20 p-3.5 rounded-xl space-y-3">
-                <span className="text-[10px] font-mono text-[#fef08a] uppercase font-bold block">RESET BASE ATTRIBUTES</span>
-                <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">Reset base levels of Strength, Endurance, Focus to 1.</p>
+                <span className="text-[10px] font-mono text-[#fef08a] uppercase font-bold block">RESTART ALL ATTRIBUTES</span>
+                <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                  Resets Strength, Endurance, Agility, Focus, and all attributes to Level 1 with 0% progress and recalibrates their progressive progression curve.
+                </p>
                 
                 {showAttrResetConfirm ? (
                   <div className="space-y-2 pt-1 border-t border-rose-500/10">
-                    <p className="text-[9px] font-mono text-rose-400">CONFIRM RESET?</p>
+                    <p className="text-[9px] font-mono text-rose-400">CONFIRM RESTART TO LEVEL 1?</p>
                     <div className="flex gap-2 justify-end">
                       <button 
                         type="button" 
                         onClick={() => setShowAttrResetConfirm(false)}
-                        className="text-[9px] font-mono text-zinc-500 cursor-pointer"
+                        className="text-[9px] font-mono text-zinc-500 cursor-pointer hover:text-zinc-300"
                       >
                         CANCEL
                       </button>
                       <button 
                         type="button"
                         onClick={() => { resetBaselineAttributes(); setShowAttrResetConfirm(false); }}
-                        className="bg-rose-950/80 hover:bg-rose-950 border border-rose-500/30 text-rose-300 text-[9px] font-mono px-2 py-0.5 rounded transition-colors cursor-pointer"
+                        className="bg-rose-950/80 hover:bg-rose-950 border border-rose-500/30 text-rose-300 text-[9px] font-mono px-2 py-0.5 rounded transition-colors cursor-pointer font-bold"
                       >
-                        CONFIRM
+                        CONFIRM RESTART
                       </button>
                     </div>
                   </div>
@@ -705,7 +732,7 @@ export const SystemView: React.FC = () => {
                     onClick={() => setShowAttrResetConfirm(true)}
                     className="w-full bg-[#0b0d13] hover:bg-[#141824] border border-[#c5a059]/25 text-[#fef08a] text-[10px] font-mono py-1.5 rounded-lg transition-all cursor-pointer font-bold"
                   >
-                    RESET ATTRIBUTES
+                    RESTART ALL ATTRIBUTES
                   </button>
                 )}
               </div>

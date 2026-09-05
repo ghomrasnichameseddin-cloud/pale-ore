@@ -131,6 +131,7 @@ interface POSContextType {
   
   // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
   updateAttributeBase: (id: string, level: number) => void;
+  restartAttribute: (id: string) => void;
   
   // XP Actions
   addXp: (amount: number, reason?: string, skillIds?: string[]) => void;
@@ -1790,7 +1791,58 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // Dynamic Attribute Engine (grounded in completed quests evidence)
+  // Helper for dynamic attribute progression:
+  // Requirements strictly scale with each level up rather than staying flat!
+  // Cost to advance from bonusLevel to bonusLevel + 1 increases progressively:
+  // cost(L) = baseCost + (L * growth) + quadratic tier scaling
+  const calculateAttributeProgression = (
+    points: number,
+    baseCost: number,
+    growth: number
+  ): {
+    earnedBonus: number;
+    pointsIntoLevel: number;
+    pointsRequiredForNextLevel: number;
+    progress: number;
+    totalPoints: number;
+  } => {
+    const cleanPoints = Math.max(0, Math.round(points * 10) / 10);
+    let bonusLevel = 0;
+    let remaining = cleanPoints;
+
+    while (true) {
+      // Dynamic Level Scaling: Requirements strictly increase with each level!
+      const costForNext = Math.round(baseCost + (bonusLevel * growth) + Math.floor((bonusLevel * bonusLevel) / 6));
+      
+      if (remaining < costForNext) {
+        const progress = costForNext > 0 
+          ? Math.min(100, Math.max(0, Math.round((remaining / costForNext) * 100))) 
+          : 0;
+        return {
+          earnedBonus: bonusLevel,
+          pointsIntoLevel: Math.round(remaining * 10) / 10,
+          pointsRequiredForNextLevel: costForNext,
+          progress,
+          totalPoints: cleanPoints
+        };
+      }
+      
+      remaining -= costForNext;
+      bonusLevel += 1;
+      
+      if (bonusLevel >= 150) {
+        return {
+          earnedBonus: 150,
+          pointsIntoLevel: costForNext,
+          pointsRequiredForNextLevel: costForNext,
+          progress: 100,
+          totalPoints: cleanPoints
+        };
+      }
+    }
+  };
+
+  // Dynamic Attribute Engine (grounded in completed quests evidence, difficulty weighting & progressive scaling)
   const getAttributes = (): Attribute[] => {
     // Analyze all completion events in the XP history, matching them with their quest details
     const completedEvents = state.xpHistory.map(h => {
@@ -1799,78 +1851,154 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...h,
         type: q?.type || 'Side',
         goalId: q?.goalId || null,
-        difficulty: q?.difficulty || 'Normal'
+        difficulty: q?.difficulty || 'Normal',
+        streak: q?.streakCount || 0
       };
     });
     
     return state.attributes.map(attr => {
-      // Find related events based on attributes rules
-      let relatedCount = 0;
-      let divider = 3; // Quests needed per level
+      // Check if this attribute or all attributes have been restarted/reset
+      const resetCutoff = attr.resetAt || state.attributesResetAt;
+      const eligibleEvents = resetCutoff
+        ? completedEvents.filter(e => e.timestamp && e.timestamp > resetCutoff)
+        : completedEvents;
+
+      let totalPoints = 0;
+      let baseCost = 14;
+      let growth = 4;
 
       if (attr.name === 'Strength') {
-        // Fitness and Boss quests
-        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
-          const skill = state.skills.find(sk => sk.id === s);
-          return skill?.name === 'Fitness';
-        }) || e.type === 'Boss').length;
-        divider = 2; // Fast strength build
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const isFitness = e.skillIds.some(s => {
+            const skill = state.skills.find(sk => sk.id === s);
+            return skill?.name === 'Fitness' || skill?.name?.toLowerCase().includes('fitness') || skill?.name?.toLowerCase().includes('workout');
+          });
+          const isBoss = e.type === 'Boss' || e.difficulty === 'Boss';
+          if (isFitness || isBoss) {
+            const pts = isBoss ? 8 : (e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2));
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Endurance') {
-        // Total completed events
-        relatedCount = completedEvents.length;
-        divider = 4;
+        // Physical stamina and mental consistency to repeat routines
+        // All completed directives feed Endurance, so it has a higher base cost and steep progressive curve
+        baseCost = 24;
+        growth = 8;
+        eligibleEvents.forEach(e => {
+          const pts = e.difficulty === 'Boss' ? 6 : (e.difficulty === 'Hard' ? 3 : (e.difficulty === 'Easy' ? 1 : 1.5));
+          totalPoints += pts;
+        });
+        if (state.profile.focusMinutesToday && state.profile.focusMinutesToday > 0) {
+          totalPoints += Math.min(10, Math.floor(state.profile.focusMinutesToday / 25));
+        }
       } else if (attr.name === 'Agility') {
-        // Side quests and quick tasks
-        relatedCount = completedEvents.filter(e => e.type === 'Side' || e.type === 'Optional').length;
-        divider = 3;
+        // Mental dexterity, quick task turnaround, side quests and optional tasks
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          if (e.type === 'Side' || e.type === 'Optional') {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Focus') {
-        // Main quests completed
-        relatedCount = completedEvents.filter(e => e.type === 'Main').length;
-        divider = 3;
+        // Deep work on Main quests and sustained pomodoro focus sessions
+        baseCost = 16;
+        growth = 5;
+        eligibleEvents.forEach(e => {
+          if (e.type === 'Main') {
+            const pts = e.difficulty === 'Boss' ? 8 : (e.difficulty === 'Hard' ? 5 : (e.difficulty === 'Easy' ? 1.5 : 3));
+            totalPoints += pts;
+          }
+        });
+        if (state.profile.focusStreak && state.profile.focusStreak > 0) {
+          totalPoints += Math.min(15, state.profile.focusStreak * 2);
+        }
       } else if (attr.name === 'Discipline') {
-        // Habit quests and side quests
-        relatedCount = completedEvents.filter(e => e.type === 'Habit' || e.type === 'Side').length;
-        divider = 3;
+        // Completing habits and side routines consistently with streak protection
+        baseCost = 16;
+        growth = 5;
+        eligibleEvents.forEach(e => {
+          if (e.type === 'Habit' || e.type === 'Side') {
+            const streakBonus = Math.min(2, Math.floor((e.streak || 0) / 3));
+            const pts = (e.type === 'Habit' ? 2 : 1.5) + streakBonus;
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Knowledge') {
-        // Programming, chess, or language quests
-        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
-          const skill = state.skills.find(sk => sk.id === s);
-          return ['Programming', 'English', 'Arabic', 'French', 'Chess'].includes(skill?.name || '');
-        })).length;
-        divider = 2;
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const isKnowledge = e.skillIds.some(s => {
+            const skill = state.skills.find(sk => sk.id === s);
+            return ['Programming', 'English', 'Arabic', 'French', 'Chess', 'Coding', 'Study', 'Reading'].some(k => 
+              skill?.name?.toLowerCase().includes(k.toLowerCase())
+            );
+          });
+          if (isKnowledge) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Wisdom') {
-        // Goals completed (represented by completed quests with Goal assignments)
-        relatedCount = completedEvents.filter(e => e.goalId !== null).length;
-        divider = 3;
+        baseCost = 16;
+        growth = 5;
+        eligibleEvents.forEach(e => {
+          if (e.goalId !== null) {
+            const pts = e.difficulty === 'Hard' ? 5 : (e.difficulty === 'Easy' ? 1.5 : 3);
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Social') {
-        // Communication, writing, or cooking
-        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
-          const skill = state.skills.find(sk => sk.id === s);
-          return ['Writing', 'Cooking', 'Business'].includes(skill?.name || '');
-        })).length;
-        divider = 3;
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const isSocial = e.skillIds.some(s => {
+            const skill = state.skills.find(sk => sk.id === s);
+            return ['Writing', 'Cooking', 'Business', 'Communication', 'Teaching'].some(k => 
+              skill?.name?.toLowerCase().includes(k.toLowerCase())
+            );
+          });
+          if (isSocial) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
+            totalPoints += pts;
+          }
+        });
       } else if (attr.name === 'Faith') {
-        // Qur'an and Arabic
-        relatedCount = completedEvents.filter(e => e.skillIds.some(s => {
-          const skill = state.skills.find(sk => sk.id === s);
-          return ['Qur\'an', 'Arabic'].includes(skill?.name || '');
-        })).length;
-        divider = 2;
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const isFaith = e.skillIds.some(s => {
+            const skill = state.skills.find(sk => sk.id === s);
+            return ['Qur\'an', 'Arabic', 'Dhikr', 'Salah', 'Tahajjud'].some(k => 
+              skill?.name?.toLowerCase().includes(k.toLowerCase())
+            );
+          });
+          if (isFaith) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += pts;
+          }
+        });
       }
 
-      // Base level is what is in state, we add the earned levels
-      const baseLevel = attr.level;
-      const extraLevels = Math.floor(relatedCount / divider);
-      const level = baseLevel + extraLevels;
-      const progress = Math.round(((relatedCount % divider) / divider) * 100);
+      const calculated = calculateAttributeProgression(totalPoints, baseCost, growth);
+      const baseLevel = attr.level || 1;
+      const extraLevels = calculated.earnedBonus;
+      const totalLevel = baseLevel + extraLevels;
 
       return {
         ...attr,
         baseLevel,
         earnedBonus: extraLevels,
-        total: level,
-        level,
-        progress
+        total: totalLevel,
+        level: totalLevel,
+        progress: calculated.progress,
+        pointsIntoLevel: calculated.pointsIntoLevel,
+        pointsRequiredForNextLevel: calculated.pointsRequiredForNextLevel,
+        totalPoints: calculated.totalPoints,
+        resetAt: attr.resetAt
       };
     });
   };
@@ -3257,10 +3385,36 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Adjust base level of Attribute
   const updateAttributeBase = (id: string, level: number) => {
+    const safeLevel = Math.max(1, Math.min(100, Math.round(level) || 1));
     setState(prev => ({
       ...prev,
-      attributes: prev.attributes.map(a => a.id === id ? { ...a, level } : a)
+      attributes: prev.attributes.map(a => a.id === id ? { ...a, level: safeLevel } : a)
     }));
+  };
+
+  // Restart an individual attribute back to Level 1
+  const restartAttribute = (id: string) => {
+    const now = new Date().toISOString();
+    const target = state.attributes.find(a => a.id === id);
+    setState(prev => ({
+      ...prev,
+      attributes: prev.attributes.map(a => a.id === id ? {
+        ...a,
+        level: 1,
+        progress: 0,
+        resetAt: now,
+        pointsIntoLevel: 0,
+        pointsRequiredForNextLevel: 14,
+        totalPoints: 0
+      } : a)
+    }));
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'alert',
+      title: `${target?.name || 'Attribute'} Recalibrated`,
+      content: `${target?.name || 'Attribute'} has been restarted to Level 1 (0% progress). Progression curve recalibrated.`,
+      priority: 'medium'
+    });
   };
 
   // Reward Shop & Coins Operations
@@ -3773,10 +3927,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetBaselineAttributes = () => {
+    const now = new Date().toISOString();
     setState(prev => ({
       ...prev,
-      attributes: prev.attributes.map(a => ({ ...a, level: 1, progress: 0 }))
+      attributesResetAt: now,
+      attributes: prev.attributes.map(a => ({
+        ...a,
+        level: 1,
+        progress: 0,
+        resetAt: now,
+        pointsIntoLevel: 0,
+        pointsRequiredForNextLevel: 14,
+        totalPoints: 0
+      }))
     }));
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'alert',
+      title: 'All Attributes Restarted',
+      content: 'All core attributes have been restarted to Level 1 (0% progress). Progression curve recalibrated.',
+      priority: 'high'
+    });
   };
 
   // Export / Import JSON representation
@@ -6567,6 +6738,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       clearAllSkills,
       equipSkillTitle,
       updateAttributeBase,
+      restartAttribute,
       addXp,
       toggleRecoveryMode,
       updateProfileFocus,

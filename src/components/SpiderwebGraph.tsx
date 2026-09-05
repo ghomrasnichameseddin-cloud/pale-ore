@@ -46,7 +46,7 @@ interface SpiderwebGraphProps {
 }
 
 export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false, onSelectEntity }) => {
-  const { state, getGoalProgress, getProjectProgress, getSkillXpAndLevel } = usePOS();
+  const { state, getGoalProgress, getProjectProgress, getSkillXpAndLevel, getAttributes } = usePOS();
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -118,7 +118,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     nMap.set(coreNode.id, coreNode);
 
     // 1B. ATTRIBUTES (Ring 1 - Inner Radial Ring)
-    const attrs = state.attributes || [];
+    const attrs = getAttributes();
     attrs.forEach((attr, idx) => {
       const angle = (idx / Math.max(attrs.length, 1)) * 2 * Math.PI - Math.PI / 2;
       const r = ringRadii[1];

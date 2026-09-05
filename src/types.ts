@@ -150,6 +150,10 @@ export interface Attribute {
   baseLevel?: number;
   earnedBonus?: number;
   total?: number;
+  resetAt?: string;
+  pointsIntoLevel?: number;
+  pointsRequiredForNextLevel?: number;
+  totalPoints?: number;
 }
 
 export interface UserProfile {
@@ -611,6 +615,7 @@ export interface POSState {
   lists: QuestList[];
   skills: Skill[];
   attributes: Attribute[];
+  attributesResetAt?: string;
   shopItems?: ShopItem[];
   inventory?: RedeemedReward[];
   profile: UserProfile;
