@@ -27,11 +27,13 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet,
+  Hourglass
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ActiveRestOverlay } from './components/ActiveRestOverlay';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history' | 'time_ledger';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -115,6 +117,7 @@ function AppContent() {
         { id: 'appearance', label: 'Visual Codex (Appearance)', icon: Palette, desc: 'Themes, ornamentation, glow & interface density' },
         { id: 'analytics', label: 'Resonance Analytics', icon: BarChart3, desc: 'Empirical analytics, XP trends & consistency' },
         { id: 'xp_history', label: 'XP Ledger & Audit', icon: FileSpreadsheet, desc: 'Complete historical ledger of all gains, losses & sources' },
+        { id: 'time_ledger', label: 'Temporal Ledger & Rest', icon: Hourglass, desc: 'Audit trail of temporal capital minted, invested & expended' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
         { id: 'system', label: 'Sanctum Engine & Backups', icon: Settings, desc: 'Data export, JSON restore & system maintenance' },
       ]
@@ -691,9 +694,9 @@ function AppContent() {
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'shop' && <RewardShopView />}
-              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history') && (
+              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history' || activeTab === 'time_ledger') && (
                 <OracleSystemView 
-                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : activeTab === 'xp_history' ? 'xp_history' : 'analytics'}
+                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : activeTab === 'xp_history' ? 'xp_history' : activeTab === 'time_ledger' ? 'time_ledger' : 'analytics'}
                   onNavigate={(tab) => setActiveTab(tab as TabId)}
                 />
               )}
@@ -829,6 +832,9 @@ function AppContent() {
         isOpenModal={isFocusModalOpen} 
         onCloseModal={() => setIsFocusModalOpen(false)} 
       />
+
+      {/* ACTIVE REST TIMER OVERLAY */}
+      <ActiveRestOverlay />
 
       {/* GLOBAL SYSTEM INBOX MODAL OVERLAY */}
       <AnimatePresence>

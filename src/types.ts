@@ -160,6 +160,12 @@ export interface UserProfile {
   level: number;
   xp: number;
   coins: number;
+  timeCredits?: number; // Temporal Leisure Balance in minutes (earned rest currency)
+  dailyWakingHours?: number; // Configurable daily waking capital in hours (default 16)
+  timeDebt?: number; // Temporal deficit / penalty in minutes
+  totalTimeInvested?: number; // All-time focus & quest minutes completed
+  totalTimeEarned?: number; // All-time leisure minutes minted
+  totalTimeSpent?: number; // All-time leisure minutes redeemed
   momentum: number; // 0 to 100 based on recent completions
   recoveryMode: boolean;
   currentFocus: string;
@@ -261,13 +267,14 @@ export interface PlanningDocument {
   updatedAt: string;
 }
 
-export type ShopItemCategory = 'Real Life Reward' | 'System Perk' | 'Custom Personal';
+export type ShopItemCategory = 'Real Life Reward' | 'System Perk' | 'Custom Personal' | 'Temporal Leisure';
 
 export interface ShopItem {
   id: string;
   name: string;
   description: string;
   costCoins: number;
+  costTimeMinutes?: number; // Time currency cost in minutes of earned leisure
   category: ShopItemCategory;
   icon: string;
   effectType?: 'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE';
@@ -281,11 +288,51 @@ export interface RedeemedReward {
   itemId: string;
   itemName: string;
   costCoins: number;
+  costTimeMinutes?: number;
   category: ShopItemCategory;
   icon: string;
   redeemedAt: string; // ISO date/time
   status: 'Available' | 'Used';
   usedAt?: string | null;
+}
+
+export type TimeTransactionType = 
+  | 'focus_mint'          // Minted from completed focus session
+  | 'quest_dividend'      // Efficiency dividend or completion reward
+  | 'ritual_reward'       // Prayer / Quran / Sacred act reward
+  | 'leisure_redemption'  // Spent on leisure voucher or active rest
+  | 'time_debt_penalty'   // Deducted / debt incurred from lapse
+  | 'manual_adjustment';  // Operator calibrated
+
+export interface TimeTransaction {
+  id: string;
+  type: TimeTransactionType;
+  minutes: number; // positive for earned/minted, negative for spent/debt
+  reason: string;
+  timestamp: string; // ISO string
+  balanceAfter: number;
+  relatedId?: string; // questId or itemId
+}
+
+export interface TemporalCapitalInfo {
+  dailyWakingMinutes: number; // e.g. 16 * 60 = 960m
+  investedMinutesToday: number; // actual focus and completed work today
+  committedMinutesToday: number; // estimated time of remaining active quests today
+  uncommittedMinutes: number; // remaining free waking capital
+  leisureMinutesBalance: number; // bank of earned rest minutes
+  timeDebt: number; // deficit minutes
+  isOverdrawn: boolean; // true if committed + invested > waking budget
+  overdraftMinutes: number;
+  utilizationPercent: number; // (invested + committed) / dailyWakingMinutes * 100
+}
+
+export interface ActiveRestSession {
+  id: string;
+  title: string;
+  totalMinutes: number;
+  remainingSeconds: number;
+  startedAt: string;
+  paused?: boolean;
 }
 
 export interface BatterySettings {
@@ -637,6 +684,8 @@ export interface POSState {
   inventory?: RedeemedReward[];
   profile: UserProfile;
   xpHistory: XPHistoryEntry[];
+  timeHistory?: TimeTransaction[];
+  activeRestSession?: ActiveRestSession | null;
   systemDate: string; // format YYYY-MM-DD
   planningDocuments: PlanningDocument[];
   customJobs?: JobSpec[];

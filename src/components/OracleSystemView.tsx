@@ -3,16 +3,17 @@ import { usePOS } from '../POSContext';
 import { SystemMessageBox } from './SystemMessageBox';
 import { VisualCodexSettingsView } from './VisualCodexSettingsView';
 import { XPHistoryLedger } from './XPHistoryLedger';
+import { TemporalLedgerView } from './TemporalLedgerView';
 import { 
   BarChart3, Settings, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, Clock, ShieldCheck, Zap, Network, Download, Upload, 
   RotateCcw, AlertTriangle, Check, ShieldAlert, Cpu, CheckCircle2,
   Inbox, Percent, Sparkles, RefreshCw, ChevronRight, Layers, Palette,
-  FileSpreadsheet
+  FileSpreadsheet, Hourglass
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
-export type OracleSystemSubTab = 'appearance' | 'analytics' | 'xp_history' | 'system' | 'messages';
+export type OracleSystemSubTab = 'appearance' | 'analytics' | 'xp_history' | 'time_ledger' | 'system' | 'messages';
 
 interface OracleSystemViewProps {
   initialSubTab?: OracleSystemSubTab;
@@ -168,6 +169,22 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
             <span>XP LEDGER & AUDIT</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
               {(state.xpHistory || []).length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('time_ledger')}
+            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
+              activeSubTab === 'time_ledger'
+                ? 'bg-gradient-to-r from-emerald-500/25 via-[#141824] to-[#0b0d13] text-emerald-300 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
+            }`}
+            id="oracle-subtab-time-ledger"
+          >
+            <Clock className={`h-4 w-4 ${activeSubTab === 'time_ledger' ? 'text-emerald-400' : 'text-zinc-500'}`} />
+            <span>TEMPORAL LEDGER</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+              {(state.timeHistory || []).length}
             </span>
           </button>
 
@@ -436,6 +453,11 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
       {/* 2. SYSTEM XP HISTORY & LEDGER SUBTAB */}
       {activeSubTab === 'xp_history' && (
         <XPHistoryLedger onNavigate={onNavigate} />
+      )}
+
+      {/* 2.5 TEMPORAL LEDGER & REST AUDIT SUBTAB */}
+      {activeSubTab === 'time_ledger' && (
+        <TemporalLedgerView onNavigate={onNavigate} />
       )}
 
       {/* 3. SANCTUM CORE & SACRED OVERRIDES SUBTAB */}

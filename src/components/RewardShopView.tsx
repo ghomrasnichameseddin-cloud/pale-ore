@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShoppingBag, Coins, Plus, Trash2, CheckCircle, ShieldAlert, Sparkles, 
   Coffee, Gamepad2, Utensils, Tv, BookOpen, Zap, Shield, Gift, Clock, Tag,
-  Pencil, RotateCcw, Edit3, Lock, Swords, Star
+  Pencil, RotateCcw, Edit3, Lock, Swords, Star, Hourglass, Moon, Play
 } from 'lucide-react';
 import { usePOS, isQuestArchived } from '../POSContext';
 import { ShopItem, ShopItemCategory, RedeemedReward } from '../types';
@@ -23,6 +23,8 @@ export const RewardShopView: React.FC = () => {
     clearVoucherHistory,
     clearAllVouchers,
     addCoins,
+    addTimeCredits,
+    startActiveRestSession,
     systemDate,
     isQuestFinishedForToday,
     isQuestScheduledForDate,
@@ -30,7 +32,7 @@ export const RewardShopView: React.FC = () => {
     isShopLocked
   } = usePOS();
 
-  const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'system-perks' | 'custom' | 'inventory'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'temporal' | 'system-perks' | 'custom' | 'inventory'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -39,6 +41,7 @@ export const RewardShopView: React.FC = () => {
   const [customName, setCustomName] = useState('');
   const [customDesc, setCustomDesc] = useState('');
   const [customCost, setCustomCost] = useState<number>(50);
+  const [customCostTime, setCustomCostTime] = useState<number>(0);
   const [customCategory, setCustomCategory] = useState<ShopItemCategory>('Real Life Reward');
   const [customIcon, setCustomIcon] = useState('🎁');
 
@@ -46,14 +49,16 @@ export const RewardShopView: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCost, setEditCost] = useState<number>(50);
+  const [editCostTime, setEditCostTime] = useState<number>(0);
   const [editCategory, setEditCategory] = useState<ShopItemCategory>('Real Life Reward');
   const [editIcon, setEditIcon] = useState('🎁');
   const [editEffectType, setEditEffectType] = useState<'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE'>('INVENTORY');
   const [editValue, setEditValue] = useState<number>(1);
 
-  const iconsList = ['🎁', '☕', '🍕', '🎮', '🍿', '📚', '🍦', '🍩', '🛍️', '✈️', '🎟️', '💆‍♂️', '🛡️', '⚡', '✨', '👑', '🚀', '💎', '🎨', '🎯'];
+  const iconsList = ['🎁', '☕', '🍕', '🎮', '🍿', '📚', '🍦', '🍩', '🛍️', '✈️', '🎟️', '💆‍♂️', '🛡️', '⚡', '✨', '👑', '🚀', '💎', '🎨', '🎯', '😴', '🌙'];
 
   const coins = state.profile.coins ?? 150;
+  const timeCredits = state.profile.timeCredits ?? 60;
   const focusShields = state.profile.focusShields ?? 0;
   const shopItems = state.shopItems && state.shopItems.length > 0 ? state.shopItems : DEFAULT_SHOP_ITEMS;
   const inventory = state.inventory || [];
@@ -105,8 +110,11 @@ export const RewardShopView: React.FC = () => {
     }
   };
 
-  const handleUseVoucher = (voucherId: string) => {
-    const res = useInventoryItem(voucherId);
+  const handleUseVoucher = (voucher: RedeemedReward) => {
+    if (voucher.category === 'Temporal Leisure' || (voucher.costTimeMinutes && voucher.costTimeMinutes > 0)) {
+      startActiveRestSession(voucher.itemName, voucher.costTimeMinutes || 25);
+    }
+    const res = useInventoryItem(voucher.id);
     if (res.success) {
       showToast(res.message, 'success');
     } else {
@@ -122,6 +130,7 @@ export const RewardShopView: React.FC = () => {
       name: customName,
       description: customDesc || 'Personal real-life custom reward.',
       costCoins: customCost,
+      costTimeMinutes: customCostTime > 0 ? customCostTime : undefined,
       category: customCategory,
       icon: customIcon,
       effectType: 'INVENTORY'
@@ -130,6 +139,7 @@ export const RewardShopView: React.FC = () => {
     setCustomName('');
     setCustomDesc('');
     setCustomCost(50);
+    setCustomCostTime(0);
     setIsAddModalOpen(false);
     showToast(`Created custom reward "${customName}"!`, 'success');
   };
@@ -179,6 +189,7 @@ export const RewardShopView: React.FC = () => {
 
   const filteredItems = shopItems.filter(item => {
     if (activeTab === 'real-life') return item.category === 'Real Life Reward';
+    if (activeTab === 'temporal') return item.category === 'Temporal Leisure' || (item.costTimeMinutes && item.costTimeMinutes > 0);
     if (activeTab === 'system-perks') return item.category === 'System Perk';
     if (activeTab === 'custom') return item.isCustom;
     return true;
@@ -242,27 +253,53 @@ export const RewardShopView: React.FC = () => {
             </p>
           </div>
 
-          {/* WALLET DISPLAY */}
-          <div className="flex items-center gap-3 bg-[#07080c]/90 border border-[#c5a059]/50 rounded-xl p-4 shadow-[0_0_20px_rgba(197,160,89,0.15)] shrink-0">
-            <div className="h-12 w-12 rounded-xl bg-[#3a2e12] border border-[#c5a059] flex items-center justify-center shrink-0 shadow-inner">
-              <Coins className="h-7 w-7 text-[#e5c875] animate-pulse" />
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-[#c5a059] uppercase font-bold tracking-wider flex items-center gap-1">
-                <RubElHizbIcon className="h-2 w-2" />
-                TREASURY BALANCE
+          {/* WALLET & TIME BANK DISPLAY */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* COIN TREASURY */}
+            <div className="flex items-center gap-3 bg-[#07080c]/90 border border-[#c5a059]/50 rounded-xl p-3.5 shadow-[0_0_20px_rgba(197,160,89,0.15)] shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-[#3a2e12] border border-[#c5a059] flex items-center justify-center shrink-0 shadow-inner">
+                <Coins className="h-5 w-5 text-[#e5c875] animate-pulse" />
               </div>
-              <div className="text-2xl font-mono font-extrabold text-[#fef08a] tracking-tight flex items-baseline gap-1">
-                {coins} <span className="text-xs font-sans text-[#c5a059] font-bold">DIRHAMS</span>
+              <div>
+                <div className="text-[9px] font-mono text-[#c5a059] uppercase font-bold tracking-wider flex items-center gap-1">
+                  <RubElHizbIcon className="h-2 w-2" />
+                  TREASURY
+                </div>
+                <div className="text-xl font-mono font-extrabold text-[#fef08a] tracking-tight flex items-baseline gap-1">
+                  {coins} <span className="text-[10px] font-sans text-[#c5a059] font-bold">DIRHAMS</span>
+                </div>
               </div>
+              <button
+                onClick={() => addCoins(50, 'Imperial stipend bonus added.')}
+                className="ml-1 text-[9px] font-mono text-[#c5a059] hover:text-[#fef08a] bg-[#3a2e12]/40 hover:bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] px-2 py-1 rounded transition cursor-pointer font-bold"
+                title="Add bonus (+50 Coins)"
+              >
+                +50 🪙
+              </button>
             </div>
-            <button
-              onClick={() => addCoins(50, 'Imperial stipend bonus added.')}
-              className="ml-2 text-[9px] font-mono text-[#c5a059] hover:text-[#fef08a] bg-[#3a2e12]/40 hover:bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] px-2.5 py-1.5 rounded-lg transition cursor-pointer font-bold"
-              title="Add bonus (+50 Coins)"
-            >
-              +50 🪙
-            </button>
+
+            {/* LEISURE BANK */}
+            <div className="flex items-center gap-3 bg-[#07080c]/90 border border-emerald-500/40 rounded-xl p-3.5 shadow-[0_0_20px_rgba(16,185,129,0.15)] shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-inner">
+                <Moon className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="text-[9px] font-mono text-emerald-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                  <Hourglass className="h-2 w-2" />
+                  REST BANK
+                </div>
+                <div className="text-xl font-mono font-extrabold text-emerald-300 tracking-tight flex items-baseline gap-1">
+                  {timeCredits} <span className="text-[10px] font-sans text-emerald-400 font-bold">MINS</span>
+                </div>
+              </div>
+              <button
+                onClick={() => addTimeCredits(30, 'Manual leisure credit grant')}
+                className="ml-1 text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded transition cursor-pointer font-bold"
+                title="Add bonus (+30m Rest)"
+              >
+                +30m ⏳
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -361,6 +398,17 @@ export const RewardShopView: React.FC = () => {
           >
             <ShoppingBag className="h-3.5 w-3.5 text-[#e5c875]" />
             ALL WARES ({shopItems.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('temporal')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'temporal'
+                ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                : 'bg-[#07080c] text-zinc-400 hover:text-white border border-white/5'
+            }`}
+          >
+            <Moon className="h-3.5 w-3.5 text-emerald-400" />
+            TEMPORAL REST ({shopItems.filter(i => i.category === 'Temporal Leisure' || (i.costTimeMinutes && i.costTimeMinutes > 0)).length})
           </button>
           <button
             onClick={() => setActiveTab('real-life')}
@@ -474,13 +522,29 @@ export const RewardShopView: React.FC = () => {
                     </div>
 
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-xs font-mono text-[#e5c875]">Cost: {v.costCoins} 🪙</span>
+                      <div className="text-xs font-mono">
+                        {v.costCoins > 0 && <span className="text-[#e5c875] mr-2">{v.costCoins} 🪙</span>}
+                        {v.costTimeMinutes && <span className="text-emerald-400 font-bold">{v.costTimeMinutes}m ⏳</span>}
+                      </div>
                       <button
-                        onClick={() => handleUseVoucher(v.id)}
-                        className="bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] hover:from-[#a38033] hover:to-[#a38033] text-[#07080c] font-black px-3.5 py-1.5 rounded-lg text-xs font-mono shadow-md transition flex items-center gap-1 cursor-pointer"
+                        onClick={() => handleUseVoucher(v)}
+                        className={`font-black px-3.5 py-1.5 rounded-lg text-xs font-mono shadow-md transition flex items-center gap-1.5 cursor-pointer ${
+                          v.category === 'Temporal Leisure' || v.costTimeMinutes
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-black'
+                            : 'bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] hover:from-[#a38033] hover:to-[#a38033] text-[#07080c]'
+                        }`}
                       >
-                        <CheckCircle className="h-3.5 w-3.5 stroke-[3]" />
-                        REDEEM NOW
+                        {v.category === 'Temporal Leisure' || v.costTimeMinutes ? (
+                          <>
+                            <Play className="h-3 w-3 fill-current" />
+                            <span>LAUNCH REST</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-3.5 w-3.5 stroke-[3]" />
+                            <span>REDEEM NOW</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -531,32 +595,47 @@ export const RewardShopView: React.FC = () => {
         /* SHOP CATALOG GRID */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredItems.map(item => {
-            const canAfford = coins >= item.costCoins;
-            const progress = Math.min(100, Math.round((coins / item.costCoins) * 100));
+            const hasCoinCost = item.costCoins > 0;
+            const hasTimeCost = (item.costTimeMinutes || 0) > 0;
+            const canAffordCoins = !hasCoinCost || coins >= item.costCoins;
+            const canAffordTime = !hasTimeCost || timeCredits >= (item.costTimeMinutes || 0);
+            const canAfford = canAffordCoins && canAffordTime;
+
+            const isTemporal = item.category === 'Temporal Leisure' || hasTimeCost;
 
             return (
               <div
                 key={item.id}
                 className={`glass-panel border rounded-2xl p-5 flex flex-col justify-between gap-4 transition duration-200 relative overflow-hidden ${
                   canAfford 
-                    ? 'border-[#c5a059]/40 hover:border-[#c5a059] shadow-[0_0_20px_rgba(197,160,89,0.1)] bg-[#0b0d13]/90' 
+                    ? isTemporal
+                      ? 'border-emerald-500/40 hover:border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.1)] bg-[#0b1013]/90'
+                      : 'border-[#c5a059]/40 hover:border-[#c5a059] shadow-[0_0_20px_rgba(197,160,89,0.1)] bg-[#0b0d13]/90' 
                     : 'border-white/5 bg-[#07080c]/60 opacity-80'
                 }`}
               >
                 {canAfford && (
-                  <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
+                  <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color={isTemporal ? '#10b981' : '#c5a059'} />
                 )}
 
                 {/* TOP HEADER */}
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-xl bg-[#3a2e12]/80 border border-[#c5a059]/40 flex items-center justify-center text-2xl shrink-0 shadow-inner">
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-inner border ${
+                        isTemporal
+                          ? 'bg-emerald-500/20 border-emerald-500/40'
+                          : 'bg-[#3a2e12]/80 border-[#c5a059]/40'
+                      }`}>
                         {item.icon}
                       </div>
                       <div>
                         <h3 className="font-bold text-white text-base font-display leading-snug">{item.name}</h3>
-                        <span className="text-[9.5px] font-mono text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/40 px-2 py-0.5 rounded font-semibold inline-block mt-0.5">
+                        <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded font-semibold inline-block mt-0.5 border ${
+                          isTemporal
+                            ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30'
+                            : 'text-[#fef08a] bg-[#3a2e12] border-[#c5a059]/40'
+                        }`}>
                           {item.category}
                         </span>
                       </div>
@@ -586,42 +665,45 @@ export const RewardShopView: React.FC = () => {
                 </div>
 
                 {/* BOTTOM PRICE & ACTION */}
-                <div className="space-y-2 pt-3 border-t border-[#c5a059]/15">
+                <div className="space-y-2 pt-3 border-t border-white/10">
                   <div className="flex items-center justify-between font-mono">
-                    <div className="text-xs text-zinc-400">Price:</div>
-                    <div className="text-base font-bold text-[#fef08a] flex items-center gap-1">
-                      <Coins className="h-4 w-4 text-[#e5c875]" />
-                      {item.costCoins} COINS
+                    <div className="text-xs text-zinc-400">Tribute Required:</div>
+                    <div className="flex items-center gap-2">
+                      {hasCoinCost && (
+                        <span className="text-sm font-bold text-[#fef08a] flex items-center gap-1">
+                          <Coins className="h-3.5 w-3.5 text-[#e5c875]" />
+                          {item.costCoins}
+                        </span>
+                      )}
+                      {hasTimeCost && (
+                        <span className="text-sm font-bold text-emerald-300 flex items-center gap-1">
+                          <Hourglass className="h-3.5 w-3.5 text-emerald-400" />
+                          {item.costTimeMinutes}m
+                        </span>
+                      )}
+                      {!hasCoinCost && !hasTimeCost && (
+                        <span className="text-xs font-bold text-emerald-400">FREE</span>
+                      )}
                     </div>
                   </div>
-
-                  {/* PROGRESS TO AFFORD IF NOT ENOUGH COINS */}
-                  {!canAfford && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                        <span>Savings Progress</span>
-                        <span>{coins} / {item.costCoins} 🪙 ({progress}%)</span>
-                      </div>
-                      <div className="w-full bg-[#07080c] h-1.5 rounded-full overflow-hidden border border-white/5">
-                        <div 
-                          className="rpg-progress-gold h-full transition-all duration-300"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   <button
                     onClick={() => handleBuy(item.id)}
                     disabled={!canAfford}
                     className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold transition flex items-center justify-center gap-2 ${
                       canAfford
-                        ? 'bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] hover:from-[#a38033] hover:to-[#a38033] text-[#07080c] font-black shadow-[0_0_15px_rgba(197,160,89,0.25)] cursor-pointer'
+                        ? isTemporal
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)] cursor-pointer'
+                          : 'bg-gradient-to-r from-[#8a6d2b] via-[#c5a059] to-[#8a6d2b] hover:from-[#a38033] hover:to-[#a38033] text-[#07080c] font-black shadow-[0_0_15px_rgba(197,160,89,0.25)] cursor-pointer'
                         : 'bg-[#07080c] text-zinc-500 cursor-not-allowed border border-white/5'
                     }`}
                   >
                     <ShoppingBag className="h-3.5 w-3.5 stroke-[2.5]" />
-                    {canAfford ? 'PURCHASE REWARD' : `NEED ${item.costCoins - coins} MORE COINS`}
+                    {canAfford 
+                      ? isTemporal ? 'CLAIM REST VOUCHER' : 'PURCHASE REWARD'
+                      : !canAffordCoins 
+                        ? `NEED ${item.costCoins - coins} MORE COINS` 
+                        : `NEED ${(item.costTimeMinutes || 0) - timeCredits}m REST BANK`}
                   </button>
                 </div>
               </div>

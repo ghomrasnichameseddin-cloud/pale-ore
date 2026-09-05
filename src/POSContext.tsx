@@ -9,7 +9,8 @@ import {
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget,
-  NotificationSettings
+  NotificationSettings,
+  TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession
 } from './types';
 import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
@@ -135,6 +136,17 @@ interface POSContextType {
   
   // XP Actions
   addXp: (amount: number, reason?: string, skillIds?: string[]) => void;
+  
+  // Temporal Currency & Leisure Bank
+  addTimeCredits: (minutes: number, reason: string, type?: TimeTransactionType, relatedId?: string) => void;
+  spendTimeCredits: (minutes: number, reason: string, relatedId?: string) => { success: boolean; message: string };
+  setDailyWakingHours: (hours: number) => void;
+  repayTimeDebt: (minutes: number) => void;
+  getTemporalCapitalInfo: () => TemporalCapitalInfo;
+  startActiveRestSession: (title: string, minutes: number) => void;
+  stopActiveRestSession: () => void;
+  pauseActiveRestSession: () => void;
+  resumeActiveRestSession: () => void;
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -1132,16 +1144,34 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
         const level = calculatePlayerLevel(totalXp);
 
+        // Mint Earned Leisure Credits (1m leisure per 4m focus, minimum 3m)
+        const earnedLeisure = Math.max(3, Math.round(cycleMinutes * 0.25));
+        const currentCredits = prev.profile.timeCredits ?? 60;
+        const newCredits = currentCredits + earnedLeisure;
+        const timeTx: TimeTransaction = {
+          id: `time-focus-${Date.now()}`,
+          type: 'focus_mint',
+          minutes: earnedLeisure,
+          reason: `Focus Harvest: ${cycleMinutes}m Deep Work on "${activeFocusSession.questName}"`,
+          timestamp: getSystemTimestamp(todayStr),
+          balanceAfter: newCredits,
+          relatedId: activeFocusSession.questId || undefined
+        };
+
         return {
           ...prev,
           xpHistory: updatedHistory,
+          timeHistory: [timeTx, ...(prev.timeHistory || [])],
           profile: {
             ...prev.profile,
             focusMinutesToday: prevMinutes + cycleMinutes,
             focusStreak: newStreak,
             lastFocusDate: todayStr,
             xp: totalXp,
-            level
+            level,
+            timeCredits: newCredits,
+            totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedLeisure,
+            totalTimeInvested: (prev.profile.totalTimeInvested || 0) + cycleMinutes
           }
         };
       });
@@ -2616,6 +2646,25 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const perkCoinMult = getCoinMultiplier(activeJob);
     const totalCoinsEarned = Math.round((baseCoinsEarned + streakCoinBonus) * perkCoinMult);
 
+    // Calculate Earned Time Credits (Leisure dividend from quest completion)
+    const earnedTimeCredits = isRecurringOrHabit ? 4
+      : questToComplete.difficulty === 'Boss' ? 30
+      : questToComplete.difficulty === 'Hard' ? 15
+      : questToComplete.difficulty === 'Easy' ? 4
+      : 8;
+
+    const currentLeisure = state.profile.timeCredits ?? 60;
+    const newLeisureBalance = currentLeisure + earnedTimeCredits;
+    const questTimeTx: TimeTransaction = {
+      id: `time-quest-${Date.now()}`,
+      type: 'quest_dividend',
+      minutes: earnedTimeCredits,
+      reason: `Quest Dividend: "${questToComplete.name}" (${questToComplete.difficulty || 'Normal'})`,
+      timestamp: completedTimestamp,
+      balanceAfter: newLeisureBalance,
+      relatedId: questToComplete.id
+    };
+
     setState(prev => {
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
@@ -2720,12 +2769,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quests: updatedQuests,
         skills: updatedSkills,
         xpHistory: updatedHistory,
+        timeHistory: [questTimeTx, ...(prev.timeHistory || [])],
         muhasabahEntries: updatedMuhasabahEntries,
         profile: {
           ...prev.profile,
           xp: totalXp,
           level,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
+          timeCredits: newLeisureBalance,
+          totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedTimeCredits,
           hp: Math.min(prev.profile.maxHp ?? 100, (prev.profile.hp ?? 100) + (isKaffarahQuest ? 35 : 2)),
           maxHp: prev.profile.maxHp ?? 100,
           momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
@@ -3464,10 +3516,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const currentCoins = state.profile.coins ?? 150;
-    if (currentCoins < item.costCoins) {
+    const currentTimeCredits = state.profile.timeCredits ?? 60;
+
+    if (item.costCoins > 0 && currentCoins < item.costCoins) {
       return {
         success: false,
         message: `Insufficient Coins! You have ${currentCoins} 🪙, but "${item.name}" costs ${item.costCoins} 🪙.`
+      };
+    }
+
+    if (item.costTimeMinutes && item.costTimeMinutes > 0 && currentTimeCredits < item.costTimeMinutes) {
+      return {
+        success: false,
+        message: `Insufficient Time Credits! You have ${currentTimeCredits}m leisure bank, but "${item.name}" costs ${item.costTimeMinutes}m of earned rest.`
       };
     }
 
@@ -3479,6 +3540,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       itemId: item.id,
       itemName: item.name,
       costCoins: item.costCoins,
+      costTimeMinutes: item.costTimeMinutes,
       category: item.category,
       icon: item.icon,
       redeemedAt: timestamp,
@@ -3489,8 +3551,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let xpSurgeHistoryEntry: XPHistoryEntry | null = null;
 
     setState(prev => {
-      const remainingCoins = (prev.profile.coins ?? 150) - item.costCoins;
-      let updatedProfile = { ...prev.profile, coins: remainingCoins };
+      const remainingCoins = (prev.profile.coins ?? 150) - (item.costCoins || 0);
+      const timeSpent = item.costTimeMinutes || 0;
+      const remainingTimeCredits = Math.max(0, (prev.profile.timeCredits ?? 60) - timeSpent);
+
+      let updatedProfile = { 
+        ...prev.profile, 
+        coins: remainingCoins,
+        timeCredits: remainingTimeCredits,
+        totalTimeSpent: (prev.profile.totalTimeSpent || 0) + timeSpent
+      };
+
+      let timeTx: TimeTransaction | null = null;
+      if (timeSpent > 0) {
+        timeTx = {
+          id: `time-spend-${Date.now()}`,
+          type: 'leisure_redemption',
+          minutes: -timeSpent,
+          reason: `Leisure Voucher: "${item.name}"`,
+          timestamp,
+          balanceAfter: remainingTimeCredits,
+          relatedId: item.id
+        };
+      }
 
       // Apply instant perk effects
       if (item.effectType === 'PERK_FOCUS_SHIELD') {
@@ -3521,6 +3604,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         profile: updatedProfile,
         xpHistory: updatedHistory,
+        timeHistory: timeTx ? [timeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
         inventory: [newReward, ...(prev.inventory || [])]
       };
     });
@@ -4109,6 +4193,242 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       xpHistory: [entry, ...(prev.xpHistory || [])]
     }));
   };
+
+  // --- TEMPORAL CURRENCY & CAPITAL ALLOCATION ENGINE ---
+  const addTimeCredits = (minutes: number, reason: string, type: TimeTransactionType = 'manual_adjustment', relatedId?: string) => {
+    setState(prev => {
+      const current = prev.profile.timeCredits ?? 60;
+      const newBal = current + minutes;
+      const tx: TimeTransaction = {
+        id: `time-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        type,
+        minutes,
+        reason,
+        timestamp: getSystemTimestamp(prev.systemDate),
+        balanceAfter: newBal,
+        relatedId
+      };
+      return {
+        ...prev,
+        timeHistory: [tx, ...(prev.timeHistory || [])],
+        profile: {
+          ...prev.profile,
+          timeCredits: newBal,
+          totalTimeEarned: minutes > 0 ? (prev.profile.totalTimeEarned || 0) + minutes : (prev.profile.totalTimeEarned || 0)
+        }
+      };
+    });
+  };
+
+  const spendTimeCredits = (minutes: number, reason: string, relatedId?: string): { success: boolean; message: string } => {
+    const current = state.profile.timeCredits ?? 60;
+    if (current < minutes) {
+      return {
+        success: false,
+        message: `Insufficient Time Credits! You have ${current}m leisure bank, but this requires ${minutes}m.`
+      };
+    }
+
+    setState(prev => {
+      const curr = prev.profile.timeCredits ?? 60;
+      const newBal = Math.max(0, curr - minutes);
+      const tx: TimeTransaction = {
+        id: `time-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        type: 'leisure_redemption',
+        minutes: -minutes,
+        reason,
+        timestamp: getSystemTimestamp(prev.systemDate),
+        balanceAfter: newBal,
+        relatedId
+      };
+      return {
+        ...prev,
+        timeHistory: [tx, ...(prev.timeHistory || [])],
+        profile: {
+          ...prev.profile,
+          timeCredits: newBal,
+          totalTimeSpent: (prev.profile.totalTimeSpent || 0) + minutes
+        }
+      };
+    });
+
+    return { success: true, message: `Redeemed ${minutes}m of earned leisure.` };
+  };
+
+  const setDailyWakingHours = (hours: number) => {
+    const clamped = Math.max(8, Math.min(20, hours));
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        dailyWakingHours: clamped
+      }
+    }));
+  };
+
+  const repayTimeDebt = (minutes: number) => {
+    setState(prev => {
+      const currDebt = prev.profile.timeDebt || 0;
+      const repaid = Math.min(currDebt, minutes);
+      const newDebt = Math.max(0, currDebt - repaid);
+      const tx: TimeTransaction = {
+        id: `time-repay-${Date.now()}`,
+        type: 'manual_adjustment',
+        minutes: repaid,
+        reason: `Temporal Debt Repayment via focus/remedy`,
+        timestamp: getSystemTimestamp(prev.systemDate),
+        balanceAfter: prev.profile.timeCredits ?? 60
+      };
+      return {
+        ...prev,
+        timeHistory: [tx, ...(prev.timeHistory || [])],
+        profile: {
+          ...prev.profile,
+          timeDebt: newDebt
+        }
+      };
+    });
+  };
+
+  const getTemporalCapitalInfo = (): TemporalCapitalInfo => {
+    const wakingHours = state.profile.dailyWakingHours || 16;
+    const dailyWakingMinutes = wakingHours * 60;
+    const todayStr = state.systemDate;
+
+    // Invested minutes today: focus time + actual time on quests completed today
+    const focusMinutesToday = state.profile.focusMinutesToday || 0;
+    const completedQuestsToday = (state.quests || []).filter(q => q.lastCompletedDate === todayStr || (q.status === 'Completed' && q.completedAt?.startsWith(todayStr)));
+    const questMinutesToday = completedQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 15), 0);
+    const investedMinutesToday = Math.max(focusMinutesToday, questMinutesToday);
+
+    // Committed minutes today: active quests scheduled for today
+    const activeQuestsToday = (state.quests || []).filter(q => {
+      if (q.status !== 'Active') return false;
+      if (q.lastCompletedDate === todayStr) return false;
+      return isQuestScheduledForDate(q, todayStr);
+    });
+    const committedMinutesToday = activeQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 30), 0);
+
+    const totalAllocated = investedMinutesToday + committedMinutesToday;
+    const uncommittedMinutes = Math.max(0, dailyWakingMinutes - totalAllocated);
+    const isOverdrawn = totalAllocated > dailyWakingMinutes;
+    const overdraftMinutes = Math.max(0, totalAllocated - dailyWakingMinutes);
+    const utilizationPercent = Math.min(150, Math.round((totalAllocated / dailyWakingMinutes) * 100));
+
+    return {
+      dailyWakingMinutes,
+      investedMinutesToday,
+      committedMinutesToday,
+      uncommittedMinutes,
+      leisureMinutesBalance: state.profile.timeCredits ?? 60,
+      timeDebt: state.profile.timeDebt || 0,
+      isOverdrawn,
+      overdraftMinutes,
+      utilizationPercent
+    };
+  };
+
+  const startActiveRestSession = (title: string, minutes: number) => {
+    const res = spendTimeCredits(minutes, `Active Rest Block: "${title}"`);
+    if (!res.success) {
+      addSystemMessage({
+        sender: 'SANCTUM_GUARDIAN',
+        category: 'alert',
+        title: 'Insufficient Leisure Currency',
+        content: res.message,
+        priority: 'high'
+      });
+      return;
+    }
+
+    const session: ActiveRestSession = {
+      id: `rest-${Date.now()}`,
+      title,
+      totalMinutes: minutes,
+      remainingSeconds: minutes * 60,
+      startedAt: new Date().toISOString(),
+      paused: false
+    };
+
+    setState(prev => ({
+      ...prev,
+      activeRestSession: session
+    }));
+
+    addSystemMessage({
+      sender: 'SANCTUM_GUARDIAN',
+      category: 'achievement',
+      title: '🌿 Active Rest Initiated',
+      content: `Started ${minutes}m guilt-free rest block: "${title}". Rest with peaceful intentionality.`,
+      priority: 'low'
+    });
+  };
+
+  const stopActiveRestSession = () => {
+    setState(prev => ({
+      ...prev,
+      activeRestSession: null
+    }));
+  };
+
+  const pauseActiveRestSession = () => {
+    setState(prev => {
+      if (!prev.activeRestSession) return prev;
+      return {
+        ...prev,
+        activeRestSession: {
+          ...prev.activeRestSession,
+          paused: true
+        }
+      };
+    });
+  };
+
+  const resumeActiveRestSession = () => {
+    setState(prev => {
+      if (!prev.activeRestSession) return prev;
+      return {
+        ...prev,
+        activeRestSession: {
+          ...prev.activeRestSession,
+          paused: false
+        }
+      };
+    });
+  };
+
+  // Active Rest Session Ticker
+  useEffect(() => {
+    if (!state.activeRestSession || state.activeRestSession.paused) return;
+
+    const interval = setInterval(() => {
+      setState(prev => {
+        if (!prev.activeRestSession || prev.activeRestSession.paused) return prev;
+        if (prev.activeRestSession.remainingSeconds <= 1) {
+          addSystemMessage({
+            sender: 'SANCTUM_GUARDIAN',
+            category: 'achievement',
+            title: '🌿 REST CYCLE CONCLUDED',
+            content: `Your ${prev.activeRestSession.totalMinutes}m earned rest session has concluded. Return to your sacred post with renewed vigor.`,
+            priority: 'high'
+          });
+          return {
+            ...prev,
+            activeRestSession: null
+          };
+        }
+        return {
+          ...prev,
+          activeRestSession: {
+            ...prev.activeRestSession,
+            remainingSeconds: prev.activeRestSession.remainingSeconds - 1
+          }
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [state.activeRestSession?.paused, state.activeRestSession?.id]);
 
   // Sync Visual Codex DOM attributes on mount and on changes
   useEffect(() => {
@@ -6740,6 +7060,15 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       updateAttributeBase,
       restartAttribute,
       addXp,
+      addTimeCredits,
+      spendTimeCredits,
+      setDailyWakingHours,
+      repayTimeDebt,
+      getTemporalCapitalInfo,
+      startActiveRestSession,
+      stopActiveRestSession,
+      pauseActiveRestSession,
+      resumeActiveRestSession,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,

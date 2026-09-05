@@ -67,7 +67,8 @@ export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
     name: 'Artisanal Coffee Pass',
     description: 'Redeem for 1 specialty coffee or matcha treat during a deep work session.',
     costCoins: 40,
-    category: 'Real Life Reward',
+    costTimeMinutes: 20,
+    category: 'Temporal Leisure',
     icon: '☕',
     effectType: 'INVENTORY',
     createdAt: new Date().toISOString()
@@ -77,8 +78,53 @@ export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
     name: '1-Hour Gaming Pass',
     description: '1 hour of guilt-free video game time after completing your daily directives.',
     costCoins: 75,
-    category: 'Real Life Reward',
+    costTimeMinutes: 60,
+    category: 'Temporal Leisure',
     icon: '🎮',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-episode-pass',
+    name: 'Streaming Episode Pass',
+    description: 'Guilt-free 45-minute episode of your favorite series or documentary.',
+    costCoins: 50,
+    costTimeMinutes: 45,
+    category: 'Temporal Leisure',
+    icon: '🍿',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-power-nap',
+    name: 'Sunnah Qaylulah (Power Nap)',
+    description: 'A 25-minute restorative midday sleep to revitalize soul and mental clarity.',
+    costCoins: 25,
+    costTimeMinutes: 25,
+    category: 'Temporal Leisure',
+    icon: '😴',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-social-pass',
+    name: 'Free Digital Browsing Pass',
+    description: '20 minutes of intentional, guilt-free social media or internet browsing.',
+    costCoins: 30,
+    costTimeMinutes: 20,
+    category: 'Temporal Leisure',
+    icon: '📱',
+    effectType: 'INVENTORY',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-fiction-reading',
+    name: 'Fiction / Leisure Reading',
+    description: '30 minutes immersed in leisurely storytelling or creative poetry.',
+    costCoins: 35,
+    costTimeMinutes: 30,
+    category: 'Temporal Leisure',
+    icon: '📖',
     effectType: 'INVENTORY',
     createdAt: new Date().toISOString()
   },
@@ -184,9 +230,26 @@ export const INITIAL_STATE: POSState = {
     equippedTitleId: 'title-novice-operator',
     focusShields: 0,
     hp: 100,
-    maxHp: 100
+    maxHp: 100,
+    timeCredits: 60, // 60 minutes starter earned leisure
+    dailyWakingHours: 16, // 16 waking hours = 960 minutes capital
+    timeDebt: 0,
+    totalTimeInvested: 0,
+    totalTimeEarned: 60,
+    totalTimeSpent: 0
   },
   xpHistory: [],
+  timeHistory: [
+    {
+      id: 'time-genesis',
+      type: 'manual_adjustment',
+      minutes: 60,
+      reason: 'Sanctum Genesis: Starter Temporal Leisure Capital',
+      timestamp: new Date().toISOString(),
+      balanceAfter: 60
+    }
+  ],
+  activeRestSession: null,
   systemDate: getLocalDateString(),
   planningDocuments: DEFAULT_PLANNING_DOCS,
   customJobs: [],

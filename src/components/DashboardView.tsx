@@ -7,7 +7,8 @@ import {
   ShieldAlert, Activity, ChevronRight, Check, Award, Compass,
   Sliders, Timer, Zap, Star, Coins, ShoppingBag, Plus, Search,
   Filter, Target, FolderKanban, Sparkles, TrendingUp, BarChart2,
-  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock, Scale
+  X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock, Scale,
+  Hourglass, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuestDifficulty, QuestType } from '../types';
@@ -15,6 +16,7 @@ import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 import { MuhasabahModal } from './MuhasabahModal';
 import { BossProgressionBanner } from './BossProgressionBanner';
+import { TemporalCapitalHud } from './TemporalCapitalHud';
 
 interface DashboardViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
@@ -521,7 +523,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               {/* Coins & Reward Shop Card */}
               <div 
                 onClick={() => onNavigate?.('shop')}
-                className="col-span-2 sm:col-span-2 lg:col-span-1 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
+                className="col-span-1 sm:col-span-1 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
               >
                 <div className="flex justify-between items-center text-[10px] font-mono text-[var(--accent-highlight)] uppercase font-bold">
                   <span>VAULT DINARS</span>
@@ -532,6 +534,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div className="text-[9px] font-mono text-[var(--accent-bright)] font-bold mt-1 flex items-center gap-1">
                   <span>OPEN VAULT</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </div>
+              </div>
+
+              {/* Leisure Bank Card */}
+              <div 
+                onClick={() => onNavigate?.('time_ledger')}
+                className="col-span-1 sm:col-span-1 bg-emerald-950/30 hover:bg-emerald-950/50 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
+                title="Click to view Temporal Capital & Audit Ledger"
+              >
+                <div className="flex justify-between items-center text-[10px] font-mono text-emerald-400 uppercase font-bold">
+                  <span>LEISURE BANK</span>
+                  <Hourglass className="h-3.5 w-3.5 text-emerald-400 group-hover:rotate-180 transition duration-500" />
+                </div>
+                <div className="text-xl sm:text-2xl font-mono font-extrabold text-emerald-300 mt-0.5">
+                  {state.profile.timeCredits ?? 60} <span className="text-xs font-sans text-emerald-400">MINS</span>
+                </div>
+                <div className="text-[9px] font-mono text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                  <span>TIME LEDGER</span>
                   <ArrowUpRight className="h-3 w-3" />
                 </div>
               </div>
@@ -551,6 +572,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   🔥 {state.profile.focusStreak || 0} Days
                 </span>
               </div>
+            </div>
+
+            {/* TEMPORAL CAPITAL & REST HUD */}
+            <div className="mt-4" id="dashboard-temporal-capital-hud">
+              <TemporalCapitalHud onNavigate={onNavigate} />
             </div>
 
             {/* MUHĀSABAH SELF-ACCOUNTABILITY WIDGET */}
