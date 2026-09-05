@@ -538,7 +538,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* FOCUS HUD & PERFORMANCE METRICS */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)] relative z-10">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle)] relative z-10">
               <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-2.5">
                 <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold block">FOCUS MINUTES TODAY</span>
                 <span className="text-sm font-mono font-bold text-white mt-1 flex items-center gap-1.5">
@@ -549,6 +549,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold block">FOCUS STREAK</span>
                 <span className="text-sm font-mono font-bold text-[var(--accent-bright)] mt-1 flex items-center gap-1.5">
                   🔥 {state.profile.focusStreak || 0} Days
+                </span>
+              </div>
+              <div className="col-span-2 lg:col-span-1 bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-mono text-rose-300 uppercase font-bold">SOUL VITALITY</span>
+                  <span className="text-[10px] font-mono font-bold text-rose-300">
+                    {muhasabahStats.currentHp}/{muhasabahStats.maxHp} HP
+                  </span>
+                </div>
+                <div className="h-1.5 mt-2 rounded-full bg-zinc-900 border border-rose-500/20 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"
+                    style={{ width: `${Math.min(100, Math.max(0, (muhasabahStats.currentHp / Math.max(1, muhasabahStats.maxHp)) * 100))}%` }}
+                  />
+                </div>
+                <span className="text-[9px] font-mono text-rose-300/80 mt-1 block">
+                  {muhasabahStats.todayLostHp > 0 ? `−${muhasabahStats.todayLostHp} HP today` : 'No HP loss today'}
                 </span>
               </div>
             </div>

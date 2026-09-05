@@ -198,6 +198,30 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
         </div>
       )}
 
+      {/* HP is an in-app recovery signal, not a hidden moral verdict. */}
+      {typeof currentHp === 'number' && typeof maxHp === 'number' && maxHp > 0 && (
+        <div className="mt-4 p-3.5 rounded-xl bg-[#0c0e14] border border-rose-500/25 relative z-10">
+          <div className="flex items-center justify-between gap-3 text-xs font-mono">
+            <span className="text-rose-300 font-bold flex items-center gap-1.5">
+              <Heart className="h-3.5 w-3.5" />
+              SOUL VITALITY / RECOVERY STATE
+            </span>
+            <span className="font-bold text-rose-300">
+              {currentHp} / {maxHp} HP
+            </span>
+          </div>
+          <div className="h-2 mt-2 rounded-full bg-zinc-900 border border-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.35)]"
+              style={{ width: `${Math.min(100, Math.max(0, (currentHp / maxHp) * 100))}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-zinc-500 font-mono mt-1.5">
+            {todayLostHp > 0 ? `Today: −${todayLostHp} HP. Complete restitution to recover.` : 'No HP loss today. HP is a recovery cue, not a judgment of faith.'}
+          </p>
+        </div>
+      )}
+
       {/* 3. THE SCALE VISUAL & STATS DOCK */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-center relative z-10">
         {/* Center: High-Fidelity SVG Balance Scale Graphic (Shows on top on mobile) */}

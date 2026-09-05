@@ -5362,13 +5362,14 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
         ...prev,
         savedWeeklySummaries: updatedSummaries,
         planningDocuments: updatedDocs,
-        muhasabahEntries: [] // Empty the ledger for the new week!
+        // Keep the full life ledger. Weekly summaries are snapshots, not a reset of accountability.
+        muhasabahEntries: prev.muhasabahEntries
       };
     });
 
     return {
       success: true,
-      message: `Weekly summary saved and archived. The slip ledger has been emptied for the new week!`
+      message: `Summary saved and archived. Your complete life Muhasabah ledger remains preserved.`
     };
   };
 

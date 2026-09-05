@@ -276,6 +276,20 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   );
 
   const activeWeaknesses = weaknesses.filter(w => w.status === 'Active');
+  const realmPatternSummary = useMemo(() => {
+    const realms: MuhasabahCategory[] = ['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'];
+    return realms.map(category => {
+      const realmEntries = entries.filter(entry => entry.category === category);
+      const latestEntry = [...realmEntries].sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date))[0];
+      const pattern = activeWeaknesses.find(weakness => weakness.category === category);
+      return {
+        category,
+        count: realmEntries.length,
+        pattern,
+        latestTitle: latestEntry?.title || 'No audit recorded'
+      };
+    });
+  }, [entries, activeWeaknesses]);
 
   const handleOpenAuditModal = (weaknessId?: string, cat?: MuhasabahCategory) => {
     setPrefillWeaknessId(weaknessId);
@@ -306,7 +320,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     const finalSummary: WeeklyMuhasabahSummary = {
       ...generatedSummary,
       summaryReflection: weeklyReflectionInput.trim() || generatedSummary.summaryReflection,
-      weeklyReflection: weeklyReflectionInput.trim() || 'Sincere intention renewed for the new week.'
+      weeklyReflection: weeklyReflectionInput.trim() || 'Sincere intention renewed; the life ledger remains open.'
     };
     const res = saveAndArchiveWeeklySummary(finalSummary);
     setSavedSummarySuccess(res.message);
@@ -322,7 +336,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       weeklyReflection: 'Sealed via Friday Jumu\'ah 1-Click Protocol. Sincere repentance renewed & clean slate activated.'
     };
     const res = saveAndArchiveWeeklySummary(finalSummary);
-    setSavedSummarySuccess(`Jumu'ah Seal Completed! Week judged ${sum.scoreOutOf10 !== undefined ? sum.scoreOutOf10.toFixed(1) : '10.0'}/10.0 [${sum.spiritualRating}]. Summary saved to Planning Documents & slip ledger purged for the fresh week.`);
+    setSavedSummarySuccess(`Jumu'ah review completed: ${sum.scoreOutOf10 !== undefined ? sum.scoreOutOf10.toFixed(1) : '10.0'}/10.0 [${sum.spiritualRating}]. Snapshot saved; the life ledger remains preserved.`);
     setTimeout(() => setSavedSummarySuccess(null), 7000);
   };
 
@@ -444,7 +458,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               <div>
                 <span className="font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
                   <RubElHizbIcon className="h-3.5 w-3.5 text-emerald-400" />
-                  Weekly Summary Archived & Ledger Reset
+                  Review Archived & Life Ledger Preserved
                 </span>
                 <p className="text-[11px] text-zinc-300 font-sans mt-0.5">{savedSummarySuccess}</p>
               </div>
@@ -527,7 +541,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
 
-      {/* 2. WEEKLY 10/10 SACRED AUDIT & REFINEMENT SCORECARD */}
+      {/* 2. LIFE MUHASABAH WITH WEEKLY REVIEW CADENCE */}
       {(() => {
         const b = liveWeeklySummary.weeklyScoreBreakdown;
         const currentScore = liveWeeklySummary.scoreOutOf10 ?? 10.0;
@@ -543,7 +557,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
                     <Scale className="h-3 w-3 text-[var(--accent-bright)]" />
-                    <span>تقييم ومحاسبة الأسبوع • WEEKLY SACRED AUDIT / 10</span>
+                    <span>محاسبة الحياة • LIFE MUHASABAH / 10</span>
                   </span>
                   <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
                     {liveWeeklySummary.startDate} → {liveWeeklySummary.endDate}
@@ -553,11 +567,18 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 <div className="flex flex-wrap items-baseline gap-3 pt-1">
                   <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                     <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
-                    <span>Weekly Spiritual Standing:</span>
+                    <span>Weekly Practice Snapshot:</span>
                   </h3>
                   <span className="text-sm font-bold text-[var(--accent-bright)] font-mono">
                     {b?.gradeAr} — <span className="text-zinc-300">{b?.gradeEn}</span>
                   </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-400">
+                  <span className="text-rose-300">LIFE LEDGER: {entries.length} audits</span>
+                  <span>•</span>
+                  <span className="text-amber-300">−{allLostXP} lifetime XP</span>
+                  <span>•</span>
+                  <span>Score = practice feedback, not divine judgment</span>
                 </div>
               </div>
 
@@ -565,8 +586,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                 <div className="flex items-center justify-between sm:justify-end gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
                   <div className="text-left sm:text-right">
-                    <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">WEEKLY JUDGMENT</span>
-                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">{isNearTen ? 'Full Mark (10/10)' : 'Refinement Target'}</span>
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">PRACTICE SNAPSHOT</span>
+                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">Not a spiritual verdict</span>
                   </div>
                   <div className="flex items-baseline gap-1 font-mono">
                     <span className={`text-2xl sm:text-3xl font-black ${
@@ -595,7 +616,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     type="button"
                     onClick={handleInstantFridaySealAndReset}
                     className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[var(--accent-primary)] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer truncate"
-                    title="Snapshot weekly 10/10 audit to Codex & reset slips ledger clean for the new week"
+                    title="Snapshot the current review to the Codex without deleting the life ledger"
                     id="one-click-friday-seal-btn"
                   >
                     <Check className="h-3.5 w-3.5 stroke-[2.5] shrink-0" />
@@ -918,7 +939,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             )}
           </div>
 
-          {/* RECURRING VULNERABILITIES & WEAKNESSES CARD */}
+          {/* RECURRING PATTERNS: USED ONLY TO PREVENT REPETITION */}
           <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
               <div className="flex items-center gap-2">
@@ -927,10 +948,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </div>
                 <div>
                   <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
-                    VULNERABILITIES & WEAKNESSES ({weaknesses.length})
+                    PATTERNS TO PREVENT RECURRENCE ({activeWeaknesses.length})
                   </h3>
                   <span className="text-[10px] font-mono text-zinc-400">
-                    Behavioral patterns & root triggers
+                    Link repeated slips to one trigger and one preventive action.
                   </span>
                 </div>
               </div>
@@ -943,9 +964,33 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               </button>
             </div>
 
-            {weaknesses.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+              {realmPatternSummary.map(realm => {
+                const catColor = CATEGORY_COLORS[realm.category] || CATEGORY_COLORS.Obligations;
+                const RealmIcon = catColor.icon;
+                return (
+                  <button
+                    key={realm.category}
+                    onClick={() => handleOpenAuditModal(realm.pattern?.id, realm.category)}
+                    className={`text-left p-2.5 rounded-lg border ${catColor.border} ${catColor.bg} hover:brightness-125 transition group`}
+                    title={`Audit ${realm.category} and address its latest trigger`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-mono font-bold uppercase flex items-center gap-1 ${catColor.text}`}>
+                        <RealmIcon className="h-3 w-3" /> {realm.category}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-300">{realm.count}</span>
+                    </div>
+                    <p className="text-[9px] text-zinc-400 mt-1 truncate">{realm.pattern ? `Trigger: ${realm.pattern.triggerCause}` : realm.latestTitle}</p>
+                    <span className="text-[9px] font-mono text-zinc-300 group-hover:text-white mt-1 block">{realm.pattern ? 'REVIEW PATTERN →' : 'LOG AUDIT →'}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {activeWeaknesses.length > 0 ? (
               <div className="space-y-3">
-                {weaknesses.map(weakness => {
+                {activeWeaknesses.map(weakness => {
                   const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
                   const isOvercome = weakness.status === 'Overcome';
 
@@ -1044,7 +1089,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             ) : (
               <div className="text-center py-5 px-3 rounded-xl bg-[#07090e] border border-white/5">
                 <p className="text-[11px] text-zinc-500 font-mono">
-                  No behavioral weaknesses recorded yet. Record recurring slips to track patterns and build self-discipline.
+                  No active pattern to resolve. A pattern is useful only when it changes the next action; isolated slips remain in the life ledger.
                 </p>
               </div>
             )}
@@ -1343,146 +1388,46 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               )}
             </AnimatePresence>
 
-            {/* ARRANGE / SORT & GROUP CONTROLS BAR */}
-            <div className="py-2.5 px-3 rounded-lg bg-[#07090e] border border-white/5 flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono">
-              {/* SORT CONTROLS */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                  <ArrowUpDown className="h-3 w-3 text-zinc-400" /> Sort:
-                </span>
-                <div className="flex items-center gap-1 bg-black/50 p-0.5 rounded border border-white/5">
-                  <button
-                    onClick={() => setSortField('time')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      sortField === 'time' ? 'bg-[#3a2e12] text-[#fef08a] font-bold border border-[#c5a059]/50' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Time
-                  </button>
-                  <button
-                    onClick={() => setSortField('severity')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      sortField === 'severity' ? 'bg-rose-950/80 text-rose-300 font-bold border border-rose-500/50' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Severity
-                  </button>
-                  <button
-                    onClick={() => setSortField('category')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      sortField === 'category' ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-500/50' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Category
-                  </button>
-                  <button
-                    onClick={() => setSortField('xp')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      sortField === 'xp' ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-500/50' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    XP Penalty
-                  </button>
-                </div>
-
-                <button
-                  onClick={toggleSortOrder}
-                  className="p-1 rounded bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 transition flex items-center gap-0.5 text-[10px]"
-                  title={sortOrder === 'desc' ? 'Descending (Highest/Newest first)' : 'Ascending (Lowest/Oldest first)'}
-                >
-                  {sortOrder === 'desc' ? <ArrowDown className="h-3 w-3 text-amber-400" /> : <ArrowUp className="h-3 w-3 text-cyan-400" />}
-                  <span>{sortOrder === 'desc' ? 'DESC' : 'ASC'}</span>
-                </button>
-              </div>
-
-              {/* GROUP BY CONTROLS */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                  <Layers className="h-3 w-3 text-zinc-400" /> Group:
-                </span>
-                <div className="flex items-center gap-1 bg-black/50 p-0.5 rounded border border-white/5">
-                  <button
-                    onClick={() => setGroupMode('none')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      groupMode === 'none' ? 'bg-zinc-800 text-zinc-200 font-bold' : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                  >
-                    Flat
-                  </button>
-                  <button
-                    onClick={() => setGroupMode('horizon')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      groupMode === 'horizon' ? 'bg-[#3a2e12] text-[#fef08a] font-bold border border-[#c5a059]/40' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                    title="Group by Today vs Earlier in Week"
-                  >
-                    Horizon
-                  </button>
-                  <button
-                    onClick={() => setGroupMode('category')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      groupMode === 'category' ? 'bg-amber-950/80 text-[#fef08a] font-bold border border-[#c5a059]/40' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Realm
-                  </button>
-                  <button
-                    onClick={() => setGroupMode('severity')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      groupMode === 'severity' ? 'bg-rose-950/80 text-rose-300 font-bold border border-rose-500/40' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Severity
-                  </button>
-                  <button
-                    onClick={() => setGroupMode('date')}
-                    className={`px-2 py-0.5 rounded text-[10px] transition ${
-                      groupMode === 'date' ? 'bg-cyan-950/80 text-cyan-300 font-bold border border-cyan-500/40' : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    Date
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* CATEGORY & SEVERITY FILTER CHIPS */}
-            <div className="space-y-2 py-1 border-b border-white/5">
-              {/* Category Realm Filter */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                <span className="text-[10px] font-mono text-zinc-500 shrink-0">Realm:</span>
-                {['ALL', 'Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'].map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className={`px-2.5 py-0.5 rounded-lg text-[10px] font-mono whitespace-nowrap transition ${
-                      categoryFilter === cat
-                        ? 'bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a] font-bold'
-                        : 'bg-white/5 border border-white/5 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-
-              {/* Severity Filter */}
-              <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
-                <span className="text-[10px] font-mono text-zinc-500 shrink-0">Severity:</span>
-                {['ALL', 'Critical', 'Severe', 'Major', 'Moderate', 'Minor'].map(sev => (
-                  <button
-                    key={sev}
-                    onClick={() => setSeverityFilter(sev)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono whitespace-nowrap transition ${
-                      severityFilter === sev
-                        ? 'bg-rose-950 border border-rose-500/60 text-rose-200 font-bold'
-                        : 'bg-white/5 border border-white/5 text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    {sev}
-                  </button>
-                ))}
-              </div>
+            {/* SIMPLE FILTER BAR */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 py-2.5 border-b border-white/5 text-[10px] font-mono">
+              <label className="flex items-center gap-2 bg-[#07090e] border border-white/10 rounded-lg px-2 py-1.5 text-zinc-400">
+                <span>Sort</span>
+                <select value={`${sortField}:${sortOrder}`} onChange={event => {
+                  const [field, order] = event.target.value.split(':') as [SortField, SortOrder];
+                  setSortField(field);
+                  setSortOrder(order);
+                }} className="min-w-0 flex-1 bg-transparent text-zinc-200 outline-none">
+                  <option value="time:desc">Newest</option>
+                  <option value="time:asc">Oldest</option>
+                  <option value="severity:desc">Severity</option>
+                  <option value="xp:desc">Largest penalty</option>
+                  <option value="category:asc">Realm A-Z</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 bg-[#07090e] border border-white/10 rounded-lg px-2 py-1.5 text-zinc-400">
+                <span>Group</span>
+                <select value={groupMode} onChange={event => setGroupMode(event.target.value as GroupMode)} className="min-w-0 flex-1 bg-transparent text-zinc-200 outline-none">
+                  <option value="none">Flat list</option>
+                  <option value="horizon">Time horizon</option>
+                  <option value="category">Realm</option>
+                  <option value="severity">Severity</option>
+                  <option value="date">Date</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 bg-[#07090e] border border-white/10 rounded-lg px-2 py-1.5 text-zinc-400">
+                <span>Realm</span>
+                <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className="min-w-0 flex-1 bg-transparent text-zinc-200 outline-none">
+                  <option value="ALL">All realms</option>
+                  {['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'].map(category => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 bg-[#07090e] border border-white/10 rounded-lg px-2 py-1.5 text-zinc-400">
+                <span>Severity</span>
+                <select value={severityFilter} onChange={event => setSeverityFilter(event.target.value)} className="min-w-0 flex-1 bg-transparent text-zinc-200 outline-none">
+                  <option value="ALL">All levels</option>
+                  {['Critical', 'Severe', 'Major', 'Moderate', 'Minor'].map(severity => <option key={severity} value={severity}>{severity}</option>)}
+                </select>
+              </label>
             </div>
 
             {/* ENTRIES FEED (SUPPORTS GROUPING & SORTING) */}
@@ -1815,7 +1760,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     </div>
                     <h2 className="text-base sm:text-lg font-bold font-display text-white mt-1 flex items-center gap-1.5">
                       <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
-                      Weekly Sacred Muhāsabah & 10/10 Judgment
+                      Weekly Muhāsabah Practice Review
                     </h2>
                   </div>
                 </div>
@@ -1829,7 +1774,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
               {/* MODAL SCROLLABLE CONTENT */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
-                {/* 10/10 SACRED AUDIT VERDICT CARD */}
+                {/* Practice feedback card: never a divine verdict. */}
                 {(() => {
                   const b = generatedSummary.weeklyScoreBreakdown;
                   const score = generatedSummary.scoreOutOf10 ?? 10.0;
@@ -1837,7 +1782,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     <div className="p-4 rounded-xl bg-gradient-to-r from-[#1d160b] via-[#121622] to-[#080b11] border border-[#c5a059]/60 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="space-y-1 text-center sm:text-left">
                         <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-mono font-bold block">
-                          SACRED WEEKLY VERDICT (حكم المحاسبة الأسبوعية)
+                          WEEKLY PRACTICE FEEDBACK (مراجعة السلوك الأسبوعية)
                         </span>
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                           <span className="text-base sm:text-lg font-bold text-[#fef08a] font-display">
@@ -2015,7 +1960,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   />
                 </div>
 
-                {/* 6. NOTICE REGARDING ARCHIVE & RESET */}
+                {/* 6. NOTICE REGARDING ARCHIVE & PERMANENT LIFE LEDGER */}
                 <div className="p-3 rounded-xl bg-[#1c160a] border border-[#c5a059]/40 space-y-1 text-[11px] text-amber-200/90 font-sans">
                   <div className="flex items-center gap-1.5 font-bold font-mono text-amber-300 text-xs">
                     <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
@@ -2023,7 +1968,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   </div>
                   <ul className="list-disc pl-4 space-y-0.5 text-zinc-300">
                     <li>This summary document is permanently saved into your <strong>Planning Documents & Codex</strong>.</li>
-                    <li>The <strong>Muhāsabah Slip Ledger is emptied</strong>, giving you a fresh, clean slate for the new week.</li>
+                    <li>The <strong>Muhāsabah Life Ledger is preserved</strong>; each weekly review is a snapshot, never a deletion of your history.</li>
                     <li>The <strong>Daily Balance Scale</strong> resets to pure equilibrium for day 1 of the new cycle.</li>
                   </ul>
                 </div>

@@ -111,8 +111,8 @@ const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
 }> = {
   Minor: {
     label: 'Minor',
-    xpPenalty: 100,
-    coinFine: 10,
+    xpPenalty: 150,
+    coinFine: 15,
     momentumPenalty: '−15% Momentum',
     shopLocked: false,
     badge: 'border-blue-500/40 bg-blue-950/40 text-blue-300',
@@ -120,8 +120,8 @@ const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
   },
   Moderate: {
     label: 'Moderate',
-    xpPenalty: 200,
-    coinFine: 25,
+    xpPenalty: 300,
+    coinFine: 35,
     momentumPenalty: '−35% Momentum',
     shopLocked: false,
     badge: 'border-amber-500/40 bg-amber-950/40 text-amber-300',
@@ -129,8 +129,8 @@ const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
   },
   Major: {
     label: 'Major',
-    xpPenalty: 300,
-    coinFine: 50,
+    xpPenalty: 500,
+    coinFine: 75,
     momentumPenalty: 'Momentum Reset (0%)',
     shopLocked: true,
     badge: 'border-orange-500/40 bg-orange-950/40 text-orange-300',
@@ -138,8 +138,8 @@ const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
   },
   Severe: {
     label: 'Severe',
-    xpPenalty: 400,
-    coinFine: 100,
+    xpPenalty: 750,
+    coinFine: 125,
     momentumPenalty: 'Momentum Reset (0%)',
     shopLocked: true,
     badge: 'border-red-500/50 bg-red-950/50 text-red-300',
@@ -147,8 +147,8 @@ const SEVERITY_CONSEQUENCES: Record<MuhasabahSeverity, {
   },
   Critical: {
     label: 'Critical',
-    xpPenalty: 500,
-    coinFine: 200,
+    xpPenalty: 1000,
+    coinFine: 250,
     momentumPenalty: 'Momentum Reset (0%)',
     shopLocked: true,
     badge: 'border-rose-500/60 bg-rose-950/60 text-rose-200',
