@@ -21,16 +21,51 @@ interface StrategyCodexViewProps {
 export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({ 
   onNavigate 
 }) => {
-  const { state, getGoalProgress, getProjectProgress } = usePOS();
+  const { state, getGoalProgress, getProjectProgress, addQuest } = usePOS();
   const [globalSearch, setGlobalSearch] = useState('');
   const [selectedHorizon, setSelectedHorizon] = useState<string>('All');
   const [expandedDestinyId, setExpandedDestinyId] = useState<string | null>(null);
   const [activeLoopStep, setActiveLoopStep] = useState<number>(0);
+  const [quickQuestGoalId, setQuickQuestGoalId] = useState<string | null>(null);
+  const [quickQuestName, setQuickQuestName] = useState('');
 
   const handleNavigate = (targetTab: string) => {
     if (onNavigate) {
       onNavigate(targetTab);
     }
+  };
+
+  const horizonMatches = (horizon: string | undefined, filter: string) => {
+    if (filter === 'All') return true;
+    const normalized = (horizon || '').toLowerCase();
+    if (filter === '30-Day') return normalized.includes('30-day');
+    if (filter === 'Quarterly') return normalized.includes('quarter');
+    if (filter === 'Annual') return normalized.includes('annual');
+    if (filter === 'Lifetime') return normalized.includes('life') || normalized.includes('lifetime');
+    return false;
+  };
+
+  const createNextDirective = (goalId: string) => {
+    if (!quickQuestName.trim()) return;
+    const goal = state.goals.find(item => item.id === goalId);
+    if (!goal) return;
+
+    addQuest({
+      name: quickQuestName.trim(),
+      description: `Next directive for ${goal.name}.`,
+      difficulty: 'Normal',
+      estimatedTime: 30,
+      xp: 100,
+      goalId,
+      projectId: null,
+      milestoneId: null,
+      relatedSkills: goal.relatedSkills || [],
+      type: 'Main',
+      recurrence: 'None',
+      deadline: null
+    });
+    setQuickQuestName('');
+    setQuickQuestGoalId(null);
   };
 
   // Calculate high-level strategic health metrics
@@ -45,7 +80,7 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
     const matchesSearch = !globalSearch.trim() || 
       g.name.toLowerCase().includes(globalSearch.toLowerCase()) || 
       g.description?.toLowerCase().includes(globalSearch.toLowerCase());
-    const matchesHorizon = selectedHorizon === 'All' || g.horizon === selectedHorizon;
+    const matchesHorizon = horizonMatches(g.horizon, selectedHorizon);
     return matchesSearch && matchesHorizon;
   });
 
@@ -470,6 +505,24 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                                 )}
                               </div>
                               <h4 className="text-xs font-display font-bold text-white mt-1">{goal.name}</h4>
+                              {quickQuestGoalId === goal.id && (
+                                <form
+                                  onSubmit={(event) => {
+                                    event.preventDefault();
+                                    createNextDirective(goal.id);
+                                  }}
+                                  className="flex items-center gap-1.5 mt-2"
+                                >
+                                  <input
+                                    autoFocus
+                                    value={quickQuestName}
+                                    onChange={(event) => setQuickQuestName(event.target.value)}
+                                    placeholder="Next directive..."
+                                    className="min-w-0 flex-1 bg-[#0b0d13] border border-cyan-500/40 rounded px-2 py-1 text-[10px] text-white focus:outline-none focus:border-cyan-300"
+                                  />
+                                  <button type="submit" className="px-2 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 text-[9px] font-bold">CREATE</button>
+                                </form>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-xs font-mono font-bold text-[#fef08a]">{progress}%</span>
@@ -542,8 +595,16 @@ export const StrategyCodexView: React.FC<StrategyCodexViewProps> = ({
                               </div>
                             </div>
                           ) : (
-                            <div className="text-[10px] font-mono text-zinc-600 italic pt-1">
-                              No campaigns attached. Create a campaign linked to this destiny.
+                            <div className="pt-1 flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-mono text-zinc-600 italic">
+                                No campaigns attached. Create a campaign linked to this destiny.
+                              </span>
+                              <button
+                                onClick={() => setQuickQuestGoalId(quickQuestGoalId === goal.id ? null : goal.id)}
+                                className="shrink-0 text-[9px] font-mono font-bold text-cyan-300 hover:text-cyan-100 border border-cyan-500/30 rounded px-2 py-1"
+                              >
+                                + DIRECTIVE
+                              </button>
                             </div>
                           )}
                         </div>

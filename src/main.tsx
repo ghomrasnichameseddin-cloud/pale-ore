@@ -19,6 +19,15 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && import.meta
   } catch {
     // Graceful fallback if SW registration is unavailable
   }
+} else if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister());
+  });
+  if ('caches' in window) {
+    caches.keys().then(cacheNames => {
+      cacheNames.forEach(cacheName => caches.delete(cacheName));
+    });
+  }
 }
 
 interface ErrorBoundaryProps {

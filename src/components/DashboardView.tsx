@@ -136,7 +136,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   
   const frogOfTheDay = activeQuests.find(q => q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Boss' || q.difficulty === 'Hard') || 
                        (activeQuests.length > 0 ? [...activeQuests].sort((a, b) => b.xp - a.xp)[0] : null);
-  const overdueQuests = activeQuests;
+  const overdueQuests = activeQuests.filter(q => !!q.deadline && q.deadline < systemDate);
+  const activeLoadMinutes = activeQuests.reduce((sum, quest) => sum + (quest.estimatedTime || 0), 0);
+  const commandState = isRecoveryActive
+    ? { label: 'RECOVERY FIRST', detail: 'Resolve restorative directives before adding new load.', color: 'text-amber-300' }
+    : overdueQuests.length > 0
+      ? { label: 'CLEAR THE DELAY', detail: `${overdueQuests.length} directive${overdueQuests.length === 1 ? '' : 's'} past deadline.`, color: 'text-rose-300' }
+      : frogOfTheDay
+        ? { label: 'EXECUTE THE FROG', detail: `Start with “${frogOfTheDay.name}”.`, color: 'text-emerald-300' }
+        : { label: 'OPEN A CLEAN SLOT', detail: 'No directive is scheduled for this system date.', color: 'text-cyan-300' };
 
   // Active Goals for linkage cards
   const activeGoals = state.goals.filter(g => g.status === 'Active').slice(0, 3);
@@ -389,6 +397,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
       {/* BOSS PROGRESSION GATE BANNER */}
       <BossProgressionBanner onNavigateToQuests={() => onNavigate?.('quests')} />
+
+      {/* COMMAND READOUT: ONE DECISION, THREE SIGNALS */}
+      <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <span className="text-[9px] font-mono tracking-[0.2em] text-[var(--accent-bright)] uppercase font-bold">COMMAND READOUT</span>
+            <h3 className={`text-base font-display font-bold uppercase mt-1 ${commandState.color}`}>{commandState.label}</h3>
+            <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{commandState.detail}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:min-w-[360px]">
+            <div className="bg-[var(--bg-void)] border border-white/10 rounded-lg px-3 py-2 text-center">
+              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Due</span>
+              <strong className="text-lg font-mono text-white">{activeQuests.length}</strong>
+            </div>
+            <div className={`bg-[var(--bg-void)] border rounded-lg px-3 py-2 text-center ${overdueQuests.length > 0 ? 'border-rose-500/40' : 'border-white/10'}`}>
+              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Late</span>
+              <strong className={`text-lg font-mono ${overdueQuests.length > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>{overdueQuests.length}</strong>
+            </div>
+            <div className="bg-[var(--bg-void)] border border-white/10 rounded-lg px-3 py-2 text-center">
+              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Load</span>
+              <strong className="text-lg font-mono text-[var(--accent-highlight)]">{activeLoadMinutes}m</strong>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => onNavigate?.('quests')} className="px-3 py-2 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[10px] font-mono font-bold text-[var(--accent-highlight)] hover:bg-[var(--accent-surface-hover)]">OPEN QUEUE</button>
+            <button onClick={() => onNavigate?.('strategy_codex')} className="px-3 py-2 rounded-lg bg-[var(--bg-void)] border border-white/10 text-[10px] font-mono font-bold text-zinc-300 hover:text-white">STRATEGY</button>
+          </div>
+        </div>
+      </div>
 
       {/* TWO COLUMN MAIN TERMINAL GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -90,11 +90,11 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
           {/* Ledger link */}
           <button
-            onClick={() => onNavigate?.('xp_history')}
+            onClick={() => onNavigate?.('time_ledger')}
             className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 text-zinc-400 hover:text-emerald-300 text-xs font-mono transition flex items-center gap-1.5 border border-white/5"
-            title="Open Full Audit Ledger"
+            title="Open Temporal Ledger"
           >
-            <span className="text-[11px] font-bold">Ledger</span>
+            <span className="text-[11px] font-bold">Time Ledger</span>
             <ArrowUpRight className="h-3 w-3" />
           </button>
         </div>

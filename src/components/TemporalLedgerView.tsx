@@ -31,6 +31,30 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
   const transactions: TimeTransaction[] = state.timeHistory || [];
   const profile = state.profile;
   const currentCredits = profile.timeCredits ?? 60;
+  const todayKey = state.systemDate || new Date().toISOString().split('T')[0];
+  const todayTransactions = transactions.filter(tx => tx.timestamp.startsWith(todayKey));
+  const todayMinted = todayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
+  const todaySpent = todayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
+  const todayNet = todayMinted - todaySpent;
+  const weeklyRestTrend = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const key = date.toISOString().split('T')[0];
+      const dayTransactions = transactions.filter(tx => tx.timestamp.startsWith(key));
+      const minted = dayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
+      const spent = dayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
+      return {
+        label: date.toLocaleDateString(undefined, { weekday: 'short' }),
+        minted,
+        spent,
+        net: minted - spent
+      };
+    });
+  }, [transactions]);
+  const weeklySpent = weeklyRestTrend.reduce((sum, day) => sum + day.spent, 0);
+  const weeklyMinted = weeklyRestTrend.reduce((sum, day) => sum + day.minted, 0);
+  const recoverySignal = weeklySpent > weeklyMinted && weeklySpent > 0;
 
   // Filtered & Sorted Transactions
   const filteredTransactions = useMemo(() => {
@@ -144,7 +168,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             Time as Currency Audit Ledger (Ra's al-Māl)
           </h2>
           <p className="text-xs text-zinc-400 max-w-2xl font-sans mt-0.5">
-            Every minute of deep focus is non-renewable capital minted into guilt-free rest credits. Track all harvests, dividends, and leisure redemptions.
+            One simple rule: earn rest through focused work, then spend it deliberately. The ledger keeps the balance honest.
           </p>
         </div>
 
@@ -165,6 +189,58 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             <Download className="h-3.5 w-3.5 text-zinc-400" />
             <span>EXPORT CSV</span>
           </button>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-xl p-4 border border-emerald-500/20 bg-[#0b1016] shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold">TODAY'S REST DECISION</span>
+            <p className="text-xs text-zinc-300 mt-1">
+              {todaySpent > todayMinted && todaySpent > 0
+                ? 'Tu dépenses plus de repos que tu n’en as gagné aujourd’hui. Protège le prochain bloc de focus.'
+                : todayMinted > 0
+                  ? 'Ton repos est financé. Programme une vraie pause avant de reprendre une nouvelle charge.'
+                  : 'Aucun mouvement aujourd’hui. Commence par un bloc de focus réaliste, puis récupère.'}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center shrink-0">
+            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Minted</span><strong className="text-emerald-300 font-mono">+{todayMinted}m</strong></div>
+            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Spent</span><strong className="text-indigo-300 font-mono">-{todaySpent}m</strong></div>
+            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Net</span><strong className={`font-mono ${todayNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{todayNet >= 0 ? '+' : ''}{todayNet}m</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-xl p-4 border border-white/10 bg-[#0b0e14] shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <span className="text-[10px] font-mono tracking-widest text-zinc-300 uppercase font-bold">7-DAY RECOVERY RHYTHM</span>
+            <p className="text-[10px] text-zinc-500 mt-1">La récupération doit suivre la charge, pas devenir une dette invisible.</p>
+          </div>
+          <span className={`text-[10px] font-mono font-bold uppercase ${recoverySignal ? 'text-amber-300' : 'text-emerald-300'}`}>
+            {recoverySignal ? 'RECOVERY NEEDED' : 'BALANCE STABLE'}
+          </span>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5 items-end h-20">
+          {weeklyRestTrend.map(day => {
+            const peak = Math.max(...weeklyRestTrend.map(item => Math.max(item.minted, item.spent)), 1);
+            const mintedHeight = Math.max(4, Math.round((day.minted / peak) * 100));
+            const spentHeight = Math.max(4, Math.round((day.spent / peak) * 100));
+            return (
+              <div key={day.label} className="h-full flex flex-col items-center justify-end gap-1">
+                <div className="flex items-end gap-0.5 h-full w-full justify-center">
+                  <div className="w-1.5 rounded-t bg-emerald-400/80" style={{ height: `${mintedHeight}%` }} title={`Minted ${day.minted}m`} />
+                  <div className="w-1.5 rounded-t bg-indigo-400/80" style={{ height: `${spentHeight}%` }} title={`Spent ${day.spent}m`} />
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 uppercase">{day.label}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between text-[9px] font-mono text-zinc-500 mt-2 border-t border-white/5 pt-2">
+          <span>7D MINTED: <strong className="text-emerald-300">+{weeklyMinted}m</strong></span>
+          <span>7D SPENT: <strong className="text-indigo-300">-{weeklySpent}m</strong></span>
         </div>
       </div>
 

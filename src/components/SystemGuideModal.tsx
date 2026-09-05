@@ -1312,6 +1312,25 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     The Strategy Overview indexes your entire knowledge base and execution queues. Filter by target horizon, locate stalled campaigns instantly, diagnose attribute imbalances across the 8-stat radar, and teleport directly to linked SOP documents or active quest lines.
                   </p>
                 </div>
+
+                {/* LIVE COMPATIBILITY CONTRACT */}
+                <div className="p-4 bg-gradient-to-r from-emerald-950/30 via-[#0b0d13] to-cyan-950/20 border border-emerald-500/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                    <h4 className="text-xs font-mono font-bold text-emerald-300 uppercase flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      LIVE PLANNING CONTRACT
+                    </h4>
+                    <span className="text-[9px] font-mono text-emerald-300 border border-emerald-500/30 rounded px-2 py-0.5">SYSTEM_ALIGNED</span>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Use the hub as a decision surface, not only as an archive. Choose the horizon, inspect the linked campaign, then create the next directive directly from the Destiny card with <strong className="text-cyan-300">+ DIRECTIVE</strong>. The new directive is linked to the Destiny and inherits its related skills.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                    <div className="p-2 bg-zinc-950/70 border border-white/5 rounded-lg"><strong className="text-[#fef08a] block">SHORT</strong><span className="text-zinc-400">30-Day Sprint → next directive</span></div>
+                    <div className="p-2 bg-zinc-950/70 border border-white/5 rounded-lg"><strong className="text-emerald-300 block">MEDIUM</strong><span className="text-zinc-400">Quarterly → campaign and milestones</span></div>
+                    <div className="p-2 bg-zinc-950/70 border border-white/5 rounded-lg"><strong className="text-cyan-300 block">LONG</strong><span className="text-zinc-400">Annual/Lifetime → doctrine and review</span></div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2380,7 +2399,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    The <strong>Temporal Capital HUD</strong> on the Dashboard monitors your daily waking capital (default 16 hours = 960 minutes) divided into three distinct operational partitions:
+                    The <strong>Temporal Capital HUD</strong> on the Dashboard monitors your daily waking capital (default 16 hours = 960 minutes) divided into three distinct operational partitions. The HUD is a planning estimate, while the Temporal Ledger is the audit record.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
@@ -2473,8 +2492,8 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                     <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
                       <div className="text-cyan-300 font-bold">🛡️ Active Rest Overlay</div>
-                      <div className="text-[10px] text-zinc-400 font-sans">Launches a full-screen restorative countdown with guided breathing.</div>
-                      <div className="text-cyan-400 text-[10.5px] font-bold">Circular Breathing Circle</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">Launches a restorative countdown with contemplation, pause/resume, and early-finish refund.</div>
+                      <div className="text-cyan-400 text-[10.5px] font-bold">Intentional Rest Block</div>
                     </div>
                   </div>
                 </div>
@@ -2535,7 +2554,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </span>
                   </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    <em>"Read your record. Sufficient is yourself against you this Day as accountant."</em> — Surah Al-Isra 17:14. Complete forensic transparency: immutable chronological transaction logs for XP and Temporal Capital, multi-attribute radar analytics, and the interactive spiderweb constellation net.
+                    <em>"Read your record. Sufficient is yourself against you this Day as accountant."</em> — Surah Al-Isra 17:14. Complete forensic transparency: chronological and auditable transaction logs for XP and Temporal Capital, multi-attribute radar analytics, and the interactive spiderweb constellation net.
                   </p>
                 </div>
 
@@ -2551,7 +2570,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </span>
                   </div>
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    In a rigorous life-operating system, numbers must never be arbitrary, mystical, or opaque. Every XP point earned, every attribute fraction accrued, and every minute of temporal capital deposited or spent originates from a verified operational event. The <strong>Observatories</strong> provide complete historical transparency with dedicated forensic ledgers.
+                    In a rigorous life-operating system, numbers must never be arbitrary, mystical, or opaque. Every XP point earned, every attribute fraction accrued, and every minute of temporal capital deposited or spent originates from a verified operational event. The <strong>Observatories</strong> provide historical transparency with dedicated forensic ledgers; manual calibration remains available for correcting offline activity.
                   </p>
                 </div>
 
@@ -2597,7 +2616,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </span>
                     </div>
                     <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Dedicated balance accounting tracking every minute minted, invested, or redeemed from your Leisure Bank.
+                      Dedicated balance accounting tracking every minute minted, invested, or redeemed from your Leisure Bank, with daily net and seven-day recovery rhythm summaries.
                     </p>
                     <div className="space-y-1.5 text-xs font-mono">
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
