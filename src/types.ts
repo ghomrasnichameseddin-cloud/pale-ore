@@ -179,6 +179,19 @@ export interface UserProfile {
   lastFatigueUpdateDate?: string;
 }
 
+export type XPSourceCategory = 
+  | 'quest' 
+  | 'habit' 
+  | 'focus' 
+  | 'boss' 
+  | 'muhasabah' 
+  | 'penalty_midnight' 
+  | 'penalty_failed' 
+  | 'penalty_recovered' 
+  | 'surge' 
+  | 'manual_adjustment'
+  | 'system';
+
 export interface XPHistoryEntry {
   id: string;
   questId: string | null;
@@ -186,6 +199,10 @@ export interface XPHistoryEntry {
   xp: number;
   timestamp: string; // ISO String
   skillIds: string[];
+  source?: XPSourceCategory;
+  category?: string;
+  notes?: string;
+  balanceAfter?: number;
 }
 
 export interface SystemMessage {

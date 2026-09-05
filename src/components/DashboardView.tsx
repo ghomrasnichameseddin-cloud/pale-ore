@@ -490,9 +490,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
 
               {/* XP progress */}
-              <div className="col-span-2 lg:col-span-2 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
+              <div 
+                onClick={() => onNavigate?.('xp_history')}
+                className="col-span-2 lg:col-span-2 bg-[var(--bg-surface)]/80 hover:bg-[var(--accent-surface)] border border-[var(--border-subtle)] hover:border-[#c5a059]/40 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-sm"
+                title="Click to view full XP History & Audit Ledger"
+              >
                 <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase font-bold">
-                  <span className="text-[var(--accent-bright)]">DIVINE_XP</span>
+                  <span className="text-[var(--accent-bright)] flex items-center gap-1.5">
+                    <span>DIVINE_XP</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/5 group-hover:bg-[#c5a059]/20 text-zinc-400 group-hover:text-[#fef08a] transition font-normal">
+                      LEDGER ↗
+                    </span>
+                  </span>
                   <span className="text-[var(--accent-bright)] font-bold">{levelInfo.totalXp} XP</span>
                 </div>
                 <div className="mt-2 space-y-1">

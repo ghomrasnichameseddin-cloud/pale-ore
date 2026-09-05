@@ -1,12 +1,17 @@
 import React from 'react';
 import { usePOS } from '../POSContext';
+import { XPHistoryLedger } from './XPHistoryLedger';
 import { 
   BarChart3, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, TrendingDown, Clock, ShieldCheck, Zap, Network
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
-export const AnalyticsView: React.FC = () => {
+interface AnalyticsViewProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onNavigate }) => {
   const { state, getAnalytics, getAttributes } = usePOS();
   
   const analytics = getAnalytics();
@@ -248,6 +253,11 @@ export const AnalyticsView: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* COMPREHENSIVE XP HISTORY LEDGER */}
+      <div className="pt-4 border-t border-[var(--border-subtle)]">
+        <XPHistoryLedger onNavigate={onNavigate} />
       </div>
 
     </div>

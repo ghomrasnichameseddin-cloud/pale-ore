@@ -27,11 +27,11 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -114,6 +114,7 @@ function AppContent() {
       items: [
         { id: 'appearance', label: 'Visual Codex (Appearance)', icon: Palette, desc: 'Themes, ornamentation, glow & interface density' },
         { id: 'analytics', label: 'Resonance Analytics', icon: BarChart3, desc: 'Empirical analytics, XP trends & consistency' },
+        { id: 'xp_history', label: 'XP Ledger & Audit', icon: FileSpreadsheet, desc: 'Complete historical ledger of all gains, losses & sources' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
         { id: 'system', label: 'Sanctum Engine & Backups', icon: Settings, desc: 'Data export, JSON restore & system maintenance' },
       ]
@@ -690,9 +691,9 @@ function AppContent() {
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'shop' && <RewardShopView />}
-              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance') && (
+              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history') && (
                 <OracleSystemView 
-                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : 'analytics'}
+                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : activeTab === 'xp_history' ? 'xp_history' : 'analytics'}
                   onNavigate={(tab) => setActiveTab(tab as TabId)}
                 />
               )}
