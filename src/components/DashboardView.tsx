@@ -8,7 +8,6 @@ import {
   Sliders, Timer, Zap, Star, Coins, ShoppingBag, Plus, Search,
   Filter, Target, FolderKanban, Sparkles, TrendingUp, BarChart2,
   X, ArrowUpRight, Cpu, Layers, Play, RefreshCw, AlertTriangle, Lock, Scale,
-  Hourglass, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QuestDifficulty, QuestType } from '../types';
@@ -136,16 +135,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   
   const frogOfTheDay = activeQuests.find(q => q.type === 'Main' || q.type === 'Boss' || q.difficulty === 'Boss' || q.difficulty === 'Hard') || 
                        (activeQuests.length > 0 ? [...activeQuests].sort((a, b) => b.xp - a.xp)[0] : null);
-  const overdueQuests = activeQuests.filter(q => !!q.deadline && q.deadline < systemDate);
-  const activeLoadMinutes = activeQuests.reduce((sum, quest) => sum + (quest.estimatedTime || 0), 0);
-  const commandState = isRecoveryActive
-    ? { label: 'RECOVERY FIRST', detail: 'Resolve restorative directives before adding new load.', color: 'text-amber-300' }
-    : overdueQuests.length > 0
-      ? { label: 'CLEAR THE DELAY', detail: `${overdueQuests.length} directive${overdueQuests.length === 1 ? '' : 's'} past deadline.`, color: 'text-rose-300' }
-      : frogOfTheDay
-        ? { label: 'EXECUTE THE FROG', detail: `Start with “${frogOfTheDay.name}”.`, color: 'text-emerald-300' }
-        : { label: 'OPEN A CLEAN SLOT', detail: 'No directive is scheduled for this system date.', color: 'text-cyan-300' };
-
   // Active Goals for linkage cards
   const activeGoals = state.goals.filter(g => g.status === 'Active').slice(0, 3);
 
@@ -398,35 +387,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* BOSS PROGRESSION GATE BANNER */}
       <BossProgressionBanner onNavigateToQuests={() => onNavigate?.('quests')} />
 
-      {/* COMMAND READOUT: ONE DECISION, THREE SIGNALS */}
-      <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 shadow-lg">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-[9px] font-mono tracking-[0.2em] text-[var(--accent-bright)] uppercase font-bold">COMMAND READOUT</span>
-            <h3 className={`text-base font-display font-bold uppercase mt-1 ${commandState.color}`}>{commandState.label}</h3>
-            <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{commandState.detail}</p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[360px]">
-            <div className="bg-[var(--bg-void)] border border-white/10 rounded-lg px-3 py-2 text-center">
-              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Due</span>
-              <strong className="text-lg font-mono text-white">{activeQuests.length}</strong>
-            </div>
-            <div className={`bg-[var(--bg-void)] border rounded-lg px-3 py-2 text-center ${overdueQuests.length > 0 ? 'border-rose-500/40' : 'border-white/10'}`}>
-              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Late</span>
-              <strong className={`text-lg font-mono ${overdueQuests.length > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>{overdueQuests.length}</strong>
-            </div>
-            <div className="bg-[var(--bg-void)] border border-white/10 rounded-lg px-3 py-2 text-center">
-              <span className="block text-[9px] font-mono text-zinc-500 uppercase">Load</span>
-              <strong className="text-lg font-mono text-[var(--accent-highlight)]">{activeLoadMinutes}m</strong>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => onNavigate?.('quests')} className="px-3 py-2 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[10px] font-mono font-bold text-[var(--accent-highlight)] hover:bg-[var(--accent-surface-hover)]">OPEN QUEUE</button>
-            <button onClick={() => onNavigate?.('strategy_codex')} className="px-3 py-2 rounded-lg bg-[var(--bg-void)] border border-white/10 text-[10px] font-mono font-bold text-zinc-300 hover:text-white">STRATEGY</button>
-          </div>
-        </div>
-      </div>
-
       {/* TWO COLUMN MAIN TERMINAL GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -575,24 +535,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Leisure Bank Card */}
-              <div 
-                onClick={() => onNavigate?.('time_ledger')}
-                className="col-span-1 sm:col-span-1 bg-emerald-950/30 hover:bg-emerald-950/50 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
-                title="Click to view Temporal Capital & Audit Ledger"
-              >
-                <div className="flex justify-between items-center text-[10px] font-mono text-emerald-400 uppercase font-bold">
-                  <span>LEISURE BANK</span>
-                  <Hourglass className="h-3.5 w-3.5 text-emerald-400 group-hover:rotate-180 transition duration-500" />
-                </div>
-                <div className="text-xl sm:text-2xl font-mono font-extrabold text-emerald-300 mt-0.5">
-                  {state.profile.timeCredits ?? 60} <span className="text-xs font-sans text-emerald-400">MINS</span>
-                </div>
-                <div className="text-[9px] font-mono text-emerald-400 font-bold mt-1 flex items-center gap-1">
-                  <span>TIME LEDGER</span>
-                  <ArrowUpRight className="h-3 w-3" />
-                </div>
-              </div>
             </div>
 
             {/* FOCUS HUD & PERFORMANCE METRICS */}
@@ -904,61 +846,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               );
             })()}
-          </div>
-
-          {/* STRATEGIC COMMAND & CODEX PORTAL */}
-          <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shrink-0 shadow-[0_0_12px_var(--glow-color)]">
-                <Compass className="h-5 w-5 text-[var(--accent-bright)]" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    STRATEGIC MATRIX & CODEX LAB
-                  </h4>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] font-black">
-                    11 ENGINES ACTIVE
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-300 font-sans">
-                  Grand Destinies, operational campaigns, 10-Folder Codex doctrine, and tactical decision frameworks.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full md:w-auto shrink-0 flex-wrap">
-              {onNavigate && (
-                <>
-                  <button
-                    onClick={() => onNavigate('goals')}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>DESTINIES</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate('projects')}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>CAMPAIGNS</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate('frameworks')}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 hover:border-[var(--border-accent)] text-[11px] font-mono text-zinc-200 transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>ENGINES</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate('strategy_codex')}
-                    className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[var(--border-strong)] via-[var(--accent-bright)] to-[var(--border-strong)] text-[var(--bg-void)] text-[11px] font-mono font-bold hover:brightness-110 active:scale-95 transition flex items-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <span>MATRIX HUB</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
           </div>
 
           {/* Strategy 1: Eat the Frog Priority Target */}
@@ -1326,7 +1213,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
         {/* RIGHT COLUMN: CURRENT FOCUS, GOALS & PROJECTS PREVIEW, DAILY HABITS, WORKLOAD REPORT */}
         <div className="space-y-6">
-          
+
+          {/* STRATEGIC COMMAND & CODEX PORTAL */}
+          <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-lg space-y-4" id="dashboard-strategic-codex-portal">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] shrink-0 shadow-[0_0_12px_var(--glow-color)]">
+                <Compass className="h-5 w-5 text-[var(--accent-bright)]" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">STRATEGIC MATRIX & CODEX LAB</h4>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] font-black">11 ENGINES ACTIVE</span>
+                </div>
+                <p className="text-[11px] text-zinc-300 font-sans">Grand Destinies, campaigns, Codex doctrine, and tactical decision frameworks.</p>
+              </div>
+            </div>
+            {onNavigate && (
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => onNavigate('goals')} className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 text-[10px] font-mono text-zinc-200">DESTINIES</button>
+                <button onClick={() => onNavigate('projects')} className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 text-[10px] font-mono text-zinc-200">CAMPAIGNS</button>
+                <button onClick={() => onNavigate('frameworks')} className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 text-[10px] font-mono text-zinc-200">ENGINES</button>
+                <button onClick={() => onNavigate('strategy_codex')} className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-[var(--border-strong)] via-[var(--accent-bright)] to-[var(--border-strong)] text-[var(--bg-void)] text-[10px] font-mono font-bold">MATRIX HUB <ArrowUpRight className="h-3 w-3 inline" /></button>
+              </div>
+            )}
+          </div>
+
           {/* CURRENT FOCUS CARD */}
           <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="current-focus-card">
             <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
