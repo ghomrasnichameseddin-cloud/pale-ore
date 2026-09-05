@@ -4,7 +4,8 @@ import {
   ShoppingBag, Settings, Compass, X, HelpCircle, Cpu,
   Zap, Timer, Coins, ArrowRight, GitFork,
   Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon,
-  FolderTree, FileText, Search, BarChart3, Split, Lightbulb, CheckSquare, Layers, Clock, RefreshCw, ChevronRight
+  FolderTree, FileText, Search, BarChart3, Split, Lightbulb, CheckSquare, Layers, Clock, RefreshCw, ChevronRight,
+  Hourglass, FileSpreadsheet, Palette, Volume2, ArrowUpRight, Play, Database, Sliders, BarChart2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
@@ -93,17 +94,24 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'shop-rewards',
-      title: '10. Luminescent Reward Shop',
-      icon: ShoppingBag,
-      badge: 'REWARDS',
-      color: 'text-[#e5c875]',
+      title: '10. Dual-Currency Vault & Temporal Capital',
+      icon: Hourglass,
+      badge: 'TIME AS CURRENCY',
+      color: 'text-emerald-400',
     },
     {
-      id: 'analytics-system',
-      title: '11. Analytics, Node Canvas & Override',
-      icon: Settings,
-      badge: 'CONTROL',
+      id: 'observatories',
+      title: '11. Observatories: XP & Temporal Audit Ledgers',
+      icon: FileSpreadsheet,
+      badge: 'AUDIT LEDGERS',
       color: 'text-indigo-400',
+    },
+    {
+      id: 'visual-system',
+      title: '12. Visual Codex, Sound FX & Sanctum Engine',
+      icon: Palette,
+      badge: 'CUSTOMIZATION',
+      color: 'text-rose-400',
     }
   ];
 
@@ -214,14 +222,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 font-mono text-xs">
                   <div className="p-3.5 bg-gradient-to-br from-[#1b1509] to-[#0d0f17] border border-[#c5a059]/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(197,160,89,0.1)]">
                     <span className="text-[#fef08a] font-bold text-[11px] block flex items-center gap-1.5">
                       <Swords className="h-3.5 w-3.5 text-[#c5a059]" />
                       <span>⚡ DIRECTIVES</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
-                      Execute Quests, Boss Battles & Daily Habits to earn XP, Luminescent Coins, and Attribute points.
+                      Execute Quests, Boss Battles & Daily Habits to earn XP, Vault Dinars, and Attribute points.
                     </p>
                   </div>
 
@@ -231,17 +239,27 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <span>🧬 ATTRIBUTES</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
-                      8 core stats (Strength, Focus, Knowledge, Discipline, Agility, Wisdom, Social, Faith) grow dynamically through proven quest completions.
+                      8 core stats grow dynamically through verified quest completions and focused skill deep work.
                     </p>
                   </div>
 
                   <div className="p-3.5 bg-gradient-to-br from-[#0e1f18] to-[#0d0f17] border border-emerald-500/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                     <span className="text-emerald-300 font-bold text-[11px] block flex items-center gap-1.5">
-                      <Award className="h-3.5 w-3.5 text-emerald-400" />
+                      <Hourglass className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>⏳ TIME CURRENCY</span>
+                    </span>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      Deep work focus cycles harvest guilt-free rest minutes into your Leisure Bank to fund restorative passes.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-gradient-to-br from-[#1c121e] to-[#0d0f17] border border-amber-500/30 rounded-xl space-y-1.5 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                    <span className="text-amber-300 font-bold text-[11px] block flex items-center gap-1.5">
+                      <Award className="h-3.5 w-3.5 text-amber-400" />
                       <span>🏆 MASTERY</span>
                     </span>
                     <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
-                      Level up skills, equip custom class titles, and spend earned coins in the Reward Shop.
+                      Ascend imperial ranks, unlock class job perks, balance the Mizan scale, and customize your Visual Codex.
                     </p>
                   </div>
                 </div>
@@ -252,12 +270,12 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
                     <span>Primary Sanctum Navigation Map:</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
                     <div onClick={() => handleNavigate('dashboard')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <Activity className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-[#fef08a] block">Dashboard Sanctuary</span>
-                        <span className="text-[11px] text-zinc-400">Daily summary, priority target, and 8-stat attribute capability matrix.</span>
+                        <span className="text-[11px] text-zinc-400">Daily summary, priority target, Temporal Capital HUD & 8-stat matrix.</span>
                       </div>
                     </div>
 
@@ -265,11 +283,11 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Swords className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-emerald-200 block">Quests & Directives</span>
-                        <span className="text-[11px] text-zinc-400">Manage main/side quests, daily habits, boss fights, split/merge/move tools.</span>
+                        <span className="text-[11px] text-zinc-400">Main/Side quests, daily habits, Calamity boss fights & Pomodoro focus timer.</span>
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('strategy')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/60 border border-white/5 hover:border-[#c5a059]/60 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                    <div onClick={() => handleNavigate('strategy_codex')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/60 border border-white/5 hover:border-[#c5a059]/60 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-[#fef08a] block">Strategy & Codex Hub</span>
@@ -289,7 +307,23 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Briefcase className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-cyan-200 block">Projects & Sub-Projects</span>
-                        <span className="text-[11px] text-zinc-400">Group tasks into project directories with sub-project components & deadlines.</span>
+                        <span className="text-[11px] text-zinc-400">Hierarchical project work breakdown with milestones and status tracking.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('planning')} className="p-3 bg-[#0d1017]/80 hover:bg-cyan-950/40 border border-white/5 hover:border-cyan-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <FileText className="h-4 w-4 text-cyan-300 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-cyan-300 block">Execution Planning</span>
+                        <span className="text-[11px] text-zinc-400">Operational planning documents, battle maps & strategic sprints.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('frameworks')} className="p-3 bg-[#0d1017]/80 hover:bg-purple-950/40 border border-white/5 hover:border-purple-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Layers className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-purple-300 block">Deep Work Frameworks</span>
+                        <span className="text-[11px] text-zinc-400">Eisenhower prioritization matrix, Pomodoro flow & sprint matrices.</span>
                       </div>
                     </div>
 
@@ -297,7 +331,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Moon className="h-4 w-4 text-[#fef08a] shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-[#fef08a] block">Sacred Protocol & Hijri</span>
-                        <span className="text-[11px] text-zinc-400">Track 5 Daily Salaats (Masjid/Rawātib), Morning/Evening Adhkār, 70+ Salawāt & Qiyām al-Layl.</span>
+                        <span className="text-[11px] text-zinc-400">5 Daily Salaats (Masjid/Rawātib), Adhkār, Salawāt & Qiyām al-Layl.</span>
                       </div>
                     </div>
 
@@ -305,7 +339,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Scale className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-amber-300 block">Muhāsabah Chamber</span>
-                        <span className="text-[11px] text-zinc-400">Self-accountability ledger, bounded XP friction (−500 cap), and restitution quests.</span>
+                        <span className="text-[11px] text-zinc-400">Self-accountability Mizan balance scale, slip logging & penance quests.</span>
                       </div>
                     </div>
 
@@ -313,15 +347,63 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <Award className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold text-purple-300 block">Skills Mastery & Jobs</span>
-                        <span className="text-[11px] text-zinc-400">Level skill trees, practice disciplines, equip custom career job perks.</span>
+                        <span className="text-[11px] text-zinc-400">Level skill trees, practice disciplines & equip custom career job perks.</span>
                       </div>
                     </div>
 
                     <div onClick={() => handleNavigate('shop')} className="p-3 bg-[#0d1017]/80 hover:bg-[#3a2e12]/40 border border-white/5 hover:border-[#c5a059]/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <ShoppingBag className="h-4 w-4 text-[#e5c875] shrink-0 mt-0.5" />
                       <div>
-                        <span className="font-bold text-[#fef08a] block">Luminescent Shop</span>
-                        <span className="text-[11px] text-zinc-400">Exchange quest coins for real-world rewards and custom productivity vouchers.</span>
+                        <span className="font-bold text-[#fef08a] block">Dual-Currency Vault</span>
+                        <span className="text-[11px] text-zinc-400">Exchange coins & banked leisure minutes for real-world rewards & rest passes.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('time_ledger')} className="p-3 bg-[#0d1017]/80 hover:bg-emerald-950/40 border border-white/5 hover:border-emerald-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Hourglass className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-emerald-300 block">Temporal Ledger & Rest</span>
+                        <span className="text-[11px] text-zinc-400">Audit trail of temporal capital minted, invested & expended with CSV export.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('xp_history')} className="p-3 bg-[#0d1017]/80 hover:bg-indigo-950/40 border border-white/5 hover:border-indigo-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <FileSpreadsheet className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-indigo-300 block">XP Ledger & Audit</span>
+                        <span className="text-[11px] text-zinc-400">Complete historical ledger of all gains, losses, sources & level deltas.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('appearance')} className="p-3 bg-[#0d1017]/80 hover:bg-rose-950/40 border border-white/5 hover:border-rose-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Palette className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-rose-300 block">Visual Codex & Audio</span>
+                        <span className="text-[11px] text-zinc-400">6 visual themes, UI density, arabesque filigree & Web Audio synth SFX.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('spiderweb')} className="p-3 bg-[#0d1017]/80 hover:bg-cyan-950/40 border border-white/5 hover:border-cyan-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <GitFork className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-cyan-300 block">Constellation Net</span>
+                        <span className="text-[11px] text-zinc-400">Interactive neural relationship canvas mapping all operational nodes.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('analytics')} className="p-3 bg-[#0d1017]/80 hover:bg-blue-950/40 border border-white/5 hover:border-blue-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <BarChart3 className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-blue-300 block">Resonance Analytics</span>
+                        <span className="text-[11px] text-zinc-400">Attribute radar charts, weekly output velocity & performance trends.</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => handleNavigate('system')} className="p-3 bg-[#0d1017]/80 hover:bg-zinc-800/50 border border-white/5 hover:border-zinc-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
+                      <Settings className="h-4 w-4 text-zinc-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-zinc-200 block">Sanctum Engine & Backups</span>
+                        <span className="text-[11px] text-zinc-400">JSON export/import backups, disaster recovery & manual stat overrides.</span>
                       </div>
                     </div>
                   </div>
@@ -953,14 +1035,83 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
                 </div>
 
-                {/* POMODORO FOCUS OVERLAY */}
-                <div className="p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2">
-                  <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
-                    <Timer className="h-4 w-4" /> Integrated Pomodoro Focus Timer Overlay
-                  </h4>
-                  <p className="text-xs text-zinc-300 font-sans">
-                    Launch Pomodoro timer overlays (25m, 45m, 60m), link focus cycles directly to active quests for extra XP, and toggle ambient focus audio. Focus session cycles auto-calculate to ensure accurate session completion before marking associated quests complete.
+                {/* POMODORO FOCUS, FOCUS SHIELDS & TIME HARVESTING */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
+                      <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
+                        <Timer className="h-4 w-4" /> Pomodoro Focus & Time Minting
+                      </h4>
+                      <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/40 px-1.5 py-0.5 rounded font-bold">
+                        DEEP_WORK
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Launch full-screen Pomodoro focus overlays (25m, 45m, 60m), link deep work cycles directly to active directives for bonus XP, and toggle ambient audio.
+                    </p>
+                    <div className="p-2.5 bg-zinc-950/90 rounded-lg border border-emerald-500/30 space-y-1 text-xs">
+                      <div className="flex items-center justify-between font-mono font-bold text-emerald-300">
+                        <span className="flex items-center gap-1"><Hourglass className="h-3.5 w-3.5" /> Temporal Harvest</span>
+                        <span>+10m / 25m Sprint</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Completing a verified focus sprint mints 10 minutes of guilt-free leisure credit directly into your <strong>Leisure Bank</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-purple-950/40 border border-purple-500/30 rounded-xl space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-purple-500/20 pb-1.5">
+                      <h4 className="text-xs font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                        <Shield className="h-4 w-4 text-purple-400" /> Focus Shields & Momentum Protection
+                      </h4>
+                      <span className="text-[9px] font-mono bg-purple-950 text-purple-400 border border-purple-500/40 px-1.5 py-0.5 rounded font-bold">
+                        SHIELD_DEFENSE
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Focus Shields guard your active session from penalties when urgent interruptions occur. When a session is aborted with a shield active, a shield is consumed to protect streaks and attribute stability without triggering a penalty.
+                    </p>
+                    <div className="p-2.5 bg-zinc-950/90 rounded-lg border border-purple-500/30 space-y-1 text-xs">
+                      <div className="flex items-center justify-between font-mono font-bold text-purple-300">
+                        <span>Shield Replenishment</span>
+                        <span>Boss Drops / Vault Perks</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Acquired by conquering Calamity Bosses, achieving perfect weekly habit consistency, or purchasing Divine Shields from the Vault.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CALAMITY BOSS BATTLES */}
+                <div className="p-4 bg-gradient-to-r from-red-950/50 via-zinc-900/90 to-amber-950/50 border border-red-500/40 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-red-500/20 pb-2">
+                    <div className="font-mono font-bold text-red-300 uppercase flex items-center gap-2 text-xs">
+                      <Flame className="h-4 w-4 text-red-400" />
+                      <span>CALAMITY BOSS CONQUESTS & THE LEVEL 10+ BOSS GATE</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-red-950 text-red-400 border border-red-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      COLOSSAL_THREAT
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Weekly Calamity Bosses (e.g. <em>The Procrastination Leviathan, Umbra Cognitive Fog, Inertia Titan</em>) manifest on the Dashboard with dynamic HP pools and elemental phases. Completing Hard, Boss, and Main directives inflicts real-time damage against the Calamity.
                   </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-2.5 bg-zinc-950/90 rounded border border-red-500/20">
+                      <span className="text-red-400 font-bold block">1. Elemental Damage</span>
+                      <span className="text-[10.5px] text-zinc-400 font-sans">Matching quest attributes (e.g. Focus vs. Cognitive Fog) deals critical multiplier damage.</span>
+                    </div>
+                    <div className="p-2.5 bg-zinc-950/90 rounded border border-amber-500/20">
+                      <span className="text-amber-400 font-bold block">2. Phase Transitions</span>
+                      <span className="text-[10.5px] text-zinc-400 font-sans">At 50% and 25% HP, the Boss triggers enrage phases requiring urgent priority task strikes.</span>
+                    </div>
+                    <div className="p-2.5 bg-zinc-950/90 rounded border border-emerald-500/20">
+                      <span className="text-emerald-400 font-bold block">3. Level 10+ Gate</span>
+                      <span className="text-[10.5px] text-zinc-400 font-sans">Advancing beyond Level 10 requires at least 1 Calamity Boss conquest, testing operational mastery.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -2119,67 +2270,601 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 10. LUMINESCENT SHOP */}
+            {/* 10. DUAL-CURRENCY VAULT & TEMPORAL CAPITAL */}
             {activeSection === 'shop-rewards' && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <ShoppingBag className="h-5 w-5 text-amber-400" />
-                    10. Luminescent Ore Reward Shop & Vouchers
-                  </h3>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Redeem Luminescent Coins earned through quest completions for custom real-life treats or system perks.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-amber-950/30 border border-amber-500/30 rounded-xl space-y-3 text-xs">
-                  <div className="flex items-center justify-between font-mono font-bold text-amber-300">
-                    <span className="flex items-center gap-1.5"><Coins className="h-4 w-4" /> How Coins Are Earned</span>
-                    <span className="bg-amber-500/20 px-2 py-0.5 rounded text-[10px]">CURRENCY_ENGINE</span>
+                <div className="border-b border-[#c5a059]/30 pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-[#fef08a] flex items-center gap-2">
+                      <Hourglass className="h-5 w-5 text-emerald-400" />
+                      10. Dual-Currency Vault & Temporal Capital Engine
+                    </h3>
+                    <span className="text-[9px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      TIME_AS_CURRENCY_V2
+                    </span>
                   </div>
-                  <p className="text-zinc-300 font-sans leading-relaxed">
-                    Coins generate automatically upon completing directives (especially Boss Fights) and finishing focus sessions. Add custom rewards to incentivize real-life execution!
+                  <p className="text-xs font-mono text-zinc-400 mt-1">
+                    <em>"Take advantage of five before five: your youth before your old age, your health before your sickness, your wealth before your poverty, your free time before you are preoccupied, and your life before your death."</em> — Al-Hakim. Converting deep work focus into guilt-free restorative passes, managing daily waking capital, and unlocking the dual-currency imperial treasury.
                   </p>
                 </div>
 
+                {/* THE CORE PHILOSOPHY OF TEMPORAL CAPITAL */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0c1a14] via-[#0d1017] to-[#0a140f] border border-emerald-500/40 rounded-xl space-y-3 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                    <div className="font-mono font-bold text-emerald-300 uppercase flex items-center gap-2 text-xs">
+                      <RubElHizbIcon className="h-4 w-4 text-emerald-400" />
+                      <span>THE PHILOSOPHY OF TEMPORAL CAPITAL (TIME AS AMĀNAH)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      SACRED_TRUST
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Time is an unrecoverable divine trust (<em>Amānah</em>). In Pale Ore, leisure is never treated as accidental escapism, mindless procrastination, or a guilty indulgence. Instead, leisure is elevated to an <strong>earned, mathematically budgeted currency</strong>. By anchoring rest to verified deep work output, the system eliminates cognitive guilt and replaces burnout cycles with deliberate restoration.
+                  </p>
+                  <div className="p-3 bg-zinc-950/80 rounded-lg border border-emerald-500/30 text-xs font-mono text-emerald-300 flex items-center justify-between">
+                    <span>👑 CORE OPERATIONAL CREED:</span>
+                    <span className="text-zinc-300 font-sans italic">"Earn your leisure through deep focus; redeem your rest without moral friction."</span>
+                  </div>
+                </div>
+
+                {/* DUAL-CURRENCY IMPERIAL TREASURY */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
+                        <Coins className="h-4 w-4 text-amber-400" /> 1. Vault Dinars (Gold Coins)
+                      </span>
+                      <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        TREASURY
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Tangible reward credits earned by completing directives, maintaining daily habit streaks, and triumphing in Calamity Boss battles.
+                    </p>
+                    <div className="space-y-1.5 text-xs font-mono">
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Quest Completions:</span>
+                        <span className="text-amber-400 font-bold">+10 to +100 Coins</span>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Calamity Boss Slaying:</span>
+                        <span className="text-amber-400 font-bold">+250 to +500 Coins</span>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Used For:</span>
+                        <span className="text-amber-300 font-bold">Custom Treats & Perks</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
+                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Leisure Bank (Temporal Capital)
+                      </span>
+                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        MINUTES_BANK
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Restorative minutes minted exclusively through verified focus cycles and operational dividends.
+                    </p>
+                    <div className="space-y-1.5 text-xs font-mono">
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Pomodoro 25m Focus Sprint:</span>
+                        <span className="text-emerald-400 font-bold">+10m Leisure</span>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Hard Directive Completion:</span>
+                        <span className="text-emerald-400 font-bold">+15m Rest Dividend</span>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Used For:</span>
+                        <span className="text-emerald-300 font-bold">Active Rest Passes</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DAILY WAKING CAPITAL HUD & OVERDRAFT ALARM */}
+                <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-1.5 text-xs">
+                      <Clock className="h-4 w-4 text-[#c5a059]" />
+                      <span>DAILY WAKING CAPITAL & 3-WAY TIME PARTITIONING</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
+                      960_MIN_BUDGET
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    The <strong>Temporal Capital HUD</strong> on the Dashboard monitors your daily waking capital (default 16 hours = 960 minutes) divided into three distinct operational partitions:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-cyan-500/30 space-y-1">
+                      <div className="text-cyan-400 font-bold flex items-center gap-1">
+                        <Zap className="h-3.5 w-3.5" /> 1. INVESTED TIME
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Minutes spent in active, completed Pomodoro sprints and verified deep work today.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-amber-500/30 space-y-1">
+                      <div className="text-amber-400 font-bold flex items-center gap-1">
+                        <Target className="h-3.5 w-3.5" /> 2. COMMITTED TIME
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Estimated duration of scheduled remaining quests, routines, and prayer obligations today.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-emerald-500/30 space-y-1">
+                      <div className="text-emerald-400 font-bold flex items-center gap-1">
+                        <Hourglass className="h-3.5 w-3.5" /> 3. UNCOMMITTED SLACK
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Free reserve buffer remaining for unplanned demands, cognitive recovery, and flexibility.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* OVERDRAFT ALARM PROTOCOL */}
+                  <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-lg space-y-1.5 text-xs">
+                    <div className="font-mono font-bold text-red-300 flex items-center gap-1.5">
+                      <AlertTriangle className="h-4 w-4 text-red-400" />
+                      <span>THE OVERDRAFT ALARM STATE (BURNOUT MITIGATION)</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      If your <strong>Committed Time</strong> exceeds your total remaining waking hours, the HUD triggers the <strong className="text-red-300">OVERDRAFT WARNING</strong>. When this occurs, you are overbooked. The system advises an immediate workload restructuring: downgrade secondary tasks to Optional, move deadlines to tomorrow, or liquidate backlogged items to preserve mental stamina.
+                    </p>
+                  </div>
+                </div>
+
+                {/* TEMPORAL LEISURE WARES & ACTIVE REST OVERLAY */}
+                <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-emerald-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Sparkles className="h-4 w-4 text-emerald-400" />
+                      <span>TEMPORAL REST WARES & THE ACTIVE REST OVERLAY CHAMBER</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      ACTIVE_RECOVERY
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Under the <strong>"Temporal Rest"</strong> tab in the Reward Shop, operators can redeem dual-cost leisure passes. Each pass consumes both Vault Dinars and banked Leisure Minutes:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                      <div className="text-[#fef08a] font-bold">😴 Deep Qaylulah Nap</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">25 min power nap to restore cognitive acuity before Asr.</div>
+                      <div className="text-emerald-400 text-[10.5px] font-bold">25m Rest • 15 Coins</div>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                      <div className="text-[#fef08a] font-bold">📖 Guilt-Free Fiction Reading</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">45 min dedicated immersion in literature or contemplative reading.</div>
+                      <div className="text-emerald-400 text-[10.5px] font-bold">45m Rest • 25 Coins</div>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                      <div className="text-[#fef08a] font-bold">🎮 Leisure Gaming Sprint</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">60 min immersive gaming session earned through hard output.</div>
+                      <div className="text-emerald-400 text-[10.5px] font-bold">60m Rest • 40 Coins</div>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                      <div className="text-[#fef08a] font-bold">🌿 Contemplative Walk</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">30 min nature walk in outdoor air to reset dopamine baselines.</div>
+                      <div className="text-emerald-400 text-[10.5px] font-bold">30m Rest • 20 Coins</div>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                      <div className="text-[#fef08a] font-bold">🎬 Evening Cinema / Media</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">90 min documentary or cinematic entertainment pass.</div>
+                      <div className="text-emerald-400 text-[10.5px] font-bold">90m Rest • 60 Coins</div>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
+                      <div className="text-cyan-300 font-bold">🛡️ Active Rest Overlay</div>
+                      <div className="text-[10px] text-zinc-400 font-sans">Launches a full-screen restorative countdown with guided breathing.</div>
+                      <div className="text-cyan-400 text-[10.5px] font-bold">Circular Breathing Circle</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* REWARD SHOP UNLOCK POLICY & GATING */}
                 <div className="p-4 bg-zinc-900/90 border border-amber-500/20 rounded-xl space-y-2 text-xs">
                   <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
-                    <Shield className="h-4 w-4 text-amber-400" /> Reward Shop Unlock Policy
+                    <Lock className="h-4 w-4 text-amber-400" /> Reward Shop Unlock Policy & Daily Obligation Gating
                   </div>
                   <p className="text-zinc-300 font-sans leading-relaxed">
-                    The Reward Shop is restricted by default until today's mandatory directives are completed. The lock is tied directly to quests categorized under <strong className="text-amber-300">Main</strong>, <strong className="text-amber-300">Boss</strong>, <strong className="text-amber-300">Penalty</strong>, and <strong className="text-amber-300">Habit</strong>. Side and Optional tasks do not prevent shop unlocking.
+                    To guarantee that recreation is always earned, the Reward Shop automatically restricts purchases until today's mandatory directives are completed. The gating lock is tied to quests classified as <strong className="text-amber-300">Main</strong>, <strong className="text-amber-300">Boss</strong>, <strong className="text-amber-300">Penalty</strong>, and <strong className="text-amber-300">Habit</strong>. Side and Optional tasks do not block access. In addition, an active <strong>Kaffārah penance quest</strong> will engage an absolute moral lockdown until fulfilled.
                   </p>
+                </div>
+
+                {/* TELEPORT BUTTONS */}
+                <div className="p-4 bg-[#141824] border border-[#c5a059]/40 rounded-xl space-y-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
+                      <ShoppingBag className="h-4 w-4 text-[#e5c875]" />
+                      <span>ACCESS THE IMPERIAL REWARD VAULT</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans">
+                      Browse physical rewards, redeem guilt-free rest passes, or audit your temporal accounting.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleNavigate('shop')}
+                      className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524017] text-[#fef08a] border border-[#c5a059]/60 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>OPEN VAULT SHOP</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('time_ledger')}
+                      className="px-3.5 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>TIME LEDGER</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* 11. ANALYTICS, NODE CANVAS & OVERRIDE */}
-            {activeSection === 'analytics-system' && (
+            {/* 11. OBSERVATORIES: XP & TEMPORAL AUDIT LEDGERS */}
+            {activeSection === 'observatories' && (
               <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-indigo-400" />
-                    11. Analytics, Spiderweb Node Canvas & System Override
-                  </h3>
+                <div className="border-b border-indigo-500/30 pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-indigo-400" />
+                      11. Observatories: XP & Temporal Audit Ledgers
+                    </h3>
+                    <span className="text-[9px] font-mono bg-indigo-950 text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      EMPIRICAL_AUDITABILITY
+                    </span>
+                  </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Performance telemetries, visual node connection canvas, and manual baseline stat overrides.
+                    <em>"Read your record. Sufficient is yourself against you this Day as accountant."</em> — Surah Al-Isra 17:14. Complete forensic transparency: immutable chronological transaction logs for XP and Temporal Capital, multi-attribute radar analytics, and the interactive spiderweb constellation net.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1">
-                    <span className="text-cyan-400 font-bold block">1. ANALYTICS</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Sustained attribute radar chart, weekly velocity, and performance metrics.</p>
+                {/* THE NEED FOR FORENSIC TRANSPARENCY */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#101426] via-[#0d1017] to-[#0b0e1b] border border-indigo-500/40 rounded-xl space-y-3 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2">
+                    <div className="font-mono font-bold text-indigo-300 uppercase flex items-center gap-2 text-xs">
+                      <RubElHizbIcon className="h-4 w-4 text-indigo-400" />
+                      <span>FORENSIC ACCOUNTABILITY & ANTI-ARBITRARY PROGRESSION</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-indigo-950 text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      ZERO_BLACK_BOX
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    In a rigorous life-operating system, numbers must never be arbitrary, mystical, or opaque. Every XP point earned, every attribute fraction accrued, and every minute of temporal capital deposited or spent originates from a verified operational event. The <strong>Observatories</strong> provide complete historical transparency with dedicated forensic ledgers.
+                  </p>
+                </div>
+
+                {/* THE 2 MASTER FORENSIC LEDGERS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* XP AUDIT LEDGER */}
+                  <div className="p-4 bg-zinc-900/90 border border-indigo-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-indigo-300 uppercase text-xs flex items-center gap-1.5">
+                        <FileSpreadsheet className="h-4 w-4 text-indigo-400" /> 1. Divine XP Audit Ledger
+                      </span>
+                      <span className="text-[9px] bg-indigo-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        XP_HISTORY
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      An immutable, chronological record of every XP gain and loss across all system facets.
+                    </p>
+                    <div className="space-y-1.5 text-xs font-mono">
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
+                        <div className="text-indigo-300 font-bold">Tracked Fields:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Timestamp, Source Type, Note/Title, Delta XP (+/-), Level at time, and Running Balance.</div>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
+                        <div className="text-indigo-300 font-bold">Source Classifications:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Directives, Habit Streaks, Focus Sprints, Sacred Protocol, Muhāsabah, Boss Fights, Recovery Deductions.</div>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Data Export:</span>
+                        <span className="text-indigo-400 font-bold">Instant CSV Download</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1">
-                    <span className="text-purple-400 font-bold block">2. SPIDERWEB CANVAS</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">Interactive visual canvas connecting all Goals, Projects, Quests, and Skills.</p>
+                  {/* TEMPORAL CAPITAL LEDGER */}
+                  <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
+                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Temporal Capital Ledger
+                      </span>
+                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        TIME_LEDGER
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                      Dedicated balance accounting tracking every minute minted, invested, or redeemed from your Leisure Bank.
+                    </p>
+                    <div className="space-y-1.5 text-xs font-mono">
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
+                        <div className="text-emerald-300 font-bold">Tracked Transactions:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Focus Harvests (+10m), Quest Dividends, Rest Vouchers (-25m to -90m), Active Rest sessions, and Debt Restructuring.</div>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
+                        <div className="text-emerald-300 font-bold">Audit Controls:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Filter by transaction category, search by event note, and synchronize with the Dashboard HUD.</div>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Data Export:</span>
+                        <span className="text-emerald-400 font-bold">Instant CSV Download</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RESONANCE ANALYTICS & CONSTELLATION SPIDERWEB NET */}
+                <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5 text-xs">
+                      <GitFork className="h-4 w-4 text-cyan-400" />
+                      <span>RESONANCE ANALYTICS & THE SPIDERWEB CONSTELLATION NET</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      NEURAL_TOPOLOGY
+                    </span>
                   </div>
 
-                  <div className="p-3.5 bg-zinc-900/80 border border-white/10 rounded-xl space-y-1">
-                    <span className="text-amber-300 font-bold block">3. SYSTEM OVERRIDE</span>
-                    <p className="text-zinc-400 font-sans text-[11px]">In System Control, manually adjust starting attribute baselines or backup JSON.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-white/5 space-y-1.5">
+                      <span className="text-cyan-400 font-bold block flex items-center gap-1">
+                        <BarChart3 className="h-3.5 w-3.5" /> Resonance Analytics Chamber
+                      </span>
+                      <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                        Visualizes your 8-attribute capability profile via an interactive radar chart, calculates weekly XP velocity, assesses task completion efficiency, and detects domain imbalances before they cause burnout.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-white/5 space-y-1.5">
+                      <span className="text-purple-400 font-bold block flex items-center gap-1">
+                        <GitFork className="h-3.5 w-3.5" /> Spiderweb Constellation Net
+                      </span>
+                      <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                        An interactive canvas mapping the neural topology of your life: Grand Destinies connect to Campaigns, Campaigns fan out into Projects, Projects spawn Quests, and Quests feed the Skills Tree.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TELEPORT ACTIONS */}
+                <div className="p-4 bg-[#141824] border border-[#c5a059]/40 rounded-xl space-y-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
+                      <FileSpreadsheet className="h-4 w-4 text-[#e5c875]" />
+                      <span>ACCESS AUDIT OBSERVATORIES</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans">
+                      Inspect the XP historical ledger, track temporal flow, or view neural constellation relationships.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleNavigate('xp_history')}
+                      className="px-3 py-1.5 bg-indigo-950/70 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>XP LEDGER</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('time_ledger')}
+                      className="px-3 py-1.5 bg-emerald-950/70 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>TIME LEDGER</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('spiderweb')}
+                      className="px-3 py-1.5 bg-cyan-950/70 hover:bg-cyan-900/70 text-cyan-300 border border-cyan-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <span>SPIDERWEB</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 12. VISUAL CODEX, SOUND FX & SANCTUM ENGINE */}
+            {activeSection === 'visual-system' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-rose-500/30 pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                      <Palette className="h-5 w-5 text-rose-400" />
+                      12. Visual Codex, Sound FX & Sanctum Engine
+                    </h3>
+                    <span className="text-[9px] font-mono bg-rose-950 text-rose-400 border border-rose-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      CUSTOMIZATION_CORE
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-zinc-400 mt-1">
+                    Sensory aesthetics and system preservation: 6 imperial visual themes, ergonomic interface density, procedural Web Audio soundscapes, JSON disaster recovery, and developer overrides.
+                  </p>
+                </div>
+
+                {/* 6 IMPERIAL THEMES */}
+                <div className="p-4 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-rose-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Palette className="h-4 w-4 text-rose-400" />
+                      <span>THE 6 IMPERIAL VISUAL THEME ARCHETYPES</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-rose-950 text-rose-400 border border-rose-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      IMMERSIVE_THEMES
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-[#c5a059]/40 space-y-1">
+                      <span className="text-[#fef08a] font-bold block">1. Imperial Gold & Obsidian</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Regal gold filigree against deep midnight slate. The flagship Pale Ore aesthetic designed for contemplative focus.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-emerald-500/40 space-y-1">
+                      <span className="text-emerald-300 font-bold block">2. Emerald Damascene</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Lush Islamic emerald hues with gilded borders, evoking tranquil Andalusian courtyard gardens.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-cyan-500/40 space-y-1">
+                      <span className="text-cyan-300 font-bold block">3. Royal Lapis Lazuli</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Deep oceanic ultramarine and sapphire with cyan radiance, inspired by historical Persian mosque tilework.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-red-500/40 space-y-1">
+                      <span className="text-red-300 font-bold block">4. Crimson Velvet</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Rich Andalusian garnet with warm ruby illumination, reminiscent of Alhambra's royal chambers.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-rose-500/40 space-y-1">
+                      <span className="text-rose-300 font-bold block">5. Rose Quartz</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Refined, gentle rose gold paired with clean high-contrast charcoal for a softer, modern aesthetic.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-500/40 space-y-1">
+                      <span className="text-zinc-200 font-bold block">6. Onyx Void</span>
+                      <p className="text-[10.5px] text-zinc-400 font-sans leading-relaxed">
+                        Tactical stealth monochrome with stark white border accents, built for high-speed distraction-free deep work.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* INTERFACE ERGONOMICS & WEB AUDIO SYNTH */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* ERGONOMICS & DENSITY */}
+                  <div className="p-4 bg-zinc-900/90 border border-white/10 rounded-xl space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-zinc-200 uppercase flex items-center gap-1.5">
+                        <Sliders className="h-4 w-4 text-cyan-400" /> UI Density & Ornamentation
+                      </span>
+                      <span className="text-[9px] bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded font-mono font-bold">
+                        DISPLAY
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5 font-sans text-zinc-300 text-[11px]">
+                      <li>• <strong>Comfortable Density:</strong> Generous whitespace and padding for relaxed tablet/desktop browsing.</li>
+                      <li>• <strong>Compact Density:</strong> Balanced proportions ideal for standard desktop monitors.</li>
+                      <li>• <strong>High Density / Tactical:</strong> Condensed spacing maximizing data visibility on screen for power users.</li>
+                      <li>• <strong>Arabesque Filigree:</strong> Toggle Islamic 8-point geometric corner runes and star dividers.</li>
+                    </ul>
+                  </div>
+
+                  {/* WEB AUDIO SYNTHESIZER */}
+                  <div className="p-4 bg-zinc-900/90 border border-white/10 rounded-xl space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <span className="font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                        <Volume2 className="h-4 w-4 text-amber-400" /> Procedural Web Audio Sound FX
+                      </span>
+                      <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                        ZERO_ASSET_SFX
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5 font-sans text-zinc-300 text-[11px]">
+                      <li>• <strong>Tactile UI Click:</strong> Crisp 800Hz transient pulse providing subtle micro-haptic feedback.</li>
+                      <li>• <strong>Golden Bell Chime:</strong> Resonant 528Hz solfeggio sine wave upon completing directives.</li>
+                      <li>• <strong>Heroic Brass Triad:</strong> Major chord cascade (C-E-G-C) celebrating imperial level ascensions.</li>
+                      <li>• <strong>Solemn Low Thud:</strong> 110Hz damped sawtooth resonance signaling Muhāsabah slips and penalties.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* SANCTUM ENGINE, BACKUPS & SYSTEM OVERRIDE */}
+                <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3 text-xs">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-1.5">
+                      <Database className="h-4 w-4 text-[#c5a059]" />
+                      <span>SANCTUM ENGINE: DISASTER RECOVERY & SYSTEM OVERRIDES</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
+                      SYSTEM_PRESERVATION
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-xs">
+                    <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                      <div className="text-emerald-400 font-bold">1. 1-Click JSON Backup</div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Export your full state (profile, quests, habits, ledger histories, inventory, and spiritual logs) into a single portable <code>.json</code> file.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                      <div className="text-cyan-400 font-bold">2. Safe State Restore</div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Import past backups with instant schema validation and atomic state hydration, safeguarding years of progress.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                      <div className="text-amber-400 font-bold">3. System Overrides</div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Manually calibrate starting base attributes or simulate system dates (<code>SYS_DATE</code>) for operational testing.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TELEPORT ACTIONS */}
+                <div className="p-4 bg-[#141824] border border-[#c5a059]/40 rounded-xl space-y-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold text-[#fef08a] flex items-center gap-1.5">
+                      <Palette className="h-4 w-4 text-[#e5c875]" />
+                      <span>CUSTOMIZE APPEARANCE OR MANAGE SYSTEM BACKUPS</span>
+                    </div>
+                    <p className="text-xs text-zinc-300 font-sans">
+                      Switch themes, adjust sound synthesis, or export your complete life operating state.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleNavigate('appearance')}
+                      className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524017] text-[#fef08a] border border-[#c5a059]/60 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>VISUAL CODEX</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleNavigate('system')}
+                      className="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>SYSTEM CONTROL</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
