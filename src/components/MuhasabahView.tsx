@@ -45,7 +45,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     deleteWeakness, updateWeakness,
-    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary
+    addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary,
+    clearAllWeeklyArchives, deleteWeeklyArchive
   } = usePOS();
 
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
@@ -65,6 +66,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [savedSummarySuccess, setSavedSummarySuccess] = useState<string | null>(null);
   const [showSavedArchivesModal, setShowSavedArchivesModal] = useState(false);
   const [selectedArchiveDetail, setSelectedArchiveDetail] = useState<WeeklyMuhasabahSummary | null>(null);
+  const [showClearArchivesConfirm, setShowClearArchivesConfirm] = useState(false);
+  const [archiveToDelete, setArchiveToDelete] = useState<WeeklyMuhasabahSummary | null>(null);
   const [injectedActionSuccess, setInjectedActionSuccess] = useState<string | null>(null);
   const [showRefineDrawer, setShowRefineDrawer] = useState(false);
 
@@ -2035,6 +2038,84 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </button>
               </div>
 
+              {/* CONFIRMATION BANNER FOR CLEAR ALL */}
+              {showClearArchivesConfirm && (
+                <div className="p-4 mx-5 my-2 rounded-xl bg-rose-950/70 border border-rose-500/60 space-y-3 shrink-0 shadow-lg animate-in fade-in duration-150">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-xs">
+                      <h4 className="font-bold text-white font-mono uppercase tracking-wide">
+                        PERMANENTLY CLEAR ALL ARCHIVED MUHĀSABAH RECORDS?
+                      </h4>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        Are you sure you want to permanently delete all <strong>{savedSummaries.length}</strong> weekly review archives from the system? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowClearArchivesConfirm(false)}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearAllWeeklyArchives();
+                        setShowClearArchivesConfirm(false);
+                        setSelectedArchiveDetail(null);
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono transition flex items-center gap-1.5 shadow-md cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Confirm & Clear All</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* CONFIRMATION BANNER FOR SINGLE RECORD */}
+              {archiveToDelete && (
+                <div className="p-4 mx-5 my-2 rounded-xl bg-rose-950/70 border border-rose-500/60 space-y-3 shrink-0 shadow-lg animate-in fade-in duration-150">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-xs">
+                      <h4 className="font-bold text-white font-mono uppercase tracking-wide">
+                        DELETE ARCHIVED WEEKLY RECORD?
+                      </h4>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        Delete record for <strong>{archiveToDelete.startDate} → {archiveToDelete.endDate}</strong> ({archiveToDelete.weekLabel || archiveToDelete.generatedDate})?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setArchiveToDelete(null)}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteWeeklyArchive(archiveToDelete.id || archiveToDelete.generatedDate);
+                        if (selectedArchiveDetail?.id === archiveToDelete.id || selectedArchiveDetail?.generatedDate === archiveToDelete.generatedDate) {
+                          setSelectedArchiveDetail(null);
+                        }
+                        setArchiveToDelete(null);
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono transition flex items-center gap-1.5 shadow-md cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete Record</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* LIST / DETAIL */}
               <div className="p-5 overflow-y-auto space-y-3 flex-1 text-xs">
                 {selectedArchiveDetail ? (
@@ -2170,6 +2251,17 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           04 Operations/Weekly Muhasabah/Weekly Summary - {selectedArchiveDetail.generatedDate}.md
                         </span>
                       </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setArchiveToDelete(selectedArchiveDetail)}
+                          className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-mono transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Delete This Archive Record</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : savedSummaries.length > 0 ? (
@@ -2197,7 +2289,20 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           <span className="text-zinc-500">{item.spiritualRating}</span>
                         </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setArchiveToDelete(item);
+                          }}
+                          className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/30 transition cursor-pointer"
+                          title="Delete this archive record"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-[#c5a059] group-hover:translate-x-0.5 transition" />
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -2210,16 +2315,33 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               </div>
 
               {/* FOOTER */}
-              <div className="p-4 bg-[#07090e] border-t border-white/10 flex items-center justify-end shrink-0">
-                <button
-                  onClick={() => {
-                    setShowSavedArchivesModal(false);
-                    setSelectedArchiveDetail(null);
-                  }}
-                  className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition"
-                >
-                  Close
-                </button>
+              <div className="p-4 bg-[#07090e] border-t border-white/10 flex items-center justify-between shrink-0">
+                <div>
+                  {savedSummaries.length > 0 && !showClearArchivesConfirm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowClearArchivesConfirm(true)}
+                      className="px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 text-xs font-mono transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Clear All Archives</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setShowSavedArchivesModal(false);
+                      setSelectedArchiveDetail(null);
+                      setShowClearArchivesConfirm(false);
+                      setArchiveToDelete(null);
+                    }}
+                    className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

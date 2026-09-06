@@ -51,7 +51,7 @@ function AppContent() {
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
-    activeFocusSession, isShopLocked, visualCodex
+    activeFocusSession, isShopLocked, visualCodex, getSpiritualLog
   } = usePOS();
   
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
@@ -83,6 +83,51 @@ function AppContent() {
     const timer = setInterval(() => setSystemTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const getNavBadgeValue = (id: string): string | number | null => {
+    switch (id) {
+      case 'dashboard':
+        return playerInfo.level;
+      case 'quests':
+        return (state.quests || []).filter(q => q.status !== 'Completed').length;
+      case 'spiritual': {
+        const todayLog = getSpiritualLog ? getSpiritualLog(systemDate) : null;
+        if (!todayLog) return 5;
+        const done = [todayLog.fajr, todayLog.dhuhr, todayLog.asr, todayLog.maghrib, todayLog.isha].filter(p => p?.fardh).length;
+        return `${done}/5`;
+      }
+      case 'muhasabah':
+        return (state.muhasabahEntries || []).length;
+      case 'strategy_codex':
+        return (state.goals?.length || 0) + (state.projects?.length || 0);
+      case 'goals':
+        return (state.goals || []).length;
+      case 'projects':
+        return (state.projects || []).length;
+      case 'planning':
+        return (state.planningDocuments || []).length;
+      case 'frameworks':
+        return 11;
+      case 'skills':
+        return (state.skills || []).length;
+      case 'shop':
+        return state.profile.coins || 0;
+      case 'appearance':
+        return 8;
+      case 'analytics':
+        return `${Math.round(state.profile.momentum || 0)}%`;
+      case 'xp_history':
+        return (state.xpHistory || []).length;
+      case 'time_ledger':
+        return (state.timeHistory || []).length;
+      case 'spiderweb':
+        return (state.goals?.length || 0) + (state.projects?.length || 0) + (state.skills?.length || 0);
+      case 'system':
+        return (state.messages || []).length;
+      default:
+        return null;
+    }
+  };
 
   const navCategories = [
     {
@@ -272,6 +317,7 @@ function AppContent() {
                     const isActive = activeTab === item.id;
                     const isQuests = item.id === 'quests';
                     const hasOverdue = isQuests && totalOverdueCount > 0;
+                    const badgeVal = getNavBadgeValue(item.id);
 
                     return (
                       <button
@@ -289,6 +335,11 @@ function AppContent() {
                         <div className="flex items-center gap-2 min-w-0">
                           <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
                           <span className="text-xs font-sans font-medium truncate">{item.label}</span>
+                          {badgeVal !== null && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-black/50 text-zinc-400 border border-white/10 shrink-0">
+                              {badgeVal}
+                            </span>
+                          )}
                         </div>
                         {hasOverdue ? (
                           <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-amber-950 text-amber-300 border border-amber-500/50 shrink-0 animate-pulse">
@@ -480,29 +531,41 @@ function AppContent() {
                 {cat.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
+                  const badgeVal = getNavBadgeValue(item.id);
                   
                   return (
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id as TabId)}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 relative ${
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 relative group ${
                         isActive 
                           ? 'text-[var(--accent-highlight)] font-bold bg-gradient-to-r from-[var(--accent-surface)] via-[var(--bg-card-hover)] to-[var(--bg-surface)] border-l-2 border-[var(--accent-primary)] shadow-sm' 
                           : 'text-zinc-400 border-l-2 border-transparent hover:text-zinc-200 hover:bg-white/[0.03]'
                       }`}
                       id={`nav-${item.id}`}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
-                        <span className="font-sans font-medium">{item.label}</span>
+                        <span className="font-sans font-medium truncate">{item.label}</span>
+                        {badgeVal !== null && (
+                          <span 
+                            className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded shrink-0 transition-colors ${
+                              isActive 
+                                ? 'bg-[var(--accent-bright)]/20 text-[var(--accent-highlight)] border border-[var(--border-accent)]' 
+                                : 'bg-black/50 text-zinc-400 border border-white/5 group-hover:text-zinc-200 group-hover:border-white/10'
+                            }`}
+                          >
+                            {badgeVal}
+                          </span>
+                        )}
                       </div>
                       
                       {item.id === 'shop' && isShopLocked ? (
-                        <span className="px-1.5 py-0.2 text-[8px] font-mono bg-rose-950 text-rose-300 border border-rose-500/30 rounded font-bold flex items-center gap-0.5">
+                        <span className="px-1.5 py-0.2 text-[8px] font-mono bg-rose-950 text-rose-300 border border-rose-500/30 rounded font-bold flex items-center gap-0.5 shrink-0 ml-1">
                           <Lock className="h-2.5 w-2.5" /> LOCKED
                         </span>
                       ) : isActive ? (
-                        <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)] shrink-0" filled />
+                        <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)] shrink-0 ml-1" filled />
                       ) : null}
                     </button>
                   );

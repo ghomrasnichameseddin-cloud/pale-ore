@@ -103,15 +103,27 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
     <div className="space-y-6" id="oracle-system-unified-root">
       
       {/* UNIFIED HEADER */}
-      <div className="border-b border-[#c5a059]/20 pb-4 space-y-4">
+      <div className="border-b border-[#c5a059]/20 pb-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold tracking-tight text-white uppercase flex items-center gap-2.5">
               <RubElHizbIcon className="h-5 w-5 text-[#c5a059]" />
-              <span>ORACLE ANALYTICS & SYSTEM CONTROL</span>
+              <span>
+                {activeSubTab === 'appearance' && 'VISUAL CODEX (APPEARANCE)'}
+                {activeSubTab === 'analytics' && 'RESONANCE ANALYTICS'}
+                {activeSubTab === 'xp_history' && 'XP LEDGER & AUDIT'}
+                {activeSubTab === 'time_ledger' && 'TEMPORAL LEDGER & REST'}
+                {activeSubTab === 'system' && 'SANCTUM ENGINE & BACKUPS'}
+                {activeSubTab === 'messages' && 'SYSTEM DISPATCH LOGS'}
+              </span>
             </h2>
             <p className="text-xs text-zinc-300 font-mono mt-1">
-              SANCTUM_OBSERVATORY_CORE • Empirical resonance logs, core overrides & sanctum archive maintenance
+              SANCTUM OBSERVATORY • {activeSubTab === 'appearance' && 'Themes, ornamentation, glow & interface density'}
+              {activeSubTab === 'analytics' && 'Empirical resonance logs, XP trends & consistency'}
+              {activeSubTab === 'xp_history' && 'Complete historical ledger of all gains, losses & sources'}
+              {activeSubTab === 'time_ledger' && 'Audit trail of temporal capital minted, invested & expended'}
+              {activeSubTab === 'system' && 'Data export, JSON restore & system maintenance'}
+              {activeSubTab === 'messages' && 'System alerts, dispatches & achievement notifications'}
             </p>
           </div>
 
@@ -126,98 +138,6 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
               SYSTEM HEALTHY
             </span>
           </div>
-        </div>
-
-        {/* SUB-NAVIGATION BAR */}
-        <div className="flex items-center gap-2 pt-2 border-t border-white/5 overflow-x-auto pb-1">
-          <button
-            onClick={() => handleTabChange('appearance')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'appearance'
-                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-appearance"
-          >
-            <Palette className={`h-4 w-4 ${activeSubTab === 'appearance' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-            <span>VISUAL CODEX (APPEARANCE)</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('analytics')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'analytics'
-                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-analytics"
-          >
-            <BarChart3 className={`h-4 w-4 ${activeSubTab === 'analytics' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-            <span>ORACLE METRICS & TRENDS</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('xp_history')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'xp_history'
-                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-xp-history"
-          >
-            <FileSpreadsheet className={`h-4 w-4 ${activeSubTab === 'xp_history' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-            <span>XP LEDGER & AUDIT</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-              {(state.xpHistory || []).length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('time_ledger')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'time_ledger'
-                ? 'bg-gradient-to-r from-emerald-500/25 via-[#141824] to-[#0b0d13] text-emerald-300 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-time-ledger"
-          >
-            <Clock className={`h-4 w-4 ${activeSubTab === 'time_ledger' ? 'text-emerald-400' : 'text-zinc-500'}`} />
-            <span>TEMPORAL LEDGER</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-              {(state.timeHistory || []).length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('system')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'system'
-                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-system"
-          >
-            <Settings className={`h-4 w-4 ${activeSubTab === 'system' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-            <span>SANCTUM CORE & OVERRIDES</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('messages')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border cursor-pointer shrink-0 ${
-              activeSubTab === 'messages'
-                ? 'bg-gradient-to-r from-[#c5a059]/25 via-[#141824] to-[#0b0d13] text-[#fef08a] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.15)]'
-                : 'bg-[#0b0d13]/80 hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border-white/5'
-            }`}
-            id="oracle-subtab-messages"
-          >
-            <Inbox className={`h-4 w-4 ${activeSubTab === 'messages' ? 'text-[#e5c875]' : 'text-zinc-500'}`} />
-            <span>DISPATCH LOGS</span>
-            {unreadMessagesCount > 0 && (
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#c5a059]/30 text-[#fef08a] font-mono font-bold animate-pulse">
-                {unreadMessagesCount} NEW
-              </span>
-            )}
-          </button>
         </div>
       </div>
 

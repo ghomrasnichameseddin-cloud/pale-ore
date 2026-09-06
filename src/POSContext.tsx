@@ -254,6 +254,8 @@ interface POSContextType {
   clearAllMuhasabahEntries: () => void;
   generateWeeklyMuhasabahSummary: (targetFridayDate?: string) => WeeklyMuhasabahSummary;
   saveAndArchiveWeeklySummary: (summary: WeeklyMuhasabahSummary) => { success: boolean; message: string };
+  clearAllWeeklyArchives: () => { success: boolean; message: string };
+  deleteWeeklyArchive: (idOrDate: string) => { success: boolean; message: string };
 
   // Weaknesses Management
   addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
@@ -774,7 +776,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
             planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
             messages: parsed.messages || INITIAL_STATE.messages || [],
-            visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex
+            visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex,
+            customAdhkar: parsed.customAdhkar ? parsed.customAdhkar.filter((a: any) => a.category !== 'sleep_dhohr' && a.category !== 'sleep_night') : undefined
           };
         }
       }
@@ -5377,6 +5380,54 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     return {
       success: true,
       message: `Summary saved and archived. Your complete life Muhasabah ledger remains preserved.`
+
+    };
+  };
+
+  const clearAllWeeklyArchives = (): { success: boolean; message: string } => {
+    setState(prev => {
+      const updatedDocs = (prev.planningDocuments || []).filter(
+        d => !d.path.startsWith('04 Operations/Weekly Muhasabah/Weekly Summary -')
+      );
+      return {
+        ...prev,
+        savedWeeklySummaries: [],
+        planningDocuments: updatedDocs
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: 'MUHĀSABAH ARCHIVES PURGED',
+      content: 'All historical weekly Muḥāsabah summary archives have been cleared from the sacred record.',
+      priority: 'low'
+    });
+
+    return {
+      success: true,
+      message: 'All archived weekly summaries have been cleared successfully.'
+    };
+  };
+
+  const deleteWeeklyArchive = (idOrDate: string): { success: boolean; message: string } => {
+    setState(prev => {
+      const remaining = (prev.savedWeeklySummaries || []).filter(
+        s => s.id !== idOrDate && s.generatedDate !== idOrDate
+      );
+      const updatedDocs = (prev.planningDocuments || []).filter(
+        d => d.path !== `04 Operations/Weekly Muhasabah/Weekly Summary - ${idOrDate}.md`
+      );
+      return {
+        ...prev,
+        savedWeeklySummaries: remaining,
+        planningDocuments: updatedDocs
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Archived weekly summary deleted.'
     };
   };
 
@@ -7143,6 +7194,8 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       clearAllMuhasabahEntries,
       generateWeeklyMuhasabahSummary,
       saveAndArchiveWeeklySummary,
+      clearAllWeeklyArchives,
+      deleteWeeklyArchive,
       addWeakness,
       updateWeakness,
       deleteWeakness,

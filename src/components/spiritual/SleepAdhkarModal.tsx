@@ -26,154 +26,9 @@ interface DhikrItem {
   targetCount: number;
 }
 
-export const DHOHR_SLEEP_ADHKAR: DhikrItem[] = [
-  {
-    id: 'dhohr-bismika-amutu',
-    titleEn: '1. Dua Upon Lying Down (Bismika Allahumma)',
-    titleAr: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
-    source: 'Sahih al-Bukhari (6312)',
-    arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
-    transliteration: 'Bismika Allāhumma amūtu wa aḥyā',
-    translation: 'In Your Name, O Allah, I die and I live.',
-    virtue: 'Prophetic affirmation that sleep is a minor death under Allah’s sovereignty.',
-    targetCount: 1
-  },
-  {
-    id: 'dhohr-bismika-rabbi',
-    titleEn: '2. Entrusting the Soul (Bismika Rabbi Wada‘tu Janbi)',
-    titleAr: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي',
-    source: 'Sahih al-Bukhari (6320) & Muslim (2714)',
-    arabic: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ',
-    transliteration: 'Bismika Rabbī waḍa‘tu janbī wa bika arfa‘uh, in amsakta nafsī farḥamhā, wa in arsaltahā faḥfaẓhā bimā taḥfaẓu bihī ‘ibādakaṣ-ṣāliḥīn.',
-    translation: 'In Your Name my Lord, I put down my side and by Your strength I rise. If You retain my soul, have mercy upon it, and if You release it, safeguard it as You safeguard Your righteous servants.',
-    virtue: 'Guarantees comprehensive divine guardianship over your soul while unconscious.',
-    targetCount: 1
-  },
-  {
-    id: 'dhohr-ayat-kursi',
-    titleEn: '3. Ayat al-Kursi (The Throne Verse - 2:255)',
-    titleAr: 'آيَةُ الكُرْسِيّ (البقرة: 255)',
-    source: 'Sahih al-Bukhari (2311)',
-    arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
-    transliteration: 'Allāhu lā ilāha illā huwal-ḥayyul-qayyūm, lā ta’khuḏhūhū sinatuw-wa lā nawm, lahū mā fis-samāwāti wa mā fil-arḍ...',
-    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence. Neither drowsiness overtakes Him nor sleep...',
-    virtue: 'Allah sends an angel to guard you continuously so no shayṭān can draw near until you awaken.',
-    targetCount: 1
-  },
-  {
-    id: 'dhohr-waking-dua',
-    titleEn: '4. Dua Upon Awakening from Qaylulah',
-    titleAr: 'دُعَاءُ الاسْتِيقَاظِ مِنَ القَيْلُولَة',
-    source: 'Sahih al-Bukhari (6312)',
-    arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
-    transliteration: 'Al-ḥamdu lillāhillaḏhī aḥyānā ba‘da mā amātanā wa ilayhin-nushūr.',
-    translation: 'All praise is for Allah Who gave us life after having caused us to die, and unto Him is the final resurrection.',
-    virtue: 'Instills immediate gratitude and awakens the heart into Allah’s remembrance for the afternoon prayers.',
-    targetCount: 1
-  }
-];
+export const DHOHR_SLEEP_ADHKAR: DhikrItem[] = [];
 
-export const NIGHT_SLEEP_ADHKAR: DhikrItem[] = [
-  {
-    id: 'night-three-quls',
-    titleEn: '1. The 3 Quls with Nafth (Al-Ikhlas, Al-Falaq, An-Nas) x3',
-    titleAr: 'المُعَوِّذَاتُ وَالإِخْلَاص مَعَ النَّفْث (3 مَرَّات)',
-    source: 'Sahih al-Bukhari (5017)',
-    arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
-    transliteration: 'Surah Al-Ikhlas, Surah Al-Falaq, Surah An-Nas (Recited 3 times into cupped hands, then wiping the head, face, and body).',
-    translation: 'Recite each Surah 3 times into cupped palms, gently blow (nafth) with fine moisture, and wipe hands over entire head, face, and front of the body.',
-    virtue: 'Shields the believer from nightmares, evil eye, jealousy, witchcraft, and unseen whispers throughout the entire night.',
-    targetCount: 3
-  },
-  {
-    id: 'night-ayat-kursi',
-    titleEn: '2. Ayat al-Kursi (2:255)',
-    titleAr: 'آيَةُ الكُرْسِيّ (البقرة: 255)',
-    source: 'Sahih al-Bukhari (2311)',
-    arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
-    transliteration: 'Allāhu lā ilāha illā huwal-ḥayyul-qayyūm...',
-    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence...',
-    virtue: 'Prophetic promise: "An angel from Allah will remain as your guardian, and no devil will come near you until morning."',
-    targetCount: 1
-  },
-  {
-    id: 'night-baqarah-last2',
-    titleEn: '3. Last Two Verses of Surah Al-Baqarah (2:285-286)',
-    titleAr: 'خَوَاتِيمُ سُورَةِ البَقَرَة (285-286)',
-    source: 'Sahih al-Bukhari (5009) & Muslim (807)',
-    arabic: 'آمَنَ الرَّسُولُ بِمَا أُنزِلَ إِلَيْهِ مِن رَّبِّهِ وَالْمُؤْمِنُونَ ۚ كُلٌّ آمَنَ بِاللَّهِ وَمَلَائِكَتِهِ وَكُتُبِهِ وَرُسُلِهِ لَا نُفَرِّقُ بَيْنَ أَحَدٍ مِّن رُّسُلِهِ ۚ وَقَالُوا سَمِعْنَا وَأَطَعْنَا ۖ غُفْرَانَكَ رَبَّنَا وَإِلَيْكَ الْمَصِيرُ ۝ لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا ۚ لَهَا مَا كَسَبَتْ وَعَلَيْهَا مَا اكْتَسَبَتْ ۗ رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا ۚ رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَا إِصْرًا كَمَا حَمَلْتَهُ عَلَى الَّذِينَ مِن قَبْلِنَا ۚ رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِ ۖ وَاعْفُ عَنَّا وَاغْفِرْ لَنَا وَارْحَمْنَا ۚ أَنتَ مَوْلَانَا فَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ',
-    transliteration: 'Āmanar-rasūlu bimā unzila ilayhi mir-rabbihī wal-mu’minūn...',
-    translation: 'The Messenger has believed in what was revealed to him from his Lord, and so have the believers... Whoever recites these two verses at night, they will suffice him (kafataah).',
-    virtue: 'Sufices the reader against all evils, harms, sorcery, and replaces night worship deficits.',
-    targetCount: 1
-  },
-  {
-    id: 'night-tasbih-fatimah',
-    titleEn: '4. Tasbīḥ Fāṭimah (33 SubhanAllah, 33 Alhamdulillah, 34 Allahu Akbar)',
-    titleAr: 'تَسْبِيحُ فَاطِمَةَ الزَّهْرَاءِ (33، 33، 34)',
-    source: 'Sahih al-Bukhari (3705) & Muslim (2727)',
-    arabic: 'سُبْحَانَ اللهِ (33×) • الحَمْدُ لِلَّهِ (33×) • اللهُ أَكْبَرُ (34×)',
-    transliteration: 'SubḥānAllāh (33x), Al-ḥamdulillāh (33x), Allāhu Akbar (34x) — Total: 100 recitations.',
-    translation: 'Glory be to Allah (33x), Praise be to Allah (33x), Allah is the Greatest (34x).',
-    virtue: 'Prophet Muhammad ﷺ gave this to Fatima & Ali when they asked for a servant: "It is better for you both than a servant."',
-    targetCount: 100
-  },
-  {
-    id: 'night-bismika-rabbi',
-    titleEn: '5. Entrusting the Soul (Bismika Rabbi Wada‘tu Janbi)',
-    titleAr: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي',
-    source: 'Sahih al-Bukhari (6320)',
-    arabic: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ',
-    transliteration: 'Bismika Rabbī waḍa‘tu janbī wa bika arfa‘uh, in amsakta nafsī farḥamhā, wa in arsaltahā faḥfaẓhā bimā taḥfaẓu bihī ‘ibādakaṣ-ṣāliḥīn.',
-    translation: 'In Your Name my Lord, I put down my side and by You I raise it up. If You hold my soul, have mercy upon it, and if You send it back, guard it as You guard Your righteous servants.',
-    virtue: 'Authentic protection over the soul in the spiritual realms while asleep.',
-    targetCount: 1
-  },
-  {
-    id: 'night-dua-fitrah',
-    titleEn: '6. Prophetic Du‘a al-Fiṭrah (Allahumma Aslamtu Nafsi)',
-    titleAr: 'دُعَاءُ الفِطْرَةِ الأَعْظَم (اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ)',
-    source: 'Sahih al-Bukhari (6313) & Muslim (2710)',
-    arabic: 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ، رَغْبَةً وَرَهْبَةً إِلَيْكَ، لَا مَلْجَأَ وَلَا مَنْجَا مِنْكَ إِلَّا إِلَيْكَ، آمَنْتُ بِكِتَابِكَ الَّذِي أَنْزَلْتَ، وَبِنَبِيِّكَ الَّذِي أَرْسَلْتَ',
-    transliteration: 'Allāhumma aslamtu nafsī ilayk, wa fawwaḍtu amrī ilayk, wa wajjahtu wajhī ilayk, wa alja’tu ẓahrī ilayk, raghbatan wa rahbatan ilayk, lā malja’a wa lā manjā minka illā ilayk, āmantu bikitābikal-laḏhī anzalt, wa binabiyyikal-laḏhī arsalt.',
-    translation: 'O Allah, I surrender my soul to You, entrust my affair to You, turn my face to You, and commit my back to You in longing and awe of You. There is no haven or refuge from You except with You. I believe in Your Book which You revealed and in Your Prophet whom You sent.',
-    virtue: 'The Prophet ﷺ taught Al-Bara’ ibn ‘Azib: "Make this the very last thing you speak before sleep. If you die that night, you die upon the pure natural religion (Fiṭrah)."',
-    targetCount: 1
-  },
-  {
-    id: 'night-qini-adhabak',
-    titleEn: '7. Refuge from the Day of Resurrection (x3)',
-    titleAr: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ (3×)',
-    source: 'Sunan Abi Dawud (5045) & Tirmidhi (3398)',
-    arabic: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ',
-    transliteration: 'Allāhumma qinī ‘aḏhābaka yawma tab‘athu ‘ibādak (Recited 3 times with right hand placed under right cheek).',
-    translation: 'O Allah, protect me from Your punishment on the Day You resurrect Your servants.',
-    virtue: 'Recited by the Prophet ﷺ three times whenever he lay down to sleep.',
-    targetCount: 3
-  },
-  {
-    id: 'night-surah-mulk',
-    titleEn: '8. Surah Al-Mulk (Tabarakal-Ladhi)',
-    titleAr: 'سُورَةُ المُلْك (المَانِعَةُ المُنْجِيَة)',
-    source: 'Jami‘ at-Tirmidhi (2891) & Sahih al-Jami‘ (3643)',
-    arabic: 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ ۝ الَّذِي خَلَقَ الْمَوْتَ وَالْحَيَاةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا ۚ وَهُوَ الْعَزِيزُ الْغَفُورُ...',
-    transliteration: 'Tabārakal-laḏhī biyadihil-mulku wa huwa ‘alā kulli shay’in qadīr...',
-    translation: 'Blessed is He in Whose hand is dominion, and He is over all things competent...',
-    virtue: 'Thirty verses that intercede for their reciter until his sins are forgiven and shields against the torment of the grave.',
-    targetCount: 1
-  },
-  {
-    id: 'night-waking-dua',
-    titleEn: '9. Dua Upon Awakening in the Morning',
-    titleAr: 'دُعَاءُ الاسْتِيقَاظِ عِنْدَ الصَّبَاح',
-    source: 'Sahih al-Bukhari (6312)',
-    arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ',
-    transliteration: 'Al-ḥamdu lillāhillaḏhī aḥyānā ba‘da mā amātanā wa ilayhin-nushūr.',
-    translation: 'Praise is to Allah Who gave us life after He caused us to die, and unto Him is the final resurrection.',
-    virtue: 'Unties the first knot of shayṭān upon awakening, welcoming the dawn with pure Tawḥīd.',
-    targetCount: 1
-  }
-];
+export const NIGHT_SLEEP_ADHKAR: DhikrItem[] = [];
 
 export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
   isOpen,
@@ -224,7 +79,7 @@ export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
   };
 
   const completedCount = currentList.filter(item => (counters[item.id] || 0) >= item.targetCount).length;
-  const progressPercent = Math.round((completedCount / currentList.length) * 100);
+  const progressPercent = currentList.length > 0 ? Math.round((completedCount / currentList.length) * 100) : 0;
 
   return (
     <AnimatePresence>
@@ -366,7 +221,18 @@ export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
 
           {/* SCROLLABLE LIST OF ADHKAR */}
           <div className="overflow-y-auto pr-1.5 space-y-3.5 flex-1 min-h-0">
-            {currentList.map((item, idx) => {
+            {currentList.length === 0 ? (
+              <div className="text-center py-12 px-4 rounded-xl border border-white/5 bg-black/30 space-y-2.5">
+                <Moon className="h-8 w-8 mx-auto text-zinc-600 mb-1" />
+                <p className="text-sm font-bold text-zinc-300 font-display">
+                  {activeTab === 'dhohr' ? 'NO NOON SLEEP ADHKĀR REGISTERED' : 'NO NIGHT SLEEP ADHKĀR REGISTERED'}
+                </p>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto font-sans leading-relaxed">
+                  The {activeTab === 'dhohr' ? 'Noon Qaylūlah' : 'Night Bedtime'} Adhkār section is currently empty. The section layout and prophetic etiquettes are preserved.
+                </p>
+              </div>
+            ) : (
+              currentList.map((item, idx) => {
               const currentVal = counters[item.id] || 0;
               const isItemDone = currentVal >= item.targetCount;
 
@@ -460,7 +326,7 @@ export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
 
                 </div>
               );
-            })}
+            }))}
           </div>
 
           {/* FOOTER ACTIONS */}
