@@ -430,41 +430,45 @@ export const calculateGatedPlayerLevel = (
   isLevelCappedByBoss: boolean;
   bossQuestsCompletedCount: number;
   bossQuestsRequiredCount: number;
+  nextGateLevel: number | null;
 } => {
   const rawLevel = calculatePlayerLevel(totalXp);
-  if (rawLevel <= INTERMEDIATE_RANK_LEVEL_THRESHOLD) {
+
+  // Boss quest gates appear at intermediate rank milestones:
+  // Level 10 reached → 1 boss quest required to advance to Level 11
+  // Level 20 reached → 2 boss quests required to advance to Level 21
+  // Level 30 reached → 3 boss quests required to advance to Level 31
+  // ...
+  // Each gate unlocks every 10 levels. Once all boss quests for that gate are slain, you may advance.
+
+  // Pre-Intermediate: no gate, no boss requirement
+  if (rawLevel < INTERMEDIATE_RANK_LEVEL_THRESHOLD) {
     return {
       level: rawLevel,
       rawLevel,
       isLevelCappedByBoss: false,
       bossQuestsCompletedCount: completedBossCount,
-      bossQuestsRequiredCount: 0
+      bossQuestsRequiredCount: 0,
+      nextGateLevel: null
     };
   }
 
-  // From Intermediate Ranks (Level 10+) forward, boss quests are required at specific levels:
-  // Level 10: 0 boss quests (just level up)
-  // Level 11: 1 boss quest required
-  // Level 12: 1 boss quest required (no additional)
-  // Level 13: 1 boss quest required (no additional)
-  // Level 14: 1 boss quest required (no additional)
-  // Level 15: 2 boss quests required (1 additional)
-  // Level 16: 2 boss quests required (no additional)
-  // Level 17: 2 boss quests required (no additional)
-  // Level 18: 2 boss quests required (no additional)
-  // Level 19: 3 boss quests required (1 additional)
-  // Level 20: 3 boss quests required (no additional)
-  // And so on... Boss quests are required every 4 levels starting from Level 11.
-  
-  // Calculate required boss count based on new progression pattern
-  // Boss levels: 11, 15, 19, 23, 27, 31, ... (every 4 levels starting from 11)
-  // For a given rawLevel, count how many boss levels are <= rawLevel
+  // Determine the current gate level (the highest gate the player has reached)
+  // Gates are at 10, 20, 30, 40, ... 10n for n >= 1
+  const currentGateLevel = Math.floor(rawLevel / 10) * 10;
+
+  // Required boss count is how many gate levels the player has REACHED (>=)
+  // Each gate level reached adds 1 required boss quest
   let requiredBossCount = 0;
-  for (let bossLevel = 11; bossLevel <= rawLevel; bossLevel += 4) {
-    requiredBossCount++;
+  for (let gate = 10; gate <= rawLevel; gate += 10) {
+    requiredBossCount += 1;
   }
-  
-  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount;
+
+  // Max allowed level: each completed boss quest shatters one gate (10 levels)
+  // 0 bosses done: max level = 10 (so 10 is the cap when no boss is slain)
+  // 1 boss done: max level = 20
+  // 2 bosses done: max level = 30
+  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount * 10;
   const isCapped = rawLevel > maxAllowedLevel;
   const effectiveLevel = Math.min(rawLevel, maxAllowedLevel);
 
@@ -473,7 +477,8 @@ export const calculateGatedPlayerLevel = (
     rawLevel,
     isLevelCappedByBoss: isCapped,
     bossQuestsCompletedCount: completedBossCount,
-    bossQuestsRequiredCount: requiredBossCount
+    bossQuestsRequiredCount: requiredBossCount,
+    nextGateLevel: currentGateLevel
   };
 };
 
@@ -1956,15 +1961,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       level, 
       totalXp, 
       xpIntoLevel, 
-      xpUntilNextLevel, 
-      progress, 
-      rank, 
+      xpUntilNextLevel,
+      progress,
+      rank,
       xpRequiredForNextLevel,
       isLevelCappedByBoss: gated.isLevelCappedByBoss,
       bossQuestsCompletedCount: gated.bossQuestsCompletedCount,
       bossQuestsRequiredCount: gated.bossQuestsRequiredCount,
       effectiveLevel: level,
-      unlockedLevel: gated.rawLevel
+      unlockedLevel: gated.rawLevel,
+      nextGateLevel: gated.nextGateLevel
     };
   };
 

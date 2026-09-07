@@ -16,11 +16,15 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
   const { state, getPlayerLevelInfo } = usePOS();
   const levelInfo: PlayerLevelInfo = getPlayerLevelInfo();
 
-  // If level < 10 and not capped, we don't show the warning banner
-  const isIntermediateOrHigher = levelInfo.level >= 10 || (levelInfo.unlockedLevel && levelInfo.unlockedLevel >= 10);
+  // The bond only appears at intermediate gate levels (10, 20, 30, 40, ...)
+  // The player is AT the gate when their effective (visible) level equals the next gate level
+  const nextGate = levelInfo.nextGateLevel ?? 10;
+  const isAtGate = levelInfo.level === nextGate;
   const isCapped = levelInfo.isLevelCappedByBoss;
 
-  if (!isIntermediateOrHigher) {
+  // Show the bond only when the player is at an intermediate gate level
+  // (reached lvl 10, 20, 30... and needs boss quests to advance)
+  if (!isAtGate) {
     return null;
   }
 
@@ -112,7 +116,7 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
                   color: 'var(--accent-highlight, #fef08a)'
                 }}
               >
-                {isCapped ? '⚔️ INTERMEDIATE GATE: LEVEL ADVANCEMENT BOND' : '⚔️ INTERMEDIATE SYSTEM RANK ACTIVE'}
+                {isCapped ? '⚔️ INTERMEDIATE GATE: LEVEL ADVANCEMENT BOND' : '⚔️ INTERMEDIATE GATE UNSEALED'}
               </span>
 
               <span className="text-[10px] font-mono text-zinc-300">
@@ -123,19 +127,19 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
             <h4 className="text-sm sm:text-base font-display font-bold text-white flex items-center gap-2">
               {isCapped ? (
                 <span style={{ color: 'var(--accent-highlight, #fef08a)' }}>
-                  XP Threshold Reached! Slain Boss Quest Required to Advance to Level {levelInfo.level + 1}
+                  Level {levelInfo.level} → Level {levelInfo.level + 1} requires {(levelInfo.bossQuestsRequiredCount || 1)} Boss Quest{((levelInfo.bossQuestsRequiredCount || 1) > 1) ? 's' : ''} to be Slain
                 </span>
               ) : (
                 <span className="text-zinc-100">
-                  Rank {levelInfo.rank} (Level {levelInfo.level}) • Boss Trials Mandatory for Higher Ascension
+                  Level {levelInfo.level} → Level {levelInfo.level + 1} unsealed! All {(levelInfo.bossQuestsRequiredCount || 1)} Boss Quest{((levelInfo.bossQuestsRequiredCount || 1) > 1) ? 's' : ''} conquered.
                 </span>
               )}
             </h4>
 
             <p className="text-xs text-zinc-300 font-sans leading-relaxed max-w-3xl">
               {isCapped
-                ? 'From Intermediate Rank (Level 10+) onward, leveling up is locked until a Boss Directive is conquered. Conquering a Boss Quest shatters the level cap and unseals ascension.'
-                : 'Each level advancement beyond Level 10 requires at least one completed Boss Quest for the week. Maintain battle readiness.'}
+                ? `Intermediate gate at Level ${levelInfo.level} sealed. Slay ${(levelInfo.bossQuestsRequiredCount || 1) - (levelInfo.bossQuestsCompletedCount || 0)} more Boss Quest${((levelInfo.bossQuestsRequiredCount || 1) - (levelInfo.bossQuestsCompletedCount || 0) > 1) ? 's' : ''} to shatter the bond and advance to Level ${levelInfo.level + 1}.`
+                : `Gate at Level ${levelInfo.level} shattered! Level ${levelInfo.level + 1} unlocked. Continue ascending — the next gate awaits at Level ${(levelInfo.level + 10)}.`}
             </p>
           </div>
         </div>

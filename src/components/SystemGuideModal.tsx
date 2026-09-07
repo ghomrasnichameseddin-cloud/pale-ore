@@ -585,28 +585,28 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                                           <div className="p-3 bg-zinc-950/90 border border-amber-500/30 rounded-lg space-y-1">
                                             <span className="text-amber-400 font-bold block text-[11px]">1. BOSS QUEST MANDATE</span>
                                             <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
-                                              From Level 10 onward, you <strong>MUST complete Boss Quests</strong> to advance. Boss quests are required at Levels 11, 15, 19, 23, 27, 31... (every 4 levels).
+                                              From Level 10 onward, you <strong>MUST complete Boss Quests</strong> to advance. Boss quests are required at Levels 10, 20, 30, 40... (every 10 levels). Each gate requires progressively more Boss Quests.
                                             </p>
                                           </div>
 
                       <div className="p-3 bg-zinc-950/90 border border-red-500/30 rounded-lg space-y-1">
                         <span className="text-red-400 font-bold block text-[11px]">2. STUCK LEVEL PROGRESSION</span>
                         <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
-                          If your total XP qualifies you for a higher level but you haven't defeated the required number of Boss Quests, your level becomes <strong>CAPPED & STUCK</strong> at the gate.
+                          If your total XP qualifies you for a higher level but you haven't slain the required number of Boss Quests, your level becomes <strong>CAPPED & STUCK</strong> at the gate.
                         </p>
                       </div>
 
                       <div className="p-3 bg-zinc-950/90 border border-emerald-500/30 rounded-lg space-y-1">
                         <span className="text-emerald-400 font-bold block text-[11px]">3. UNBROKEN XP ACCUMULATION</span>
                         <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
-                          Your hard-earned XP is never discarded. Once the required Boss Quest is slain, your pending levels will immediately unlock and surge into effect!
+                          Your hard-earned XP is never discarded. Once the required Boss Quests are slain, your pending levels will immediately unlock and surge into effect!
                         </p>
                       </div>
                     </div>
 
                     <div className="p-2.5 bg-black/60 border border-amber-500/30 rounded-lg flex items-center justify-between text-xs font-mono">
                                           <div className="text-zinc-300 text-[11px]">
-                                            <span className="text-amber-400 font-bold">Rule Formula:</span> Boss Quests required at Levels 11, 15, 19, 23, 27, 31... (every 4 levels). Max Allowed Level = <code>10 + Completed Boss Quests Count</code> (When Raw Level ≥ 11).
+                                            <span className="text-amber-400 font-bold">Rule Formula:</span> Gates at Levels 10, 20, 30, 40... (every 10 levels). Max Allowed Level = <code>10 + Completed Boss Quests × 10</code>. Level 10 gate requires 1 boss; Level 20 requires 2 bosses total, etc.
                                           </div>
                       <button 
                         onClick={() => handleNavigate('quests')}
@@ -1109,7 +1109,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
                     <div className="p-2.5 bg-zinc-950/90 rounded border border-emerald-500/20">
                                           <span className="text-emerald-400 font-bold block">3. Boss Quest Gate</span>
-                                          <span className="text-[10.5px] text-zinc-400 font-sans">Boss Quests required at Levels 11, 15, 19, 23... (every 4 levels). Each gate tests operational mastery.</span>
+                                          <span className="text-[10.5px] text-zinc-400 font-sans">Boss Quest Gates at Levels 10, 20, 30, 40... (every 10 levels). Each gate requires progressively more Boss Quests to shatter.</span>
                                         </div>
                   </div>
                 </div>

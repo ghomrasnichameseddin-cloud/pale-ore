@@ -655,6 +655,7 @@ export interface PlayerLevelInfo {
   bossQuestsRequiredCount?: number;
   effectiveLevel?: number;
   unlockedLevel?: number;
+  nextGateLevel?: number | null;
 }
 
 export interface Masjid40DayCovenant {
