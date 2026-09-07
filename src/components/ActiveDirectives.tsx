@@ -83,6 +83,18 @@ export const getCategoryDetails = (type: string) => {
       accentBg: 'bg-indigo-500/10',
     };
   }
+  if (t === 'milestone') {
+    return {
+      label: 'Milestone Quest',
+      shortLabel: 'Milestone',
+      icon: '🚩',
+      badgeClass: 'bg-violet-950/60 text-violet-300 border-violet-500/40',
+      borderLeftClass: 'border-l-4 border-l-violet-500',
+      textColor: 'text-violet-400',
+      bgHeader: 'bg-violet-950/40 border-violet-500/30 text-violet-300',
+      accentBg: 'bg-violet-500/10',
+    };
+  }
   return {
     label: type || 'General',
     shortLabel: type || 'General',
@@ -98,7 +110,7 @@ export const getCategoryDetails = (type: string) => {
 const QUEST_VIEW_SETTINGS_KEY = 'pale_ore_quest_view_settings';
 
 export interface QuestViewSettings {
-  categoryFilter: 'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional';
+  categoryFilter: 'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional' | 'Milestone';
   difficultyFilter: 'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss';
   groupBy: 'none' | 'list' | 'folder' | 'category' | 'difficulty';
   sortBy: 'default' | 'name' | 'difficulty' | 'xp' | 'deadline' | 'type' | 'streak';
@@ -1925,6 +1937,7 @@ export const ActiveDirectives: React.FC = () => {
             <option value="Recovery">🛡️ Recovery ({categoryCounts['Recovery'] || 0})</option>
             <option value="Penalty">💀 Penalty ({categoryCounts['Penalty'] || 0})</option>
             <option value="Optional">🌟 Optional ({categoryCounts['Optional'] || 0})</option>
+            <option value="Milestone">🚩 Milestone ({categoryCounts['Milestone'] || 0})</option>
           </select>
 
           {/* Difficulty Dropdown */}

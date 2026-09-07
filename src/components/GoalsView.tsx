@@ -4,17 +4,18 @@ import { Goal, GoalStatus, GoalPriority, Project, Milestone, Quest, QuestDifficu
 import { 
   Target, Calendar, AlertCircle, Trash2, Plus, Edit3, 
   Play, Pause, Archive, CheckCircle, Clock, BookOpen, BarChart2, History,
-  ChevronRight, ArrowRight, GitFork, Link2, Copy, Move, ArrowUpRight, X
+  ChevronRight, ArrowRight, GitFork, Link2, Copy, Move, ArrowUpRight, X, Flag, ListTodo
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 
 export const GoalsView: React.FC = () => {
-  const { 
+  const {
     state, addGoal, updateGoal, deleteGoal, clearAllGoals,
     addSubGoal, updateSubGoal, toggleSubGoal, deleteSubGoal,
     addProject, updateProject, deleteProject,
     addMilestone, updateMilestone, deleteMilestone,
+    convertMilestoneToQuest, convertSubGoalToQuest,
     addQuest, updateQuest, deleteQuest, completeQuest, reopenQuest,
     duplicateQuest, splitQuest, mergeQuests,
     getGoalProgress, getProjectProgress, getMilestoneProgress, getSkillXpAndLevel,
@@ -996,6 +997,14 @@ export const GoalsView: React.FC = () => {
                                 )}
                                 <button
                                   type="button"
+                                  onClick={() => convertSubGoalToQuest(selectedGoal.id, sg.id)}
+                                  className="text-zinc-500 hover:text-violet-400 p-1 transition cursor-pointer"
+                                  title="Convert to Terminal Quest"
+                                >
+                                  <Flag className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setEditingSubGoalId(sg.id);
                                     setEditSubGoalName(sg.name);
@@ -1181,12 +1190,22 @@ export const GoalsView: React.FC = () => {
                                       PROJECT: {state.projects.find(p => p.id === mile.projectId)?.name || 'Unknown'}
                                     </span>
                                   </div>
-                                  <button 
-                                    onClick={() => deleteMilestone(mile.id)}
-                                    className="text-zinc-500 hover:text-rose-400 cursor-pointer"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => convertMilestoneToQuest(mile.id)}
+                                      className="text-zinc-500 hover:text-violet-400 cursor-pointer p-1"
+                                      title="Convert to Terminal Quest"
+                                    >
+                                      <ListTodo className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteMilestone(mile.id)}
+                                      className="text-zinc-500 hover:text-rose-400 cursor-pointer p-1"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
                                 </div>
                                 
                                 <div className="flex justify-between text-[10px] font-mono text-zinc-400 mt-1">
