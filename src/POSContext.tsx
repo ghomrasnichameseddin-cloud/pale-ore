@@ -83,7 +83,16 @@ interface POSContextType {
   addMilestone: (milestone: Omit<Milestone, 'id' | 'createdAt'>) => string;
   updateMilestone: (id: string, updates: Partial<Milestone>) => void;
   deleteMilestone: (id: string) => void;
-  
+  convertMilestoneToQuest: (
+    milestoneId: string,
+    overrides?: Partial<Omit<Quest, 'id' | 'createdAt' | 'milestoneId' | 'goalId' | 'projectId'>>
+  ) => string | null;
+  convertSubGoalToQuest: (
+    goalId: string,
+    subGoalId: string,
+    overrides?: Partial<Omit<Quest, 'id' | 'createdAt' | 'goalId' | 'milestoneId'>>
+  ) => string | null;
+
   // Quests CRUD & Advanced Actions
   addQuest: (quest: Partial<Quest> & { name: string; description: string }) => string;
   updateQuest: (id: string, updates: Partial<Quest>) => void;
@@ -2605,6 +2614,58 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       milestones: prev.milestones.filter(m => m.id !== id),
       quests: prev.quests.map(q => q.milestoneId === id ? { ...q, milestoneId: null } : q)
     }));
+  };
+
+  // CONVERT MILESTONES & SUBGOALS INTO QUESTS
+  const convertMilestoneToQuest = (
+    milestoneId: string,
+    overrides?: Partial<Omit<Quest, 'id' | 'createdAt' | 'milestoneId' | 'goalId' | 'projectId'>>
+  ): string | null => {
+    const milestone = state.milestones.find(m => m.id === milestoneId);
+    if (!milestone) return null;
+
+    const questId = addQuest({
+      name: milestone.name,
+      description: `Milestone Quest: ${milestone.name}`,
+      milestoneId: milestone.id,
+      goalId: milestone.goalId,
+      projectId: milestone.projectId,
+      type: 'Milestone',
+      difficulty: 'Normal',
+      estimatedTime: 60,
+      xp: 150,
+      status: 'Active',
+      ...overrides
+    });
+
+    return questId;
+  };
+
+  const convertSubGoalToQuest = (
+    goalId: string,
+    subGoalId: string,
+    overrides?: Partial<Omit<Quest, 'id' | 'createdAt' | 'goalId' | 'milestoneId'>>
+  ): string | null => {
+    const goal = state.goals.find(g => g.id === goalId);
+    if (!goal) return null;
+    const subGoal = goal.subGoals?.find(sg => sg.id === subGoalId);
+    if (!subGoal) return null;
+
+    const questId = addQuest({
+      name: subGoal.name,
+      description: `Mini Goal: ${subGoal.name}`,
+      goalId: goal.id,
+      milestoneId: null,
+      type: 'Milestone',
+      difficulty: 'Normal',
+      estimatedTime: 30,
+      xp: 75,
+      status: 'Active',
+      deadline: subGoal.targetDate || null,
+      ...overrides
+    });
+
+    return questId;
   };
 
   // CRUD FOR QUESTS & PROGRESSION ACTIONS
@@ -7233,6 +7294,8 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       addMilestone,
       updateMilestone,
       deleteMilestone,
+      convertMilestoneToQuest,
+      convertSubGoalToQuest,
       addQuest,
       updateQuest,
       deleteQuest,
