@@ -1570,7 +1570,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    <strong>Weekly Jumu'ah Bridge (Friday) &amp; Automated Sunday Cycle:</strong> On any Friday you may trigger a snapshot via the <strong>FRIDAY SEAL</strong> (one-tap) or <strong>FULL AUDIT</strong> (with personal reflection) — the system calculates your <strong>10.0 Sacred Score</strong>, evaluates weekly campaign progress, extracts lessons learned, and permanently archives the summary markdown document under <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>. Then, <strong>every Sunday at first light</strong>, the system automatically runs the closing week through the same archive pipeline and resets the active slip ledger for the new week — so the Life Ledger remains a permanent, cumulative record while the weekly practice slate is renewed without manual effort.
+                    <strong>Weekly Jumu'ah Bridge (Friday) &amp; Automated Sunday Cycle:</strong> At any time you may open the <strong>FULL AUDIT</strong> modal to attach a personal reflection and trigger a snapshot — the system calculates your <strong>10.0 Sacred Score</strong>, evaluates weekly campaign progress, extracts lessons learned, and permanently archives the summary markdown document under <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>. Then, <strong>every Sunday at first light</strong>, the system automatically runs the closing week through the same archive pipeline and resets the active slip ledger for the new week — so the Life Ledger remains a permanent, cumulative record while the weekly practice slate is renewed without manual effort.
                   </p>
 
                   <div className="p-2.5 bg-black/40 border border-[#c5a059]/20 rounded-lg text-center font-mono text-xs text-[#c5a059]">
@@ -2286,7 +2286,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
                     <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
                       <RubElHizbIcon className="h-4 w-4 text-cyan-400" />
-                      <span>WEEKLY PRACTICE SNAPSHOT — FOUR SACRED BUTTONS</span>
+                      <span>WEEKLY PRACTICE SNAPSHOT — THREE SACRED BUTTONS</span>
                     </div>
                     <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/40 px-2 py-0.5 rounded font-bold uppercase">
                       SNAPSHOT_ENGINE_V1
@@ -2294,7 +2294,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    At the top of the Muhāsabah chamber sits the <strong>Weekly Practice Snapshot</strong> — a 10.0-pt composite score across six pillars (Farā'iḍ, Slips, Adhkār, Sunan, Salawāt, Kaffārah). Four buttons govern what happens to that snapshot and the active slip ledger:
+                    At the top of the Muhāsabah chamber sits the <strong>Weekly Practice Snapshot</strong> — a 10.0-pt composite score across six pillars (Farā'iḍ, Slips, Adhkār, Sunan, Salawāt, Kaffārah). Three buttons govern what happens to that snapshot and the active slip ledger:
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -2304,34 +2304,24 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span>1. ⚡ REFINE</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Toggles an action-plan drawer showing exactly which pillars are below 10.0 and the one-tap quests that close each gap. Does <em>not</em> archive or alter any state — purely diagnostic.
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-950/80 border border-emerald-500/30 rounded-xl space-y-1.5">
-                      <div className="flex items-center gap-1.5 font-mono font-bold text-emerald-300 text-[11px] uppercase">
-                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>2. FRIDAY SEAL</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-300 font-sans">
-                        One-tap Friday snapshot. Computes the 10.0 score, writes a permanent archive document, and emits a System Inbox announcement. <strong>Does not</strong> reset the active slip ledger — your Life Ledger remains cumulative.
+                        Toggles an action-plan drawer showing exactly which pillars are below 10.0 and the one-tap quests that close each gap. Does <em>not</em> archive or alter any state — purely diagnostic and forward-looking.
                       </p>
                     </div>
 
                     <div className="p-3 bg-zinc-950/80 border border-[#c5a059]/30 rounded-xl space-y-1.5">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-[#fef08a] text-[11px] uppercase">
                         <FileText className="h-3.5 w-3.5 text-[#c5a059]" />
-                        <span>3. FULL AUDIT</span>
+                        <span>2. FULL AUDIT</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Opens the weekly summary modal so you can attach a <strong>personal reflection</strong> before archiving. Same archive output as FRIDAY SEAL — the differentiator is the written intent.
+                        Opens the weekly summary modal so you can attach a <strong>personal reflection</strong> before archiving. The same archive pipeline the automated Sunday cycle uses, available on demand. <strong>Does not</strong> clear the active slip ledger.
                       </p>
                     </div>
 
                     <div className="p-3 bg-zinc-950/80 border border-amber-500/30 rounded-xl space-y-1.5">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-amber-300 text-[11px] uppercase">
                         <History className="h-3.5 w-3.5 text-amber-400" />
-                        <span>4. ARCHIVES (n)</span>
+                        <span>3. ARCHIVES (n)</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
                         Opens the historical archive browser — every prior week, grade, breakdown, reflection, and planning-doc link. <em>Read-only.</em> Use the inline trash icon to delete a single record, or the footer control to purge the entire archive.
@@ -2341,7 +2331,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                   <div className="p-3 bg-[#1c160a] border border-[#c5a059]/40 rounded-lg text-[11px] text-amber-100/90 font-sans leading-relaxed">
                     <div className="font-mono font-bold text-amber-300 text-[11px] mb-1 uppercase">⚙️ Automated Sunday Reset (مرحلة الأحد)</div>
-                    Neither FRIDAY SEAL nor FULL AUDIT clears the slip ledger. <strong>Every Sunday</strong>, on the first appearance of that day in <code>systemDate</code> (real clock or manual override), the system automatically: (a) generates a Jumu'ah-bridging summary of the closing week, (b) archives it to <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>, (c) clears <code>muhasabahEntries</code> for a clean new week, and (d) stamps <code>lastWeeklyMuhasabahResetDate</code> so it is fully idempotent. The Life Ledger in the XP Audit and the per-week archive docs remain the unbroken historical record.
+                    FULL AUDIT archives on demand but does <em>not</em> clear the slip ledger. <strong>Every Sunday</strong>, on the first appearance of that day in <code>systemDate</code> (real clock or manual override), the system automatically: (a) generates a Jumu'ah-bridging summary of the closing week, (b) archives it to <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>, (c) clears <code>muhasabahEntries</code> for a clean new week, and (d) stamps <code>lastWeeklyMuhasabahResetDate</code> so it is fully idempotent. The Life Ledger in the XP Audit and the per-week archive docs remain the unbroken historical record.
                   </div>
                 </div>
 
