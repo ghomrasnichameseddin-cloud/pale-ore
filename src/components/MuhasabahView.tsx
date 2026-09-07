@@ -619,11 +619,11 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     type="button"
                     onClick={handleInstantFridaySealAndReset}
                     className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 via-[var(--accent-primary)] to-emerald-600 hover:brightness-110 border border-emerald-400/50 text-black font-display text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer truncate"
-                    title="Snapshot the current review to the Codex without deleting the life ledger"
+                    title="Archive a Friday snapshot of this week's practice to the Codex (the active ledger resets automatically every Sunday)"
                     id="one-click-friday-seal-btn"
                   >
                     <Check className="h-3.5 w-3.5 stroke-[2.5] shrink-0" />
-                    <span className="truncate">1-CLICK SEAL</span>
+                    <span className="truncate">FRIDAY SEAL</span>
                   </button>
 
                   <button
@@ -631,6 +631,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                     onClick={handleOpenWeeklySummaryGenerator}
                     className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     id="full-friday-audit-modal-btn"
+                    title="Open the weekly summary modal to write a personal reflection before archiving"
                   >
                     <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
                     <span>FULL AUDIT</span>
@@ -2309,7 +2310,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   <div className="text-center py-10 text-zinc-500">
                     <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-xs font-bold text-zinc-300">No archived weekly summaries found yet.</p>
-                    <p className="text-[10px] text-zinc-500 mt-1">Use "1-CLICK JUMU'AH SEAL" or "FULL AUDIT" on Friday to snapshot your week and clear the slips ledger for a clean slate.</p>
+                    <p className="text-[10px] text-zinc-500 mt-1">The active slip ledger is auto-archived and reset every Sunday. Use "FRIDAY SEAL" or "FULL AUDIT" to snapshot intermediate weeks on demand.</p>
                   </div>
                 )}
               </div>
