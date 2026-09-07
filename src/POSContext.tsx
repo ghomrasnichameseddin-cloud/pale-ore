@@ -464,7 +464,12 @@ export const calculateGatedPlayerLevel = (
     requiredBossCount++;
   }
   
-  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount;
+  // Max allowed level advances by 4 for each boss quest completed
+  // 0 bosses: capped at level 10
+  // 1 boss: capped at level 14
+  // 2 bosses: capped at level 18
+  // 3 bosses: capped at level 22
+  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + (completedBossCount * 4);
   const isCapped = rawLevel > maxAllowedLevel;
   const effectiveLevel = Math.min(rawLevel, maxAllowedLevel);
 
