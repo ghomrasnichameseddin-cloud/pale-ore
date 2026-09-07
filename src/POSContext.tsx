@@ -422,7 +422,7 @@ export const getCompletedBossQuestsCount = (quests: Quest[] = [], xpHistory: XPH
 };
 
 export const calculateGatedPlayerLevel = (
-  totalXp: number, 
+  totalXp: number,
   completedBossCount: number
 ): {
   level: number;
@@ -442,11 +442,28 @@ export const calculateGatedPlayerLevel = (
     };
   }
 
-  // From Intermediate Ranks (Level 10+) forward, each level advancement requires completing a Boss Quest!
-  // Level 10 is reached with 0 boss quests.
-  // Level 11 requires 1 boss quest.
-  // Level 12 requires 2 boss quests, etc.
-  const requiredBossCount = rawLevel - INTERMEDIATE_RANK_LEVEL_THRESHOLD;
+  // From Intermediate Ranks (Level 10+) forward, boss quests are required at specific levels:
+  // Level 10: 0 boss quests (just level up)
+  // Level 11: 1 boss quest required
+  // Level 12: 1 boss quest required (no additional)
+  // Level 13: 1 boss quest required (no additional)
+  // Level 14: 1 boss quest required (no additional)
+  // Level 15: 2 boss quests required (1 additional)
+  // Level 16: 2 boss quests required (no additional)
+  // Level 17: 2 boss quests required (no additional)
+  // Level 18: 2 boss quests required (no additional)
+  // Level 19: 3 boss quests required (1 additional)
+  // Level 20: 3 boss quests required (no additional)
+  // And so on... Boss quests are required every 4 levels starting from Level 11.
+  
+  // Calculate required boss count based on new progression pattern
+  // Boss levels: 11, 15, 19, 23, 27, 31, ... (every 4 levels starting from 11)
+  // For a given rawLevel, count how many boss levels are <= rawLevel
+  let requiredBossCount = 0;
+  for (let bossLevel = 11; bossLevel <= rawLevel; bossLevel += 4) {
+    requiredBossCount++;
+  }
+  
   const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount;
   const isCapped = rawLevel > maxAllowedLevel;
   const effectiveLevel = Math.min(rawLevel, maxAllowedLevel);

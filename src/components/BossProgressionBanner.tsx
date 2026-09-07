@@ -116,8 +116,8 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
               </span>
 
               <span className="text-[10px] font-mono text-zinc-300">
-                Boss Quests Slain: <strong className="text-[var(--accent-bright,#e5c875)]">{levelInfo.bossQuestsCompletedCount || 0}</strong> / {(levelInfo.level - 10) + (isCapped ? 1 : 0)}
-              </span>
+                              Boss Quests Slain: <strong className="text-[var(--accent-bright,#e5c875)]">{levelInfo.bossQuestsCompletedCount || 0}</strong> / {levelInfo.bossQuestsRequiredCount || 0}
+                            </span>
             </div>
 
             <h4 className="text-sm sm:text-base font-display font-bold text-white flex items-center gap-2">

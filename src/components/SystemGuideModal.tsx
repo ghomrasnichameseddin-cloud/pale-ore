@@ -582,12 +582,12 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-                      <div className="p-3 bg-zinc-950/90 border border-amber-500/30 rounded-lg space-y-1">
-                        <span className="text-amber-400 font-bold block text-[11px]">1. BOSS QUEST MANDATE</span>
-                        <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
-                          To advance to Level 10 and each subsequent level, you <strong>MUST complete at least one Boss Quest</strong> (Difficulty: <em>Boss</em> or Type: <em>Boss</em>).
-                        </p>
-                      </div>
+                                          <div className="p-3 bg-zinc-950/90 border border-amber-500/30 rounded-lg space-y-1">
+                                            <span className="text-amber-400 font-bold block text-[11px]">1. BOSS QUEST MANDATE</span>
+                                            <p className="text-zinc-300 font-sans text-[11px] leading-relaxed">
+                                              From Level 10 onward, you <strong>MUST complete Boss Quests</strong> to advance. Boss quests are required at Levels 11, 15, 19, 23, 27, 31... (every 4 levels).
+                                            </p>
+                                          </div>
 
                       <div className="p-3 bg-zinc-950/90 border border-red-500/30 rounded-lg space-y-1">
                         <span className="text-red-400 font-bold block text-[11px]">2. STUCK LEVEL PROGRESSION</span>
@@ -605,9 +605,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
 
                     <div className="p-2.5 bg-black/60 border border-amber-500/30 rounded-lg flex items-center justify-between text-xs font-mono">
-                      <div className="text-zinc-300 text-[11px]">
-                        <span className="text-amber-400 font-bold">Rule Formula:</span> Max Allowed Level = <code>9 + Completed Boss Quests Count</code> (When Raw Level ≥ 10).
-                      </div>
+                                          <div className="text-zinc-300 text-[11px]">
+                                            <span className="text-amber-400 font-bold">Rule Formula:</span> Boss Quests required at Levels 11, 15, 19, 23, 27, 31... (every 4 levels). Max Allowed Level = <code>10 + Completed Boss Quests Count</code> (When Raw Level ≥ 11).
+                                          </div>
                       <button 
                         onClick={() => handleNavigate('quests')}
                         className="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-1 rounded font-bold transition flex items-center gap-1"
@@ -1108,9 +1108,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <span className="text-[10.5px] text-zinc-400 font-sans">At 50% and 25% HP, the Boss triggers enrage phases requiring urgent priority task strikes.</span>
                     </div>
                     <div className="p-2.5 bg-zinc-950/90 rounded border border-emerald-500/20">
-                      <span className="text-emerald-400 font-bold block">3. Level 10+ Gate</span>
-                      <span className="text-[10.5px] text-zinc-400 font-sans">Advancing beyond Level 10 requires at least 1 Calamity Boss conquest, testing operational mastery.</span>
-                    </div>
+                                          <span className="text-emerald-400 font-bold block">3. Boss Quest Gate</span>
+                                          <span className="text-[10.5px] text-zinc-400 font-sans">Boss Quests required at Levels 11, 15, 19, 23... (every 4 levels). Each gate tests operational mastery.</span>
+                                        </div>
                   </div>
                 </div>
               </div>
