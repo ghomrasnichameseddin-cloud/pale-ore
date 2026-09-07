@@ -265,6 +265,7 @@ interface POSContextType {
   saveAndArchiveWeeklySummary: (summary: WeeklyMuhasabahSummary) => { success: boolean; message: string };
   clearAllWeeklyArchives: () => { success: boolean; message: string };
   deleteWeeklyArchive: (idOrDate: string) => { success: boolean; message: string };
+  runWeeklyMuhasabahCycle: (sundayDateStr?: string) => { success: boolean; message: string; summaryId?: string };
 
   // Weaknesses Management
   addWeakness: (weakness: Omit<Weakness, 'id' | 'createdAt'>) => string;
@@ -4675,6 +4676,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateVisualCodexSettings({ theme: themeId });
   };
 
+  // ─── Automated Weekly Muḥāsabah Cycle ───────────────────────────────────────
+  // Detects Sunday onset (including manual system date jumps) and auto-archives
+  // the previous week's Muhasabah ledger, then resets it for the new cycle.
+  useEffect(() => {
+    const currentSysDate = state.systemDate || getLocalDateString();
+    const [y, m, d] = currentSysDate.split('-').map(Number);
+    const dateObj = new Date(y, (m || 1) - 1, d || 1);
+    if (dateObj.getDay() !== 0) return; // Only trigger on Sunday
+    if (state.lastWeeklyMuhasabahResetDate === currentSysDate) return; // Already ran today
+
+    // This call is wrapped in try/catch for safety but should not throw.
+    runWeeklyMuhasabahCycle(currentSysDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.systemDate]);
+
   // Battery Saver & Eco Defense Functions
   const updateBatterySettings = (updates: Partial<BatterySettings>) => {
     setState(prev => {
@@ -5637,6 +5653,106 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
     return {
       success: true,
       message: 'Archived weekly summary deleted.'
+    };
+  };
+
+  /**
+   * Automated Weekly Muḥāsabah Cycle
+   * - Detects Sunday onset (or a manual system date jump into a new week).
+   * - Generates a Jumu'ah-bridging summary of the closing week.
+   * - Saves it to the permanent archive (savedWeeklySummaries + planning doc).
+   * - Resets the active `muhasabahEntries` ledger so the new week starts clean.
+   * - Sets `lastWeeklyMuhasabahResetDate` to the current system date to prevent re-runs.
+   *
+   * Idempotent: only fires if `lastWeeklyMuhasabahResetDate !== today` and today is Sunday.
+   */
+  const runWeeklyMuhasabahCycle = (sundayDateStr?: string): { success: boolean; message: string; summaryId?: string } => {
+    const targetSunday = sundayDateStr || state.systemDate || getLocalDateString();
+    const [y, m, d] = targetSunday.split('-').map(Number);
+    const targetDateObj = new Date(y, (m || 1) - 1, d || 1);
+    if (targetDateObj.getDay() !== 0) {
+      return { success: false, message: `Weekly cycle only triggers on Sunday. ${targetSunday} is not a Sunday.` };
+    }
+    if (state.lastWeeklyMuhasabahResetDate === targetSunday) {
+      return { success: false, message: `Weekly cycle already ran for ${targetSunday}.` };
+    }
+
+    // Use the most recent prior Friday as the Jumu'ah anchor for the closing week.
+    const fridayAnchor = new Date(targetDateObj);
+    fridayAnchor.setDate(fridayAnchor.getDate() - 3);
+    const fridayAnchorStr = `${fridayAnchor.getFullYear()}-${String(fridayAnchor.getMonth() + 1).padStart(2, '0')}-${String(fridayAnchor.getDate()).padStart(2, '0')}`;
+
+    let summary: WeeklyMuhasabahSummary;
+    try {
+      summary = generateWeeklyMuhasabahSummary(fridayAnchorStr);
+    } catch (err) {
+      return { success: false, message: 'Failed to generate weekly summary.' };
+    }
+
+    let savedSummaryId: string | undefined;
+    setState(prev => {
+      const existingSummaries = prev.savedWeeklySummaries || [];
+      const updatedSummaries = [
+        summary,
+        ...existingSummaries.filter(s => s.weekLabel !== summary.weekLabel && s.generatedDate !== summary.generatedDate)
+      ];
+      savedSummaryId = summary.id;
+
+      // Build the canonical planning doc (same format as manual archive).
+      const b = summary.weeklyScoreBreakdown;
+      const scoreStr = summary.scoreOutOf10 !== undefined ? `${summary.scoreOutOf10.toFixed(1)} / 10.0` : '10/10';
+      const gradeStr = b ? `${b.gradeAr} (${b.gradeEn})` : summary.spiritualRating;
+      const breakdownMd = b ? `\n### ⚖️ 10/10 Pillar Score Breakdown:\n- **1. Farā'iḍ Prayers (أركان الصلاة):** ${b.fardhPrayersScore.toFixed(1)} / 2.5 pts\n- **2. Slips & Restraint (حفظ الجوارح والعثرات):** ${b.slipsRestraintScore.toFixed(1)} / 2.0 pts\n- **3. Adhkār Fortress (حصن الأذكار):** ${b.adhkarFortressScore.toFixed(1)} / 1.5 pts\n- **4. Sunan & Qiyām (السنن وقيام الليل):** ${b.sunnahQiyamScore.toFixed(1)} / 1.5 pts\n- **5. Salawāt upon ﷺ (الصلاة على النبي):** ${b.salawatScore.toFixed(1)} / 1.0 pt\n- **6. Tawbah & Kaffārah (التوبة وتصفية الكفارات):** ${b.kaffarahTawbahScore.toFixed(1)} / 1.5 pts\n\n### 🎯 Refine to 10/10 Action Plan:\n${b.actionPlan10OutOf10.map(plan => `- ${plan}`).join('\n')}\n` : '';
+
+      const docPath = `04 Operations/Weekly Muhasabah/Weekly Summary - ${summary.generatedDate}.md`;
+      const docName = `Weekly Summary - ${summary.generatedDate}`;
+      const docContent = `# 📜 Weekly Muḥāsabah Sacred Review (${summary.weekLabel})\n\n**Generated:** ${summary.generatedDate} (Jumu'ah Review)\n**Weekly Sacred Audit Score:** **${scoreStr}** — *${gradeStr}*\n**Net Weekly XP:** ${summary.totalNetXP >= 0 ? '+' : ''}${summary.totalNetXP} XP (Earned: +${summary.totalEarnedXP} XP, Lost: −${summary.totalLostXP} XP)\n${breakdownMd}\n## 🕌 Prayer & Worship Fulfillments (Out of 35 Fardh)\n- **Fardh Completed:** ${summary.prayersCount} / 35\n- **On-Time (في وقتها):** ${summary.prayersOnTimeCount} (+40 XP bonus per prayer)\n- **Delayed / Late:** ${summary.prayersDelayedCount} (−50 XP deduction)\n- **Sunan Rawātib:** ${summary.sunnahRawatibCount}\n- **Morning Adhkar:** ${summary.adhkarSabahCount} / 7\n- **Evening Adhkar:** ${summary.adhkarMasaCount} / 7\n- **Night Sleep Adhkar:** ${summary.adhkarSleepNightCount || 0} / 7\n- **Dhohr Qaylulah Adhkar:** ${summary.adhkarSleepDhohrCount || 0} / 7\n- **Salawāt upon the Prophet (ﷺ):** ${summary.salawatTotal}\n- **Qiyām al-Layl Rak'ahs:** ${summary.qiyamTotalRakats}\n\n## ⚖️ Slip Ledger Summary\n- **Total Slips Audited:** ${summary.totalSlipsCount}\n- **Total Coin Fines:** −${summary.totalLostCoins} Coins\n- **Top Vulnerability Realm:** ${summary.topWeaknessCategories[0]?.category || 'None'} (${summary.topWeaknessCategories[0]?.count || 0} slips)\n\n## 🎯 Targeted Recommendations for the New Week\n${summary.recommendations.map(r => `- ${r}`).join('\n')}\n\n---\n_Auto-archived on ${targetSunday} (Sunday weekly cycle). XP is an in-app motivational measure. The true reward of worship belongs to Allah alone._`;
+
+      const existingDocs = prev.planningDocuments || [];
+      const docIndex = existingDocs.findIndex(d => d.path === docPath);
+      let updatedDocs = [...existingDocs];
+      if (docIndex >= 0) {
+        updatedDocs[docIndex] = {
+          ...updatedDocs[docIndex],
+          content: docContent,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        updatedDocs.push({
+          id: `pdoc-weekly-${Date.now()}`,
+          path: docPath,
+          name: docName,
+          content: docContent,
+          linkedGoals: [],
+          linkedProjects: [],
+          linkedQuests: [],
+          linkedSkills: [],
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: `🌅 WEEKLY CYCLE ARCHIVED: ${summary.weekLabel}`,
+        content: `Sunday has dawned — the closing week has been auto-archived to the sacred record. The active Muḥāsabah ledger has been reset clean for the new week. Final standing: ${summary.spiritualRating}.`,
+        priority: 'high'
+      });
+
+      return {
+        ...prev,
+        savedWeeklySummaries: updatedSummaries,
+        planningDocuments: updatedDocs,
+        // RESET the active weekly ledger so the new week begins with a clean slate.
+        muhasabahEntries: [],
+        lastWeeklyMuhasabahResetDate: targetSunday
+      };
+    });
+
+    return {
+      success: true,
+      message: `Weekly cycle complete for ${targetSunday}. Summary archived, ledger reset.`,
+      summaryId: savedSummaryId
     };
   };
 
@@ -7414,6 +7530,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
       saveAndArchiveWeeklySummary,
       clearAllWeeklyArchives,
       deleteWeeklyArchive,
+      runWeeklyMuhasabahCycle,
       addWeakness,
       updateWeakness,
       deleteWeakness,

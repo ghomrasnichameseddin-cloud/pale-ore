@@ -296,6 +296,8 @@ export const INITIAL_STATE: POSState = {
     maxFpsCap: 60
   },
   muhasabahEntries: [],
+  savedWeeklySummaries: [],
+  lastWeeklyMuhasabahResetDate: null,
   weaknesses: [
     {
       id: 'weakness-scrolling',

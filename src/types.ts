@@ -721,6 +721,7 @@ export interface POSState {
   weaknesses?: Weakness[];
   spiritualLogs?: Record<string, SpiritualDailyLog>;
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
+  lastWeeklyMuhasabahResetDate?: string | null; // YYYY-MM-DD of last Sunday on which the weekly cycle was auto-archived
   masjid40Covenant?: Masjid40DayCovenant;
   visualCodex?: VisualCodexSettings;
   customAdhkar?: AdhkarItem[];
