@@ -252,6 +252,26 @@ export interface ActiveFocusSession {
   timeSpent?: number; // total time spent in this session in seconds
 }
 
+export interface ActiveAdhkarFocusSession {
+  id: string;
+  adhkarId: string;
+  adhkarTitle: string;
+  arabicText?: string;
+  translation?: string;
+  targetCount: number;
+  currentCount: number;
+  totalWorkTime: number; // in minutes
+  mode: 'work' | 'rest';
+  status: 'running' | 'paused' | 'idle';
+  timeLeft: number; // in seconds
+  completedCycles: number;
+  estimatedCycles: number;
+  lastUpdated?: number;
+  timeSpent?: number;
+  xpEarned?: number;
+  notes?: string;
+}
+
 export interface PlanningDocument {
   id: string;
   path: string; // e.g. "00 Vision/Life Vision.md" or "04 Operations/Daily"
@@ -686,6 +706,7 @@ export interface POSState {
   xpHistory: XPHistoryEntry[];
   timeHistory?: TimeTransaction[];
   activeRestSession?: ActiveRestSession | null;
+  activeAdhkarFocusSession?: ActiveAdhkarFocusSession | null;
   systemDate: string; // format YYYY-MM-DD
   planningDocuments: PlanningDocument[];
   customJobs?: JobSpec[];

@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Sun, Moon, Sparkles, CheckCircle2, Plus, 
+import {
+  Sun, Moon, Sparkles, CheckCircle2, Plus,
   Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap,
   Bed, BookOpen, Clock, Edit2, Trash2, Search, Filter,
-  Volume2, Share2, Copy, AlertCircle, RotateCcw, Shield
+  Volume2, Share2, Copy, AlertCircle, RotateCcw, Shield, Timer
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, SpiritualDailyLog } from '../../types';
@@ -12,6 +12,7 @@ import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
 import { SleepAdhkarModal } from './SleepAdhkarModal';
 import { AdhkarFormModal } from './AdhkarFormModal';
 import { PostSalahAdhkarModal } from './PostSalahAdhkarModal';
+import { AdhkarFocusSessionModal } from './AdhkarFocusSessionModal';
 
 interface AdhkarSectionProps {
   systemDate: string;
@@ -54,6 +55,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   const [selectedPostPrayer, setSelectedPostPrayer] = useState<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'>('fajr');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showFocusSessionModal, setShowFocusSessionModal] = useState(false);
+  const [focusSessionAdhkar, setFocusSessionAdhkar] = useState<AdhkarItem | null>(null);
 
   // Quick inputs
   const [salawatCustomInput, setSalawatCustomInput] = useState('');
@@ -846,6 +849,17 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setFocusSessionAdhkar(item);
+                          setShowFocusSessionModal(true);
+                        }}
+                        className="p-1.5 text-zinc-400 hover:text-[#e5c875] hover:bg-[#3a2e12]/60 rounded-lg transition"
+                        title="Start Focus Session"
+                      >
+                        <Timer className="h-3.5 w-3.5" />
+                      </button>
                     </div>
 
                     {/* Digital Counter Display */}
@@ -1021,6 +1035,16 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         onClose={() => setShowPostSalahModal(false)}
         systemDate={systemDate}
         initialPrayer={selectedPostPrayer}
+      />
+
+      {/* ADHKAR FOCUS SESSION MODAL */}
+      <AdhkarFocusSessionModal
+        isOpen={showFocusSessionModal}
+        onClose={() => {
+          setShowFocusSessionModal(false);
+          setFocusSessionAdhkar(null);
+        }}
+        initialAdhkar={focusSessionAdhkar}
       />
     </div>
   );

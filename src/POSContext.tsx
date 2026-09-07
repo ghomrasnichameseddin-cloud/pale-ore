@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { 
+import {
   Goal, Project, Milestone, Quest, Skill, Attribute, UserProfile, XPHistoryEntry, POSState, QuestFolder, QuestList,
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
@@ -8,7 +8,7 @@ import {
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
-  AdhkarItem, AdhkarCategory, AdhkarPrayerTarget,
+  AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession
 } from './types';
@@ -904,41 +904,43 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
   const [activeFocusSession, setActiveFocusSession] = useState<ActiveFocusSession | null>(() => {
-    try {
-      const saved = localStorage.getItem('pale_ore_pos_focus_session');
-      if (!saved) return null;
-      const session = JSON.parse(saved) as ActiveFocusSession;
-      if (session && session.status === 'running' && session.lastUpdated) {
-        const elapsedSeconds = Math.floor((Date.now() - session.lastUpdated) / 1000);
-        if (elapsedSeconds > 0) {
-          let newTimeLeft = session.timeLeft - elapsedSeconds;
-          let currentMode = session.mode;
-          let completedCycles = session.completedCycles;
-          
-          while (newTimeLeft <= 0) {
-            const cycleLength = currentMode === 'work' ? session.totalWorkTime * 60 : session.totalRestTime * 60;
-            newTimeLeft += cycleLength;
-            if (currentMode === 'work') {
-              completedCycles += 1;
+      try {
+        const saved = localStorage.getItem('pale_ore_pos_focus_session');
+        if (!saved) return null;
+        const session = JSON.parse(saved) as ActiveFocusSession;
+        if (session && session.status === 'running' && session.lastUpdated) {
+          const elapsedSeconds = Math.floor((Date.now() - session.lastUpdated) / 1000);
+          if (elapsedSeconds > 0) {
+            let newTimeLeft = session.timeLeft - elapsedSeconds;
+            let currentMode = session.mode;
+            let completedCycles = session.completedCycles;
+  
+            while (newTimeLeft <= 0) {
+              const cycleLength = currentMode === 'work' ? session.totalWorkTime * 60 : session.totalRestTime * 60;
+              newTimeLeft += cycleLength;
+              if (currentMode === 'work') {
+                completedCycles += 1;
+              }
+              currentMode = currentMode === 'work' ? 'rest' : 'work';
             }
-            currentMode = currentMode === 'work' ? 'rest' : 'work';
+  
+            return {
+              ...session,
+              timeLeft: newTimeLeft,
+              mode: currentMode,
+              completedCycles,
+              timeSpent: (session.timeSpent || 0) + elapsedSeconds,
+              lastUpdated: Date.now()
+            };
           }
-          
-          return {
-            ...session,
-            timeLeft: newTimeLeft,
-            mode: currentMode,
-            completedCycles,
-            timeSpent: (session.timeSpent || 0) + elapsedSeconds,
-            lastUpdated: Date.now()
-          };
         }
+        return session;
+      } catch {
+        return null;
       }
-      return session;
-    } catch {
-      return null;
-    }
-  });
+    });
+  
+    const [activeAdhkarFocusSession, setActiveAdhkarFocusSession] = useState<ActiveAdhkarFocusSession | null>(null);
 
   useEffect(() => {
     if (activeFocusSession) {
@@ -1352,22 +1354,145 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const completeFocusCycle = (questId: string | null = null) => {
-    setActiveFocusSession(prev => {
-      if (!prev) return null;
-      const nextMode = prev.mode === 'work' ? 'rest' : 'work';
-      const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
-      const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
-      return {
-        ...prev,
-        mode: nextMode,
-        timeLeft: nextDuration * 60,
-        completedCycles: nextCycles,
-        status: 'paused'
+      setActiveFocusSession(prev => {
+        if (!prev) return null;
+        const nextMode = prev.mode === 'work' ? 'rest' : 'work';
+        const nextDuration = nextMode === 'work' ? prev.totalWorkTime : prev.totalRestTime;
+        const nextCycles = prev.mode === 'work' ? prev.completedCycles + 1 : prev.completedCycles;
+        return {
+          ...prev,
+          mode: nextMode,
+          timeLeft: nextDuration * 60,
+          completedCycles: nextCycles,
+          status: 'paused'
+        };
+      });
+    };
+  
+    // ===== ADHKAR FOCUS SESSIONS =====
+    // Timer effect for adhkar focus session
+    useEffect(() => {
+      if (!activeAdhkarFocusSession || activeAdhkarFocusSession.status !== 'running') return;
+  
+      const timer = setInterval(() => {
+        setActiveAdhkarFocusSession(prev => {
+          if (!prev || prev.status !== 'running') return prev;
+          const now = Date.now();
+          const lastUpd = prev.lastUpdated || now;
+          const elapsed = Math.max(1, Math.floor((now - lastUpd) / 1000));
+  
+          if (prev.timeLeft <= elapsed) {
+            // Session completed
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav');
+              audio.volume = 0.5;
+              audio.play().catch(() => {});
+            } catch (e) {}
+  
+            return {
+              ...prev,
+              mode: 'rest',
+              timeLeft: 0,
+              completedCycles: prev.completedCycles + 1,
+              status: 'paused',
+              timeSpent: (prev.timeSpent || 0) + elapsed,
+              lastUpdated: now
+            };
+          }
+          return {
+            ...prev,
+            timeLeft: prev.timeLeft - elapsed,
+            timeSpent: (prev.timeSpent || 0) + elapsed,
+            lastUpdated: now
+          };
+        });
+      }, 1000);
+  
+      return () => clearInterval(timer);
+    }, [activeAdhkarFocusSession?.status]);
+  
+    const startAdhkarFocusSession = (adhkar: AdhkarItem, workTime = 25, estimatedCycles?: number) => {
+      const cycles = estimatedCycles || Math.max(1, Math.round(adhkar.targetCount / 10));
+      
+      const session: ActiveAdhkarFocusSession = {
+        id: `adhkar-focus-${Date.now()}`,
+        adhkarId: adhkar.id,
+        adhkarTitle: adhkar.title,
+        arabicText: adhkar.arabicText,
+        translation: adhkar.translation,
+        targetCount: adhkar.targetCount,
+        currentCount: 0,
+        totalWorkTime: workTime,
+        mode: 'work',
+        status: 'running',
+        timeLeft: workTime * 60,
+        completedCycles: 0,
+        estimatedCycles: cycles,
+        timeSpent: 0,
+        lastUpdated: Date.now()
       };
-    });
-  };
 
-  const isQuestFinishedForToday = (q: Quest): boolean => {
+      setActiveAdhkarFocusSession(session);
+
+      addSystemMessage({
+        sender: 'FOCUS_BOT',
+        category: 'note',
+        title: 'Adhkar Focus Session Engaged',
+        content: `Engaged ${workTime}m focus session for "${adhkar.title}" (${adhkar.targetCount}x target). Concentration lock active.`,
+        priority: 'medium'
+      });
+    };
+  
+    const pauseAdhkarFocusSession = () => {
+      setActiveAdhkarFocusSession(prev => prev ? { ...prev, status: 'paused' } : null);
+    };
+  
+    const resumeAdhkarFocusSession = () => {
+      setActiveAdhkarFocusSession(prev => prev ? { ...prev, status: 'running', lastUpdated: Date.now() } : null);
+    };
+  
+    const stopAdhkarFocusSession = () => {
+      if (activeAdhkarFocusSession) {
+        addSystemMessage({
+          sender: 'FOCUS_BOT',
+          category: 'note',
+          title: 'Adhkar Focus Session Ended',
+          content: `Session for "${activeAdhkarFocusSession.adhkarTitle}" stopped. Completed ${activeAdhkarFocusSession.completedCycles} cycles.`,
+          priority: 'low'
+        });
+      }
+      setActiveAdhkarFocusSession(null);
+    };
+  
+    const completeAdhkarFocusCycle = () => {
+      setActiveAdhkarFocusSession(prev => {
+        if (!prev) return null;
+        const nextCycles = prev.completedCycles + 1;
+        const isComplete = nextCycles >= prev.estimatedCycles;
+        
+        return {
+          ...prev,
+          mode: 'rest',
+          timeLeft: 0,
+          completedCycles: nextCycles,
+          status: isComplete ? 'paused' : 'paused',
+          lastUpdated: Date.now()
+        };
+      });
+    };
+  
+    const incrementAdhkarFocusCount = (delta: number = 1) => {
+      setActiveAdhkarFocusSession(prev => {
+        if (!prev) return null;
+        const newCount = Math.min(prev.targetCount, Math.max(0, prev.currentCount + delta));
+        return {
+          ...prev,
+          currentCount: newCount
+        };
+      });
+    };
+  
+    const isQuestFinishedForToday = (q: Quest): boolean => {
     const targetDateStr = state.systemDate || new Date().toISOString().split('T')[0];
     
     // If it is a recurring quest, its finished status for today is ONLY determined by completedAt
@@ -7059,24 +7184,31 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
   };
 
   return (
-    <POSContext.Provider value={{
-      state,
-      addSystemMessage,
-      markSystemMessageRead,
-      markAllSystemMessagesRead,
-      deleteSystemMessage,
-      clearAllSystemMessages,
-      updateNotificationSettings,
-      scanDelayedTasks,
-      activeFocusSession,
-      startFocusSession,
-      pauseFocusSession,
-      resumeFocusSession,
-      stopFocusSession,
-      skipFocusStage,
-      adjustFocusSessionTime,
-      completeFocusCycle,
-      addGoal,
+      <POSContext.Provider value={{
+        state,
+        addSystemMessage,
+        markSystemMessageRead,
+        markAllSystemMessagesRead,
+        deleteSystemMessage,
+        clearAllSystemMessages,
+        updateNotificationSettings,
+        scanDelayedTasks,
+        activeFocusSession,
+        startFocusSession,
+        pauseFocusSession,
+        resumeFocusSession,
+        stopFocusSession,
+        skipFocusStage,
+        adjustFocusSessionTime,
+        completeFocusCycle,
+        activeAdhkarFocusSession,
+        startAdhkarFocusSession,
+        pauseAdhkarFocusSession,
+        resumeAdhkarFocusSession,
+        stopAdhkarFocusSession,
+        completeAdhkarFocusCycle,
+        incrementAdhkarFocusCount,
+        addGoal,
       updateGoal,
       deleteGoal,
       clearAllGoals,
