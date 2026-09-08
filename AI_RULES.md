@@ -48,6 +48,7 @@
 
 - **State Management**: All state lives in `POSContext` via `useState`. The `POSProvider` wraps the entire app. State is persisted to `localStorage` on every change via `useEffect`.
 - **Date System**: The app has a simulated date system (`systemDate`) that can be manually adjusted. Midnight transitions trigger penalties and quest resets.
+- **Weekly Muhāsabah Cycle**: Runs strictly on a Saturday 00:00:00 to Friday 23:59:59 window. Sundays trigger automated archival and active slip resets. Deterministic multi-week reconciliation (`reconcileMissedWeeks` in `src/utils/weeklyCycle.ts`) handles catch-up idempotently when app is opened days or weeks later.
 - **XP System**: All XP flows through `xpHistory` (array of `XPHistoryEntry`). Levels are calculated dynamically from cumulative XP.
 - **Component Composition**: Views are composed in `AppContent()` based on `activeTab` state. Each view is a separate component in `src/components/`.
 - **No Server**: This is a fully client-side application. No API routes, no server code, no backend dependencies.

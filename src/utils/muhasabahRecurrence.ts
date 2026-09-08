@@ -1,48 +1,6 @@
 import { MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, Weakness, RecurrenceCadence, RecurrenceAnalysis } from '../types';
-
-export const SEVERITY_BASE_CONSEQUENCES: Record<MuhasabahSeverity, {
-  baseHp: number;
-  baseCoins: number;
-  baseXp: number;
-  baseMomentum: number;
-  label: string;
-}> = {
-  Minor: {
-    baseHp: 10,
-    baseCoins: 10,
-    baseXp: 100,
-    baseMomentum: 15,
-    label: 'Minor'
-  },
-  Moderate: {
-    baseHp: 20,
-    baseCoins: 25,
-    baseXp: 200,
-    baseMomentum: 35,
-    label: 'Moderate'
-  },
-  Major: {
-    baseHp: 35,
-    baseCoins: 50,
-    baseXp: 300,
-    baseMomentum: 100, // resets momentum
-    label: 'Major'
-  },
-  Severe: {
-    baseHp: 50,
-    baseCoins: 100,
-    baseXp: 400,
-    baseMomentum: 100,
-    label: 'Severe'
-  },
-  Critical: {
-    baseHp: 75,
-    baseCoins: 200,
-    baseXp: 500,
-    baseMomentum: 100,
-    label: 'Critical'
-  }
-};
+import { SEVERITY_BASE_CONSEQUENCES } from './muhasabahConsequences';
+export { SEVERITY_BASE_CONSEQUENCES };
 
 /**
  * Calculates calendar day differences between two YYYY-MM-DD strings.
@@ -82,6 +40,7 @@ export function analyzeSinRecurrence(params: {
   weaknesses: Weakness[];
   currentEntryId?: string;
   forceCadence?: RecurrenceCadence;
+  isPreCommit?: boolean;
 }): RecurrenceAnalysis {
   const {
     title,
@@ -93,7 +52,8 @@ export function analyzeSinRecurrence(params: {
     allEntries = [],
     weaknesses = [],
     currentEntryId,
-    forceCadence
+    forceCadence,
+    isPreCommit = true
   } = params;
 
   const base = SEVERITY_BASE_CONSEQUENCES[severity] || SEVERITY_BASE_CONSEQUENCES.Moderate;
@@ -130,16 +90,23 @@ export function analyzeSinRecurrence(params: {
     return (b.timestamp || '').localeCompare(a.timestamp || '');
   });
 
-  // Check linked weakness state if available
-  const linkedWeakness = weaknesses.find(w => 
-    (weaknessId && w.id === weaknessId) ||
-    (normWeaknessName && normalizeSinKey(w.name) === normWeaknessName) ||
-    (normTitle && normalizeSinKey(w.name) === normTitle)
-  );
+  // Check linked weakness state if available: prioritize weaknessId, then weaknessName, then title
+  let linkedWeakness: Weakness | undefined;
+  if (weaknessId) {
+    linkedWeakness = weaknesses.find(w => w.id === weaknessId);
+  }
+  if (!linkedWeakness && normWeaknessName) {
+    linkedWeakness = weaknesses.find(w => normalizeSinKey(w.name) === normWeaknessName);
+  }
+  if (!linkedWeakness && normTitle) {
+    linkedWeakness = weaknesses.find(w => normalizeSinKey(w.name) === normTitle);
+  }
 
   const totalPastOccurrences = matchingPastEntries.length;
   const sameDayEntries = matchingPastEntries.filter(e => e.date === targetDate);
-  const sameDayCount = sameDayEntries.length;
+  const sameDayCount = isPreCommit 
+    ? sameDayEntries.length 
+    : Math.max(0, sameDayEntries.length - 1);
 
   // Filter prior dates strictly before targetDate for history interval
   const priorDayEntries = matchingPastEntries.filter(e => e.date < targetDate);
@@ -336,6 +303,16 @@ export interface RecurringSinItem {
   historyEntries: MuhasabahEntry[];
 }
 
+export interface RecurringSinsRegistry {
+  allRecurringSins: RecurringSinItem[];
+  intraDaySins: RecurringSinItem[];
+  dailySins: RecurringSinItem[];
+  everyTwoDaysSins: RecurringSinItem[];
+  periodicSins: RecurringSinItem[];
+  totalRecurringCount: number;
+  activeChainsCount: number;
+}
+
 /**
  * Scans all Muhasabah entries and weaknesses to compile a comprehensive
  * list of recurring sins grouped by their recurrence rhythm.
@@ -344,15 +321,7 @@ export function getRecurringSinsRegistry(
   allEntries: MuhasabahEntry[] = [],
   weaknesses: Weakness[] = [],
   targetDate: string
-): {
-  allRecurringSins: RecurringSinItem[];
-  intraDaySins: RecurringSinItem[];
-  dailySins: RecurringSinItem[];
-  everyTwoDaysSins: RecurringSinItem[];
-  periodicSins: RecurringSinItem[];
-  totalRecurringCount: number;
-  activeChainsCount: number;
-} {
+): RecurringSinsRegistry {
   const sinMap = new Map<string, {
     key: string;
     name: string;
@@ -423,7 +392,8 @@ export function getRecurringSinsRegistry(
       weaknessName: item.name,
       targetDate,
       allEntries,
-      weaknesses
+      weaknesses,
+      isPreCommit: false
     });
 
     const matchingWeakness = item.weaknessId ? weaknesses.find(w => w.id === item.weaknessId) : null;
@@ -468,7 +438,7 @@ export function getRecurringSinsRegistry(
     return b.occurrenceCount - a.occurrenceCount;
   });
 
-  const intraDaySins = registry.filter(s => s.cadence === 'same_day' || s.sameDayCount >= 1);
+  const intraDaySins = registry.filter(s => s.cadence === 'same_day' || s.sameDayCount >= 2);
   const dailySins = registry.filter(s => s.cadence === 'daily');
   const everyTwoDaysSins = registry.filter(s => s.cadence === 'every_2_days');
   const periodicSins = registry.filter(s => s.cadence === 'semi_weekly' || s.cadence === 'weekly');

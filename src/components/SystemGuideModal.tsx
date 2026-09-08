@@ -1570,7 +1570,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    <strong>Weekly Jumu'ah Bridge (Friday) &amp; Automated Sunday Cycle:</strong> At any time you may open the <strong>FULL AUDIT</strong> modal to attach a personal reflection and trigger a snapshot — the system calculates your <strong>10.0 Sacred Score</strong>, evaluates weekly campaign progress, extracts lessons learned, and permanently archives the summary markdown document under <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>. Then, <strong>every Sunday at first light</strong>, the system automatically runs the closing week through the same archive pipeline and resets the active slip ledger for the new week — so the Life Ledger remains a permanent, cumulative record while the weekly practice slate is renewed without manual effort.
+                    <strong>Weekly Saturday–Friday Cycle &amp; Automated Sunday Reconciliation:</strong> The accountability window strictly spans <strong>Saturday 00:00:00 to Friday 23:59:59</strong>, anchored by Friday Jumu'ah. At any time you may open the <strong>FULL AUDIT</strong> modal to attach a personal reflection and trigger an on-demand snapshot — the system calculates your normalized <strong>10.0 Sacred Score</strong> across the six pillars, evaluates weekly campaign progress, extracts lessons learned, and permanently archives the summary markdown document under <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>. Then, <strong>every Sunday at first light</strong>, the deterministic reconciliation engine automatically runs the closing week through the archive pipeline and resets the active slip ledger for the new week (with multi-week catch-up handling if absent) — ensuring the Life Ledger remains an unbroken cumulative record while the weekly practice slate is renewed cleanly.
                   </p>
 
                   <div className="p-2.5 bg-black/40 border border-[#c5a059]/20 rounded-lg text-center font-mono text-xs text-[#c5a059]">
@@ -2245,12 +2245,81 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
                 </div>
 
+                {/* RECURRENCE CADENCE MULTIPLIER & WEAKNESS TRACKING */}
+                <div className="p-4 bg-amber-950/20 border border-amber-500/40 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                    <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5 text-xs">
+                      <Zap className="h-4 w-4 text-amber-400" />
+                      <span>RECURRENCE CADENCE MULTIPLIER & COMPOUNDING FRICTION ENGINE</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-bold">
+                      COMPOUNDING_CADENCE
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    A single slip is human error; repeated relapses signify a neglected systemic vulnerability. The <strong>Recurrence Engine</strong> inspects prior entry timestamps and linked weaknesses to apply escalating friction multipliers:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-mono">
+                    <div className="p-2.5 bg-black/40 border border-rose-500/30 rounded-lg space-y-1">
+                      <div className="text-rose-400 font-bold flex items-center justify-between">
+                        <span>SAME-DAY RELAPSE</span>
+                        <span className="text-[10px] bg-rose-950 px-1 rounded">1.75×</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Relapsing on the exact same weakness within the same calendar day triggers maximum acute compounding friction.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-black/40 border border-amber-500/30 rounded-lg space-y-1">
+                      <div className="text-amber-400 font-bold flex items-center justify-between">
+                        <span>CONSECUTIVE DAILY</span>
+                        <span className="text-[10px] bg-amber-950 px-1 rounded">1.50×</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Falling into the same breach on consecutive days indicates habituation and escalates the penalty by 50%.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-black/40 border border-yellow-500/30 rounded-lg space-y-1">
+                      <div className="text-yellow-400 font-bold flex items-center justify-between">
+                        <span>EVERY 2 DAYS</span>
+                        <span className="text-[10px] bg-yellow-950 px-1 rounded">1.25×</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Alternating-day lapses trigger a 25% penalty escalator to break oscillating relapse loops.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-black/40 border border-cyan-500/30 rounded-lg space-y-1">
+                      <div className="text-cyan-400 font-bold flex items-center justify-between">
+                        <span>PERIODIC (3–7 DAYS)</span>
+                        <span className="text-[10px] bg-cyan-950 px-1 rounded">1.10×</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-400 font-sans">
+                        Weekly cyclical relapses trigger a 10% awareness surcharge to prompt proactive environmental defense.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-black/50 border border-white/5 rounded-lg text-[11px] font-mono text-zinc-300 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-amber-300 font-bold flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-amber-400" />
+                      LIVE RECURRENCE CADENCE REGISTRY
+                    </span>
+                    <span className="text-zinc-400 font-sans">
+                      Monitored via the active telemetry bar at the top of the Muhāsabah chamber to highlight active compounding chains.
+                    </span>
+                  </div>
+                </div>
+
                 {/* SACRED KAFFĀRAH RESTITUTION & SPIRITUAL SHOP LOCK */}
                 <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5 text-xs">
                       <Lock className="h-4 w-4 text-cyan-400" />
-                      <span>KAFFĀRAH RESTITUTION & SPIRITUAL REWARD LOCK</span>
+                      <span>KAFFĀRAH RESTITUTION, RECOVERY CEILING & SPIRITUAL REWARD LOCK</span>
                     </div>
                     <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded">
                       PENANCE_LIFT_ENGINE
@@ -2266,45 +2335,131 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
 
                     <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                      <strong className="text-emerald-300 font-mono block text-[11px]">🌿 1-Click Kaffārah Fulfillment & Shop Unlocking</strong>
+                      <strong className="text-emerald-300 font-mono block text-[11px]">🌿 1-Click Kaffārah Fulfillment, Soul Vitality & Shop Unlocking</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        Once you perform your penance (e.g. 2 Rak'ahs of Tawbah, 100x Istighfar, deep focus sprint, or charity donation), fulfill the directive in your active queue to restore spiritual equilibrium, regain restitution XP, boost momentum by +15%, and immediately lift all shop locks.
+                        Once you perform your penance (e.g. 2 Rak'ahs of Tawbah, 100x Istighfar, deep focus sprint, or charity donation), fulfill the directive in your active queue to restore spiritual equilibrium, restore <strong>+35 Soul Vitality (HP)</strong>, boost momentum by +15%, and immediately lift all shop locks.
                       </p>
                     </div>
 
                     <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
-                      <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Full Audit Accounting & 0 XP Balance Floor</strong>
+                      <strong className="text-cyan-300 font-mono block text-[11px]">🛡️ Configurable Recovery Percentage (10%–30%) & 0 XP Balance Floor</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        Every non-exempt Muhāsabah audit is logged in full severity (e.g. Critical slips deduct −500 XP and −200 Coins each). Total player XP is safeguarded with a strict <code>0 XP</code> floor to prevent negative balances.
+                        Every slip supports a configurable <strong>recoveryPercentage</strong> (10% to 30%, default 20%), returning recovered XP upon penance completion and preserving audit records permanently through weekly archives. Total player XP is safeguarded with a strict <code>0 XP</code> floor to prevent negative balances.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* WEEKLY PRACTICE SNAPSHOT — BUTTONS & SUNDAY AUTOMATION */}
-                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0d0f17] via-[#141721] to-[#0b0d13] border border-cyan-500/40 rounded-xl space-y-3">
+                {/* WEEKLY PRACTICE SNAPSHOT & 10.0 SACRED SCORE ARCHITECTURE */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0d0f17] via-[#141721] to-[#0b0d13] border border-cyan-500/40 rounded-xl space-y-4">
                   <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
                     <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
                       <RubElHizbIcon className="h-4 w-4 text-cyan-400" />
-                      <span>WEEKLY PRACTICE SNAPSHOT — THREE SACRED BUTTONS</span>
+                      <span>WEEKLY PRACTICE SNAPSHOT — EXACT 10.0 SACRED SCORE ENGINE</span>
                     </div>
                     <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/40 px-2 py-0.5 rounded font-bold uppercase">
-                      SNAPSHOT_ENGINE_V1
+                      MATHEMATICAL_10.0_NORM
                     </span>
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    At the top of the Muhāsabah chamber sits the <strong>Weekly Practice Snapshot</strong> — a 10.0-pt composite score across six pillars (Farā'iḍ, Slips, Adhkār, Sunan, Salawāt, Kaffārah). Three buttons govern what happens to that snapshot and the active slip ledger:
+                    At the top of the Muhāsabah chamber sits the <strong>Weekly Practice Snapshot</strong> — an exact <strong>10.0-point composite score</strong> derived from six sacred pillars. Each pillar is mathematically weighted to sum to exactly 10.0:
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* 6 PILLARS BREAKDOWN */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950/90 border border-emerald-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-300 font-bold">1. FARĀ'IḌ PRESERVATION</span>
+                        <span className="text-[10px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-bold">MAX 2.5 PTS</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        Obligatory prayers (35 total weekly: 5 daily × 7 days). Full 2.5 pts awarded when all fardh prayers are completed on time and in congregation.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 border border-rose-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-300 font-bold">2. MORAL RESTRAINT</span>
+                        <span className="text-[10px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-bold">MAX 2.0 PTS</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        Starts at a pristine 2.0 pts. Slips incur severity deductions: Minor (−0.10), Moderate (−0.25), Major (−0.50), Severe (−0.80), Critical (−1.20). Minimum 0.0 pts.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 border border-amber-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-amber-300 font-bold">3. ADHKĀR FORTRESS</span>
+                        <span className="text-[10px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-bold">MAX 2.0 PTS</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        Morning Adhkār (Sabāh), Evening Adhkār (Masā'), and Sleep Adhkār (Nawm) consistency across the 21 weekly sessions (3 daily × 7 days).
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 border border-purple-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-purple-300 font-bold">4. SUNAN, RAWĀTIB & QIYĀM</span>
+                        <span className="text-[10px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-bold">MAX 1.5 PTS</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        12 confirmed daily prophetic Rawātib (including Dhuhr before/after), Duha morning prayer, Tahajjud/Qiyām al-Layl, and Witr night prayer.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 border border-cyan-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-cyan-300 font-bold">5. SALAWĀT UPON THE PROPHET ﷺ</span>
+                        <span className="text-[10px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded font-bold">MAX 1.0 PT</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        Prophetic blessings benchmark: 70+ daily Salawāt (500 per week target for full 1.0 pt).
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 border border-yellow-500/30 rounded-lg space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-yellow-300 font-bold">6. TAWBAH & KAFFĀRAH</span>
+                        <span className="text-[10px] bg-yellow-950 text-yellow-400 px-1.5 py-0.5 rounded font-bold">MAX 1.0 PT</span>
+                      </div>
+                      <p className="text-[10.5px] text-zinc-300 font-sans">
+                        Ratio of settled restitution penances vs pending breaches. If zero slips occurred all week, awards a full 1.0 pt Clean-Slate bonus.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* SACRED GRADES */}
+                  <div className="p-3 bg-black/40 border border-white/10 rounded-lg text-xs font-mono space-y-1.5">
+                    <span className="text-zinc-400 font-bold block text-[11px]">SACRED GRADE THRESHOLDS:</span>
+                    <div className="flex flex-wrap gap-2 text-[10.5px]">
+                      <span className="px-2 py-0.5 bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 rounded">
+                        Mumtāz (A+): 9.0–10.0
+                      </span>
+                      <span className="px-2 py-0.5 bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 rounded">
+                        Jayyid Jiddan (A): 8.0–8.9
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-950/80 border border-amber-500/30 text-amber-300 rounded">
+                        Jayyid (B): 7.0–7.9
+                      </span>
+                      <span className="px-2 py-0.5 bg-yellow-950/80 border border-yellow-500/30 text-yellow-300 rounded">
+                        Maqbūl (C): 6.0–6.9
+                      </span>
+                      <span className="px-2 py-0.5 bg-rose-950/80 border border-rose-500/30 text-rose-300 rounded">
+                        Da'īf (Needs Tawbah): &lt; 6.0
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* THREE BUTTONS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
                     <div className="p-3 bg-zinc-950/80 border border-violet-500/30 rounded-xl space-y-1.5">
                       <div className="flex items-center gap-1.5 font-mono font-bold text-violet-300 text-[11px] uppercase">
                         <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                         <span>1. ⚡ REFINE</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Toggles an action-plan drawer showing exactly which pillars are below 10.0 and the one-tap quests that close each gap. Does <em>not</em> archive or alter any state — purely diagnostic and forward-looking.
+                        Toggles an action-plan drawer showing exactly which pillars are below target and provides 1-tap corrective quests to close the gaps before closing.
                       </p>
                     </div>
 
@@ -2314,7 +2469,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span>2. FULL AUDIT</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Opens the weekly summary modal so you can attach a <strong>personal reflection</strong> before archiving. The same archive pipeline the automated Sunday cycle uses, available on demand. <strong>Does not</strong> clear the active slip ledger.
+                        Opens the weekly summary modal so you can attach a <strong>personal qualitative reflection</strong> before archiving on demand. <strong>Does not</strong> clear the active slip ledger.
                       </p>
                     </div>
 
@@ -2324,14 +2479,26 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span>3. ARCHIVES (n)</span>
                       </div>
                       <p className="text-[11px] text-zinc-300 font-sans">
-                        Opens the historical archive browser — every prior week, grade, breakdown, reflection, and planning-doc link. <em>Read-only.</em> Use the inline trash icon to delete a single record, or the footer control to purge the entire archive.
+                        Opens the historical archive browser — every prior week, grade, 6-pillar breakdown, reflection, and planning-doc link. Read-only with individual delete and bulk purge tools.
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-[#1c160a] border border-[#c5a059]/40 rounded-lg text-[11px] text-amber-100/90 font-sans leading-relaxed">
-                    <div className="font-mono font-bold text-amber-300 text-[11px] mb-1 uppercase">⚙️ Automated Sunday Reset (مرحلة الأحد)</div>
-                    FULL AUDIT archives on demand but does <em>not</em> clear the slip ledger. <strong>Every Sunday</strong>, on the first appearance of that day in <code>systemDate</code> (real clock or manual override), the system automatically: (a) generates a Jumu'ah-bridging summary of the closing week, (b) archives it to <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>, (c) clears <code>muhasabahEntries</code> for a clean new week, and (d) stamps <code>lastWeeklyMuhasabahResetDate</code> so it is fully idempotent. The Life Ledger in the XP Audit and the per-week archive docs remain the unbroken historical record.
+                  {/* WEEK BOUNDARY & AUTOMATED SUNDAY RESET */}
+                  <div className="p-3.5 bg-[#1c160a] border border-[#c5a059]/40 rounded-xl text-[11px] text-amber-100/90 font-sans leading-relaxed space-y-2">
+                    <div className="font-mono font-bold text-amber-300 text-[11px] uppercase flex items-center justify-between">
+                      <span>⚙️ WEEK-BOUNDARY ARCHITECTURE & AUTOMATED SUNDAY RESET (مرحلة الأحد)</span>
+                      <span className="text-[9px] bg-amber-950 px-1.5 py-0.5 rounded text-[#fef08a]">SATURDAY → FRIDAY CYCLE</span>
+                    </div>
+                    <p>
+                      <strong>Unified Week Definition:</strong> The accountability cycle strictly spans <strong>Saturday 00:00:00 to Friday 23:59:59</strong> (anchored by Friday Jumu'ah). 
+                    </p>
+                    <p>
+                      <strong>Automated Sunday Closure:</strong> Every Sunday at first light, the system automatically: (a) generates a Jumu'ah-bridging summary of the closing week anchored to the preceding Friday, (b) archives it to <code className="text-[#fef08a]">04 Operations/Weekly Muhasabah/Weekly Summary - YYYY-MM-DD.md</code>, (c) records it in <code>savedWeeklySummaries</code>, (d) resets <code>muhasabahEntries</code> for a clean new week, and (e) stamps <code>lastWeeklyMuhasabahResetDate</code> for idempotency.
+                    </p>
+                    <p>
+                      <strong>Deterministic Multi-Week Catch-Up Engine:</strong> If the app is not opened on Sunday (e.g. opened on Monday or after 2+ weeks away), the engine automatically detects all elapsed Friday boundaries that passed since the last reset. It chronologically generates and archives each missed week's summary markdown without losing slip records or corrupting historical data.
+                    </p>
                   </div>
                 </div>
 

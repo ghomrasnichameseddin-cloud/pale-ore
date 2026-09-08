@@ -46,7 +46,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
     deleteWeakness, updateWeakness,
     addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary,
-    clearAllWeeklyArchives, deleteWeeklyArchive
+    clearAllWeeklyArchives, deleteWeeklyArchive, getRecurringSins
   } = usePOS();
 
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
@@ -79,6 +79,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const entries = state.muhasabahEntries || [];
   const weaknesses = state.weaknesses || [];
   const savedSummaries = state.savedWeeklySummaries || [];
+
+  const recurringSinsRegistry = useMemo(() => {
+    return getRecurringSins ? getRecurringSins() : null;
+  }, [entries, weaknesses, state.systemDate, getRecurringSins]);
 
   const todayDateStr = state.systemDate || '2026-08-27';
 
@@ -945,6 +949,40 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 <Plus className="h-4 w-4" />
               </button>
             </div>
+
+            {recurringSinsRegistry && recurringSinsRegistry.totalRecurringCount > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-amber-950/20 border border-amber-500/30">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-amber-400" />
+                    RECURRENCE CADENCE REGISTRY ({recurringSinsRegistry.totalRecurringCount} DETECTED)
+                  </span>
+                  {recurringSinsRegistry.activeChainsCount > 0 && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950/60 border border-rose-500/40 text-rose-300">
+                      {recurringSinsRegistry.activeChainsCount} ACTIVE COMPOUNDING CHAINS
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">SAME-DAY RELAPSE</div>
+                    <div className="text-rose-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.intraDaySins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">CONSECUTIVE DAILY</div>
+                    <div className="text-amber-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.dailySins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">EVERY 2 DAYS</div>
+                    <div className="text-yellow-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.everyTwoDaysSins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">PERIODIC (3-7 DAYS)</div>
+                    <div className="text-cyan-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.periodicSins.length} patterns</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
               {realmPatternSummary.map(realm => {
