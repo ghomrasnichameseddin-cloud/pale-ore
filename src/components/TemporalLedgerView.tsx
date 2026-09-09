@@ -8,6 +8,7 @@ import {
 import { usePOS } from '../POSContext';
 import { TimeTransaction, TimeTransactionType } from '../types';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
+import { getLocalDateString, addDays, parseDateSafe } from '../utils/dateUtils';
 
 interface TemporalLedgerViewProps {
   onNavigate?: (tab: string) => void;
@@ -31,16 +32,15 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
   const transactions: TimeTransaction[] = state.timeHistory || [];
   const profile = state.profile;
   const currentCredits = profile.timeCredits ?? 60;
-  const todayKey = state.systemDate || new Date().toISOString().split('T')[0];
+  const todayKey = state.systemDate || getLocalDateString();
   const todayTransactions = transactions.filter(tx => tx.timestamp.startsWith(todayKey));
   const todayMinted = todayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
   const todaySpent = todayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
   const todayNet = todayMinted - todaySpent;
   const weeklyRestTrend = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - index));
-      const key = date.toISOString().split('T')[0];
+      const key = addDays(todayKey, -(6 - index));
+      const date = parseDateSafe(key);
       const dayTransactions = transactions.filter(tx => tx.timestamp.startsWith(key));
       const minted = dayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
       const spent = dayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
@@ -51,7 +51,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
         net: minted - spent
       };
     });
-  }, [transactions]);
+  }, [transactions, todayKey]);
   const weeklySpent = weeklyRestTrend.reduce((sum, day) => sum + day.spent, 0);
   const weeklyMinted = weeklyRestTrend.reduce((sum, day) => sum + day.minted, 0);
   const recoverySignal = weeklySpent > weeklyMinted && weeklySpent > 0;
@@ -135,7 +135,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `temporal_time_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `temporal_time_ledger_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -1,5 +1,6 @@
 import { MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, Weakness, RecurrenceCadence, RecurrenceAnalysis } from '../types';
 import { SEVERITY_BASE_CONSEQUENCES } from './muhasabahConsequences';
+import { parseDateSafe, addDays } from './dateUtils';
 export { SEVERITY_BASE_CONSEQUENCES };
 
 /**
@@ -7,10 +8,8 @@ export { SEVERITY_BASE_CONSEQUENCES };
  */
 export function getDaysDifference(dateStrA: string, dateStrB: string): number {
   try {
-    const [yA, mA, dA] = dateStrA.split('-').map(Number);
-    const [yB, mB, dB] = dateStrB.split('-').map(Number);
-    const dtA = new Date(yA, mA - 1, dA);
-    const dtB = new Date(yB, mB - 1, dB);
+    const dtA = parseDateSafe(dateStrA);
+    const dtB = parseDateSafe(dateStrB);
     const diffMs = dtA.getTime() - dtB.getTime();
     return Math.round(diffMs / (1000 * 60 * 60 * 24));
   } catch {
@@ -125,13 +124,7 @@ export function analyzeSinRecurrence(params: {
     while (keepChecking && checkOffset < 30) {
       // Date checkOffset days ago
       try {
-        const [y, m, d] = targetDate.split('-').map(Number);
-        const refD = new Date(y, m - 1, d);
-        refD.setDate(refD.getDate() - checkOffset);
-        const yStr = refD.getFullYear();
-        const mStr = String(refD.getMonth() + 1).padStart(2, '0');
-        const dStr = String(refD.getDate()).padStart(2, '0');
-        const dateStrToCheck = `${yStr}-${mStr}-${dStr}`;
+        const dateStrToCheck = addDays(targetDate, -checkOffset);
 
         const foundOnDate = priorDayEntries.some(e => e.date === dateStrToCheck);
         if (foundOnDate) {

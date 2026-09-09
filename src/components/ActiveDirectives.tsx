@@ -8,6 +8,7 @@ import {
   Archive, ArchiveRestore
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { addDays } from '../utils/dateUtils';
 
 export const getCategoryDetails = (type: string) => {
   const t = (type || '').toLowerCase();
@@ -504,9 +505,7 @@ export const ActiveDirectives: React.FC = () => {
         setTerminalLog(`[ERROR] Usage: simulate <days>`);
         return;
       }
-      const currentDateObj = new Date(systemDate);
-      currentDateObj.setDate(currentDateObj.getDate() + days);
-      const newDateStr = currentDateObj.toISOString().split('T')[0];
+      const newDateStr = addDays(systemDate, days);
       setSystemDate(newDateStr);
       setTerminalLog(`[SUCCESS] CHRONO_SHIFT: Advanced ${days} day(s) to ${newDateStr}.`);
       setQuickInputText('');
@@ -830,32 +829,10 @@ export const ActiveDirectives: React.FC = () => {
   const todayStr = systemDate;
 
   // Calculate tomorrow's string
-  const getTomorrowStr = () => {
-    try {
-      const tomorrow = new Date(systemDate);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    } catch (e) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    }
-  };
+  const getTomorrowStr = () => addDays(systemDate, 1);
 
   const getNext7Days = (): string[] => {
-    const dates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      try {
-        const d = new Date(systemDate);
-        d.setDate(d.getDate() + i);
-        dates.push(d.toISOString().split('T')[0]);
-      } catch (e) {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        dates.push(d.toISOString().split('T')[0]);
-      }
-    }
-    return dates;
+    return Array.from({ length: 7 }, (_, i) => addDays(systemDate, i));
   };
 
   const tomorrowStr = getTomorrowStr();

@@ -68,31 +68,8 @@ if (Math.abs(TOTAL_MAX_WEEKLY_SCORE - 10.0) > 0.0001) {
   throw new Error(`[CRITICAL] WEEKLY_SCORE_WEIGHTS must sum to exactly 10.0, but sums to ${TOTAL_MAX_WEEKLY_SCORE}`);
 }
 
-/**
- * Parses a YYYY-MM-DD or ISO string into a local noon Date to prevent timezone drift.
- */
-export function parseDateSafe(dateInput: string | Date): Date {
-  if (dateInput instanceof Date) {
-    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate(), 12, 0, 0);
-  }
-  const dateStr = String(dateInput).split('T')[0];
-  const [year, month, day] = dateStr.split('-').map(Number);
-  if (!year || !month || !day) {
-    const fallback = new Date();
-    return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate(), 12, 0, 0);
-  }
-  return new Date(year, month - 1, day, 12, 0, 0);
-}
-
-/**
- * Formats a Date object to YYYY-MM-DD.
- */
-export function formatDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+import { parseDateSafe, formatDateStr, getLocalDateString, addDays } from './dateUtils';
+export { parseDateSafe, formatDateStr, addDays };
 
 /**
  * Single source of truth for weekly boundaries.
@@ -113,15 +90,11 @@ export function getWeekBoundaries(referenceDate: Date | string = new Date()): We
 
   // Days to subtract from reference date to arrive at Saturday
   const daysToSaturday = (dayOfWeek + 1) % 7;
-
-  const saturday = new Date(refDate);
-  saturday.setDate(saturday.getDate() - daysToSaturday);
+  const saturdayStr = addDays(refDate, -daysToSaturday);
 
   const daysInWeek: string[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(saturday);
-    d.setDate(d.getDate() + i);
-    daysInWeek.push(formatDateStr(d));
+    daysInWeek.push(addDays(saturdayStr, i));
   }
 
   const weekStart = daysInWeek[0]; // Saturday
@@ -150,10 +123,7 @@ export function getWeekBoundaries(referenceDate: Date | string = new Date()): We
  * On Sunday, the week to be archived ended on Friday (Sunday - 2 days).
  */
 export function getClosingWeekBoundaries(sundayReferenceDate: Date | string): WeekBoundaries {
-  const sunday = parseDateSafe(sundayReferenceDate);
-  // Subtract 2 days to reach the Jumu'ah Friday closing anchor
-  const fridayAnchor = new Date(sunday);
-  fridayAnchor.setDate(fridayAnchor.getDate() - 2);
+  const fridayAnchor = addDays(sundayReferenceDate, -2);
   return getWeekBoundaries(fridayAnchor);
 }
 
@@ -566,29 +536,22 @@ export function reconcileMissedWeeks(
   // Determine starting point
   let lastResetDateStr = state.lastWeeklyMuhasabahResetDate;
 
-  let cursorSunday: Date;
+  let cursorSundayStr: string;
 
   if (lastResetDateStr) {
     // If last reset date was already recorded, the previous cycle was completed on that date.
     // Therefore, the first potential unarchived Sunday is 7 days after lastResetDate.
     const prevSunday = parseDateSafe(lastResetDateStr);
     const prevDay = prevSunday.getDay();
-    if (prevDay !== 0) {
-      const daysUntilSunday = (7 - prevDay) % 7;
-      prevSunday.setDate(prevSunday.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
-    }
-    cursorSunday = new Date(prevSunday);
-    cursorSunday.setDate(cursorSunday.getDate() + 7);
+    const alignedSunday = prevDay === 0 ? formatDateStr(prevSunday) : addDays(prevSunday, 7 - prevDay);
+    cursorSundayStr = addDays(alignedSunday, 7);
   } else {
     // If no last reset date is recorded, check saved summaries
     if (savedSummaries.length > 0) {
       const sorted = [...savedSummaries].sort((a, b) => b.generatedDate.localeCompare(a.generatedDate));
-      const latestSummaryFriday = parseDateSafe(sorted[0].generatedDate);
       // The Sunday following that Friday is Friday + 2 days
-      const followingSunday = new Date(latestSummaryFriday);
-      followingSunday.setDate(followingSunday.getDate() + 2);
-      cursorSunday = new Date(followingSunday);
-      cursorSunday.setDate(cursorSunday.getDate() + 7);
+      const followingSunday = addDays(sorted[0].generatedDate, 2);
+      cursorSundayStr = addDays(followingSunday, 7);
     } else {
       // Find the earliest entry or spiritual log
       const dates: string[] = [];
@@ -599,31 +562,27 @@ export function reconcileMissedWeeks(
         dates.sort();
         const earliestWeek = getWeekBoundaries(dates[0]);
         // The Sunday closing that earliest week is Friday + 2 days
-        const earliestSunday = new Date(parseDateSafe(earliestWeek.weekEnd));
-        earliestSunday.setDate(earliestSunday.getDate() + 2);
-        cursorSunday = earliestSunday;
+        cursorSundayStr = addDays(earliestWeek.weekEnd, 2);
       } else {
         // Brand new state with no entries
-        cursorSunday = new Date(today);
-        const day = cursorSunday.getDay();
-        if (day !== 0) {
-          const daysToSun = (7 - day) % 7;
-          cursorSunday.setDate(cursorSunday.getDate() + (daysToSun === 0 ? 7 : daysToSun));
-        }
+        const day = today.getDay();
+        const daysToSun = (7 - day) % 7;
+        cursorSundayStr = addDays(today, daysToSun === 0 ? 7 : daysToSun);
       }
     }
   }
 
   const missedSummaries: WeeklyMuhasabahSummary[] = [];
-  let latestResetDate = lastResetDateStr || formatDateStr(cursorSunday);
+  let latestResetDate = lastResetDateStr || cursorSundayStr;
+  const todayStr = formatDateStr(today);
 
   // Iterate forward week-by-week as long as cursorSunday <= today
   // Cap at 52 weeks to prevent infinite loops in corrupted dates
   let loopCount = 0;
-  while (cursorSunday <= today && loopCount < 52) {
+  while (cursorSundayStr <= todayStr && loopCount < 52) {
     loopCount++;
-    const sundayStr = formatDateStr(cursorSunday);
-    const closingWeek = getClosingWeekBoundaries(cursorSunday);
+    const sundayStr = cursorSundayStr;
+    const closingWeek = getClosingWeekBoundaries(cursorSundayStr);
 
     // Only archive if this week has ended and hasn't already been archived
     if (!existingSummaryDates.has(closingWeek.anchorDate)) {
@@ -635,7 +594,7 @@ export function reconcileMissedWeeks(
     latestResetDate = sundayStr;
 
     // Advance to next Sunday
-    cursorSunday.setDate(cursorSunday.getDate() + 7);
+    cursorSundayStr = addDays(cursorSundayStr, 7);
   }
 
   if (missedSummaries.length === 0) {

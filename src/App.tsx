@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { POSProvider, usePOS } from './POSContext';
-import { getLocalDateString } from './initialState';
+import { getLocalDateString, addDays } from './utils/dateUtils';
 import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
 import { StrategyCodexView } from './components/StrategyCodexView';
@@ -69,10 +69,7 @@ function AppContent() {
 
   const shiftDate = (days: number) => {
     try {
-      const [y, m, d] = systemDate.split('-').map(Number);
-      const current = new Date(y, m - 1, d);
-      current.setDate(current.getDate() + days);
-      setSystemDate(getLocalDateString(current));
+      setSystemDate(addDays(systemDate, days));
     } catch (e) {
       console.error(e);
     }

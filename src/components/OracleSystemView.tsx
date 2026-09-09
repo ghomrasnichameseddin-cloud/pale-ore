@@ -12,6 +12,7 @@ import {
   FileSpreadsheet, Hourglass
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export type OracleSystemSubTab = 'appearance' | 'analytics' | 'xp_history' | 'time_ledger' | 'system' | 'messages';
 
@@ -71,7 +72,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportData());
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `pale_ore_pos_backup_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("download", `pale_ore_pos_backup_${getLocalDateString()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

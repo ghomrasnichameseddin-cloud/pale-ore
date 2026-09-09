@@ -1,3 +1,5 @@
+import { parseDateSafe } from './dateUtils';
+
 /**
  * Hijri Calendar Calculation & Islamic Date Utilities
  * Uses both Internationalization API (Intl.DateTimeFormat) with 'islamic-umalqura'
@@ -142,17 +144,7 @@ function gregorianToHijriFallback(date: Date): { day: number; month: number; yea
  * Calculates accurate Hijri Date Info from a date string (YYYY-MM-DD) or Date object
  */
 export function getHijriDate(dateInput: string | Date = new Date()): HijriDateInfo {
-  let date: Date;
-  if (typeof dateInput === 'string') {
-    const parts = dateInput.split('-').map(Number);
-    if (parts.length === 3) {
-      date = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
-    } else {
-      date = new Date(dateInput);
-    }
-  } else {
-    date = dateInput;
-  }
+  const date = parseDateSafe(dateInput);
 
   const dayOfWeek = date.getDay();
   const isJumuah = dayOfWeek === 5; // Friday

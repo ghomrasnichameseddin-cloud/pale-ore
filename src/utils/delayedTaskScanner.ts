@@ -1,5 +1,5 @@
 import { POSState, Quest, Goal, Project, SystemMessage } from '../types';
-import { getLocalDateString } from '../initialState';
+import { getLocalDateString, parseDateSafe, addDays } from './dateUtils';
 import { sendNativeNotification } from './nativeNotifications';
 
 export interface DelayedItem {
@@ -28,8 +28,8 @@ export interface DelayedScanResult {
  */
 export const calculateDaysOverdue = (deadlineStr: string, currentSysDate: string): number => {
   try {
-    const deadlineTime = new Date(deadlineStr).getTime();
-    const currentTime = new Date(currentSysDate).getTime();
+    const deadlineTime = parseDateSafe(deadlineStr).getTime();
+    const currentTime = parseDateSafe(currentSysDate).getTime();
     if (isNaN(deadlineTime) || isNaN(currentTime)) return 0;
     
     // Convert to days difference
@@ -214,9 +214,7 @@ export const generateDelayedNotifications = async (
  */
 export const calculateSnoozeDate = (daysToAdd: number, systemDateStr?: string): string => {
   const ref = systemDateStr || getLocalDateString();
-  const d = new Date(ref);
-  d.setDate(d.getDate() + daysToAdd);
-  return getLocalDateString(d);
+  return addDays(ref, daysToAdd);
 };
 
 /**

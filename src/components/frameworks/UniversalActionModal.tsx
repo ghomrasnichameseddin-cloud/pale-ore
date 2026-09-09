@@ -6,6 +6,7 @@ import {
   BookOpen, FolderOpen, Target, Calendar, Clock, AlertTriangle, Sparkles
 } from 'lucide-react';
 import { RubElHizbIcon } from '../IslamicRpgDecorations';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 export type ActionSpawnType = 'quest' | 'campaign' | 'experiment' | 'sop' | 'codex';
 
@@ -38,7 +39,7 @@ export const UniversalActionModal: React.FC<UniversalActionModalProps> = ({
   const [questDifficulty, setQuestDifficulty] = useState<QuestDifficulty>('Normal');
   const [questType, setQuestType] = useState<QuestType>('Main');
   const [questTime, setQuestTime] = useState<number>(45);
-  const [questDeadline, setQuestDeadline] = useState(systemDate || new Date().toISOString().split('T')[0]);
+  const [questDeadline, setQuestDeadline] = useState(systemDate || getLocalDateString());
   const [questEnergy, setQuestEnergy] = useState<'Low' | 'Medium' | 'High'>('Medium');
   const [selectedGoalId, setSelectedGoalId] = useState<string>(state.goals[0]?.id || '');
   const [selectedProjId, setSelectedProjId] = useState<string>(state.projects[0]?.id || '');

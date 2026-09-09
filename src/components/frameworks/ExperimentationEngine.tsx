@@ -6,6 +6,7 @@ import {
   TrendingUp, Layers, Award, AlertTriangle
 } from 'lucide-react';
 import { UniversalActionModal, ActionSpawnType } from './UniversalActionModal';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface ExperimentItem {
   id: string;
@@ -99,7 +100,7 @@ export const TrialAndErrorLaboratory: React.FC = () => {
       baseline: newBaseline.trim() || 'Unmeasured',
       target: newTarget.trim() || '+20% efficiency',
       status: 'Running',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: getLocalDateString(),
       iterations: []
     };
 
@@ -118,7 +119,7 @@ export const TrialAndErrorLaboratory: React.FC = () => {
     if (!newIterationNote.trim() || !activeExp) return;
 
     const newIter = {
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
       note: newIterationNote.trim(),
       result: newIterationResult.trim() || 'Logged'
     };

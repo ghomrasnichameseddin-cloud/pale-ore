@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { getHijriDate } from '../utils/hijriCalendar';
+import { addDays } from '../utils/dateUtils';
 import { RubElHizbIcon, GeometricDivider, ArabesqueCorner } from './IslamicRpgDecorations';
 import { SpiritualDailyLog, PrayerCheck, PostSalahDhikrMode } from '../types';
 import { SiamFastingSection } from './spiritual/SiamFastingSection';
@@ -80,13 +81,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
   const shiftDate = (days: number) => {
     try {
-      const [y, m, d] = systemDate.split('-').map(Number);
-      const current = new Date(y, m - 1, d);
-      current.setDate(current.getDate() + days);
-      const year = current.getFullYear();
-      const month = String(current.getMonth() + 1).padStart(2, '0');
-      const day = String(current.getDate()).padStart(2, '0');
-      setSystemDate(`${year}-${month}-${day}`);
+      setSystemDate(addDays(systemDate, days));
     } catch (e) {
       console.error(e);
     }

@@ -1,6 +1,7 @@
 import { POSState, ShopItem, SpiritualDailyLog } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
+import { getLocalDateString } from './utils/dateUtils';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
@@ -54,12 +55,7 @@ export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   totalEarnedXpToday: 0
 });
 
-export const getLocalDateString = (d = new Date()): string => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+export { getLocalDateString };
 
 export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
   {

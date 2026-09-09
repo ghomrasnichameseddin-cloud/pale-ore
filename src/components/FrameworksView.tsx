@@ -14,6 +14,7 @@ import { OperationalHeuristicsEngine } from './frameworks/DecisionEngines';
 import { RootCauseAnalysisEngine, WorkBackwardsEngine } from './frameworks/ProblemSolvingEngines';
 import { BrainstormingSandbox, LateralThinkingLab, MindMappingGraph } from './frameworks/CreativeThinkingEngines';
 import { TrialAndErrorLaboratory } from './frameworks/ExperimentationEngine';
+import { getLocalDateString, addDays } from '../utils/dateUtils';
 
 export type FrameworkCategory = 'all' | 'decision' | 'problem_solving' | 'creative' | 'experimentation';
 
@@ -129,34 +130,14 @@ export const FrameworksView: React.FC = () => {
   const [selectedTimelineFilter, setSelectedTimelineFilter] = useState<'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_7_DAYS' | 'NO_DATE' | 'OVERDUE'>('ALL');
   const [showMatrixGuide, setShowMatrixGuide] = useState(false);
 
-  const systemDate = state.systemDate || new Date().toISOString().split('T')[0];
+  const systemDate = state.systemDate || getLocalDateString();
 
   const getTomorrowStr = (baseDateStr: string) => {
-    try {
-      const parts = baseDateStr.split('-').map(Number);
-      if (parts.length !== 3) return baseDateStr;
-      const dateObj = new Date(parts[0], parts[1] - 1, parts[2] + 1);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    } catch {
-      return baseDateStr;
-    }
+    return addDays(baseDateStr, 1);
   };
 
   const getNDaysStr = (baseDateStr: string, days: number) => {
-    try {
-      const parts = baseDateStr.split('-').map(Number);
-      if (parts.length !== 3) return baseDateStr;
-      const dateObj = new Date(parts[0], parts[1] - 1, parts[2] + days);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    } catch {
-      return baseDateStr;
-    }
+    return addDays(baseDateStr, days);
   };
 
   const tomorrowStr = useMemo(() => getTomorrowStr(systemDate), [systemDate]);

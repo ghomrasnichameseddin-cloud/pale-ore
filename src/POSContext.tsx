@@ -17,15 +17,9 @@ import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
-
-export const getSystemTimestamp = (systemDateStr?: string): string => {
-  const dateStr = systemDateStr || getLocalDateString();
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `${dateStr}T${hours}:${minutes}:${seconds}`;
-};
+import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
+import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties } from './utils/penaltyEngine';
+export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties };
 import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES } from './jobsAndTitles';
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
@@ -43,7 +37,6 @@ import {
   generateWeeklyMuhasabahSummaryPure,
   reconcileMissedWeeks,
   buildWeeklySummaryMarkdown,
-  parseDateSafe,
   WEEKLY_SCORE_WEIGHTS
 } from './utils/weeklyCycle';
 import {
@@ -551,128 +544,6 @@ const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] 
   return result;
 };
 
-const getDaysDifference = (dateStr1: string, dateStr2: string): number => {
-  try {
-    const [y1, m1, d1] = dateStr1.split('T')[0].split('-').map(Number);
-    const [y2, m2, d2] = dateStr2.split('T')[0].split('-').map(Number);
-    const date1 = new Date(y1, m1 - 1, d1);
-    const date2 = new Date(y2, m2 - 1, d2);
-    const diffTime = date2.getTime() - date1.getTime();
-    return Math.round(diffTime / (1000 * 60 * 60 * 24));
-  } catch (e) {
-    return 0;
-  }
-};
-
-export const getWeekdayStr = (dateStr: string): string => {
-  try {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return weekdays[date.getDay()];
-  } catch (e) {
-    return '';
-  }
-};
-
-export const isQuestScheduledForDate = (q: Quest, dateStr: string): boolean => {
-  // If the quest was explicitly postponed to this specific date, it is scheduled for this date
-  if (q.postponedTo === dateStr) {
-    return true;
-  }
-
-  // If the quest was postponed FROM this date to a DIFFERENT date, it is deferred away from this date
-  if (q.postponedFrom === dateStr && q.postponedTo && q.postponedTo !== dateStr) {
-    return false;
-  }
-
-  // If the quest has an explicit deadline matching this date, it is scheduled for this date
-  if (q.deadline === dateStr) {
-    return true;
-  }
-
-  if (!q.recurrence || q.recurrence === 'None') {
-    return true;
-  }
-
-  const rec = q.recurrence.toLowerCase();
-
-  // 1. Check for specific day-of-week constraints first
-  const currentWeekday = getWeekdayStr(dateStr).toLowerCase();
-  const fullWeekdaysMap: Record<string, string> = {
-    'sunday': 'sun', 'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed',
-    'thursday': 'thu', 'friday': 'fri', 'saturday': 'sat'
-  };
-
-  const weekdays = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  let hasWeekdayConstraint = false;
-  let matchesWeekday = false;
-
-  for (const day of weekdays) {
-    const shortPattern = day;
-    const fullPattern = Object.keys(fullWeekdaysMap).find(k => fullWeekdaysMap[k] === day) || '';
-    
-    if (rec.includes(shortPattern) || (fullPattern && rec.includes(fullPattern))) {
-      hasWeekdayConstraint = true;
-      if (currentWeekday === day) {
-        matchesWeekday = true;
-      }
-    }
-  }
-
-  if (hasWeekdayConstraint) {
-    return matchesWeekday;
-  }
-
-  // 2. Check for "Every N Days" interval pattern (e.g. "Every 2 Days", "Custom: Every 3 Days")
-  const everyDaysMatch = rec.match(/every\s+(\d+)\s+days?/i);
-  if (everyDaysMatch) {
-    const n = parseInt(everyDaysMatch[1], 10);
-    if (n > 0) {
-      const creationDateStr = q.createdAt.split('T')[0];
-      const diff = getDaysDifference(creationDateStr, dateStr);
-      return diff >= 0 && diff % n === 0;
-    }
-  }
-
-  // 3. Check for Monthly recurrence
-  if (rec === 'monthly') {
-    const creationDateStr = q.createdAt.split('T')[0];
-    const [cYear, cMonth, cDay] = creationDateStr.split('-').map(Number);
-    const [tYear, tMonth, tDay] = dateStr.split('-').map(Number);
-    const lastDayOfTargetMonth = new Date(tYear, tMonth, 0).getDate();
-    const targetDayToMatch = Math.min(cDay, lastDayOfTargetMonth);
-    return tDay === targetDayToMatch;
-  }
-
-  // 4. Check for Weekly recurrence
-  if (rec === 'weekly') {
-    const creationDateStr = q.createdAt.split('T')[0];
-    const creationWeekday = getWeekdayStr(creationDateStr).toLowerCase();
-    return currentWeekday === creationWeekday;
-  }
-
-  // 5. Default to true for Daily or other non-weekday custom patterns
-  return true;
-};
-
-export const isQuestArchived = (
-  q: Quest,
-  lists: QuestList[] = [],
-  folders: QuestFolder[] = []
-): boolean => {
-  if (q.archived) return true;
-  if (q.listId) {
-    const list = lists.find(l => l.id === q.listId);
-    if (list?.archived) return true;
-    if (list?.folderId) {
-      const folder = folders.find(f => f.id === list.folderId);
-      if (folder?.archived) return true;
-    }
-  }
-  return false;
-};
-
 const resetRecurringQuestsForNewDate = (
   newDateStr: string,
   currentQuests: Quest[],
@@ -1140,7 +1011,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!activeFocusSession) return;
     if (activeFocusSession.completedCycles > 0) {
       const cycleMinutes = activeFocusSession.totalWorkTime;
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = state.systemDate || getLocalDateString();
       
       const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
       const focusXpMult = getFocusXpMultiplier(activeJob);
@@ -1181,7 +1052,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (lastDate === '') {
             newStreak = 1;
           } else {
-            const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const yesterdayStr = addDays(todayStr, -1);
             if (lastDate === yesterdayStr) {
               newStreak = prevStreak + 1;
             } else {
@@ -1519,13 +1390,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   
     const isQuestFinishedForToday = (q: Quest): boolean => {
-    const targetDateStr = state.systemDate || new Date().toISOString().split('T')[0];
+    const targetDateStr = state.systemDate || getLocalDateString();
     
     // If it is a recurring quest, its finished status for today is ONLY determined by completedAt
     if (q.recurrence && q.recurrence !== 'None') {
       if (q.completedAt) {
         try {
-          const completedDateStr = new Date(q.completedAt).toISOString().split('T')[0];
+          const completedDateStr = getLocalDateString(q.completedAt);
           if (completedDateStr === targetDateStr) {
             return true;
           }
@@ -1542,7 +1413,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (q.completedAt) {
       try {
-        const completedDateStr = new Date(q.completedAt).toISOString().split('T')[0];
+        const completedDateStr = getLocalDateString(q.completedAt);
         if (completedDateStr === targetDateStr) {
           return true;
         }
@@ -1557,233 +1428,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const applyMidnightPenalties = (prev: POSState, oldDate: string, newDateStr: string) => {
-    const daysDiff = getDaysDifference(oldDate, newDateStr);
-    const normalizedQuests = prev.quests.map(q => {
-      if (q.status === 'Active' && q.postponedTo && q.postponedTo <= newDateStr) {
-        return {
-          ...q,
-          postponedFrom: null,
-          postponedTo: null
-        };
-      }
-      return q;
-    });
-
-    let updatedQuests = [...normalizedQuests];
-    let updatedHistory = [...prev.xpHistory];
-    let updatedMomentum = prev.profile.momentum;
-    let recoveryModeActivated = false;
-
-    if (daysDiff >= 1) {
-      // Find ALL quests active on oldDate that were left unchecked (incomplete)
-      const uncheckedQuests = normalizedQuests.filter(q => {
-        if (q.status !== 'Active') return false;
-        if (isQuestArchived(q, prev.lists, prev.folders)) return false;
-        if (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') return false;
-
-        // DO NOT PENALIZE if the user explicitly postponed this quest on/from oldDate or set deadline > oldDate.
-        // If the postponed target date has arrived, the quest has already been normalized back into its regular active state.
-        if (q.postponedFrom === oldDate) return false;
-        if (q.postponedTo && q.postponedTo > oldDate) return false;
-        if (q.deadline && q.deadline > oldDate) return false;
-
-        // Check if recurring
-        if (q.recurrence && q.recurrence !== 'None') {
-          const isScheduled = isQuestScheduledForDate(q, oldDate);
-          if (!isScheduled) return false;
-
-          if (q.completedAt) {
-            const compDate = q.completedAt.split('T')[0];
-            if (compDate === oldDate) {
-              return false; // completed on oldDate
-            }
-          }
-          return true; // scheduled but not completed on oldDate
-        } else {
-          // One-off quest
-          if (q.deadline && q.deadline <= oldDate) {
-            return true;
-          }
-          return false;
-        }
-      });
-
-      // Apply penalties for each unchecked quest and automatically create penalty recovery quests
-      const activeJobForMidnight = getActiveJob(prev.profile.jobId, prev.customJobs || [], prev.deletedJobIds || []);
-      const penaltyReduction = getFailPenaltyMultiplier(activeJobForMidnight);
-
-      uncheckedQuests.forEach(q => {
-        const typeUpper = q.type.toUpperCase();
-        const isDailyOrHabit = typeUpper === 'HABIT' || q.recurrence === 'Daily' || (q.recurrence && q.recurrence !== 'None');
-        const isSideOrOptional = typeUpper === 'SIDE' || typeUpper === 'OPTIONAL';
-        const origEstTime = typeof q.estimatedTime === 'number' && q.estimatedTime > 0 ? q.estimatedTime : 30;
-        const recoveryEstTime = Math.max(1, Math.round(origEstTime / 2));
-
-        if (isSideOrOptional) {
-          // Side Quests / Optional Quests are EXCLUDED from penalty amount (0 XP deduction)
-          if (!q.recurrence || q.recurrence === 'None') {
-            updatedQuests = updatedQuests.map(uq => {
-              if (uq.id === q.id) {
-                return {
-                  ...uq,
-                  status: 'Failed' as const,
-                  completedAt: new Date().toISOString()
-                };
-              }
-              return uq;
-            });
-          }
-          return;
-        }
-
-        if (isDailyOrHabit || typeUpper === 'MAIN' || typeUpper === 'BOSS') {
-          // Main, Habit, and Boss quests: INCLUDED in penalty XP deduction + generates restorative Recovery Quest (half XP, half Time)
-          let penaltyXp = 50;
-          if (q.difficulty === 'Easy') penaltyXp = 25;
-          else if (q.difficulty === 'Normal') penaltyXp = 50;
-          else if (q.difficulty === 'Hard') penaltyXp = 100;
-          else if (q.difficulty === 'Boss') penaltyXp = 250;
-
-          const isCritical = typeUpper === 'MAIN' || typeUpper === 'BOSS' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
-          const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
-          const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
-
-          const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
-          const penaltyEntry: XPHistoryEntry = {
-            id: xpHistoryId,
-            questId: q.id,
-            questName: isDailyOrHabit ? `💀 MIDNIGHT PENALTY: Lapsed habit "${q.name}"` : `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
-            xp: -Math.round(finalPenaltyXp),
-            timestamp: new Date().toISOString(),
-            skillIds: q.relatedSkills || []
-          };
-
-          updatedHistory.unshift(penaltyEntry);
-          const momentumLoss = isCritical ? 25 : 10;
-          updatedMomentum = Math.max(0, updatedMomentum - momentumLoss);
-
-          // If one-off, mark as Failed
-          if (!q.recurrence || q.recurrence === 'None') {
-            updatedQuests = updatedQuests.map(uq => {
-              if (uq.id === q.id) {
-                return {
-                  ...uq,
-                  status: 'Failed' as const,
-                  completedAt: new Date().toISOString()
-                };
-              }
-              return uq;
-            });
-          }
-
-          const origXp = (typeof q.xp === 'number' && q.xp > 0) 
-            ? q.xp 
-            : (q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50);
-          const recoveryXp = Math.max(5, Math.round(origXp / 2));
-
-          const recoveryQuest: Quest = {
-            id: `q-recovery-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            name: `🛡️ RECOVERY: Resolve "${q.name}"`,
-            description: `Recovery directive generated for failed/unchecked ${q.type} objective "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore operations.`,
-            status: 'Active' as const,
-            difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
-            type: 'Recovery',
-            estimatedTime: recoveryEstTime,
-            recurrence: 'None',
-            energyLevel: 'Medium',
-            deadline: newDateStr || q.deadline || new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-            completedAt: null,
-            xp: recoveryXp,
-            goalId: q.goalId || null,
-            projectId: q.projectId || null,
-            milestoneId: q.milestoneId || null,
-            subquests: [
-              {
-                id: `sq-rec-${q.id}-1`,
-                name: `Execute condensed ${recoveryEstTime}-min recovery session for "${q.name}"`,
-                completed: false
-              }
-            ],
-            relatedSkills: q.relatedSkills || []
-          };
-
-          updatedQuests.push(recoveryQuest);
-          recoveryModeActivated = true;
-        } else {
-          // Other non-side one-off quests: apply standard penalty and generate recovery directive
-          let penaltyXp = 50;
-          if (q.difficulty === 'Easy') penaltyXp = 25;
-          else if (q.difficulty === 'Normal') penaltyXp = 50;
-          else if (q.difficulty === 'Hard') penaltyXp = 100;
-          else if (q.difficulty === 'Boss') penaltyXp = 250;
-
-          const basePenaltyXp = penaltyXp;
-          const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
-
-          const xpHistoryId = `h-fail-midnight-${q.id}-${Date.now()}`;
-          const penaltyEntry: XPHistoryEntry = {
-            id: xpHistoryId,
-            questId: q.id,
-            questName: `💀 MIDNIGHT PENALTY: Unchecked "${q.name}"`,
-            xp: -Math.round(finalPenaltyXp),
-            timestamp: new Date().toISOString(),
-            skillIds: q.relatedSkills || []
-          };
-
-          updatedHistory.unshift(penaltyEntry);
-          updatedMomentum = Math.max(0, updatedMomentum - 10);
-
-          if (!q.recurrence || q.recurrence === 'None') {
-            updatedQuests = updatedQuests.map(uq => {
-              if (uq.id === q.id) {
-                return {
-                  ...uq,
-                  status: 'Failed' as const,
-                  completedAt: new Date().toISOString()
-                };
-              }
-              return uq;
-            });
-          }
-
-          const origXp = (typeof q.xp === 'number' && q.xp > 0) ? q.xp : penaltyXp;
-          const recoveryXp = Math.max(5, Math.round(origXp / 2));
-
-          const recoveryQuest: Quest = {
-            id: `q-recovery-${q.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            name: `🛡️ RECOVERY: Resolve "${q.name}"`,
-            description: `Recovery directive generated for unchecked objective "${q.name}". Complete this condensed routine (${recoveryEstTime} mins, +${recoveryXp} XP) to restore operations.`,
-            status: 'Active' as const,
-            difficulty: q.difficulty === 'Custom' ? 'Normal' : q.difficulty,
-            type: 'Recovery',
-            estimatedTime: recoveryEstTime,
-            recurrence: 'None',
-            energyLevel: 'Medium',
-            deadline: q.deadline || new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-            completedAt: null,
-            xp: recoveryXp,
-            goalId: q.goalId || null,
-            projectId: q.projectId || null,
-            milestoneId: q.milestoneId || null,
-            subquests: [
-              {
-                id: `sq-rec-${q.id}-1`,
-                name: `Execute condensed ${recoveryEstTime}-min recovery session for "${q.name}"`,
-                completed: false
-              }
-            ],
-            relatedSkills: q.relatedSkills || []
-          };
-
-          updatedQuests.push(recoveryQuest);
-          recoveryModeActivated = true;
-        }
-      });
-    }
-
-    return { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated };
+    return processMultiDayPenalties(prev, oldDate, newDateStr);
   };
 
   const setSystemDate = (newDateStr: string) => {
@@ -3134,7 +2779,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           estimatedTime: recoveryEstTime,
           recurrence: 'None',
           energyLevel: 'Medium',
-          deadline: questToFail.deadline || new Date().toISOString().split('T')[0],
+          deadline: questToFail.deadline || state.systemDate || getLocalDateString(),
           createdAt: new Date().toISOString(),
           completedAt: null,
           xp: recoveryXp,
@@ -3253,7 +2898,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           targetQuest = q;
 
           if (allDone && q.status === 'Active') {
-            const wasCompletedToday = q.completedAt && new Date(q.completedAt).toDateString() === new Date().toDateString();
+            const todayStr = prev.systemDate || getLocalDateString();
+            const wasCompletedToday = q.completedAt && getLocalDateString(q.completedAt) === todayStr;
             if (!wasCompletedToday) {
               questCompletedNow = true;
             }
@@ -3489,9 +3135,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const processQuestReview = (id: string, action: 'rollover' | 'postpone' | 'forgive') => {
     setState(prev => {
       const todayStr = prev.systemDate || getLocalDateString();
-      const tomorrowDate = new Date(todayStr);
-      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-      const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+      const tomorrowStr = addDays(todayStr, 1);
 
       const updatedQuests = prev.quests.map(q => {
         if (q.id === id) {
@@ -4295,34 +3939,30 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const milestonesCompleted = state.milestones.filter(m => getMilestoneProgress(m.id) === 100).length;
 
     // Time calculations
-    const today = new Date().toISOString().split('T')[0];
+    const today = state.systemDate || getLocalDateString();
     
     // Today's XP
     const todayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(today));
     const todayXp = todayEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Weekly XP
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const weeklyEvents = state.xpHistory.filter(h => new Date(h.timestamp) >= oneWeekAgo);
+    const oneWeekAgoStr = addDays(today, -7);
+    const weeklyEvents = state.xpHistory.filter(h => h.timestamp.split('T')[0] >= oneWeekAgoStr);
     const weeklyXp = weeklyEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Monthly XP
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    const monthlyEvents = state.xpHistory.filter(h => new Date(h.timestamp) >= oneMonthAgo);
+    const oneMonthAgoStr = addDays(today, -30);
+    const monthlyEvents = state.xpHistory.filter(h => h.timestamp.split('T')[0] >= oneMonthAgoStr);
     const monthlyXp = monthlyEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Calculate daily XP breakdown for charts (past 7 days)
     const dailyXpTrend: { date: string; xp: number }[] = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = addDays(today, -i);
       const dayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(dateStr));
       const dayXp = dayEvents.reduce((sum, h) => sum + h.xp, 0);
       
-      // Beautiful short string (e.g. "Jul 07" or "07 Jul")
+      const d = parseDateSafe(dateStr);
       const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       dailyXpTrend.push({ date: formattedDate, xp: dayXp });
     }
@@ -6557,13 +6197,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Helper for stepping back one day
     const getPrevDate = (currentStr: string): string => {
       try {
-        const [y, m, d] = currentStr.split('-').map(Number);
-        const dt = new Date(Date.UTC(y, m - 1, d));
-        dt.setUTCDate(dt.getUTCDate() - 1);
-        const year = dt.getUTCFullYear();
-        const month = String(dt.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(dt.getUTCDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return addDays(currentStr, -1);
       } catch {
         return '';
       }
@@ -6600,15 +6234,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!lastDate) {
           currentChain = 1;
         } else {
-          const expectedNext = (() => {
-            const [y, m, day] = lastDate.split('-').map(Number);
-            const dt = new Date(Date.UTC(y, m - 1, day));
-            dt.setUTCDate(dt.getUTCDate() + 1);
-            const year = dt.getUTCFullYear();
-            const month = String(dt.getUTCMonth() + 1).padStart(2, '0');
-            const dayNum = String(dt.getUTCDate()).padStart(2, '0');
-            return `${year}-${month}-${dayNum}`;
-          })();
+          const expectedNext = addDays(lastDate, 1);
           if (d === expectedNext) {
             currentChain++;
           } else {

@@ -9,6 +9,7 @@ import {
   ExternalLink, FileSpreadsheet, Sparkles, Scale, Swords
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
+import { getLocalDateString } from '../utils/dateUtils';
 
 // Helper to derive the source and human label of any XP History entry
 export const deriveXpSourceInfo = (entry: XPHistoryEntry, questMap: Map<string, any>): {
@@ -272,7 +273,7 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `xp_history_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `xp_history_ledger_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();

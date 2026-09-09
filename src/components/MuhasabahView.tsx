@@ -5,6 +5,8 @@ import { MuhasabahModal } from './MuhasabahModal';
 import { DailyBalanceScale } from './DailyBalanceScale';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { AncientCarvedRune } from './AncientCarvedRune';
+import { getWeekBoundaries } from '../utils/weeklyCycle';
+import { getLocalDateString, parseDateSafe, getDaysDifference } from '../utils/dateUtils';
 import { 
   Scale, Shield, Flame, Heart, MessageSquare, Clock, AlertTriangle, 
   Sparkles, Plus, Search, Filter, CheckCircle2, 
@@ -84,30 +86,16 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     return getRecurringSins ? getRecurringSins() : null;
   }, [entries, weaknesses, state.systemDate, getRecurringSins]);
 
-  const todayDateStr = state.systemDate || '2026-08-27';
+  const todayDateStr = state.systemDate || getLocalDateString();
 
-  // Calculate 7-day week cycle range
-  const { weekStartDate, weekEndDate, daysInWeek } = useMemo(() => {
-    let refDate = new Date();
-    try {
-      const [y, m, d] = todayDateStr.split('-').map(Number);
-      refDate = new Date(y, m - 1, d);
-    } catch {
-      refDate = new Date();
-    }
-    const days: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(refDate);
-      d.setDate(d.getDate() - i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      days.push(`${y}-${m}-${day}`);
-    }
+  // Canonical Islamic week cycle range (Saturday → Friday)
+  const { weekStartDate, weekEndDate, daysInWeek, weekLabel } = useMemo(() => {
+    const boundaries = getWeekBoundaries(todayDateStr);
     return {
-      weekStartDate: days[0],
-      weekEndDate: days[days.length - 1],
-      daysInWeek: days
+      weekStartDate: boundaries.weekStart,
+      weekEndDate: boundaries.weekEnd,
+      daysInWeek: boundaries.daysInWeek,
+      weekLabel: boundaries.weekLabel
     };
   }, [todayDateStr]);
 
@@ -153,8 +141,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   // Check if current systemDate is Friday
   const isFriday = useMemo(() => {
     try {
-      const dt = new Date(`${todayDateStr}T12:00:00`);
-      return dt.getDay() === 5;
+      return parseDateSafe(todayDateStr).getDay() === 5;
     } catch {
       return false;
     }
@@ -187,8 +174,8 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     return [...filtered].sort((a, b) => {
       let comparison = 0;
       if (sortField === 'time') {
-        const timeA = new Date(a.timestamp || a.date).getTime();
-        const timeB = new Date(b.timestamp || b.date).getTime();
+        const timeA = parseDateSafe(a.timestamp || a.date).getTime();
+        const timeB = parseDateSafe(b.timestamp || b.date).getTime();
         comparison = timeA - timeB;
       } else if (sortField === 'severity') {
         const sevA = SEVERITY_ORDER[a.severity] || 1;
@@ -211,11 +198,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
       return { label: 'Today • اليوم', isToday: true, isThisWeek: true, badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-500/50' };
     }
     try {
-      const [cy, cm, cd] = todayDateStr.split('-').map(Number);
-      const [ey, em, ed] = dateStr.split('-').map(Number);
-      const dtCurrent = new Date(cy, cm - 1, cd);
-      const dtEntry = new Date(ey, em - 1, ed);
-      const diffDays = Math.round((dtCurrent.getTime() - dtEntry.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = getDaysDifference(dateStr, todayDateStr);
       if (diffDays === 1) {
         return { label: 'Yesterday • أمس', isToday: false, isThisWeek: true, badgeColor: 'bg-zinc-800 text-zinc-300 border-zinc-600/40' };
       }

@@ -8,6 +8,7 @@ import {
   Activity, HardDrive, Flame, Shield, Info, Percent
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const SystemView: React.FC = () => {
   const { 
@@ -76,7 +77,7 @@ export const SystemView: React.FC = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportData());
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `pale_ore_pos_backup_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("download", `pale_ore_pos_backup_${getLocalDateString()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
