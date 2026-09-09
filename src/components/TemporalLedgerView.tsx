@@ -3,19 +3,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Hourglass, Clock, Search, Filter, ArrowDownRight, ArrowUpRight, 
   Download, Plus, RefreshCw, Moon, Coffee, ShieldAlert, Sparkles,
-  ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap, Check
+  ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap, Check,
+  Play, Flame, BarChart3, Info
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
-import { TimeTransaction, TimeTransactionType } from '../types';
+import { TimeTransaction, TimeTransactionType, RestPass, LeisureTransaction } from '../types';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
 import { getLocalDateString, addDays, parseDateSafe } from '../utils/dateUtils';
+import { 
+  evaluateTodayRestDecision, 
+  DEFAULT_REST_PASSES,
+  REST_DECISION_THRESHOLDS 
+} from '../utils/temporalLedger';
 
 interface TemporalLedgerViewProps {
   onNavigate?: (tab: string) => void;
 }
 
 export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNavigate }) => {
-  const { state, addTimeCredits } = usePOS();
+  const { state, addTimeCredits, redeemRestPass, getDailyWakingCapital } = usePOS();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | TimeTransactionType>('ALL');
@@ -23,53 +29,88 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [isCalibrateModalOpen, setIsCalibrateModalOpen] = useState(false);
+  const [selectedPassForRedeem, setSelectedPassForRedeem] = useState<RestPass | null>(null);
 
   // Calibrate Form State
   const [calibrateMinutes, setCalibrateMinutes] = useState<number>(30);
   const [calibrateNature, setCalibrateNature] = useState<'GRANT' | 'DEDUCT'>('GRANT');
   const [calibrateReason, setCalibrateReason] = useState('');
 
-  const transactions: TimeTransaction[] = state.timeHistory || [];
+  const transactions: LeisureTransaction[] = (state.timeHistory || []) as LeisureTransaction[];
   const profile = state.profile;
   const currentCredits = profile.timeCredits ?? 60;
+  const currentCoins = profile.coins ?? 150;
   const todayKey = state.systemDate || getLocalDateString();
+
+  // Waking Capital & Overdraft Alarm
+  const wakingCapital = getDailyWakingCapital ? getDailyWakingCapital() : {
+    budgetMinutes: (profile.dailyWakingHours || 16) * 60,
+    investedMinutes: profile.focusMinutesToday || 0,
+    committedMinutes: 0,
+    slackMinutes: (profile.dailyWakingHours || 16) * 60 - (profile.focusMinutesToday || 0),
+    isOverdrawn: false,
+    overdraftMinutes: 0,
+    utilizationPercent: 0
+  };
+
+  // Today's Decision calculation
   const todayTransactions = transactions.filter(tx => tx.timestamp.startsWith(todayKey));
-  const todayMinted = todayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
-  const todaySpent = todayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
+  const todayMinted = todayTransactions.reduce((sum, tx) => {
+    const val = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+    return sum + (val > 0 ? val : 0);
+  }, 0);
+  const todaySpent = todayTransactions.reduce((sum, tx) => {
+    const val = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+    return sum + (val < 0 ? Math.abs(val) : 0);
+  }, 0);
   const todayNet = todayMinted - todaySpent;
+  const todayDecision = evaluateTodayRestDecision(todayMinted, todaySpent);
+
+  // 7-day Recovery Rhythm (bucketing by day)
   const weeklyRestTrend = useMemo(() => {
     return Array.from({ length: 7 }, (_, index) => {
       const key = addDays(todayKey, -(6 - index));
       const date = parseDateSafe(key);
       const dayTransactions = transactions.filter(tx => tx.timestamp.startsWith(key));
-      const minted = dayTransactions.reduce((sum, tx) => sum + (tx.minutes > 0 ? tx.minutes : 0), 0);
-      const spent = dayTransactions.reduce((sum, tx) => sum + (tx.minutes < 0 ? Math.abs(tx.minutes) : 0), 0);
+      const minted = dayTransactions.reduce((sum, tx) => {
+        const val = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+        return sum + (val > 0 ? val : 0);
+      }, 0);
+      const spent = dayTransactions.reduce((sum, tx) => {
+        const val = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+        return sum + (val < 0 ? Math.abs(val) : 0);
+      }, 0);
       return {
         label: date.toLocaleDateString(undefined, { weekday: 'short' }),
+        dateKey: key,
         minted,
         spent,
         net: minted - spent
       };
     });
   }, [transactions, todayKey]);
+
   const weeklySpent = weeklyRestTrend.reduce((sum, day) => sum + day.spent, 0);
   const weeklyMinted = weeklyRestTrend.reduce((sum, day) => sum + day.minted, 0);
   const recoverySignal = weeklySpent > weeklyMinted && weeklySpent > 0;
 
-  // Filtered & Sorted Transactions
+  // Filtered & Sorted Transactions (Audit trail list only grows)
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
+      const delta = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+
       // Text search
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
-        const matchesReason = tx.reason.toLowerCase().includes(term);
-        const matchesType = tx.type.toLowerCase().includes(term);
-        if (!matchesReason && !matchesType) return false;
+        const matchesReason = (tx.reason || '').toLowerCase().includes(term);
+        const matchesType = (tx.type || '').toLowerCase().includes(term);
+        const matchesLinked = ((tx.linkedId || tx.relatedId || '')).toLowerCase().includes(term);
+        if (!matchesReason && !matchesType && !matchesLinked) return false;
       }
 
       // Nature filter
-      if (natureFilter === 'GAINS' && tx.minutes <= 0) return false;
-      if (natureFilter === 'SPENT' && tx.minutes >= 0) return false;
+      if (natureFilter === 'GAINS' && delta <= 0) return false;
+      if (natureFilter === 'SPENT' && delta >= 0) return false;
 
       // Type filter
       if (typeFilter !== 'ALL' && tx.type !== typeFilter) return false;
@@ -110,7 +151,9 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
       case 'ritual_reward':
         return { label: 'SACRED RITE', color: 'bg-amber-500/15 text-amber-300 border-amber-500/30', icon: RubElHizbIcon };
       case 'leisure_redemption':
-        return { label: 'LEISURE VOUCHER', color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30', icon: Coffee };
+        return { label: 'REST REDEEMED', color: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30', icon: Coffee };
+      case 'rest_refund':
+        return { label: 'REST REFUND', color: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30', icon: RefreshCw };
       case 'time_debt_penalty':
         return { label: 'TIME DEBT', color: 'bg-rose-500/15 text-rose-300 border-rose-500/30', icon: AlertTriangle };
       case 'manual_adjustment':
@@ -121,21 +164,27 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
 
   // CSV Export
   const handleExportCSV = () => {
-    const headers = ['Transaction ID', 'Timestamp', 'Type', 'Change (Minutes)', 'Balance After (Minutes)', 'Reason'];
-    const rows = filteredTransactions.map(tx => [
-      `"${tx.id}"`,
-      `"${tx.timestamp}"`,
-      `"${tx.type}"`,
-      tx.minutes,
-      tx.balanceAfter,
-      `"${tx.reason.replace(/"/g, '""')}"`
-    ]);
+    const headers = ['Transaction ID', 'Timestamp', 'Type', 'Minutes Delta', 'Ending Balance', 'Reason', 'Linked Reference'];
+    const rows = filteredTransactions.map(tx => {
+      const delta = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+      const balance = tx.endingBalance !== undefined ? tx.endingBalance : tx.balanceAfter;
+      const linked = tx.linkedId || tx.relatedId || '';
+      return [
+        `"${tx.id}"`,
+        `"${tx.timestamp}"`,
+        `"${tx.type}"`,
+        delta,
+        balance,
+        `"${(tx.reason || '').replace(/"/g, '""')}"`,
+        `"${linked.replace(/"/g, '""')}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `temporal_time_ledger_${getLocalDateString()}.csv`);
+    link.setAttribute('download', `temporal_leisure_ledger_${getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -147,6 +196,12 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
     addTimeCredits(finalMinutes, `Operator Calibration: ${calibrateReason}`, 'manual_adjustment');
     setIsCalibrateModalOpen(false);
     setCalibrateReason('');
+  };
+
+  const handleQuickRedeemPass = (pass: RestPass) => {
+    if (redeemRestPass) {
+      redeemRestPass(pass);
+    }
   };
 
   return (
@@ -165,10 +220,10 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-zinc-100 tracking-wide mt-1">
-            Time as Currency Audit Ledger (Ra's al-Māl)
+            Temporal Ledger & Sacred Rest Bank
           </h2>
           <p className="text-xs text-zinc-400 max-w-2xl font-sans mt-0.5">
-            One simple rule: earn rest through focused work, then spend it deliberately. The ledger keeps the balance honest.
+            Rest is earned capital, not stolen time. Deep work mints leisure credits; redeemed passes grant guilt-free, deliberate renewal.
           </p>
         </div>
 
@@ -184,7 +239,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
           <button
             onClick={handleExportCSV}
             className="px-3 py-2 rounded-xl text-xs font-mono font-bold bg-white/5 hover:bg-white/10 text-zinc-200 border border-white/10 transition flex items-center gap-1.5"
-            title="Download CSV spreadsheet"
+            title="Download CSV spreadsheet audit trail"
           >
             <Download className="h-3.5 w-3.5 text-zinc-400" />
             <span>EXPORT CSV</span>
@@ -192,56 +247,185 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
         </div>
       </div>
 
-      <div className="glass-panel rounded-xl p-4 border border-emerald-500/20 bg-[#0b1016] shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* OVERDRAFT ALARM (STEP 6: committed > budget − invested-so-far) */}
+      {wakingCapital.isOverdrawn ? (
+        <div className="glass-panel rounded-xl p-4 border border-rose-500/50 bg-rose-950/25 shadow-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 shrink-0 mt-0.5 sm:mt-0">
+                <AlertTriangle className="h-5 w-5 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono tracking-wider text-rose-400 uppercase font-black">
+                    OVERDRAFT ALARM TRIGGERED
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/30 text-rose-200 font-mono font-bold">
+                    +{wakingCapital.overdraftMinutes}m OVER BUDGET
+                  </span>
+                </div>
+                <p className="text-xs text-rose-200 font-sans mt-1">
+                  Committed tasks ({wakingCapital.committedMinutes}m) exceed remaining waking capacity ({Math.max(0, wakingCapital.budgetMinutes - wakingCapital.investedMinutes)}m). 
+                  You are borrowing from tomorrow's sleep or essential rest. Rebalance your day now.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0 font-mono text-xs border-t sm:border-t-0 border-rose-500/20 pt-2 sm:pt-0 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="text-right">
+                <span className="text-[9px] text-zinc-400 uppercase block">Utilization</span>
+                <span className="font-black text-rose-300">{wakingCapital.utilizationPercent}%</span>
+              </div>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('quests')}
+                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 text-[11px] font-bold transition"
+                >
+                  Trim Quests
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="glass-panel rounded-xl p-3 sm:p-4 border border-white/10 bg-[#090d14] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
+              <ShieldAlert className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-bold">
+                  DAILY WAKING CAPITAL (BUDGET: {Math.round(wakingCapital.budgetMinutes / 60)}H)
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                  SLACK: {wakingCapital.slackMinutes}M
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
+                Invested: <strong className="text-zinc-200">{wakingCapital.investedMinutes}m</strong> | Committed: <strong className="text-zinc-200">{wakingCapital.committedMinutes}m</strong> | Capacity Honored.
+              </p>
+            </div>
+          </div>
+          <div className="w-full sm:w-48 bg-black/40 h-2 rounded-full overflow-hidden border border-white/5 shrink-0">
+            <div 
+              className={`h-full transition-all duration-500 ${
+                wakingCapital.utilizationPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}
+              style={{ width: `${Math.min(100, wakingCapital.utilizationPercent)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TODAY'S REST DECISION WIDGET & 7-DAY RHYTHM */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        {/* Widget 1: Today's Rest Decision */}
+        <div className="glass-panel rounded-xl p-4 border border-emerald-500/20 bg-[#0b1016] shadow-md flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold">TODAY'S REST DECISION</span>
-            <p className="text-xs text-zinc-300 mt-1">
-              {todaySpent > todayMinted && todaySpent > 0
-                ? 'Tu dépenses plus de repos que tu n’en as gagné aujourd’hui. Protège le prochain bloc de focus.'
-                : todayMinted > 0
-                  ? 'Ton repos est financé. Programme une vraie pause avant de reprendre une nouvelle charge.'
-                  : 'Aucun mouvement aujourd’hui. Commence par un bloc de focus réaliste, puis récupère.'}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold flex items-center gap-1.5">
+                <Moon className="h-3.5 w-3.5 text-emerald-400" />
+                TODAY'S REST DECISION
+              </span>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                todayDecision.status === 'deficit'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                  : todayDecision.status === 'generous'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : todayDecision.status === 'funded'
+                      ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                      : 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30'
+              }`}>
+                {todayDecision.headline}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              {todayDecision.guidanceText}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center shrink-0">
-            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Minted</span><strong className="text-emerald-300 font-mono">+{todayMinted}m</strong></div>
-            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Spent</span><strong className="text-indigo-300 font-mono">-{todaySpent}m</strong></div>
-            <div><span className="block text-[9px] font-mono text-zinc-500 uppercase">Net</span><strong className={`font-mono ${todayNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{todayNet >= 0 ? '+' : ''}{todayNet}m</strong></div>
-          </div>
-        </div>
-      </div>
 
-      <div className="glass-panel rounded-xl p-4 border border-white/10 bg-[#0b0e14] shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-          <div>
-            <span className="text-[10px] font-mono tracking-widest text-zinc-300 uppercase font-bold">7-DAY RECOVERY RHYTHM</span>
-            <p className="text-[10px] text-zinc-500 mt-1">La récupération doit suivre la charge, pas devenir une dette invisible.</p>
+          <div className="grid grid-cols-3 gap-2 text-center mt-4 pt-3 border-t border-white/5">
+            <div className="bg-white/[0.02] p-2 rounded-lg border border-white/5">
+              <span className="block text-[9px] font-mono text-zinc-400 uppercase">Minted</span>
+              <strong className="text-emerald-300 font-mono text-sm">+{todayMinted}m</strong>
+            </div>
+            <div className="bg-white/[0.02] p-2 rounded-lg border border-white/5">
+              <span className="block text-[9px] font-mono text-zinc-400 uppercase">Spent</span>
+              <strong className="text-indigo-300 font-mono text-sm">-{todaySpent}m</strong>
+            </div>
+            <div className="bg-white/[0.02] p-2 rounded-lg border border-white/5">
+              <span className="block text-[9px] font-mono text-zinc-400 uppercase">Today Net</span>
+              <strong className={`font-mono text-sm ${todayNet >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {todayNet >= 0 ? '+' : ''}{todayNet}m
+              </strong>
+            </div>
           </div>
-          <span className={`text-[10px] font-mono font-bold uppercase ${recoverySignal ? 'text-amber-300' : 'text-emerald-300'}`}>
-            {recoverySignal ? 'RECOVERY NEEDED' : 'BALANCE STABLE'}
-          </span>
         </div>
-        <div className="grid grid-cols-7 gap-1.5 items-end h-20">
-          {weeklyRestTrend.map(day => {
-            const peak = Math.max(...weeklyRestTrend.map(item => Math.max(item.minted, item.spent)), 1);
-            const mintedHeight = Math.max(4, Math.round((day.minted / peak) * 100));
-            const spentHeight = Math.max(4, Math.round((day.spent / peak) * 100));
-            return (
-              <div key={day.label} className="h-full flex flex-col items-center justify-end gap-1">
-                <div className="flex items-end gap-0.5 h-full w-full justify-center">
-                  <div className="w-1.5 rounded-t bg-emerald-400/80" style={{ height: `${mintedHeight}%` }} title={`Minted ${day.minted}m`} />
-                  <div className="w-1.5 rounded-t bg-indigo-400/80" style={{ height: `${spentHeight}%` }} title={`Spent ${day.spent}m`} />
-                </div>
-                <span className="text-[9px] font-mono text-zinc-500 uppercase">{day.label}</span>
+
+        {/* Widget 2: 7-Day Recovery Rhythm */}
+        <div className="glass-panel rounded-xl p-4 border border-white/10 bg-[#0b0e14] shadow-md flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <div>
+                <span className="text-[10px] font-mono tracking-widest text-zinc-300 uppercase font-bold flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5 text-zinc-400" />
+                  7-DAY RECOVERY RHYTHM
+                </span>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  Recovery must synchronize with load, preventing debt from compounding unnoticed.
+                </p>
               </div>
-            );
-          })}
+              <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border self-start sm:self-auto ${
+                recoverySignal 
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              }`}>
+                {recoverySignal ? 'RECOVERY DEFICIT' : 'RHYTHM BALANCED'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1.5 items-end h-20 mt-3">
+              {weeklyRestTrend.map(day => {
+                const peak = Math.max(...weeklyRestTrend.map(item => Math.max(item.minted, item.spent)), 1);
+                const mintedHeight = Math.max(6, Math.round((day.minted / peak) * 100));
+                const spentHeight = Math.max(6, Math.round((day.spent / peak) * 100));
+                const isToday = day.dateKey === todayKey;
+                return (
+                  <div key={day.dateKey} className="h-full flex flex-col items-center justify-end gap-1">
+                    <div className="flex items-end gap-0.5 h-full w-full justify-center">
+                      <div 
+                        className={`w-2 rounded-t transition-all ${isToday ? 'bg-emerald-400' : 'bg-emerald-500/70'}`} 
+                        style={{ height: `${mintedHeight}%` }} 
+                        title={`${day.label}: Minted ${day.minted}m`} 
+                      />
+                      <div 
+                        className={`w-2 rounded-t transition-all ${isToday ? 'bg-indigo-400' : 'bg-indigo-500/70'}`} 
+                        style={{ height: `${spentHeight}%` }} 
+                        title={`${day.label}: Spent ${day.spent}m`} 
+                      />
+                    </div>
+                    <span className={`text-[9px] font-mono uppercase ${isToday ? 'text-emerald-300 font-bold' : 'text-zinc-500'}`}>
+                      {day.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 mt-3 border-t border-white/5 pt-2">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+              <span>7D MINTED: <strong className="text-emerald-300">+{weeklyMinted}m</strong></span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />
+              <span>7D SPENT: <strong className="text-indigo-300">-{weeklySpent}m</strong></span>
+            </span>
+          </div>
         </div>
-        <div className="flex justify-between text-[9px] font-mono text-zinc-500 mt-2 border-t border-white/5 pt-2">
-          <span>7D MINTED: <strong className="text-emerald-300">+{weeklyMinted}m</strong></span>
-          <span>7D SPENT: <strong className="text-indigo-300">-{weeklySpent}m</strong></span>
-        </div>
+
       </div>
 
       {/* METRIC SUMMARY CARDS */}
@@ -317,6 +501,73 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
 
       </div>
 
+      {/* REST PASS QUICK LAUNCHER (STEP 4 & STEP 5 REDEMPTION SHELF) */}
+      <div className="glass-panel rounded-xl p-4 border border-white/10 bg-[#0c1018]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-300 font-bold flex items-center gap-1.5">
+              <Coffee className="h-3.5 w-3.5 text-indigo-400" />
+              REST PASS SHELF — REDEEM INTENTIONAL LEISURE
+            </h3>
+            <p className="text-[11px] text-zinc-400">
+              Deducts coins and rest credits atomically. Launches the full-screen timer with pro-rata early return refunds.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-xs font-mono">
+            <span className="text-zinc-400">Coins: <strong className="text-[#fef08a]">{currentCoins}</strong></span>
+            <span className="text-zinc-400">Rest: <strong className="text-emerald-300">{currentCredits}m</strong></span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {DEFAULT_REST_PASSES.map((pass) => {
+            const hasEnoughMinutes = currentCredits >= pass.costMinutes;
+            const hasEnoughCoins = currentCoins >= pass.costCoins;
+            const canAfford = hasEnoughMinutes && hasEnoughCoins;
+
+            return (
+              <div 
+                key={pass.id}
+                className={`p-3 rounded-xl border transition flex flex-col justify-between ${
+                  canAfford 
+                    ? 'bg-[#121622] border-white/10 hover:border-indigo-500/50 hover:bg-[#161c2c]' 
+                    : 'bg-[#0f121a]/60 border-white/5 opacity-60'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-xs font-mono font-bold text-zinc-200 line-clamp-1">{pass.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 shrink-0">
+                      {pass.durationMinutes}m
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 font-sans line-clamp-2 min-h-[28px]">
+                    {pass.description}
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                  <div className="text-[10px] font-mono">
+                    <span className={hasEnoughMinutes ? 'text-emerald-400' : 'text-rose-400'}>{pass.costMinutes}m</span>
+                    <span className="text-zinc-600 mx-1">+</span>
+                    <span className={hasEnoughCoins ? 'text-[#fef08a]' : 'text-rose-400'}>{pass.costCoins}c</span>
+                  </div>
+
+                  <button
+                    disabled={!canAfford}
+                    onClick={() => handleQuickRedeemPass(pass)}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-white/5 disabled:text-zinc-600 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    <Play className="h-2.5 w-2.5" />
+                    <span>REST</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* FILTER & SEARCH TOOLBAR */}
       <div className="glass-panel rounded-xl p-3 sm:p-4 border border-white/10 bg-[#0b0e14] flex flex-wrap items-center justify-between gap-3">
         
@@ -325,7 +576,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
-            placeholder="Search temporal transactions..."
+            placeholder="Search transactions by reason, type, or reference ID..."
             value={searchTerm}
             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full bg-[#121622] border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 transition font-sans"
@@ -365,7 +616,8 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             <option value="ALL">All Categories</option>
             <option value="focus_mint">Focus Harvest</option>
             <option value="quest_dividend">Quest Dividend</option>
-            <option value="leisure_redemption">Leisure Voucher</option>
+            <option value="leisure_redemption">Rest Redeemed</option>
+            <option value="rest_refund">Rest Refund</option>
             <option value="ritual_reward">Sacred Rite</option>
             <option value="time_debt_penalty">Time Debt</option>
             <option value="manual_adjustment">Manual Adjustment</option>
@@ -374,7 +626,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
 
       </div>
 
-      {/* TRANSACTION TABLE */}
+      {/* TRANSACTION TABLE (AUDIT TRAIL) */}
       <div className="glass-panel rounded-xl border border-white/10 bg-[#090c12] overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
@@ -383,14 +635,15 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
                 <th className="py-3 px-4 font-semibold">Timestamp</th>
                 <th className="py-3 px-4 font-semibold">Category</th>
                 <th className="py-3 px-4 font-semibold">Event & Reason</th>
+                <th className="py-3 px-4 font-semibold">Linked Ref</th>
                 <th className="py-3 px-4 font-semibold text-right">Time Flux</th>
-                <th className="py-3 px-4 font-semibold text-right">Balance</th>
+                <th className="py-3 px-4 font-semibold text-right">Ending Balance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {paginatedTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-zinc-500">
+                  <td colSpan={6} className="py-12 text-center text-zinc-500">
                     <Hourglass className="h-8 w-8 mx-auto mb-2 opacity-30 text-emerald-400" />
                     <span>No temporal transactions matching current filters.</span>
                   </td>
@@ -399,7 +652,10 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
                 paginatedTransactions.map((tx) => {
                   const badge = getTypeBadge(tx.type);
                   const Icon = badge.icon;
-                  const isGain = tx.minutes >= 0;
+                  const delta = tx.minutesDelta !== undefined ? tx.minutesDelta : tx.minutes;
+                  const ending = tx.endingBalance !== undefined ? tx.endingBalance : tx.balanceAfter;
+                  const linked = tx.linkedId || tx.relatedId;
+                  const isGain = delta >= 0;
 
                   return (
                     <tr key={tx.id} className="hover:bg-white/[0.02] transition">
@@ -423,16 +679,27 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
                         </div>
                       </td>
 
+                      {/* Linked Reference */}
+                      <td className="py-3.5 px-4 text-zinc-500 text-[10px] font-mono whitespace-nowrap">
+                        {linked ? (
+                          <span className="truncate max-w-[120px] inline-block" title={linked}>
+                            {linked}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-700">—</span>
+                        )}
+                      </td>
+
                       {/* Time Flux Change */}
                       <td className={`py-3.5 px-4 text-right font-black text-xs whitespace-nowrap ${
                         isGain ? 'text-emerald-400' : 'text-rose-400'
                       }`}>
-                        {isGain ? `+${tx.minutes}m` : `${tx.minutes}m`}
+                        {isGain ? `+${delta}m` : `${delta}m`}
                       </td>
 
                       {/* Running Balance */}
                       <td className="py-3.5 px-4 text-right font-bold text-zinc-300 whitespace-nowrap">
-                        {tx.balanceAfter}m
+                        {ending}m
                       </td>
                     </tr>
                   );

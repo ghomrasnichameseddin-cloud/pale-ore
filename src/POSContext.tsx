@@ -10,8 +10,19 @@ import {
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
   NotificationSettings,
-  TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession
+  TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
+  RestPass, DailyWakingCapital, LeisureTransaction
 } from './types';
+import {
+  buildQuestMintKey,
+  isQuestAlreadyMinted,
+  calculateFocusRestMint,
+  calculateQuestRestDividend,
+  redeemRestPassAtomic,
+  calculateEarlyFinishRefund,
+  calculateDailyWakingCapital,
+  DEFAULT_REST_PASSES
+} from './utils/temporalLedger';
 import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
@@ -168,10 +179,12 @@ interface POSContextType {
   // Temporal Currency & Leisure Bank
   addTimeCredits: (minutes: number, reason: string, type?: TimeTransactionType, relatedId?: string) => void;
   spendTimeCredits: (minutes: number, reason: string, relatedId?: string) => { success: boolean; message: string };
+  redeemRestPass: (pass: RestPass) => { success: boolean; message: string };
   setDailyWakingHours: (hours: number) => void;
   repayTimeDebt: (minutes: number) => void;
   getTemporalCapitalInfo: () => TemporalCapitalInfo;
-  startActiveRestSession: (title: string, minutes: number) => void;
+  getDailyWakingCapital: () => DailyWakingCapital;
+  startActiveRestSession: (title: string, minutes: number, passId?: string, costMinutes?: number) => void;
   stopActiveRestSession: () => void;
   pauseActiveRestSession: () => void;
   resumeActiveRestSession: () => void;
@@ -1072,6 +1085,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const timeTx: TimeTransaction = {
           id: `time-focus-${Date.now()}`,
           type: 'focus_mint',
+          minutesDelta: earnedLeisure,
+          endingBalance: newCredits,
           minutes: earnedLeisure,
           reason: `Focus Harvest: ${cycleMinutes}m Deep Work on "${activeFocusSession.questName}"`,
           timestamp: getSystemTimestamp(todayStr),
@@ -2518,22 +2533,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const totalCoinsEarned = Math.round((baseCoinsEarned + streakCoinBonus) * perkCoinMult);
 
     // Calculate Earned Time Credits (Leisure dividend from quest completion)
-    const earnedTimeCredits = isRecurringOrHabit ? 4
-      : questToComplete.difficulty === 'Boss' ? 30
-      : questToComplete.difficulty === 'Hard' ? 15
-      : questToComplete.difficulty === 'Easy' ? 4
-      : 8;
+    const earnedTimeCredits = isRecurringOrHabit ? 4 : calculateQuestRestDividend(questToComplete);
+    const questMintKey = buildQuestMintKey(questToComplete.id, completedTimestamp);
+    const alreadyMinted = isQuestAlreadyMinted(state.timeHistory, questToComplete.id, completedTimestamp);
 
     const currentLeisure = state.profile.timeCredits ?? 60;
-    const newLeisureBalance = currentLeisure + earnedTimeCredits;
-    const questTimeTx: TimeTransaction = {
-      id: `time-quest-${Date.now()}`,
+    const newLeisureBalance = alreadyMinted ? currentLeisure : currentLeisure + earnedTimeCredits;
+    const questTimeTx: LeisureTransaction | null = alreadyMinted ? null : {
+      id: `time-quest-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       type: 'quest_dividend',
-      minutes: earnedTimeCredits,
+      minutesDelta: earnedTimeCredits,
+      endingBalance: newLeisureBalance,
       reason: `Quest Dividend: "${questToComplete.name}" (${questToComplete.difficulty || 'Normal'})`,
+      linkedId: questMintKey,
       timestamp: completedTimestamp,
+      minutes: earnedTimeCredits,
       balanceAfter: newLeisureBalance,
-      relatedId: questToComplete.id
+      relatedId: questMintKey
     };
 
     setState(prev => {
@@ -2645,7 +2661,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quests: updatedQuests,
         skills: updatedSkills,
         xpHistory: updatedHistory,
-        timeHistory: [questTimeTx, ...(prev.timeHistory || [])],
+        timeHistory: (!alreadyMinted && questTimeTx) ? [questTimeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
         muhasabahEntries: updatedMuhasabahEntries,
         profile: {
           ...prev.profile,
@@ -2653,7 +2669,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           level,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           timeCredits: newLeisureBalance,
-          totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedTimeCredits,
+          totalTimeEarned: (!alreadyMinted && questTimeTx) ? (prev.profile.totalTimeEarned || 0) + earnedTimeCredits : (prev.profile.totalTimeEarned || 0),
           hp: Math.min(nextMaxHp, nextHp + (isKaffarahQuest ? 35 : 2)),
           maxHp: nextMaxHp,
           momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
@@ -3442,6 +3458,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timeTx = {
           id: `time-spend-${Date.now()}`,
           type: 'leisure_redemption',
+          minutesDelta: -timeSpent,
+          endingBalance: remainingTimeCredits,
           minutes: -timeSpent,
           reason: `Leisure Voucher: "${item.name}"`,
           timestamp,
@@ -4069,13 +4087,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTimeCredits = (minutes: number, reason: string, type: TimeTransactionType = 'manual_adjustment', relatedId?: string) => {
     setState(prev => {
       const current = prev.profile.timeCredits ?? 60;
-      const newBal = current + minutes;
-      const tx: TimeTransaction = {
+      const newBal = Math.max(0, current + minutes); // Clamped >= 0: Balance cannot go negative
+      const tx: LeisureTransaction = {
         id: `time-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         type,
-        minutes,
+        minutesDelta: minutes,
+        endingBalance: newBal,
         reason,
+        linkedId: relatedId,
         timestamp: getSystemTimestamp(prev.systemDate),
+        minutes,
         balanceAfter: newBal,
         relatedId
       };
@@ -4103,12 +4124,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => {
       const curr = prev.profile.timeCredits ?? 60;
       const newBal = Math.max(0, curr - minutes);
-      const tx: TimeTransaction = {
+      const tx: LeisureTransaction = {
         id: `time-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         type: 'leisure_redemption',
-        minutes: -minutes,
+        minutesDelta: -minutes,
+        endingBalance: newBal,
         reason,
+        linkedId: relatedId,
         timestamp: getSystemTimestamp(prev.systemDate),
+        minutes: -minutes,
         balanceAfter: newBal,
         relatedId
       };
@@ -4124,6 +4148,45 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return { success: true, message: `Redeemed ${minutes}m of earned leisure.` };
+  };
+
+  const redeemRestPass = (pass: RestPass): { success: boolean; message: string } => {
+    const currentCoins = state.profile.coins ?? 150;
+    const currentLeisure = state.profile.timeCredits ?? 60;
+    const timestamp = getSystemTimestamp(state.systemDate);
+
+    const result = redeemRestPassAtomic({
+      currentCoins,
+      currentLeisureBalance: currentLeisure,
+      pass,
+      timestamp
+    });
+
+    if (!result.success) {
+      return { success: false, message: result.error || 'Failed to redeem rest pass.' };
+    }
+
+    setState(prev => ({
+      ...prev,
+      timeHistory: result.transaction ? [result.transaction, ...(prev.timeHistory || [])] : prev.timeHistory,
+      activeRestSession: result.activeRestSession || null,
+      profile: {
+        ...prev.profile,
+        coins: result.newCoins,
+        timeCredits: result.newLeisureBalance,
+        totalTimeSpent: (prev.profile.totalTimeSpent || 0) + pass.costMinutes
+      }
+    }));
+
+    addSystemMessage({
+      sender: 'SANCTUM_GUARDIAN',
+      category: 'achievement',
+      title: '🌿 Active Rest Initiated',
+      content: `Redeemed ${pass.name} (${pass.durationMinutes}m). Balance remaining: ${result.newLeisureBalance}m rest, ${result.newCoins} coins.`,
+      priority: 'low'
+    });
+
+    return { success: true, message: `Redeemed ${pass.name}. Rest with peaceful intentionality.` };
   };
 
   const setDailyWakingHours = (hours: number) => {
@@ -4142,13 +4205,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currDebt = prev.profile.timeDebt || 0;
       const repaid = Math.min(currDebt, minutes);
       const newDebt = Math.max(0, currDebt - repaid);
-      const tx: TimeTransaction = {
+      const tx: LeisureTransaction = {
         id: `time-repay-${Date.now()}`,
         type: 'manual_adjustment',
-        minutes: repaid,
+        minutesDelta: repaid,
+        endingBalance: prev.profile.timeCredits ?? 60,
         reason: `Temporal Debt Repayment via focus/remedy`,
+        linkedId: undefined,
         timestamp: getSystemTimestamp(prev.systemDate),
-        balanceAfter: prev.profile.timeCredits ?? 60
+        minutes: repaid,
+        balanceAfter: prev.profile.timeCredits ?? 60,
+        relatedId: undefined
       };
       return {
         ...prev,
@@ -4161,14 +4228,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const getTemporalCapitalInfo = (): TemporalCapitalInfo => {
+  const getDailyWakingCapital = (): DailyWakingCapital => {
     const wakingHours = state.profile.dailyWakingHours || 16;
-    const dailyWakingMinutes = wakingHours * 60;
+    const budgetMinutes = wakingHours * 60;
     const todayStr = state.systemDate;
 
     // Invested minutes today: focus time + actual time on quests completed today
     const focusMinutesToday = state.profile.focusMinutesToday || 0;
-    const completedQuestsToday = (state.quests || []).filter(q => q.lastCompletedDate === todayStr || (q.status === 'Completed' && q.completedAt?.startsWith(todayStr)));
+    const completedQuestsToday = (state.quests || []).filter(
+      q => q.lastCompletedDate === todayStr || (q.status === 'Completed' && q.completedAt?.startsWith(todayStr))
+    );
     const questMinutesToday = completedQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 15), 0);
     const investedMinutesToday = Math.max(focusMinutesToday, questMinutesToday);
 
@@ -4180,27 +4249,30 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const committedMinutesToday = activeQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 30), 0);
 
-    const totalAllocated = investedMinutesToday + committedMinutesToday;
-    const uncommittedMinutes = Math.max(0, dailyWakingMinutes - totalAllocated);
-    const isOverdrawn = totalAllocated > dailyWakingMinutes;
-    const overdraftMinutes = Math.max(0, totalAllocated - dailyWakingMinutes);
-    const utilizationPercent = Math.min(150, Math.round((totalAllocated / dailyWakingMinutes) * 100));
-
-    return {
-      dailyWakingMinutes,
+    return calculateDailyWakingCapital({
+      budgetMinutes,
       investedMinutesToday,
-      committedMinutesToday,
-      uncommittedMinutes,
+      committedMinutesToday
+    });
+  };
+
+  const getTemporalCapitalInfo = (): TemporalCapitalInfo => {
+    const capital = getDailyWakingCapital();
+    return {
+      dailyWakingMinutes: capital.budgetMinutes,
+      investedMinutesToday: capital.investedMinutes,
+      committedMinutesToday: capital.committedMinutes,
+      uncommittedMinutes: capital.slackMinutes,
       leisureMinutesBalance: state.profile.timeCredits ?? 60,
       timeDebt: state.profile.timeDebt || 0,
-      isOverdrawn,
-      overdraftMinutes,
-      utilizationPercent
+      isOverdrawn: capital.isOverdrawn,
+      overdraftMinutes: capital.overdraftMinutes,
+      utilizationPercent: capital.utilizationPercent
     };
   };
 
-  const startActiveRestSession = (title: string, minutes: number) => {
-    const res = spendTimeCredits(minutes, `Active Rest Block: "${title}"`);
+  const startActiveRestSession = (title: string, minutes: number, passId?: string, costMinutes?: number) => {
+    const res = spendTimeCredits(minutes, `Active Rest Block: "${title}"`, passId);
     if (!res.success) {
       addSystemMessage({
         sender: 'SANCTUM_GUARDIAN',
@@ -4217,8 +4289,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       title,
       totalMinutes: minutes,
       remainingSeconds: minutes * 60,
-      startedAt: new Date().toISOString(),
-      paused: false
+      startedAt: getSystemTimestamp(state.systemDate),
+      paused: false,
+      costMinutes: costMinutes ?? minutes,
+      passId
     };
 
     setState(prev => ({
@@ -6711,9 +6785,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addXp,
       addTimeCredits,
       spendTimeCredits,
+      redeemRestPass,
       setDailyWakingHours,
       repayTimeDebt,
       getTemporalCapitalInfo,
+      getDailyWakingCapital,
       startActiveRestSession,
       stopActiveRestSession,
       pauseActiveRestSession,

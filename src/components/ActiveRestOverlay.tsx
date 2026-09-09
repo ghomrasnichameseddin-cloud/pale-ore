@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
+import { calculateEarlyFinishRefund } from '../utils/temporalLedger';
 
 const REST_CONTEMPLATIONS = [
   {
@@ -49,13 +50,16 @@ export const ActiveRestOverlay: React.FC = () => {
   const progressPercent = Math.min(100, Math.max(0, ((totalSeconds - session.remainingSeconds) / totalSeconds) * 100));
 
   const handleEarlyFinish = () => {
-    // Refund remaining unspent full minutes back to user leisure bank
-    const refundMinutes = Math.floor(session.remainingSeconds / 60);
+    // Pro-rata refund by time remaining based on pass cost
+    const totalSeconds = session.totalMinutes * 60;
+    const cost = session.costMinutes ?? session.totalMinutes;
+    const refundMinutes = calculateEarlyFinishRefund(session.remainingSeconds, totalSeconds, cost);
     if (refundMinutes > 0) {
       addTimeCredits(
         refundMinutes, 
-        `Early Rest Conclusion: +${refundMinutes}m unspent rest refunded`,
-        'manual_adjustment'
+        `Early Rest Conclusion: +${refundMinutes}m unspent rest refunded from "${session.title}"`,
+        'rest_refund',
+        session.id
       );
     }
     stopActiveRestSession();

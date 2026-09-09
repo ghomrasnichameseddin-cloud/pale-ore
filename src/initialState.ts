@@ -239,6 +239,8 @@ export const INITIAL_STATE: POSState = {
     {
       id: 'time-genesis',
       type: 'manual_adjustment',
+      minutesDelta: 60,
+      endingBalance: 60,
       minutes: 60,
       reason: 'Sanctum Genesis: Starter Temporal Leisure Capital',
       timestamp: new Date().toISOString(),

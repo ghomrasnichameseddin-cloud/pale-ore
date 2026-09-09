@@ -316,22 +316,59 @@ export interface RedeemedReward {
   usedAt?: string | null;
 }
 
-export type TimeTransactionType = 
+export type LeisureTransactionType = 
   | 'focus_mint'          // Minted from completed focus session
   | 'quest_dividend'      // Efficiency dividend or completion reward
   | 'ritual_reward'       // Prayer / Quran / Sacred act reward
   | 'leisure_redemption'  // Spent on leisure voucher or active rest
+  | 'rest_refund'         // Pro-rata unspent rest refund
   | 'time_debt_penalty'   // Deducted / debt incurred from lapse
   | 'manual_adjustment';  // Operator calibrated
 
-export interface TimeTransaction {
+export type TimeTransactionType = LeisureTransactionType;
+
+export interface LeisureTransaction {
   id: string;
-  type: TimeTransactionType;
-  minutes: number; // positive for earned/minted, negative for spent/debt
+  type: LeisureTransactionType;
+  minutesDelta?: number; // positive for earned/minted, negative for spent/debt
+  endingBalance?: number;
   reason: string;
-  timestamp: string; // ISO string
+  linkedId?: string; // questId:completedAt, passId, etc.
+  timestamp: string; // ISO string or system timestamp
+  // Compatibility fields for existing code
+  minutes: number;
   balanceAfter: number;
-  relatedId?: string; // questId or itemId
+  relatedId?: string;
+}
+
+export type TimeTransaction = LeisureTransaction;
+
+export interface RestPass {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  costCoins: number;
+  costMinutes: number;
+  description?: string;
+  category?: string;
+  icon?: string;
+}
+
+export interface LeisureBankState {
+  balance: number;
+  transactions: LeisureTransaction[];
+  totalEarned?: number;
+  totalSpent?: number;
+}
+
+export interface DailyWakingCapital {
+  budgetMinutes: number; // e.g. 16 * 60 = 960m
+  investedMinutes: number; // logged focus + completed quests today
+  committedMinutes: number; // estimated time of remaining active quests today
+  slackMinutes: number; // remaining free waking capital
+  isOverdrawn: boolean; // committed > budget - invested
+  overdraftMinutes: number;
+  utilizationPercent: number; // (invested + committed) / budget * 100
 }
 
 export interface TemporalCapitalInfo {
@@ -353,6 +390,8 @@ export interface ActiveRestSession {
   remainingSeconds: number;
   startedAt: string;
   paused?: boolean;
+  costMinutes?: number;
+  passId?: string;
 }
 
 export interface BatterySettings {
