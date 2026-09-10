@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, Moon, Coffee, ShieldAlert, Sparkles, ChevronRight, 
-  Settings, ShoppingBag, Plus, ArrowUpRight, Flame, Hourglass, Check
+  Settings, ShoppingBag, Plus, ArrowUpRight, Flame, Hourglass, Check, Lock
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
+import { getActiveUsageBlocker } from '../utils/temporalLedger';
 
 interface TemporalCapitalHudProps {
   onNavigate?: (tab: string) => void;
@@ -27,6 +28,7 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
   const capital = getTemporalCapitalInfo();
   const currentHours = state.profile.dailyWakingHours || 16;
+  const usageBlocker = getActiveUsageBlocker(state.appUsageLimits || [], state.appUsageLogs || [], state.systemDate);
 
   // Format minutes into hours + mins
   const formatMins = (m: number) => {
@@ -218,6 +220,26 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
               </span>
             </div>
           )}
+
+          {/* Usage Limit Lock Warning Banner */}
+          {usageBlocker.isBlocked && (
+            <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 shrink-0 text-rose-400" />
+                <span>
+                  <strong>Rest Blocked:</strong> Daily limit for &ldquo;{usageBlocker.appName}&rdquo; exceeded by +{usageBlocker.overdraftMinutes}m.
+                </span>
+              </div>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('time_ledger')}
+                  className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/30 hover:bg-rose-500/50 text-rose-100 border border-rose-500/40 transition shrink-0 font-bold"
+                >
+                  View Ledger
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* COLUMN 3: EARNED LEISURE BANK (REST CURRENCY) */}
@@ -250,12 +272,31 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
           {/* Action Buttons */}
           <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2">
             <button
-              onClick={() => setIsQuickRedeemOpen(true)}
-              className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm"
-              title="Start an active rest block now"
+              onClick={() => {
+                if (usageBlocker.isBlocked) {
+                  onNavigate?.('time_ledger');
+                } else {
+                  setIsQuickRedeemOpen(true);
+                }
+              }}
+              className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm ${
+                usageBlocker.isBlocked
+                  ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40'
+                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+              }`}
+              title={usageBlocker.isBlocked ? `Rest pass locked: ${usageBlocker.appName} exceeded limit by +${usageBlocker.overdraftMinutes}m` : "Start an active rest block now"}
             >
-              <Coffee className="h-3.5 w-3.5" />
-              <span>START REST</span>
+              {usageBlocker.isBlocked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>REST LOCKED</span>
+                </>
+              ) : (
+                <>
+                  <Coffee className="h-3.5 w-3.5" />
+                  <span>START REST</span>
+                </>
+              )}
             </button>
 
             <button

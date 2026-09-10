@@ -11,17 +11,22 @@ import {
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
-  RestPass, DailyWakingCapital, LeisureTransaction
+  RestPass, DailyWakingCapital, LeisureTransaction,
+  AppUsageLimit, AppUsageLogEntry
 } from './types';
 import {
   buildQuestMintKey,
   isQuestAlreadyMinted,
   calculateFocusRestMint,
   calculateQuestRestDividend,
+  calculateQuestMintingWithLabor,
   redeemRestPassAtomic,
   calculateEarlyFinishRefund,
   calculateDailyWakingCapital,
-  DEFAULT_REST_PASSES
+  calculateAppUsageStatus,
+  getActiveUsageBlocker,
+  DEFAULT_REST_PASSES,
+  DEFAULT_APP_USAGE_LIMITS
 } from './utils/temporalLedger';
 import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
@@ -127,7 +132,8 @@ interface POSContextType {
   addQuest: (quest: Partial<Quest> & { name: string; description: string }) => string;
   updateQuest: (id: string, updates: Partial<Quest>) => void;
   deleteQuest: (id: string) => void;
-  completeQuest: (id: string) => void;
+  completeQuest: (id: string, additionalElapsedMinutes?: number) => void;
+  logQuestWorkTime: (questId: string, minutes: number) => void;
   reopenQuest: (id: string) => void;
   failQuest: (id: string) => void;
   duplicateQuest: (id: string) => string;
@@ -188,6 +194,14 @@ interface POSContextType {
   stopActiveRestSession: () => void;
   pauseActiveRestSession: () => void;
   resumeActiveRestSession: () => void;
+  
+  // App & Digital Usage Limits
+  addAppUsageLimit: (limit: Omit<AppUsageLimit, 'id' | 'createdAt'>) => string;
+  updateAppUsageLimit: (id: string, updates: Partial<AppUsageLimit>) => void;
+  deleteAppUsageLimit: (id: string) => void;
+  logAppUsage: (limitId: string, minutes: number, notes?: string) => void;
+  deleteAppUsageLog: (logId: string) => void;
+  resetDefaultAppUsageLimits: () => void;
   
   // Profile Adjustments
   toggleRecoveryMode: () => void;
@@ -1096,6 +1110,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return {
           ...prev,
+          quests: prev.quests.map(q => {
+            if (activeFocusSession.questId && q.id === activeFocusSession.questId) {
+              return {
+                ...q,
+                actualMinutesWorked: (q.actualMinutesWorked || 0) + cycleMinutes
+              };
+            }
+            return q;
+          }),
           xpHistory: updatedHistory,
           timeHistory: [timeTx, ...(prev.timeHistory || [])],
           profile: {
@@ -2484,7 +2507,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const completeQuest = (id: string) => {
+  const completeQuest = (id: string, additionalElapsedMinutes?: number) => {
     const questToComplete = state.quests.find(q => q.id === id);
     if (!questToComplete) return;
     // If it's a non-recurring quest and is already completed, ignore
@@ -2532,8 +2555,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const perkCoinMult = getCoinMultiplier(activeJob);
     const totalCoinsEarned = Math.round((baseCoinsEarned + streakCoinBonus) * perkCoinMult);
 
-    // Calculate Earned Time Credits (Leisure dividend from quest completion)
-    const earnedTimeCredits = isRecurringOrHabit ? 4 : calculateQuestRestDividend(questToComplete);
+    // Calculate Earned Time Credits (Labor-reconciled leisure dividend from quest completion)
+    const timerSeconds = (activeFocusSession?.questId === id) ? (activeFocusSession.timeSpent || 0) : 0;
+    const sessionMinutes = Math.floor(timerSeconds / 60);
+    const extraMinutes = (additionalElapsedMinutes || 0) + sessionMinutes;
+    const totalLaborMinutes = (questToComplete.actualMinutesWorked || 0) + extraMinutes;
+
+    const mintResult = calculateQuestMintingWithLabor({
+      quest: {
+        ...questToComplete,
+        actualMinutesWorked: totalLaborMinutes
+      },
+      timeHistory: state.timeHistory
+    });
+
+    const earnedTimeCredits = mintResult.totalMinted;
     const questMintKey = buildQuestMintKey(questToComplete.id, completedTimestamp);
     const alreadyMinted = isQuestAlreadyMinted(state.timeHistory, questToComplete.id, completedTimestamp);
 
@@ -2544,12 +2580,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'quest_dividend',
       minutesDelta: earnedTimeCredits,
       endingBalance: newLeisureBalance,
-      reason: `Quest Dividend: "${questToComplete.name}" (${questToComplete.difficulty || 'Normal'})`,
+      reason: mintResult.reason,
       linkedId: questMintKey,
       timestamp: completedTimestamp,
       minutes: earnedTimeCredits,
       balanceAfter: newLeisureBalance,
-      relatedId: questMintKey
+      relatedId: questToComplete.id
     };
 
     setState(prev => {
@@ -2563,6 +2599,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const newBest = Math.max(q.bestStreak || 0, newStreak);
             return {
               ...q,
+              actualMinutesWorked: totalLaborMinutes,
               status: 'Active' as const, // Remain Active so it can be completed again!
               completedAt: completedTimestamp,
               lastCompletedDate: state.systemDate,
@@ -2575,6 +2612,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             return {
               ...q,
+              actualMinutesWorked: totalLaborMinutes,
               status: 'Completed' as const,
               completedAt: completedTimestamp,
               lastCompletedDate: state.systemDate,
@@ -4154,12 +4192,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentCoins = state.profile.coins ?? 150;
     const currentLeisure = state.profile.timeCredits ?? 60;
     const timestamp = getSystemTimestamp(state.systemDate);
+    const usageBlocker = getActiveUsageBlocker(state.appUsageLimits || [], state.appUsageLogs || [], state.systemDate);
 
     const result = redeemRestPassAtomic({
       currentCoins,
       currentLeisureBalance: currentLeisure,
       pass,
-      timestamp
+      timestamp,
+      blockedByAppUsage: usageBlocker
     });
 
     if (!result.success) {
@@ -4340,6 +4380,141 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+  };
+
+  const logQuestWorkTime = (questId: string, minutes: number) => {
+    if (minutes <= 0) return;
+    setState(prev => ({
+      ...prev,
+      quests: prev.quests.map(q => {
+        if (q.id === questId) {
+          return {
+            ...q,
+            actualMinutesWorked: (q.actualMinutesWorked || 0) + minutes
+          };
+        }
+        return q;
+      })
+    }));
+  };
+
+  const addAppUsageLimit = (limit: Omit<AppUsageLimit, 'id' | 'createdAt'>): string => {
+    const id = `limit-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newLimit: AppUsageLimit = {
+      ...limit,
+      id,
+      createdAt: getSystemTimestamp(state.systemDate)
+    };
+    setState(prev => ({
+      ...prev,
+      appUsageLimits: [...(prev.appUsageLimits || []), newLimit]
+    }));
+    return id;
+  };
+
+  const updateAppUsageLimit = (id: string, updates: Partial<AppUsageLimit>) => {
+    setState(prev => ({
+      ...prev,
+      appUsageLimits: (prev.appUsageLimits || []).map(l => l.id === id ? { ...l, ...updates } : l)
+    }));
+  };
+
+  const deleteAppUsageLimit = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      appUsageLimits: (prev.appUsageLimits || []).filter(l => l.id !== id),
+      appUsageLogs: (prev.appUsageLogs || []).filter(l => l.limitId !== id)
+    }));
+  };
+
+  const resetDefaultAppUsageLimits = () => {
+    setState(prev => ({
+      ...prev,
+      appUsageLimits: DEFAULT_APP_USAGE_LIMITS
+    }));
+  };
+
+  const logAppUsage = (limitId: string, minutes: number, notes?: string) => {
+    if (minutes <= 0) return;
+    const targetLimit = (state.appUsageLimits || []).find(l => l.id === limitId);
+    if (!targetLimit) return;
+
+    const todayStr = state.systemDate;
+    const timestamp = getSystemTimestamp(todayStr);
+    const newLog: AppUsageLogEntry = {
+      id: `usage-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      limitId,
+      appName: targetLimit.name,
+      date: todayStr,
+      minutesUsed: minutes,
+      timestamp,
+      notes
+    };
+
+    // Calculate current usage before this log
+    const existingLogsToday = (state.appUsageLogs || []).filter(l => l.limitId === limitId && l.date === todayStr);
+    const prevUsed = existingLogsToday.reduce((sum, l) => sum + (l.minutesUsed || 0), 0);
+    const newTotalUsed = prevUsed + minutes;
+    const dailyLimit = targetLimit.dailyLimitMinutes;
+
+    // Check if this log creates or expands an overdraft
+    const prevOverdraft = Math.max(0, prevUsed - dailyLimit);
+    const newOverdraft = Math.max(0, newTotalUsed - dailyLimit);
+    const incrementalOverdraft = newOverdraft - prevOverdraft;
+
+    // If consequence is 'deduct_leisure_bank' and overdraft occurred, create a debit transaction!
+    let usageTx: LeisureTransaction | null = null;
+    let newCredits = state.profile.timeCredits ?? 60;
+    if (targetLimit.consequence === 'deduct_leisure_bank' && incrementalOverdraft > 0) {
+      const deductAmount = incrementalOverdraft;
+      newCredits = Math.max(0, newCredits - deductAmount);
+      usageTx = {
+        id: `time-usage-penalty-${Date.now()}`,
+        type: 'time_debt_penalty',
+        minutesDelta: -deductAmount,
+        endingBalance: newCredits,
+        reason: `Usage Limit Breach: Exceeded daily limit on "${targetLimit.name}" by ${deductAmount}m`,
+        linkedId: newLog.id,
+        timestamp,
+        minutes: -deductAmount,
+        balanceAfter: newCredits,
+        relatedId: limitId
+      };
+    }
+
+    setState(prev => ({
+      ...prev,
+      appUsageLogs: [newLog, ...(prev.appUsageLogs || [])],
+      timeHistory: usageTx ? [usageTx, ...(prev.timeHistory || [])] : prev.timeHistory,
+      profile: usageTx ? {
+        ...prev.profile,
+        timeCredits: newCredits,
+        timeDebt: (prev.profile.timeDebt || 0) + (newCredits === 0 ? incrementalOverdraft : 0)
+      } : prev.profile
+    }));
+
+    if (newTotalUsed > dailyLimit) {
+      addSystemMessage({
+        sender: 'SANCTUM_GUARDIAN',
+        category: 'alert',
+        title: '⚠️ App Usage Limit Exceeded',
+        content: `Daily limit of ${dailyLimit}m for "${targetLimit.name}" was exceeded (Total: ${newTotalUsed}m, +${newOverdraft}m over limit). ${
+          targetLimit.consequence === 'deduct_leisure_bank'
+            ? `Auto-debited ${incrementalOverdraft}m from Leisure Bank.`
+            : targetLimit.consequence === 'block_rest_passes'
+              ? 'Rest pass redemption is locked until reset.'
+              : 'Informational advisory logged.'
+        }`,
+        priority: 'high'
+      });
+    }
+  };
+
+  const deleteAppUsageLog = (logId: string) => {
+    setState(prev => ({
+      ...prev,
+      appUsageLogs: (prev.appUsageLogs || []).filter(l => l.id !== logId)
+    }));
   };
 
   // Active Rest Session Ticker
@@ -6746,6 +6921,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateQuest,
       deleteQuest,
       completeQuest,
+      logQuestWorkTime,
       reopenQuest,
       failQuest,
       duplicateQuest,
@@ -6794,6 +6970,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       stopActiveRestSession,
       pauseActiveRestSession,
       resumeActiveRestSession,
+      addAppUsageLimit,
+      updateAppUsageLimit,
+      deleteAppUsageLimit,
+      logAppUsage,
+      deleteAppUsageLog,
+      resetDefaultAppUsageLimits,
       toggleRecoveryMode,
       updateProfileFocus,
       updateJob,

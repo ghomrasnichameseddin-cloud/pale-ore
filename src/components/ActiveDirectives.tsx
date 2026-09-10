@@ -5,7 +5,7 @@ import {
   Circle, CheckCircle2, Trash2, Edit3, Save, X, Skull, 
   Calendar, SkipForward, Play, Pause, Clock, Timer, 
   AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers,
-  Archive, ArchiveRestore
+  Archive, ArchiveRestore, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addDays } from '../utils/dateUtils';
@@ -153,7 +153,8 @@ export const ActiveDirectives: React.FC = () => {
     updateProfileFocus,
     selectedFolderId,
     selectedListId,
-    updateSubQuest
+    updateSubQuest,
+    logQuestWorkTime
   } = usePOS();
 
   const [editingSubquestId, setEditingSubquestId] = useState<string | null>(null);
@@ -372,8 +373,32 @@ export const ActiveDirectives: React.FC = () => {
     const restText = words.slice(1).join(' ').trim();
 
     if (firstWord === 'help' || text === '?') {
-      setTerminalLog(`[HELP] Commands: add <directive> | complete <query> | fail <query> | delete <query> | focus <text> [/goal] | simulate <days>`);
+      setTerminalLog(`[HELP] Commands: add <directive> | complete <query> | labor <mins> <query> | fail <query> | delete <query> | archive <query>`);
       setQuickInputText('');
+      return;
+    }
+
+    if (firstWord === 'labor' || firstWord === 'work' || firstWord === 'time') {
+      const parts = restText.split(' ');
+      const mins = parseInt(parts[0]);
+      const questQuery = parts.slice(1).join(' ').trim();
+      if (isNaN(mins) || mins <= 0 || !questQuery) {
+        setTerminalLog(`[ERROR] Usage: labor <minutes> <quest name or id> (e.g. labor 30 Deep Work)`);
+        return;
+      }
+      const matched = state.quests.find(q => 
+        q.status === 'Active' && 
+        (q.id.toLowerCase() === questQuery.toLowerCase() || q.name.toLowerCase().includes(questQuery.toLowerCase()))
+      );
+      if (matched) {
+        logQuestWorkTime(matched.id, mins);
+        const currentLabor = (matched.actualMinutesWorked || 0) + mins;
+        setTerminalLog(`[SUCCESS] LABOR_RECORDED: +${mins}m logged for "${matched.name}". Total labor: ${currentLabor}m.`);
+        setQuickInputText('');
+      } else {
+        setTerminalLog(`[ERROR] Active quest matching "${questQuery}" not found.`);
+      }
+      setTimeout(() => setTerminalLog(null), 5000);
       return;
     }
 
@@ -728,6 +753,7 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestDeadline, setEditQuestDeadline] = useState('');
   const [editQuestSkills, setEditQuestSkills] = useState<string[]>([]);
   const [editQuestDuration, setEditQuestDuration] = useState<number>(30);
+  const [editQuestActualMinutes, setEditQuestActualMinutes] = useState<number>(0);
 
   // Custom recurrence edit states
   const [editCustomRecurrenceType, setEditCustomRecurrenceType] = useState<'days' | 'weekdays' | 'text'>('days');
@@ -753,6 +779,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestSkills(quest.relatedSkills || []);
     setEditQuestDuration(quest.estimatedTime || 30);
+    setEditQuestActualMinutes(quest.actualMinutesWorked || 0);
 
     const rec = quest.recurrence || 'None';
     if (rec.startsWith('Custom:')) {
@@ -794,6 +821,7 @@ export const ActiveDirectives: React.FC = () => {
       type: editQuestType,
       xp: editQuestXp,
       estimatedTime: editQuestDuration,
+      actualMinutesWorked: editQuestActualMinutes,
       goalId: editQuestGoal ? editQuestGoal : null,
       listId: editQuestListId ? editQuestListId : null,
       recurrence: finalRecurrence,
@@ -1161,7 +1189,7 @@ export const ActiveDirectives: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Difficulty</label>
                 <select 
@@ -1202,6 +1230,19 @@ export const ActiveDirectives: React.FC = () => {
                   value={editQuestDuration}
                   onChange={(e) => setEditQuestDuration(Math.max(1, Number(e.target.value)))}
                   className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-cyan-400 text-center font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Actual Worked (Mins)</label>
+                <input 
+                  type="number"
+                  min="0"
+                  max="10000"
+                  value={editQuestActualMinutes}
+                  onChange={(e) => setEditQuestActualMinutes(Math.max(0, Number(e.target.value)))}
+                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-emerald-400 text-center font-mono"
+                  title="Track real labor minutes. Reconciles into rest minting upon quest completion."
                 />
               </div>
             </div>
@@ -2092,6 +2133,12 @@ export const ActiveDirectives: React.FC = () => {
               <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Est. Duration</span>
               <span className="text-[#e5c875] font-bold">⏱️ {quest.estimatedTime || 30} mins</span>
             </div>
+            <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
+              <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Labor Logged</span>
+              <span className={`font-bold font-mono ${(quest.actualMinutesWorked || 0) > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                ⏳ {quest.actualMinutesWorked || 0}m
+              </span>
+            </div>
             {quest.recurrence && quest.recurrence !== 'None' && (
               <div className="bg-[#0b0d13]/85 p-2 rounded border border-[#c5a059]/15">
                 <span className="text-zinc-400 uppercase block text-[8px] mb-0.5">Recurrence</span>
@@ -2276,18 +2323,47 @@ export const ActiveDirectives: React.FC = () => {
         <div className="pt-2.5 border-t border-[#c5a059]/20 shrink-0 space-y-2 bg-[#0b0d13]/70 px-3 pb-3">
           {/* POMODORO TRIGGER SECTION */}
           {!finished && (
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1 items-center">
               <button
                 type="button"
                 onClick={() => {
                   setFocusChoiceQuestId(focusChoiceQuestId === quest.id ? null : quest.id);
                   startFocusSession(quest.id, 25);
                 }}
-                className="flex-1 bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/45 text-[#fef08a] font-bold font-mono text-xs py-1.5 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_12px_rgba(197,160,89,0.05)]"
+                className="flex-1 min-w-[200px] bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/45 text-[#fef08a] font-bold font-mono text-xs py-1.5 rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_12px_rgba(197,160,89,0.05)]"
               >
                 <Timer className="h-4 w-4 text-[#e5c875] animate-pulse" />
                 <span>ENGAGE_FOCUS_POMODORO (25M)</span>
               </button>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    logQuestWorkTime(quest.id, 15);
+                    setTerminalLog(`[SUCCESS] LABOR_RECORDED: +15m logged for "${quest.name}". Total: ${(quest.actualMinutesWorked || 0) + 15}m.`);
+                    setTimeout(() => setTerminalLog(null), 3000);
+                  }}
+                  className="px-2.5 py-1.5 bg-[#0b0d13] hover:bg-teal-950/60 border border-teal-500/30 hover:border-teal-500/60 text-teal-300 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1"
+                  title="Quick-log 15 minutes of elapsed labor"
+                >
+                  <Zap className="h-3 w-3 text-teal-400" />
+                  <span>+15m Labor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logQuestWorkTime(quest.id, 30);
+                    setTerminalLog(`[SUCCESS] LABOR_RECORDED: +30m logged for "${quest.name}". Total: ${(quest.actualMinutesWorked || 0) + 30}m.`);
+                    setTimeout(() => setTerminalLog(null), 3000);
+                  }}
+                  className="px-2.5 py-1.5 bg-[#0b0d13] hover:bg-teal-950/60 border border-teal-500/30 hover:border-teal-500/60 text-teal-300 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1"
+                  title="Quick-log 30 minutes of elapsed labor"
+                >
+                  <Zap className="h-3 w-3 text-teal-400" />
+                  <span>+30m Labor</span>
+                </button>
+              </div>
             </div>
           )}
 

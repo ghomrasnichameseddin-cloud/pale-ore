@@ -3,7 +3,9 @@ import {
   LeisureTransactionType,
   RestPass,
   DailyWakingCapital,
-  ActiveRestSession
+  ActiveRestSession,
+  AppUsageLimit,
+  AppUsageLogEntry
 } from '../types';
 
 /**
@@ -73,6 +75,77 @@ export function calculateQuestRestDividend(quest: {
   return Math.max(5, Math.min(30, Math.round((quest.estimatedTime || 25) * 0.2)));
 }
 
+export interface QuestLaborMintParams {
+  quest: {
+    id: string;
+    name: string;
+    difficulty?: string;
+    estimatedTime?: number;
+    actualMinutesWorked?: number;
+    recurrence?: string;
+    type?: string;
+  };
+  timeHistory?: LeisureTransaction[];
+}
+
+export interface QuestLaborMintResult {
+  baseDividend: number;
+  laborMinutes: number;
+  laborRestMint: number;
+  alreadyMintedPomodoroRest: number;
+  incrementalTimeRest: number;
+  totalMinted: number;
+  reason: string;
+}
+
+/**
+ * Calculates rest minted upon quest completion, integrating actual elapsed work time.
+ * Reconciles against prior focus_mint transactions linked to this quest to prevent double-counting.
+ * The rule is explicitly reflected in the reason field: labor-based rest supersedes previously
+ * minted focus blocks, awarding only the net incremental unminted rest.
+ */
+export function calculateQuestMintingWithLabor(params: QuestLaborMintParams): QuestLaborMintResult {
+  const { quest, timeHistory = [] } = params;
+  const isRecurringOrHabit = (quest.recurrence && quest.recurrence !== 'None') || quest.type === 'Habit';
+  const baseDividend = isRecurringOrHabit ? 4 : calculateQuestRestDividend(quest);
+  
+  const laborMinutes = Math.max(0, Math.round(quest.actualMinutesWorked || 0));
+  // 5 minutes of rest per 25 minutes of actual labor (20% conversion)
+  const laborRestMint = Math.floor(laborMinutes / 5);
+
+  // Sum any focus_mint transactions already minted for this specific quest
+  const alreadyMintedPomodoroRest = timeHistory
+    .filter(tx => (tx.relatedId === quest.id || tx.linkedId === quest.id) && tx.type === 'focus_mint')
+    .reduce((sum, tx) => sum + (tx.minutesDelta ?? tx.minutes ?? 0), 0);
+
+  // High-water mark reconciliation: only mint unminted incremental minutes
+  const incrementalTimeRest = Math.max(0, laborRestMint - alreadyMintedPomodoroRest);
+  const totalMinted = baseDividend + incrementalTimeRest;
+
+  let reason = `Quest Dividend: "${quest.name}" (${quest.difficulty || 'Normal'}: +${baseDividend}m)`;
+  if (laborMinutes > 0) {
+    if (incrementalTimeRest > 0) {
+      if (alreadyMintedPomodoroRest > 0) {
+        reason += ` + Elapsed Time (+${incrementalTimeRest}m unminted work, superseding ${alreadyMintedPomodoroRest}m prior Pomodoro mints of ${laborMinutes}m total)`;
+      } else {
+        reason += ` + Elapsed Time (+${incrementalTimeRest}m for ${laborMinutes}m deep work)`;
+      }
+    } else if (alreadyMintedPomodoroRest > 0) {
+      reason += ` (${laborMinutes}m work fully credited via ${alreadyMintedPomodoroRest}m prior Pomodoro mints)`;
+    }
+  }
+
+  return {
+    baseDividend,
+    laborMinutes,
+    laborRestMint,
+    alreadyMintedPomodoroRest,
+    incrementalTimeRest,
+    totalMinted,
+    reason
+  };
+}
+
 /**
  * Calculates rest minted from a deep work focus session (5m rest per 25m focus).
  */
@@ -116,8 +189,18 @@ export function redeemRestPassAtomic(params: {
   currentLeisureBalance: number;
   pass: RestPass;
   timestamp: string;
+  blockedByAppUsage?: { isBlocked: boolean; appName?: string; overdraftMinutes?: number };
 }): AtomicRedeemResult {
-  const { currentCoins, currentLeisureBalance, pass, timestamp } = params;
+  const { currentCoins, currentLeisureBalance, pass, timestamp, blockedByAppUsage } = params;
+
+  if (blockedByAppUsage?.isBlocked) {
+    return {
+      success: false,
+      error: `Rest Pass Blocked: Daily limit for "${blockedByAppUsage.appName}" is exceeded by ${blockedByAppUsage.overdraftMinutes}m. Consequence rule enforces pass lock until reset or balanced.`,
+      newCoins: currentCoins,
+      newLeisureBalance: currentLeisureBalance
+    };
+  }
 
   if (currentCoins < pass.costCoins) {
     return {
@@ -247,46 +330,184 @@ export function calculateDailyWakingCapital(params: {
 }
 
 /**
- * Evaluates today's rest decision based on net rest minted vs spent.
+ * Evaluates today's rest decision based on net rest minted vs spent and app usage limits.
  */
-export function evaluateTodayRestDecision(todayMinted: number, todaySpent: number): {
+export function evaluateTodayRestDecision(
+  todayMinted: number,
+  todaySpent: number,
+  totalUsageOverdraftMinutes: number = 0
+): {
   net: number;
   status: 'deficit' | 'balanced' | 'funded' | 'generous';
   headline: string;
   guidanceText: string;
+  usageOverdraftMinutes: number;
+  usageOverdraftWarning?: string;
 } {
   const net = todayMinted - todaySpent;
+  const hasUsageOverdraft = totalUsageOverdraftMinutes > 0;
+  const overdraftWarning = hasUsageOverdraft
+    ? `Digital consumption exceeded daily ceilings by +${totalUsageOverdraftMinutes}m today.`
+    : undefined;
+
   if (net < REST_DECISION_THRESHOLDS.DEFICIT) {
     return {
       net,
       status: 'deficit',
-      headline: 'REST DEFICIT WARNING',
-      guidanceText: 'You are spending more rest than you earned today. Protect your next focus block before redeeming additional leisure.'
+      headline: hasUsageOverdraft ? 'CRITICAL REST & DIGITAL DEFICIT' : 'REST DEFICIT WARNING',
+      guidanceText: hasUsageOverdraft
+        ? `You are spending more rest than earned, and digital consumption exceeded limits by ${totalUsageOverdraftMinutes}m today. Cut digital friction immediately.`
+        : 'You are spending more rest than you earned today. Protect your next focus block before redeeming additional leisure.',
+      usageOverdraftMinutes: totalUsageOverdraftMinutes,
+      usageOverdraftWarning: overdraftWarning
     };
   }
+
   if (todayMinted === 0 && todaySpent === 0) {
     return {
       net,
       status: 'balanced',
-      headline: 'NEUTRAL INERTIA',
-      guidanceText: 'No rest transactions recorded today. Complete a deep focus block or quest to fund your first recovery pass.'
+      headline: hasUsageOverdraft ? 'DIGITAL OVERDRAFT DETECTED' : 'NEUTRAL INERTIA',
+      guidanceText: hasUsageOverdraft
+        ? `No productive rest minted yet today, but digital consumption exceeded limits by ${totalUsageOverdraftMinutes}m. Complete a deep focus block to restore balance.`
+        : 'No rest transactions recorded today. Complete a deep focus block or quest to fund your first recovery pass.',
+      usageOverdraftMinutes: totalUsageOverdraftMinutes,
+      usageOverdraftWarning: overdraftWarning
     };
   }
+
+  if (hasUsageOverdraft) {
+    return {
+      net,
+      status: 'funded',
+      headline: 'REST FUNDED (DIGITAL COMPROMISED)',
+      guidanceText: `Rest is earned (+${net}m), but ${totalUsageOverdraftMinutes}m of over-limit digital consumption compromises true recovery. Transition to offline rest.`,
+      usageOverdraftMinutes: totalUsageOverdraftMinutes,
+      usageOverdraftWarning: overdraftWarning
+    };
+  }
+
   if (net >= REST_DECISION_THRESHOLDS.GENEROUS) {
     return {
       net,
       status: 'generous',
       headline: 'GENEROUS EQUITY',
-      guidanceText: 'Generous recovery equity available! Schedule a full restorative block with zero guilt.'
+      guidanceText: 'Generous recovery equity available! Schedule a full restorative block with zero guilt.',
+      usageOverdraftMinutes: 0
     };
   }
+
   return {
     net,
     status: 'funded',
     headline: 'REST FULLY FUNDED',
-    guidanceText: 'Your rest is fully funded. Schedule a deliberate recovery break before taking on new high-friction work.'
+    guidanceText: 'Your rest is fully funded. Schedule a deliberate recovery break before taking on new high-friction work.',
+    usageOverdraftMinutes: 0
   };
 }
+
+export interface AppUsageStatus {
+  limitId: string;
+  appName: string;
+  category: string;
+  dailyLimitMinutes: number;
+  usedMinutes: number;
+  remainingMinutes: number;
+  overdraftMinutes: number;
+  isOverLimit: boolean;
+  isOverdrawn: boolean;
+  percentUsed: number;
+  consequence: string;
+}
+
+/**
+ * Calculates current usage, remaining minutes, and overdraft for a specific app limit.
+ */
+export function calculateAppUsageStatus(
+  limit: AppUsageLimit,
+  logs: AppUsageLogEntry[] = [],
+  todayDate: string
+): AppUsageStatus {
+  const todayLogs = logs.filter(l => l.limitId === limit.id && l.date === todayDate);
+  const usedMinutes = todayLogs.reduce((sum, l) => sum + (l.minutesUsed || 0), 0);
+  const remainingMinutes = Math.max(0, limit.dailyLimitMinutes - usedMinutes);
+  const overdraftMinutes = Math.max(0, usedMinutes - limit.dailyLimitMinutes);
+  const isOverLimit = usedMinutes > limit.dailyLimitMinutes;
+  const percentUsed = limit.dailyLimitMinutes > 0
+    ? Math.min(200, Math.round((usedMinutes / limit.dailyLimitMinutes) * 100))
+    : 100;
+
+  return {
+    limitId: limit.id,
+    appName: limit.name,
+    category: limit.category,
+    dailyLimitMinutes: limit.dailyLimitMinutes,
+    usedMinutes,
+    remainingMinutes,
+    overdraftMinutes,
+    isOverLimit,
+    isOverdrawn: isOverLimit,
+    percentUsed,
+    consequence: limit.consequence
+  };
+}
+
+/**
+ * Checks if any limit with 'block_rest_passes' consequence is currently violated.
+ */
+export function getActiveUsageBlocker(
+  limits: AppUsageLimit[] = [],
+  logs: AppUsageLogEntry[] = [],
+  todayDate: string
+): { isBlocked: boolean; appName?: string; overdraftMinutes?: number; limit?: AppUsageLimit } {
+  for (const limit of limits) {
+    if (limit.consequence === 'block_rest_passes') {
+      const status = calculateAppUsageStatus(limit, logs, todayDate);
+      if (status.isOverLimit) {
+        return {
+          isBlocked: true,
+          appName: limit.name,
+          overdraftMinutes: status.overdraftMinutes,
+          limit
+        };
+      }
+    }
+  }
+  return { isBlocked: false };
+}
+
+/**
+ * Default App/Site Usage Limits Catalog.
+ */
+export const DEFAULT_APP_USAGE_LIMITS: AppUsageLimit[] = [
+  {
+    id: 'limit-gaming',
+    name: 'Steam & Video Games',
+    category: 'gaming',
+    dailyLimitMinutes: 45,
+    consequence: 'informational',
+    icon: '🎮',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 'limit-streaming',
+    name: 'YouTube & Video Streaming',
+    category: 'video_streaming',
+    dailyLimitMinutes: 45,
+    consequence: 'deduct_leisure_bank',
+    icon: '📺',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 'limit-social',
+    name: 'Social Media & Infinite Feeds',
+    category: 'social_media',
+    dailyLimitMinutes: 30,
+    consequence: 'block_rest_passes',
+    icon: '📱',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  }
+];
 
 /**
  * Default Rest Passes Catalog.

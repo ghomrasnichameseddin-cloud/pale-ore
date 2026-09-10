@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { POSProvider, usePOS } from './POSContext';
+import { POSProvider, usePOS, isQuestArchived } from './POSContext';
 import { getLocalDateString, addDays } from './utils/dateUtils';
 import { getActiveJob, getActiveTitle } from './jobsAndTitles';
 import { DashboardView } from './components/DashboardView';
@@ -51,7 +51,8 @@ function AppContent() {
 
   const { 
     state, getPlayerLevelInfo, systemDate, setSystemDate, syncWithRealClock, 
-    activeFocusSession, isShopLocked, visualCodex, getSpiritualLog
+    activeFocusSession, isShopLocked, visualCodex, getSpiritualLog,
+    getTemporalCapitalInfo
   } = usePOS();
   
   const unreadMessagesCount = (state.messages || []).filter(m => !m.read).length;
@@ -81,46 +82,86 @@ function AppContent() {
     return () => clearInterval(timer);
   }, []);
 
-  const getNavBadgeValue = (id: string): string | number | null => {
+  const getNavBadgeValue = (id: string): string | null => {
     switch (id) {
       case 'dashboard':
-        return playerInfo.level;
-      case 'quests':
-        return (state.quests || []).filter(q => q.status !== 'Completed').length;
+        return `Lv.${playerInfo.level}`;
+
+      case 'quests': {
+        const active = (state.quests || []).filter(q => q.status === 'Active' && !isQuestArchived(q, state.lists, state.folders)).length;
+        if (totalOverdueCount > 0) {
+          return `${totalOverdueCount} overdue`;
+        }
+        return `${active} active`;
+      }
+
       case 'spiritual': {
         const todayLog = getSpiritualLog ? getSpiritualLog(systemDate) : null;
-        if (!todayLog) return 5;
+        if (!todayLog) return '0/5 prayers';
         const done = [todayLog.fajr, todayLog.dhuhr, todayLog.asr, todayLog.maghrib, todayLog.isha].filter(p => p?.fardh).length;
-        return `${done}/5`;
+        return `${done}/5 prayers`;
       }
-      case 'muhasabah':
-        return (state.muhasabahEntries || []).length;
-      case 'strategy_codex':
-        return (state.goals?.length || 0) + (state.projects?.length || 0);
-      case 'goals':
-        return (state.goals || []).length;
-      case 'projects':
-        return (state.projects || []).length;
-      case 'planning':
-        return (state.planningDocuments || []).length;
+
+      case 'muhasabah': {
+        const hasTodayEntry = (state.muhasabahEntries || []).some(e => e.date === systemDate);
+        return hasTodayEntry ? '✓ Reviewed' : 'Pending';
+      }
+
+      case 'strategy_codex': {
+        const total = (state.goals?.length || 0) + (state.projects?.length || 0);
+        return `${total} plans`;
+      }
+
+      case 'goals': {
+        const count = (state.goals || []).length;
+        return `${count} ${count === 1 ? 'goal' : 'goals'}`;
+      }
+
+      case 'projects': {
+        const count = (state.projects || []).length;
+        return `${count} ${count === 1 ? 'campaign' : 'campaigns'}`;
+      }
+
+      case 'planning': {
+        const count = (state.planningDocuments || []).length;
+        return `${count} ${count === 1 ? 'scroll' : 'scrolls'}`;
+      }
+
       case 'frameworks':
-        return 11;
-      case 'skills':
-        return (state.skills || []).length;
+        return '11 models';
+
+      case 'skills': {
+        const count = (state.skills || []).length;
+        return `${count} ${count === 1 ? 'skill' : 'skills'}`;
+      }
+
       case 'shop':
-        return state.profile.coins || 0;
+        return `🪙 ${state.profile.coins ?? 150}`;
+
       case 'appearance':
-        return 8;
+        return '8 themes';
+
       case 'analytics':
-        return `${Math.round(state.profile.momentum || 0)}%`;
-      case 'xp_history':
-        return (state.xpHistory || []).length;
-      case 'time_ledger':
-        return (state.timeHistory || []).length;
-      case 'spiderweb':
-        return (state.goals?.length || 0) + (state.projects?.length || 0) + (state.skills?.length || 0);
+        return `🔥 ${Math.round(state.profile.momentum || 0)}%`;
+
+      case 'xp_history': {
+        const count = (state.xpHistory || []).length;
+        return `${count} logs`;
+      }
+
+      case 'time_ledger': {
+        const restMins = getTemporalCapitalInfo ? getTemporalCapitalInfo().leisureMinutesBalance : (state.profile?.timeCredits ?? 60);
+        return `${restMins}m rest`;
+      }
+
+      case 'spiderweb': {
+        const totalNodes = (state.goals?.length || 0) + (state.projects?.length || 0) + (state.skills?.length || 0);
+        return `${totalNodes} nodes`;
+      }
+
       case 'system':
-        return (state.messages || []).length;
+        return unreadMessagesCount > 0 ? `${unreadMessagesCount} new` : 'v2.6';
+
       default:
         return null;
     }
@@ -329,22 +370,24 @@ function AppContent() {
                             : 'bg-[var(--bg-surface)] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/15'
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
                           <span className="text-xs font-sans font-medium truncate">{item.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {badgeVal !== null && (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-black/50 text-zinc-400 border border-white/10 shrink-0">
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap ${
+                              hasOverdue 
+                                ? 'bg-amber-950 text-amber-300 border border-amber-500/50 animate-pulse'
+                                : 'bg-black/50 text-zinc-400 border border-white/10'
+                            }`}>
                               {badgeVal}
                             </span>
                           )}
+                          {item.id === 'shop' && isShopLocked && (
+                            <Lock className="h-3 w-3 text-rose-400 shrink-0" />
+                          )}
                         </div>
-                        {hasOverdue ? (
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-amber-950 text-amber-300 border border-amber-500/50 shrink-0 animate-pulse">
-                            {totalOverdueCount}
-                          </span>
-                        ) : item.id === 'shop' && isShopLocked ? (
-                          <Lock className="h-3 w-3 text-rose-400 shrink-0" />
-                        ) : null}
                       </button>
                     );
                   })}
@@ -411,7 +454,7 @@ function AppContent() {
       </AnimatePresence>
 
       {/* DESKTOP PERMANENT NAVIGATION SIDEBAR */}
-      <aside className="hidden md:flex flex-col justify-between w-64 bg-[var(--bg-void)]/90 border-r border-[var(--border-subtle)] p-4 shrink-0 h-screen sticky top-0 overflow-y-auto backdrop-blur-md" id="desktop-sidebar-pane">
+      <aside className="hidden md:flex flex-col justify-between w-72 bg-[var(--bg-void)]/90 border-r border-[var(--border-subtle)] p-4 shrink-0 h-screen sticky top-0 overflow-y-auto backdrop-blur-md" id="desktop-sidebar-pane">
         <div className="space-y-4">
           
           {/* BRAND LOGO */}
@@ -541,29 +584,35 @@ function AppContent() {
                       }`}
                       id={`nav-${item.id}`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-1 mr-1.5">
                         <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
                         <span className="font-sans font-medium truncate">{item.label}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {badgeVal !== null && (
                           <span 
-                            className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded shrink-0 transition-colors ${
-                              isActive 
-                                ? 'bg-[var(--accent-bright)]/20 text-[var(--accent-highlight)] border border-[var(--border-accent)]' 
-                                : 'bg-black/50 text-zinc-400 border border-white/5 group-hover:text-zinc-200 group-hover:border-white/10'
+                            className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap transition-colors ${
+                              item.id === 'quests' && totalOverdueCount > 0
+                                ? 'bg-amber-950 text-amber-300 border border-amber-500/50 animate-pulse'
+                                : isActive 
+                                  ? 'bg-[var(--accent-bright)]/20 text-[var(--accent-highlight)] border border-[var(--border-accent)]' 
+                                  : 'bg-black/50 text-zinc-400 border border-white/5 group-hover:text-zinc-200 group-hover:border-white/10'
                             }`}
+                            title={item.desc}
                           >
                             {badgeVal}
                           </span>
                         )}
+                        
+                        {item.id === 'shop' && isShopLocked ? (
+                          <span className="px-1.5 py-0.5 text-[8px] font-mono bg-rose-950 text-rose-300 border border-rose-500/30 rounded font-bold flex items-center gap-0.5 shrink-0">
+                            <Lock className="h-2.5 w-2.5" /> LOCKED
+                          </span>
+                        ) : isActive ? (
+                          <RubElHizbIcon className="h-2 w-2 text-[var(--accent-bright)] shrink-0" filled />
+                        ) : null}
                       </div>
-                      
-                      {item.id === 'shop' && isShopLocked ? (
-                        <span className="px-1.5 py-0.2 text-[8px] font-mono bg-rose-950 text-rose-300 border border-rose-500/30 rounded font-bold flex items-center gap-0.5 shrink-0 ml-1">
-                          <Lock className="h-2.5 w-2.5" /> LOCKED
-                        </span>
-                      ) : isActive ? (
-                        <RubElHizbIcon className="h-2.5 w-2.5 text-[var(--accent-bright)] shrink-0 ml-1" filled />
-                      ) : null}
                     </button>
                   );
                 })}
@@ -611,7 +660,7 @@ function AppContent() {
                   {unreadMessagesCount} NEW
                 </span>
               ) : (
-                <span className="text-[9px] text-zinc-600">0</span>
+                <span className="text-[9px] text-zinc-500 font-mono font-bold">0 NEW</span>
               )}
             </button>
 

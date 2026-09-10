@@ -499,12 +499,15 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         onClick={() => toggleFolder(folderName)}
                         className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-300 hover:text-white transition cursor-pointer"
                       >
-                        <div className="flex items-center gap-2 truncate">
+                        <div className="flex items-center gap-2 truncate mr-2">
                           <span className="text-[10px] text-[#c5a059]">
                             {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
                           </span>
-                          <span>{folderEmoji} {folderName}</span>
+                          <span className="truncate">{folderEmoji} {folderName}</span>
                         </div>
+                        <span className="text-[9px] font-mono font-bold text-zinc-400 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 shrink-0">
+                          {filteredFolderStructure[folderName]?.length || 0} {filteredFolderStructure[folderName]?.length === 1 ? 'doc' : 'docs'}
+                        </span>
                       </button>
                       
                       <div className="flex items-center gap-1 pr-2">

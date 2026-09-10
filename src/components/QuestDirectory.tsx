@@ -745,8 +745,8 @@ export const QuestDirectory: React.FC = () => {
             <span>⚔️</span>
             <span>ALL_ACTIVE_QUESTS</span>
           </span>
-          <span className="text-[10px] text-zinc-500 font-mono">
-            {activeQuestsCount}
+          <span className="text-[10px] text-zinc-400 font-mono font-bold px-1.5 py-0.5 rounded bg-black/40 border border-white/5">
+            {activeQuestsCount} active
           </span>
         </button>
 
@@ -808,8 +808,8 @@ export const QuestDirectory: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                    <span className="text-[10px] font-mono text-zinc-500 px-1">
-                      {folderQuests.active > 0 ? `${folderQuests.active}/` : ''}{folderQuests.total}
+                    <span className="text-[10px] font-mono text-zinc-400 px-1 font-semibold">
+                      {folderQuests.active > 0 ? `${folderQuests.active} active · ` : ''}{folderQuests.total} total
                     </span>
 
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
@@ -906,8 +906,8 @@ export const QuestDirectory: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                                <span className="text-[9px] font-mono text-zinc-500">
-                                  {listQuests.active > 0 ? `${listQuests.active}/` : ''}{listQuests.total}
+                                <span className="text-[9px] font-mono text-zinc-400 font-semibold">
+                                  {listQuests.active > 0 ? `${listQuests.active} active · ` : ''}{listQuests.total} quests
                                 </span>
 
                                 <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
@@ -971,7 +971,7 @@ export const QuestDirectory: React.FC = () => {
         >
           <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 uppercase px-1 pb-0.5">
             <span>STANDALONE_LISTS</span>
-            <span className="text-[9px]">{activeStandaloneLists.length}</span>
+            <span className="text-[9px] font-mono text-zinc-400 font-semibold">{activeStandaloneLists.length} {activeStandaloneLists.length === 1 ? 'list' : 'lists'}</span>
           </div>
 
           <div className={`space-y-1 p-1 rounded transition-colors ${
@@ -1015,8 +1015,8 @@ export const QuestDirectory: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                      <span className="text-[9px] font-mono text-zinc-500">
-                        {listQuests.active > 0 ? `${listQuests.active}/` : ''}{listQuests.total}
+                      <span className="text-[9px] font-mono text-zinc-400 font-semibold">
+                        {listQuests.active > 0 ? `${listQuests.active} active · ` : ''}{listQuests.total} quests
                       </span>
 
                       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
@@ -1105,7 +1105,7 @@ export const QuestDirectory: React.FC = () => {
 
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[10px] font-mono px-1.5 py-0.5 bg-zinc-900 border border-white/10 rounded text-amber-300 font-bold">
-                {totalArchivedCount}
+                {totalArchivedCount} archived
               </span>
             </div>
           </div>

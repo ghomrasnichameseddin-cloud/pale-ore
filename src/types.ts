@@ -116,6 +116,7 @@ export interface Quest {
   deadline: string | null; // YYYY-MM-DD
   completedAt: string | null; // ISO Timestamp when completed
   createdAt: string;
+  actualMinutesWorked?: number; // Total real elapsed minutes spent working on this quest
   subquests?: SubQuest[];
   energyLevel?: 'Low' | 'Medium' | 'High';
   postponedFrom?: string | null;
@@ -392,6 +393,33 @@ export interface ActiveRestSession {
   paused?: boolean;
   costMinutes?: number;
   passId?: string;
+}
+
+export type UsageLimitCategory = 'gaming' | 'social_media' | 'video_streaming' | 'browsing' | 'other';
+export type AppUsageLimitCategory = UsageLimitCategory;
+
+export type UsageConsequenceMode = 'informational' | 'deduct_leisure_bank' | 'block_rest_passes';
+export type AppUsageLimitConsequence = UsageConsequenceMode;
+
+export interface AppUsageLimit {
+  id: string;
+  name: string;
+  category: UsageLimitCategory;
+  dailyLimitMinutes: number;
+  consequence: UsageConsequenceMode;
+  icon?: string;
+  enabled?: boolean;
+  createdAt: string;
+}
+
+export interface AppUsageLogEntry {
+  id: string;
+  limitId: string;
+  appName: string;
+  date: string; // YYYY-MM-DD
+  minutesUsed: number;
+  timestamp: string; // ISO
+  notes?: string;
 }
 
 export interface BatterySettings {
@@ -765,6 +793,8 @@ export interface POSState {
   visualCodex?: VisualCodexSettings;
   customAdhkar?: AdhkarItem[];
   adhkarRecitations?: Record<string, Record<string, number>>;
+  appUsageLimits?: AppUsageLimit[];
+  appUsageLogs?: AppUsageLogEntry[];
 }
 
 export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';

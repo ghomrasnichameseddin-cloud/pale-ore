@@ -2,6 +2,7 @@ import { POSState, ShopItem, SpiritualDailyLog } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getLocalDateString } from './utils/dateUtils';
+import { DEFAULT_APP_USAGE_LIMITS } from './utils/temporalLedger';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
@@ -319,5 +320,7 @@ export const INITIAL_STATE: POSState = {
     glow: 'standard',
     density: 'standard',
     reducedMotion: false
-  }
+  },
+  appUsageLimits: DEFAULT_APP_USAGE_LIMITS,
+  appUsageLogs: []
 };
