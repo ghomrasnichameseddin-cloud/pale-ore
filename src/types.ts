@@ -3,6 +3,45 @@ import type { JobSpec, TitleSpec } from './jobsAndTitles';
 export type GoalStatus = 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
 export type GoalPriority = 'Low' | 'Medium' | 'High';
 export type CampaignHealth = 'Healthy' | 'At Risk' | 'Blocked' | 'Completed';
+export type DestinyHealth = 'On Track' | 'At Risk' | 'Off Track' | 'Dormant' | 'Completed' | 'Abandoned';
+
+export type CampaignDependencyType = 
+  | 'Depends On' 
+  | 'Blocks' 
+  | 'Supports' 
+  | 'Informs' 
+  | 'Derived From' 
+  | 'Supersedes' 
+  | 'Validates';
+
+export interface DeliverableItem {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  dueDate?: string;
+}
+
+export interface CampaignDependency {
+  targetCampaignId: string;
+  type: CampaignDependencyType;
+  description?: string;
+  notes?: string;
+}
+
+export interface CampaignUpdate {
+  id: string;
+  date: string;
+  content?: string;
+  note?: string;
+  health?: CampaignHealth;
+  healthSnapshot?: CampaignHealth;
+}
+
+export interface DestinyReview {
+  date: string;
+  summary: string;
+  decision: 'CONTINUE' | 'MODIFY' | 'PAUSE' | 'ABANDON' | 'CODIFY';
+}
 
 export interface SubGoal {
   id: string;
@@ -34,6 +73,15 @@ export interface Goal {
   deadline?: string;
   createdAt: string;
   subGoals?: SubGoal[];
+  // Upgraded Strategic Command Fields
+  strategicWeight?: number; // 1 - 100
+  confidence?: number; // 0 - 100%
+  health?: DestinyHealth;
+  destinyHealth?: DestinyHealth;
+  risks?: string[];
+  linkedCampaigns?: string[];
+  linkedCodexDocs?: string[];
+  latestReview?: DestinyReview;
 }
 
 export interface Project {
@@ -41,18 +89,115 @@ export interface Project {
   goalId: string;
   name: string;
   description?: string;
+  objective?: string;
   status: 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
   campaignHealth?: CampaignHealth;
+  priority?: GoalPriority;
+  startDate?: string;
   estimatedTime: string;
   timeBudgetHours?: number;
   deadline?: string;
-  deliverables?: string[];
+  deliverables?: (string | DeliverableItem | any)[];
   dependencies?: string[];
+  dependenciesList?: CampaignDependency[];
+  blockers?: string[];
   risks?: string[];
   createdAt: string;
   subProjects?: SubProject[];
   archived?: boolean;
+  linkedCodexDocs?: string[];
+  updates?: CampaignUpdate[];
+  campaignUpdates?: CampaignUpdate[];
 }
+
+export interface Doctrine {
+  id: string;
+  name: string;
+  rule: string;
+  appliesTo: string;
+  origin: string;
+  status: 'Active' | 'Draft' | 'Deprecated';
+  createdAt: string;
+  updatedAt?: string;
+  category?: string;
+}
+
+export interface StrategicDecision {
+  id: string;
+  problem: string;
+  context: string;
+  options: string[];
+  optionsConsidered?: string[];
+  frameworkUsed: string;
+  decision: string;
+  reason?: string;
+  expectedResult: string;
+  confidence: number;
+  reviewDate: string;
+  actualResult?: string;
+  actualOutcome?: string;
+  status?: 'Open' | 'Validated' | 'Invalidated' | string;
+  lesson?: string;
+  createdAt: string;
+  campaignId?: string | null;
+  goalId?: string | null;
+}
+
+export type ExperimentVerdict = 'Keep' | 'Modify' | 'Reject' | 'Inconclusive' | 'Pending';
+
+export interface StrategicExperiment {
+  id: string;
+  title?: string;
+  hypothesis: string;
+  prediction: string;
+  experiment: string;
+  timeboxDays: number;
+  startDate?: string;
+  endDate?: string;
+  measurement: string;
+  metric?: string;
+  result?: string;
+  status?: 'Draft' | 'Running' | 'Concluded' | 'Abandoned' | string;
+  verdict: ExperimentVerdict;
+  decision?: string;
+  codifiedSopOrDoctrine?: string;
+  campaignId?: string | null;
+  goalId?: string | null;
+  createdAt: string;
+}
+
+export interface StrategicPostmortem {
+  id: string;
+  title?: string;
+  event: string;
+  expectedOutcome: string;
+  actualOutcome: string;
+  impact: string;
+  timeline: string;
+  date?: string;
+  failurePoint: string;
+  rootCause: string;
+  correctiveAction: string;
+  codifiedSOP?: string;
+  experiment?: string;
+  result?: string;
+  lesson?: string;
+  codifiedSopOrDoctrine?: string;
+  createdAt: string;
+  campaignId?: string | null;
+  goalId?: string | null;
+}
+
+export type StrategicLoadLevel = 'Low' | 'Stable' | 'Heavy' | 'Overloaded';
+
+export type StrategicIntegrityIssueType = 
+  | 'UNANCHORED_DESTINY'
+  | 'EMPTY_CAMPAIGN'
+  | 'STALE_CAMPAIGN'
+  | 'ORPHAN_CAMPAIGN'
+  | 'BROKEN_DEPENDENCY'
+  | 'CODEX_GAP'
+  | 'DEADLINE_COLLISION';
 
 export interface SubQuest {
   id: string;
@@ -117,6 +262,7 @@ export interface Quest {
   completedAt: string | null; // ISO Timestamp when completed
   createdAt: string;
   actualMinutesWorked?: number; // Total real elapsed minutes spent working on this quest
+  timeSpent?: number; // alias for actualMinutesWorked
   subquests?: SubQuest[];
   energyLevel?: 'Low' | 'Medium' | 'High';
   postponedFrom?: string | null;
@@ -273,6 +419,9 @@ export interface ActiveAdhkarFocusSession {
   notes?: string;
 }
 
+export type CodexDocType = 'Strategy' | 'Framework' | 'SOP' | 'Lesson' | 'Experiment' | 'Decision' | 'Doctrine' | 'General';
+export type CodexDocStatus = 'Active' | 'Draft' | 'Deprecated';
+
 export interface PlanningDocument {
   id: string;
   path: string; // e.g. "00 Vision/Life Vision.md" or "04 Operations/Daily"
@@ -286,6 +435,11 @@ export interface PlanningDocument {
   linkedReviews?: string[]; // Review IDs
   linkedAttributes?: string[]; // Attribute IDs
   updatedAt: string;
+  docType?: CodexDocType;
+  status?: CodexDocStatus;
+  version?: string;
+  lastReviewed?: string;
+  relatedEntities?: string[];
 }
 
 export type ShopItemCategory = 'Real Life Reward' | 'System Perk' | 'Custom Personal' | 'Temporal Leisure';
@@ -795,6 +949,11 @@ export interface POSState {
   adhkarRecitations?: Record<string, Record<string, number>>;
   appUsageLimits?: AppUsageLimit[];
   appUsageLogs?: AppUsageLogEntry[];
+  doctrines?: Doctrine[];
+  strategicDecisions?: StrategicDecision[];
+  strategicExperiments?: StrategicExperiment[];
+  strategicPostmortems?: StrategicPostmortem[];
+  strategicFreeze?: boolean;
 }
 
 export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';

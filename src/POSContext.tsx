@@ -12,7 +12,8 @@ import {
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
   RestPass, DailyWakingCapital, LeisureTransaction,
-  AppUsageLimit, AppUsageLogEntry
+  AppUsageLimit, AppUsageLogEntry,
+  Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem
 } from './types';
 import {
   buildQuestMintKey,
@@ -260,6 +261,21 @@ interface POSContextType {
   updatePlanningDocument: (id: string, updates: Partial<PlanningDocument>) => void;
   deletePlanningDocument: (id: string) => void;
   linkPlanningDocToComponent: (id: string, type: 'goal' | 'project' | 'quest' | 'skill', componentId: string, link: boolean) => void;
+
+  // Strategic Command & Doctrine Operations
+  addDoctrine: (doc: Omit<Doctrine, 'id' | 'createdAt'>) => string;
+  updateDoctrine: (id: string, updates: Partial<Doctrine>) => void;
+  deleteDoctrine: (id: string) => void;
+  addStrategicDecision: (dec: Omit<StrategicDecision, 'id' | 'createdAt'>) => string;
+  updateStrategicDecision: (id: string, updates: Partial<StrategicDecision>) => void;
+  deleteStrategicDecision: (id: string) => void;
+  addStrategicExperiment: (exp: Omit<StrategicExperiment, 'id' | 'createdAt'>) => string;
+  updateStrategicExperiment: (id: string, updates: Partial<StrategicExperiment>) => void;
+  deleteStrategicExperiment: (id: string) => void;
+  addStrategicPostmortem: (pm: Omit<StrategicPostmortem, 'id' | 'createdAt'>) => string;
+  updateStrategicPostmortem: (id: string, updates: Partial<StrategicPostmortem>) => void;
+  deleteStrategicPostmortem: (id: string) => void;
+  setStrategicFreeze: (freeze: boolean) => void;
 
   // Reward Shop & Coins Operations
   purchaseShopItem: (itemId: string) => { success: boolean; message: string };
@@ -718,7 +734,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
             messages: parsed.messages || INITIAL_STATE.messages || [],
             visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex,
-            customAdhkar: parsed.customAdhkar ? parsed.customAdhkar.filter((a: any) => a.category !== 'sleep_dhohr' && a.category !== 'sleep_night') : undefined
+            customAdhkar: parsed.customAdhkar ? parsed.customAdhkar.filter((a: any) => a.category !== 'sleep_dhohr' && a.category !== 'sleep_night') : undefined,
+            doctrines: parsed.doctrines && parsed.doctrines.length > 0 ? parsed.doctrines : (INITIAL_STATE.doctrines || []),
+            strategicDecisions: parsed.strategicDecisions && parsed.strategicDecisions.length > 0 ? parsed.strategicDecisions : (INITIAL_STATE.strategicDecisions || []),
+            strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
+            strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
+            strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false
           };
         }
       }
@@ -822,6 +843,129 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         planningDocuments: updatedDocs
       };
     });
+  };
+
+  // Doctrine Operations
+  const addDoctrine = (doc: Omit<Doctrine, 'id' | 'createdAt'>): string => {
+    const id = `doc-${Date.now()}`;
+    const newDoc: Doctrine = {
+      ...doc,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      doctrines: [...(prev.doctrines || []), newDoc]
+    }));
+    return id;
+  };
+
+  const updateDoctrine = (id: string, updates: Partial<Doctrine>) => {
+    setState(prev => ({
+      ...prev,
+      doctrines: (prev.doctrines || []).map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d)
+    }));
+  };
+
+  const deleteDoctrine = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      doctrines: (prev.doctrines || []).filter(d => d.id !== id)
+    }));
+  };
+
+  // Strategic Decision Operations
+  const addStrategicDecision = (dec: Omit<StrategicDecision, 'id' | 'createdAt'>): string => {
+    const id = `sdec-${Date.now()}`;
+    const newDec: StrategicDecision = {
+      ...dec,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      strategicDecisions: [newDec, ...(prev.strategicDecisions || [])]
+    }));
+    return id;
+  };
+
+  const updateStrategicDecision = (id: string, updates: Partial<StrategicDecision>) => {
+    setState(prev => ({
+      ...prev,
+      strategicDecisions: (prev.strategicDecisions || []).map(d => d.id === id ? { ...d, ...updates } : d)
+    }));
+  };
+
+  const deleteStrategicDecision = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      strategicDecisions: (prev.strategicDecisions || []).filter(d => d.id !== id)
+    }));
+  };
+
+  // Strategic Experiment Operations
+  const addStrategicExperiment = (exp: Omit<StrategicExperiment, 'id' | 'createdAt'>): string => {
+    const id = `sexp-${Date.now()}`;
+    const newExp: StrategicExperiment = {
+      ...exp,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      strategicExperiments: [newExp, ...(prev.strategicExperiments || [])]
+    }));
+    return id;
+  };
+
+  const updateStrategicExperiment = (id: string, updates: Partial<StrategicExperiment>) => {
+    setState(prev => ({
+      ...prev,
+      strategicExperiments: (prev.strategicExperiments || []).map(e => e.id === id ? { ...e, ...updates } : e)
+    }));
+  };
+
+  const deleteStrategicExperiment = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      strategicExperiments: (prev.strategicExperiments || []).filter(e => e.id !== id)
+    }));
+  };
+
+  // Strategic Postmortem Operations
+  const addStrategicPostmortem = (pm: Omit<StrategicPostmortem, 'id' | 'createdAt'>): string => {
+    const id = `spm-${Date.now()}`;
+    const newPm: StrategicPostmortem = {
+      ...pm,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      strategicPostmortems: [newPm, ...(prev.strategicPostmortems || [])]
+    }));
+    return id;
+  };
+
+  const updateStrategicPostmortem = (id: string, updates: Partial<StrategicPostmortem>) => {
+    setState(prev => ({
+      ...prev,
+      strategicPostmortems: (prev.strategicPostmortems || []).map(p => p.id === id ? { ...p, ...updates } : p)
+    }));
+  };
+
+  const deleteStrategicPostmortem = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      strategicPostmortems: (prev.strategicPostmortems || []).filter(p => p.id !== id)
+    }));
+  };
+
+  const setStrategicFreeze = (freeze: boolean) => {
+    setState(prev => ({
+      ...prev,
+      strategicFreeze: freeze
+    }));
   };
 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -7022,6 +7166,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatePlanningDocument,
       deletePlanningDocument,
       linkPlanningDocToComponent,
+      addDoctrine,
+      updateDoctrine,
+      deleteDoctrine,
+      addStrategicDecision,
+      updateStrategicDecision,
+      deleteStrategicDecision,
+      addStrategicExperiment,
+      updateStrategicExperiment,
+      deleteStrategicExperiment,
+      addStrategicPostmortem,
+      updateStrategicPostmortem,
+      deleteStrategicPostmortem,
+      setStrategicFreeze,
       purchaseShopItem,
       useInventoryItem,
       addCustomShopItem,
