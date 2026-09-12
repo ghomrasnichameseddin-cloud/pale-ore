@@ -1869,6 +1869,45 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   </div>
                 </div>
 
+                {/* ADHKĀR FORTRESS & QUR'AN GUIDANCE INTEGRATION */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3.5 rounded-xl bg-[#080d16] border border-cyan-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-cyan-300 font-bold uppercase flex items-center gap-1.5 font-mono">
+                        <ShieldCheck className="h-4 w-4 text-cyan-400" />
+                        <span>Adhkār Fortress Integrity</span>
+                      </span>
+                      <span className="text-xs font-bold font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+                        {generatedSummary.adhkarFortressIntegrityAvg !== undefined ? `${generatedSummary.adhkarFortressIntegrityAvg}%` : '100%'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-300 flex items-center justify-between pt-1 border-t border-white/5 font-mono">
+                      <span className="text-zinc-400">Completed Sessions:</span>
+                      <span className="text-zinc-200">
+                        🌅 {generatedSummary.adhkarMorningSessions || 0} Morn • 🌇 {generatedSummary.adhkarEveningSessions || 0} Eve • 🌙 {generatedSummary.adhkarSleepSessions || 0} Sleep
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#08120d] border border-emerald-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-emerald-300 font-bold uppercase flex items-center gap-1.5 font-mono">
+                        <BookOpen className="h-4 w-4 text-emerald-400" />
+                        <span>Qur’an Guidance & Freshness</span>
+                      </span>
+                      <span className="text-xs font-bold font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                        {generatedSummary.quranFreshnessScore !== undefined ? `${generatedSummary.quranFreshnessScore}% Fresh` : '100% Fresh'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-300 flex items-center justify-between pt-1 border-t border-white/5 font-mono">
+                      <span className="text-zinc-400">Tilāwah & Revision:</span>
+                      <span className="text-zinc-200">
+                        📖 {generatedSummary.quranPagesRead || 0} pgs • 🔄 {generatedSummary.quranPassagesRevised || 0} revised
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 2. 6-PILLAR 10/10 BREAKDOWN IN MODAL */}
                 {generatedSummary.weeklyScoreBreakdown && (
                   <div className="p-3.5 rounded-xl bg-[#07090e] border border-[#c5a059]/30 space-y-2.5">
@@ -2230,6 +2269,28 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                             {selectedArchiveDetail.adhkarSabahCount + selectedArchiveDetail.adhkarMasaCount}
                           </span>
                           <span className="text-[9px] text-zinc-500 block">{selectedArchiveDetail.sunnahRawatibCount} Sunan • {selectedArchiveDetail.qiyamTotalRakats} Qiyām</span>
+                        </div>
+                      </div>
+
+                      {/* ARCHIVED ADHKAR & QUR'AN SUMMARY */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                        <div className="p-2.5 rounded-lg bg-[#080d16] border border-cyan-500/20 flex items-center justify-between">
+                          <span className="text-[10px] text-cyan-400 flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3" />
+                            <span>Fortress Integrity</span>
+                          </span>
+                          <span className="text-xs font-bold text-cyan-200">
+                            {selectedArchiveDetail.adhkarFortressIntegrityAvg !== undefined ? `${selectedArchiveDetail.adhkarFortressIntegrityAvg}%` : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-[#08120d] border border-emerald-500/20 flex items-center justify-between">
+                          <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                            <BookOpen className="h-3 w-3" />
+                            <span>Qur’an Progress</span>
+                          </span>
+                          <span className="text-xs font-bold text-emerald-200">
+                            {selectedArchiveDetail.quranPagesRead || 0} pgs • {selectedArchiveDetail.quranPassagesRevised || 0} revised
+                          </span>
                         </div>
                       </div>
 

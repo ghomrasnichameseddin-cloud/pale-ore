@@ -7,6 +7,7 @@ import {
   SpiritualDailyLog
 } from '../types';
 import { getXPAnalytics } from './xpCirculation';
+import { calculateQuranFreshness } from './quranAndAdhkarEngine';
 
 /**
  * ═════════════════════════════════════════════════════════════════════════════
@@ -186,7 +187,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
  * Pure function to generate a WeeklyMuhasabahSummary from state and target date.
  */
 export function generateWeeklyMuhasabahSummaryPure(
-  state: Pick<POSState, 'muhasabahEntries' | 'spiritualLogs' | 'xpHistory' | 'quests' | 'profile'> & { skills?: POSState['skills'] },
+  state: Pick<POSState, 'muhasabahEntries' | 'spiritualLogs' | 'xpHistory' | 'quests' | 'profile' | 'quranTracker'> & { skills?: POSState['skills'] },
   targetFridayDate?: string
 ): WeeklyMuhasabahSummary {
   const boundaries = targetFridayDate ? getWeekBoundaries(targetFridayDate) : getWeekBoundaries();
@@ -244,6 +245,12 @@ export function generateWeeklyMuhasabahSummaryPure(
   let adhkarMasaCount = 0;
   let adhkarSleepDhohrCount = 0;
   let adhkarSleepNightCount = 0;
+  let adhkarMorningCount = 0;
+  let adhkarEveningCount = 0;
+  let adhkarSleepCount = 0;
+  let weeklyIntegritySum = 0;
+  let quranPagesTotal = 0;
+  let quranPassagesRevisedCount = 0;
   let salawatTotal = 0;
   let qiyamTotalRakats = 0;
 
@@ -269,12 +276,37 @@ export function generateWeeklyMuhasabahSummaryPure(
       if (log.adhkarMasa) adhkarMasaCount++;
       if (log.adhkarSleepDhohr) adhkarSleepDhohrCount++;
       if (log.adhkarSleepNight) adhkarSleepNightCount++;
+
+      const mStatus = log.adhkarSessions?.morning || (log.adhkarSabah ? 'complete' : 'not_started');
+      const eStatus = log.adhkarSessions?.evening || (log.adhkarMasa ? 'complete' : 'not_started');
+      const sStatus = log.adhkarSessions?.sleep || (log.adhkarSleepNight || log.adhkarSleepDhohr ? 'complete' : 'not_started');
+
+      if (mStatus === 'complete') adhkarMorningCount++;
+      if (eStatus === 'complete') adhkarEveningCount++;
+      if (sStatus === 'complete') adhkarSleepCount++;
+
+      const mw = mStatus === 'complete' ? 33.33 : mStatus === 'in_progress' ? 15 : 0;
+      const ew = eStatus === 'complete' ? 33.33 : eStatus === 'in_progress' ? 15 : 0;
+      const sw = sStatus === 'complete' ? 33.34 : sStatus === 'in_progress' ? 15 : 0;
+      weeklyIntegritySum += Math.min(100, Math.round(mw + ew + sw));
+
+      if (log.quran?.pagesRead) quranPagesTotal += log.quran.pagesRead;
+      if (log.quran?.passagesRevisedToday && log.quran.passagesRevisedToday.length > 0) {
+        quranPassagesRevisedCount += log.quran.passagesRevisedToday.length;
+      } else if (log.quran?.memorizationReviewed) {
+        quranPassagesRevisedCount += 1;
+      }
+
       salawatTotal += log.salawatCount || 0;
       qiyamTotalRakats += log.qiyamRakats || 0;
     } else {
       prayersMissedCount += 5;
     }
   });
+
+  const adhkarFortressIntegrityAvg = Math.round(weeklyIntegritySum / 7);
+  const quranFreshness = calculateQuranFreshness(state.quranTracker?.passages || [], endDate);
+  const quranFreshnessScore = quranFreshness.score;
 
   const weekXpEntries = (state.xpHistory || []).filter(h => {
     const dStr = h.timestamp ? h.timestamp.split('T')[0] : '';
@@ -479,6 +511,15 @@ export function generateWeeklyMuhasabahSummaryPure(
     adhkarMasaCount,
     adhkarSleepDhohrCount,
     adhkarSleepNightCount,
+    adhkarMorningCount,
+    adhkarEveningCount,
+    adhkarSleepCount,
+    adhkarFortressIntegrityAvg,
+    adhkarFortressAvgIntegrity: adhkarFortressIntegrityAvg,
+    quranPagesTotal,
+    quranPagesRead: quranPagesTotal,
+    quranPassagesRevised: quranPassagesRevisedCount,
+    quranFreshnessScore,
     salawatTotal,
     qiyamTotalRakats,
     questsCompletedCount: questsCompletedInWeek,

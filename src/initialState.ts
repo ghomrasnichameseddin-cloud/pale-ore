@@ -1,7 +1,7 @@
-import { POSState, ShopItem, SpiritualDailyLog } from './types';
+import { POSState, ShopItem, SpiritualDailyLog, QuranTrackerState } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
-import { getLocalDateString } from './utils/dateUtils';
+import { getLocalDateString, addDays } from './utils/dateUtils';
 import { DEFAULT_APP_USAGE_LIMITS } from './utils/temporalLedger';
 import { 
   DEFAULT_DOCTRINES, 
@@ -21,6 +21,11 @@ export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   adhkarMasa: false,
   adhkarSleepDhohr: false,
   adhkarSleepNight: false,
+  adhkarSessions: {
+    morning: 'not_started',
+    evening: 'not_started',
+    sleep: 'not_started'
+  },
   salawatCount: 0,
   salawatCompleted: false,
   qiyamRakats: 0,
@@ -196,6 +201,111 @@ export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
   }
 ];
 
+export const DEFAULT_QURAN_TRACKER: QuranTrackerState = {
+  currentSurah: 'Al-Baqarah',
+  currentSurahNumber: 2,
+  currentAyah: 186,
+  currentPage: 28,
+  targetDailyPages: 4,
+  passages: [
+    {
+      id: 'passage-mulk',
+      surahName: 'Al-Mulk',
+      surahNumber: 67,
+      ayahStart: 1,
+      ayahEnd: 30,
+      pageStart: 562,
+      pageEnd: 564,
+      status: 'stable',
+      lastRevisedDate: getLocalDateString(),
+      revisionCount: 14,
+      memorizedDate: addDays(getLocalDateString(), -30),
+      mistakeNotes: 'Solid recitation; guard pause on verse 15.'
+    },
+    {
+      id: 'passage-kursi',
+      surahName: 'Al-Baqarah (Ayat al-Kursi)',
+      surahNumber: 2,
+      ayahStart: 255,
+      ayahEnd: 255,
+      pageStart: 42,
+      pageEnd: 42,
+      status: 'stable',
+      lastRevisedDate: getLocalDateString(),
+      revisionCount: 25,
+      memorizedDate: addDays(getLocalDateString(), -60)
+    },
+    {
+      id: 'passage-kahf-10',
+      surahName: 'Al-Kahf (Opening 10 Verses)',
+      surahNumber: 18,
+      ayahStart: 1,
+      ayahEnd: 10,
+      pageStart: 293,
+      pageEnd: 294,
+      status: 'due',
+      lastRevisedDate: addDays(getLocalDateString(), -4),
+      revisionCount: 6,
+      memorizedDate: addDays(getLocalDateString(), -18),
+      mistakeNotes: 'Reinforce verse 7-8 transition.'
+    },
+    {
+      id: 'passage-naba',
+      surahName: 'An-Naba',
+      surahNumber: 78,
+      ayahStart: 1,
+      ayahEnd: 40,
+      pageStart: 582,
+      pageEnd: 583,
+      status: 'due',
+      lastRevisedDate: addDays(getLocalDateString(), -5),
+      revisionCount: 9,
+      memorizedDate: addDays(getLocalDateString(), -45)
+    },
+    {
+      id: 'passage-ala',
+      surahName: "Al-A'la",
+      surahNumber: 87,
+      ayahStart: 1,
+      ayahEnd: 19,
+      pageStart: 591,
+      pageEnd: 592,
+      status: 'weak',
+      lastRevisedDate: addDays(getLocalDateString(), -8),
+      revisionCount: 3,
+      memorizedDate: addDays(getLocalDateString(), -10),
+      mistakeNotes: 'Hesitation on verses 6-9 (سنقرئك فلا تنسى).'
+    },
+    {
+      id: 'passage-muzzammil',
+      surahName: 'Al-Muzzammil',
+      surahNumber: 73,
+      ayahStart: 1,
+      ayahEnd: 20,
+      pageStart: 574,
+      pageEnd: 575,
+      status: 'weak',
+      lastRevisedDate: addDays(getLocalDateString(), -9),
+      revisionCount: 2,
+      memorizedDate: addDays(getLocalDateString(), -12),
+      mistakeNotes: 'Long final verse 20 requires pacing and breath control.'
+    }
+  ],
+  reflections: [
+    {
+      id: 'refl-baqarah-186',
+      surahName: 'Al-Baqarah',
+      surahNumber: 2,
+      ayahNumber: 186,
+      verseText: 'وَإِذَا سَأَلَكَ عِبَادِي عَنِّي فَإِنِّي قَرِيبٌ ۖ أُجِيبُ دَعْوَةَ الدَّاعِ إِذَا دَعَانِ',
+      translation: 'And when My servants ask you concerning Me, indeed I am near. I respond to the invocation of the supplicant when he calls upon Me.',
+      reflectionText: 'Divine proximity is completely unmediated. Allah did not say "say to them I am near"; He directly answered "Indeed I am near". No bureaucratic delay, no barrier.',
+      actionPoint: 'Turn immediate stress or paralysis into a silent heart-dua before touching the keyboard.',
+      date: getLocalDateString()
+    }
+  ]
+};
+
 export const INITIAL_STATE: POSState = {
   goals: [],
   projects: [],
@@ -318,6 +428,7 @@ export const INITIAL_STATE: POSState = {
     }
   ],
   spiritualLogs: {},
+  quranTracker: DEFAULT_QURAN_TRACKER,
   customAdhkar: DEFAULT_ADHKAR_LIST,
   adhkarRecitations: {},
   visualCodex: {

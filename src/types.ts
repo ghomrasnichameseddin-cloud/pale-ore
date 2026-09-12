@@ -803,6 +803,69 @@ export interface SunnahPrayersLog {
   sujudShukrOrTilawah: boolean; // Prostration of gratitude or Quran recitation (+20 XP)
 }
 
+export type AdhkarSessionStatus = 'not_started' | 'in_progress' | 'complete';
+
+export interface AdhkarFortressStats {
+  integrityScore: number; // 0 to 100
+  statusLabel: string;
+  statusLabelAr: string;
+  morningStatus: AdhkarSessionStatus;
+  eveningStatus: AdhkarSessionStatus;
+  sleepStatus: AdhkarSessionStatus;
+  completedCount: number;
+  currentStreak: number;
+  sevenDayAverage: number;
+}
+
+export type QuranRevisionStatus = 'weak' | 'due' | 'stable';
+
+export interface QuranPassage {
+  id: string;
+  surahName: string;
+  surahNumber: number;
+  ayahStart: number;
+  ayahEnd: number;
+  pageStart?: number;
+  pageEnd?: number;
+  status: QuranRevisionStatus; // 'weak' | 'due' | 'stable'
+  lastRevisedDate?: string; // YYYY-MM-DD
+  revisionCount: number;
+  mistakeNotes?: string;
+  notes?: string;
+  memorizedDate?: string;
+}
+
+export interface QuranReflection {
+  id: string;
+  surahName: string;
+  surahNumber: number;
+  ayahNumber: number;
+  verseText?: string;
+  ayahText?: string;
+  translation?: string;
+  reflectionText: string;
+  actionPoint?: string;
+  practicalActionItem?: string;
+  date: string; // YYYY-MM-DD
+}
+
+export interface QuranTrackerState {
+  currentSurah: string;
+  currentSurahNumber: number;
+  currentAyah: number;
+  currentPage: number;
+  targetDailyPages: number;
+  targetPagesPerDay?: number;
+  currentJuz?: number;
+  khatmahCount?: number;
+  memorizationTargetSurah?: string;
+  memorizationTargetAyahRange?: string;
+  memorizedPagesCount?: number;
+  lastKhatmahDate?: string;
+  passages: QuranPassage[];
+  reflections: QuranReflection[];
+}
+
 export interface QuranLog {
   pagesRead: number; // Pages read today (+5 XP per page, up to 100 XP)
   juzRead?: number; // Juz number 1-30 (+100 XP per Juz)
@@ -811,6 +874,8 @@ export interface QuranLog {
   ayahNumber?: number;
   tadabburNotes?: string; // Reflection on Ayah (+40 XP)
   memorizationReviewed?: boolean; // Hifdh / revision (+50 XP)
+  passagesRevisedToday?: string[]; // IDs of passages revised today
+  newMemorizationPassages?: string[]; // IDs of new passages memorized today
 }
 
 export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';
@@ -889,6 +954,19 @@ export interface WeeklyMuhasabahSummary {
   adhkarMasaCount: number;
   adhkarSleepDhohrCount?: number;
   adhkarSleepNightCount?: number;
+  adhkarMorningCount?: number;
+  adhkarEveningCount?: number;
+  adhkarSleepCount?: number;
+  adhkarFortressAvgIntegrity?: number;
+  adhkarFortressIntegrityAvg?: number;
+  adhkarMorningSessions?: number;
+  adhkarEveningSessions?: number;
+  adhkarSleepSessions?: number;
+  quranPagesTotal?: number;
+  quranPagesRead?: number;
+  quranPassagesRevised?: number;
+  quranFreshnessScore?: number;
+  quranTadabburCount?: number;
   salawatTotal: number;
   qiyamTotalRakats: number;
   questsCompletedCount: number;
@@ -917,6 +995,12 @@ export interface SpiritualDailyLog {
   adhkarMasa: boolean; // Evening Adhkar (+75 XP)
   adhkarSleepDhohr?: boolean; // Midday Nap / Qaylulah Sleep Adhkar (+50 XP)
   adhkarSleepNight?: boolean; // Night Sleep Adhkar (+75 XP)
+  // 3 Core Daily Sessions (Morning, Evening, Sleep)
+  adhkarSessions?: {
+    morning: AdhkarSessionStatus;
+    evening: AdhkarSessionStatus;
+    sleep: AdhkarSessionStatus;
+  };
   salawatCount: number; // Target 70+ Salawat upon the Prophet (ﷺ) (+100 XP when >= 70)
   salawatCompleted: boolean;
   qiyamRakats: number; // 2 mandatory baseline (+100 XP) + bonus per additional pair (+40 XP per pair)
@@ -1010,6 +1094,7 @@ export interface POSState {
   muhasabahEntries?: MuhasabahEntry[];
   weaknesses?: Weakness[];
   spiritualLogs?: Record<string, SpiritualDailyLog>;
+  quranTracker?: QuranTrackerState;
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
   lastWeeklyMuhasabahResetDate?: string | null; // YYYY-MM-DD of last Sunday on which the weekly cycle was auto-archived
   masjid40Covenant?: Masjid40DayCovenant;

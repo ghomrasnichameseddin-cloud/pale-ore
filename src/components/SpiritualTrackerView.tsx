@@ -14,6 +14,7 @@ import { SpiritualDailyLog, PrayerCheck, PostSalahDhikrMode } from '../types';
 import { SiamFastingSection } from './spiritual/SiamFastingSection';
 import { SunnahPrayersSection } from './spiritual/SunnahPrayersSection';
 import { AdhkarSection } from './spiritual/AdhkarSection';
+import { QuranSection } from './spiritual/QuranSection';
 import { SacredProtocolScorecard } from './spiritual/SacredProtocolScorecard';
 import { Masjid40DayTracker } from './spiritual/Masjid40DayTracker';
 import { PostSalahAdhkarModal } from './spiritual/PostSalahAdhkarModal';
@@ -49,10 +50,12 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     updateDhikrLog,
     updateQuranLog,
     getTodayMuhasabahStats,
-    getMasjid40Stats
+    getMasjid40Stats,
+    getAdhkarFortressStats,
+    getQuranFreshnessScore
   } = usePOS();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'salaat' | 'masjid40' | 'sunnah' | 'siam' | 'adhkar' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'salaat' | 'masjid40' | 'sunnah' | 'siam' | 'adhkar' | 'quran' | 'audit'>('overview');
   const [showScorecardModal, setShowScorecardModal] = useState(false);
   const [selectedPostPrayer, setSelectedPostPrayer] = useState<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'>('fajr');
   const [isPostAdhkarModalOpen, setIsPostAdhkarModalOpen] = useState(false);
@@ -199,6 +202,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   const khushuRating = currentLog.khushuRating || 8;
   const duhaRakats = currentLog.sunnahPrayers?.duhaRakats || 0;
   const salawatCount = currentLog.salawatCount || 0;
+  const fortressStats = getAdhkarFortressStats ? getAdhkarFortressStats(systemDate) : null;
+  const quranFreshness = getQuranFreshnessScore ? getQuranFreshnessScore(systemDate) : null;
 
   const getKhushuLabel = (val: number) => {
     if (val >= 9) return { label: 'Mumtāz / Deep Presence (حضور تام وخشوع عالٍ)', color: 'text-emerald-300' };
@@ -213,7 +218,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     { id: 'masjid40' as const, label: '40-Day Sanctuary', labelAr: 'أربعون في المسجد', icon: Shield, badge: `${masjid40Stats.currentStreak}D` },
     { id: 'sunnah' as const, label: 'Sunan & Qiyām', labelAr: 'النوافل والقيام', icon: Compass },
     { id: 'siam' as const, label: 'Siam & Fasting', labelAr: 'الصيام', icon: Moon, badge: currentLog.fasting?.isFasting ? 'Fasting' : undefined },
-    { id: 'adhkar' as const, label: 'Adhkār Fortress', labelAr: 'الأذكار', icon: Heart, badge: `${salawatCount}ﷺ` },
+    { id: 'adhkar' as const, label: 'Adhkār Fortress', labelAr: 'الأذكار', icon: Heart, badge: fortressStats ? `${fortressStats.integrityScore}%` : `${salawatCount}ﷺ` },
+    { id: 'quran' as const, label: 'Qur’an Sanctum', labelAr: 'القرآن الكريم', icon: BookOpen, badge: `${currentLog.quran?.pagesRead || 0}p` },
     { id: 'audit' as const, label: 'Quality Scorecard', labelAr: 'ميزان الجودة', icon: Award }
   ];
 
@@ -338,8 +344,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
           </div>
         </div>
 
-        {/* 3. SIMPLIFIED 4-METRIC SUMMARY STRIP */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+        {/* 3. SIMPLIFIED 5-METRIC SUMMARY STRIP */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
           
           {/* Fardh Salaat */}
           <div 
@@ -377,39 +383,58 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
             </div>
           </div>
 
-          {/* Siam / Fasting */}
-          <div 
-            onClick={() => setActiveTab('siam')}
-            className="p-3 bg-[#080a0f] hover:bg-[#0c0f16] border border-white/5 hover:border-emerald-500/40 rounded-xl space-y-1 cursor-pointer transition"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-zinc-400 uppercase">Siam / Fasting</span>
-              <Moon className="h-3.5 w-3.5 text-emerald-400" />
-            </div>
-            <div className="flex items-baseline justify-between">
-              <span className={`text-base font-display font-bold ${currentLog.fasting?.isFasting ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                {currentLog.fasting?.isFasting ? (currentLog.fasting.iftarCompleted ? 'Completed ✓' : 'Fasting Active') : 'None'}
-              </span>
-              {currentLog.fasting?.isFasting && <span className="text-[10px] font-mono text-amber-300">🌙</span>}
-            </div>
-          </div>
-
-          {/* Adhkar & Salawat */}
+          {/* Adhkar Fortress */}
           <div 
             onClick={() => setActiveTab('adhkar')}
             className="p-3 bg-[#080a0f] hover:bg-[#0c0f16] border border-white/5 hover:border-rose-500/40 rounded-xl space-y-1 cursor-pointer transition"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-zinc-400 uppercase">Adhkār &amp; Salawāt</span>
-              <Heart className="h-3.5 w-3.5 text-rose-400" />
+              <span className="text-[10px] font-mono text-zinc-400 uppercase">Adhkār Fortress</span>
+              <Shield className="h-3.5 w-3.5 text-rose-400" />
             </div>
             <div className="flex items-baseline justify-between">
-              <span className="text-base font-display font-bold text-violet-300">
-                {completedPostPrayersCount}/5 Post
+              <span className="text-base font-display font-bold text-rose-300">
+                {fortressStats ? `${fortressStats.integrityScore}%` : `${completedPostPrayersCount}/5 Post`}
               </span>
-              <span className="text-[10px] font-mono text-rose-300">
-                {salawatCount}/70+ ﷺ
+              <span className="text-[10px] font-mono text-amber-300">
+                {fortressStats ? `⚡ ${fortressStats.currentStreak}D streak` : `${salawatCount} ﷺ`}
               </span>
+            </div>
+          </div>
+
+          {/* Qur’an Sanctum */}
+          <div 
+            onClick={() => setActiveTab('quran')}
+            className="p-3 bg-[#080a0f] hover:bg-[#0c0f16] border border-white/5 hover:border-emerald-500/40 rounded-xl space-y-1 cursor-pointer transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase">Qur’an Sanctum</span>
+              <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-base font-display font-bold text-emerald-300">
+                {currentLog.quran?.pagesRead || 0} pgs
+              </span>
+              <span className="text-[10px] font-mono text-emerald-400">
+                {quranFreshness ? `${quranFreshness.score}% Fresh` : 'Active'}
+              </span>
+            </div>
+          </div>
+
+          {/* Siam / Fasting */}
+          <div 
+            onClick={() => setActiveTab('siam')}
+            className="p-3 bg-[#080a0f] hover:bg-[#0c0f16] border border-white/5 hover:border-amber-500/40 rounded-xl space-y-1 cursor-pointer transition"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase">Siam / Fasting</span>
+              <Moon className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className={`text-base font-display font-bold ${currentLog.fasting?.isFasting ? 'text-amber-300' : 'text-zinc-400'}`}>
+                {currentLog.fasting?.isFasting ? (currentLog.fasting.iftarCompleted ? 'Completed ✓' : 'Fasting Active') : 'None'}
+              </span>
+              {currentLog.fasting?.isFasting && <span className="text-[10px] font-mono text-amber-300">🌙</span>}
             </div>
           </div>
 
@@ -1438,6 +1463,15 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         {/* ADHKAR FORTRESS TAB */}
         {activeTab === 'adhkar' && (
           <AdhkarSection
+            systemDate={systemDate}
+            spiritualLog={currentLog}
+            onOpenGuide={onOpenGuide}
+          />
+        )}
+
+        {/* QURAN SANCTUM TAB */}
+        {activeTab === 'quran' && (
+          <QuranSection
             systemDate={systemDate}
             spiritualLog={currentLog}
             onOpenGuide={onOpenGuide}

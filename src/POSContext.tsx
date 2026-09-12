@@ -9,6 +9,8 @@ import {
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
+  AdhkarSessionStatus, AdhkarFortressStats,
+  QuranRevisionStatus, QuranPassage, QuranReflection, QuranTrackerState,
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
   RestPass, DailyWakingCapital, LeisureTransaction,
@@ -36,7 +38,13 @@ import {
   DEFAULT_REST_PASSES,
   DEFAULT_APP_USAGE_LIMITS
 } from './utils/temporalLedger';
-import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, getLocalDateString, createDefaultSpiritualLog } from './initialState';
+import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, DEFAULT_QURAN_TRACKER, getLocalDateString, createDefaultSpiritualLog } from './initialState';
+import {
+  calculateAdhkarFortressStats,
+  calculateQuranFreshness,
+  advanceRevisionQueueStatus,
+  regressRevisionQueueStatus
+} from './utils/quranAndAdhkarEngine';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
@@ -420,6 +428,21 @@ interface POSContextType {
   incrementAdhkarRecitation: (adhkarId: string, delta: number, dateStr?: string) => void;
   resetAdhkarRecitation: (adhkarId: string, dateStr?: string) => void;
   getAdhkarRecitationCount: (adhkarId: string, dateStr?: string) => number;
+  setAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', status: AdhkarSessionStatus, dateStr?: string) => void;
+  cycleAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
+  getAdhkarFortressStats: (dateStr?: string) => AdhkarFortressStats;
+
+  // Qur'an Sanctum & Revision Queue
+  quranTracker: QuranTrackerState;
+  updateQuranTracker: (updates: Partial<QuranTrackerState>) => void;
+  addQuranPassage: (passage: Omit<QuranPassage, 'id' | 'revisionCount'>) => QuranPassage;
+  updateQuranPassage: (id: string, updates: Partial<QuranPassage>) => void;
+  deleteQuranPassage: (id: string) => void;
+  advancePassageRevisionStatus: (id: string, newStatus?: QuranRevisionStatus, dateStr?: string) => void;
+  markPassageRevised: (id: string, dateStr?: string) => void;
+  addQuranReflection: (reflection: Omit<QuranReflection, 'id' | 'date'>, dateStr?: string) => void;
+  deleteQuranReflection: (id: string) => void;
+  getQuranFreshnessScore: (targetDate?: string) => { score: number; label: string; labelAr: string; weakCount: number; dueCount: number; stableCount: number };
 
   // Visual Codex (Appearance System)
   visualCodex: VisualCodexSettings;
@@ -767,7 +790,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             strategicDecisions: parsed.strategicDecisions && parsed.strategicDecisions.length > 0 ? parsed.strategicDecisions : (INITIAL_STATE.strategicDecisions || []),
             strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
             strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
-            strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false
+            strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false,
+            quranTracker: parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER
           };
         }
       }
@@ -6197,9 +6221,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setState(prev => {
       const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const sessionKey = type === 'sabah' ? 'morning' : type === 'masa' ? 'evening' : 'sleep';
+      const currentSessions = log.adhkarSessions || {
+        morning: log.adhkarSabah ? 'complete' : 'not_started',
+        evening: log.adhkarMasa ? 'complete' : 'not_started',
+        sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+      };
       const updatedLog: SpiritualDailyLog = {
         ...log,
-        [field]: newValue
+        [field]: newValue,
+        adhkarSessions: {
+          ...currentSessions,
+          [sessionKey]: newValue ? 'complete' : 'not_started'
+        }
       };
 
       let updatedHistory = [...prev.xpHistory];
@@ -6252,6 +6286,274 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+  };
+
+  const setAdhkarSessionStatus = (
+    session: 'morning' | 'evening' | 'sleep',
+    newStatus: AdhkarSessionStatus,
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const existingLog = getSpiritualLog(targetDate);
+
+    let legacyField: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepNight' = 'adhkarSabah';
+    let xpReward = 75;
+    let coinsReward = 10;
+    let label = 'Morning Adhkār (أذكار الصباح)';
+    let messageContent = 'Morning Fortress complete (+75 XP, +10 Coins). Sheltered in divine grace from dawn till dusk.';
+
+    if (session === 'evening') {
+      legacyField = 'adhkarMasa';
+      label = 'Evening Adhkār (أذكار المساء)';
+      messageContent = 'Evening Fortress complete (+75 XP, +10 Coins). Guarded under divine light through the night.';
+    } else if (session === 'sleep') {
+      legacyField = 'adhkarSleepNight';
+      label = 'Night Sleep Adhkār (أذكار النوم)';
+      messageContent = 'Night Sleep Adhkār complete (+75 XP, +10 Coins). Fortified with Ayat al-Kursi, Mu‘awwidhatayn & Tasbīḥ Fāṭimah.';
+    }
+
+    const questIdentifier = `spiritual-adhkar-${targetDate}-${session === 'morning' ? 'sabah' : session === 'evening' ? 'masa' : 'sleepNight'}`;
+    const isNowComplete = newStatus === 'complete';
+    const wasComplete = existingLog.adhkarSessions?.[session] === 'complete' || existingLog[legacyField];
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currentSessions = log.adhkarSessions || {
+        morning: log.adhkarSabah ? 'complete' : 'not_started',
+        evening: log.adhkarMasa ? 'complete' : 'not_started',
+        sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+      };
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        [legacyField]: isNowComplete,
+        adhkarSessions: {
+          ...currentSessions,
+          [session]: newStatus
+        }
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      let coinsDelta = 0;
+
+      if (isNowComplete && !wasComplete) {
+        const entry: XPHistoryEntry = {
+          id: `h-adhkar-${Date.now()}-${session}`,
+          questId: questIdentifier,
+          questName: `📿 ADHKĀR: ${label}`,
+          xp: xpReward,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'adhkar',
+          source: 'quest',
+          sourceId: questIdentifier,
+          activityId: `adhkar-${session}`,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+        coinsDelta = coinsReward;
+
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `📿 ADHKĀR COMPLETED: ${label}`,
+          content: messageContent,
+          priority: 'medium'
+        });
+      } else if (!isNowComplete && wasComplete) {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+        coinsDelta = -coinsReward;
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta),
+          momentum: Math.min(100, prev.profile.momentum + (isNowComplete && !wasComplete ? 3 : !isNowComplete && wasComplete ? -3 : 0))
+        }
+      };
+    });
+  };
+
+  const cycleAdhkarSessionStatus = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const log = getSpiritualLog(targetDate);
+    const currentStatus: AdhkarSessionStatus = log.adhkarSessions?.[session] ||
+      (session === 'morning' ? (log.adhkarSabah ? 'complete' : 'not_started') :
+       session === 'evening' ? (log.adhkarMasa ? 'complete' : 'not_started') :
+       ((log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'));
+
+    let nextStatus: AdhkarSessionStatus = 'not_started';
+    if (currentStatus === 'not_started') nextStatus = 'in_progress';
+    else if (currentStatus === 'in_progress') nextStatus = 'complete';
+    else nextStatus = 'not_started';
+
+    setAdhkarSessionStatus(session, nextStatus, targetDate);
+  };
+
+  const getAdhkarFortressStats = (dateStr?: string): AdhkarFortressStats => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    return calculateAdhkarFortressStats(state.spiritualLogs, targetDate);
+  };
+
+  const quranTracker: QuranTrackerState = state.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER;
+
+  const updateQuranTracker = (updates: Partial<QuranTrackerState>) => {
+    setState(prev => ({
+      ...prev,
+      quranTracker: {
+        ...(prev.quranTracker || DEFAULT_QURAN_TRACKER),
+        ...updates
+      }
+    }));
+  };
+
+  const addQuranPassage = (passage: Omit<QuranPassage, 'id' | 'revisionCount'>): QuranPassage => {
+    const newId = `passage-${Date.now()}`;
+    const newPassage: QuranPassage = {
+      ...passage,
+      id: newId,
+      revisionCount: 0
+    };
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: [newPassage, ...currentTracker.passages]
+        }
+      };
+    });
+    return newPassage;
+  };
+
+  const updateQuranPassage = (id: string, updates: Partial<QuranPassage>) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: currentTracker.passages.map(p => p.id === id ? { ...p, ...updates } : p)
+        }
+      };
+    });
+  };
+
+  const deleteQuranPassage = (id: string) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: currentTracker.passages.filter(p => p.id !== id)
+        }
+      };
+    });
+  };
+
+  const advancePassageRevisionStatus = (id: string, newStatus?: QuranRevisionStatus, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      const targetPassage = currentTracker.passages.find(p => p.id === id);
+      if (!targetPassage) return prev;
+
+      const nextStatus = newStatus || advanceRevisionQueueStatus(targetPassage.status);
+      const updatedPassages = currentTracker.passages.map(p => {
+        if (p.id !== id) return p;
+        return {
+          ...p,
+          status: nextStatus,
+          lastRevisedDate: targetDate,
+          revisionCount: p.revisionCount + 1
+        };
+      });
+
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: updatedPassages
+        }
+      };
+    });
+  };
+
+  const markPassageRevised = (id: string, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    advancePassageRevisionStatus(id, undefined, targetDate);
+    const log = getSpiritualLog(targetDate);
+    const existingRevised = log.quran?.passagesRevisedToday || [];
+    if (!existingRevised.includes(id)) {
+      updateQuranLog({
+        memorizationReviewed: true,
+        passagesRevisedToday: [...existingRevised, id]
+      }, targetDate);
+    }
+  };
+
+  const addQuranReflection = (reflection: Omit<QuranReflection, 'id' | 'date'>, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const newId = `refl-${Date.now()}`;
+    const newRefl: QuranReflection = {
+      ...reflection,
+      id: newId,
+      date: targetDate
+    };
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          reflections: [newRefl, ...currentTracker.reflections]
+        }
+      };
+    });
+
+    const log = getSpiritualLog(targetDate);
+    if (!log.quran?.tadabburNotes || log.quran.tadabburNotes.trim().length === 0) {
+      updateQuranLog({
+        surahName: reflection.surahName,
+        surahNumber: reflection.surahNumber,
+        ayahNumber: reflection.ayahNumber,
+        tadabburNotes: reflection.reflectionText
+      }, targetDate);
+    }
+  };
+
+  const deleteQuranReflection = (id: string) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          reflections: currentTracker.reflections.filter(r => r.id !== id)
+        }
+      };
+    });
+  };
+
+  const getQuranFreshnessScore = (targetDate?: string) => {
+    const currentTracker = state.quranTracker || DEFAULT_QURAN_TRACKER;
+    return calculateQuranFreshness(currentTracker.passages, targetDate || state.systemDate || getLocalDateString());
   };
 
   const incrementSalawat = (amount: number, dateStr?: string) => {
@@ -7538,6 +7840,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       incrementAdhkarRecitation,
       resetAdhkarRecitation,
       getAdhkarRecitationCount,
+      setAdhkarSessionStatus,
+      cycleAdhkarSessionStatus,
+      getAdhkarFortressStats,
+      quranTracker,
+      updateQuranTracker,
+      addQuranPassage,
+      updateQuranPassage,
+      deleteQuranPassage,
+      advancePassageRevisionStatus,
+      markPassageRevised,
+      addQuranReflection,
+      deleteQuranReflection,
+      getQuranFreshnessScore,
       visualCodex: state.visualCodex || getStoredVisualCodexSettings(),
       updateVisualCodexSettings,
       setTheme

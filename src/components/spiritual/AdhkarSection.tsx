@@ -4,10 +4,16 @@ import {
   Sun, Moon, Sparkles, CheckCircle2, Plus,
   Minus, RefreshCw, Heart, Award, HelpCircle, Check, Zap,
   Bed, BookOpen, Clock, Edit2, Trash2, Search, Filter,
-  Volume2, Share2, Copy, AlertCircle, RotateCcw, Shield, Timer
+  Volume2, Share2, Copy, AlertCircle, RotateCcw, Shield, Timer, Flame
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
-import { AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, SpiritualDailyLog } from '../../types';
+import {
+  AdhkarItem,
+  AdhkarCategory,
+  AdhkarPrayerTarget,
+  SpiritualDailyLog,
+  AdhkarSessionStatus
+} from '../../types';
 import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
 import { SleepAdhkarModal } from './SleepAdhkarModal';
 import { AdhkarFormModal } from './AdhkarFormModal';
@@ -27,6 +33,9 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
 }) => {
   const { 
     toggleAdhkar, 
+    setAdhkarSessionStatus,
+    cycleAdhkarSessionStatus,
+    getAdhkarFortressStats,
     incrementSalawat, 
     setSalawatCount, 
     updateDhikrLog,
@@ -73,6 +82,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     const mode = postMap[p];
     return mode === 'standard33' || mode === 'mini10';
   }).length;
+
+  const fortressStats = getAdhkarFortressStats(systemDate);
 
   // Filtered Adhkar list
   const filteredAdhkar = useMemo(() => {
@@ -220,246 +231,621 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </div>
         </div>
 
-        {/* Quick Sacred Stat Strip */}
+        {/* Quick Sacred Stat Strip: Fortress Integrity & Streaks */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle,rgba(197,160,89,0.2))] text-xs font-mono">
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">TOTAL PROTOCOLS</span>
-            <span className="text-base font-bold text-white mt-0.5 block">{adhkarList.length} Sacred Items</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-zinc-400 uppercase block font-bold">FORTRESS INTEGRITY</span>
+              <Shield className="h-3 w-3 text-amber-400" />
+            </div>
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-base font-bold text-[var(--accent-highlight,#fef08a)]">
+                {fortressStats.integrityScore}%
+              </span>
+              <span className="text-[10px] text-zinc-400">
+                {fortressStats.statusLabelAr}
+              </span>
+            </div>
+            <div className="w-full bg-zinc-800/80 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  fortressStats.integrityScore === 100 ? 'bg-emerald-400' :
+                  fortressStats.integrityScore >= 50 ? 'bg-amber-400' : 'bg-rose-400'
+                }`}
+                style={{ width: `${fortressStats.integrityScore}%` }}
+              />
+            </div>
           </div>
+
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">COMPLETED TODAY</span>
-            <span className="text-base font-bold text-[var(--accent-highlight,#fef08a)] mt-0.5 flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              {completedTodayCount} / {adhkarList.length}
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">FORTRESS STREAK</span>
+            <div className="flex items-baseline justify-between mt-1">
+              <span className="text-base font-bold text-emerald-400 flex items-center gap-1">
+                <Flame className="h-4 w-4" />
+                {fortressStats.currentStreak} Days
+              </span>
+              <span className="text-[10px] text-zinc-400">
+                Avg: {fortressStats.sevenDayAverage}%
+              </span>
+            </div>
+            <span className="text-[9px] text-zinc-500 mt-1 block">
+              Consistency is your shield
             </span>
           </div>
+
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">MORNING & EVENING</span>
-            <span className="text-xs font-bold text-zinc-200 mt-1 flex items-center gap-2">
-              <span className={adhkarSabah ? 'text-amber-300' : 'text-zinc-500'}>
-                {adhkarSabah ? '🌅 Sabah Done' : '🌅 Sabah Pending'}
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">3 SACRED SESSIONS</span>
+            <span className="text-xs font-bold text-zinc-200 mt-1 flex items-center gap-1 flex-wrap">
+              <span className={fortressStats.morningStatus === 'complete' ? 'text-emerald-400' : fortressStats.morningStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
+                {fortressStats.morningStatus === 'complete' ? '🌅 Sabah ✓' : fortressStats.morningStatus === 'in_progress' ? '🌅 Sabah (⏳)' : '🌅 Sabah'}
               </span>
               <span>•</span>
-              <span className={adhkarMasa ? 'text-indigo-300' : 'text-zinc-500'}>
-                {adhkarMasa ? '🌇 Masa Done' : '🌇 Masa Pending'}
+              <span className={fortressStats.eveningStatus === 'complete' ? 'text-emerald-400' : fortressStats.eveningStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
+                {fortressStats.eveningStatus === 'complete' ? '🌇 Masa ✓' : fortressStats.eveningStatus === 'in_progress' ? '🌇 Masa (⏳)' : '🌇 Masa'}
+              </span>
+              <span>•</span>
+              <span className={fortressStats.sleepStatus === 'complete' ? 'text-emerald-400' : fortressStats.sleepStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
+                {fortressStats.sleepStatus === 'complete' ? '🌙 Sleep ✓' : fortressStats.sleepStatus === 'in_progress' ? '🌙 Sleep (⏳)' : '🌙 Sleep'}
               </span>
             </span>
           </div>
+
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">SALAWĀT PROPHETIC BEATS</span>
-            <span className="text-base font-bold text-emerald-400 mt-0.5 flex items-center gap-1">
-              <span>{salawatCount}x</span>
-              <span className="text-[10px] text-zinc-400">/ 70 Target</span>
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">TOTAL PROTOCOLS</span>
+            <span className="text-base font-bold text-white mt-0.5 flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              {completedTodayCount} / {adhkarList.length} Items
+            </span>
+            <span className="text-[9px] text-zinc-500 mt-0.5 block">
+              Continuous Adhkar
             </span>
           </div>
         </div>
       </div>
 
-      {/* QUICK RITUAL MASTER TOGGLE CONTROLS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Morning Adhkār Quick Toggle */}
-        <div 
-          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
-            adhkarSabah
-              ? 'bg-amber-950/40 border-amber-500/50 shadow-amber-950/20'
-              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
-                adhkarSabah ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
-              }`}>
-                <Sun className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SACRED DAWN LITANY</span>
-                <h4 className="text-sm font-display font-bold text-white">Morning Adhkār (أذكار الصباح)</h4>
-                <span className="text-[10px] font-mono text-zinc-400">After Fajr until Sunrise • +75 XP</span>
-              </div>
-            </div>
-            <button
-              onClick={() => toggleAdhkar('sabah', systemDate)}
-              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
-                adhkarSabah ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
-              }`}
-            >
-              {adhkarSabah && <Check className="h-4 w-4 stroke-[3]" />}
-            </button>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-            <span className={adhkarSabah ? 'text-amber-300 font-bold' : 'text-zinc-500'}>
-              {adhkarSabah ? '✓ Dawn Shield Completed' : 'Pending Recitation'}
+      {/* 3 DAILY SACRED SESSIONS: MORNING, EVENING, SLEEP */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-amber-400" />
+            <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+              THE THREE FORTRESS SESSIONS • جُنَنُ الْحِمَايَةِ الثَّلَاث
             </span>
-            <button
-              onClick={() => { setActiveCategory('morning'); }}
-              className="text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer"
-            >
-              <span>View Adhkār</span>
-            </button>
+          </div>
+          <span className="text-[10px] font-mono text-zinc-400">
+            States: Not Started • In Progress • Complete
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1. Morning Session */}
+          <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            fortressStats.morningStatus === 'complete'
+              ? 'bg-emerald-950/25 border-emerald-500/40 shadow-emerald-950/20'
+              : fortressStats.morningStatus === 'in_progress'
+              ? 'bg-amber-950/30 border-amber-500/40 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  fortressStats.morningStatus === 'complete'
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                    : fortressStats.morningStatus === 'in_progress'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                    : 'bg-white/5 border-white/10 text-zinc-400'
+                }`}>
+                  <Sun className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SACRED DAWN LITANY</span>
+                  <h4 className="text-sm font-display font-bold text-white">Morning Adhkār (أذكار الصباح)</h4>
+                  <span className="text-[10px] font-mono text-zinc-400">After Fajr until Sunrise</span>
+                </div>
+              </div>
+
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold capitalize ${
+                fortressStats.morningStatus === 'complete' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                fortressStats.morningStatus === 'in_progress' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                'bg-zinc-800 text-zinc-400 border-zinc-700'
+              }`}>
+                {fortressStats.morningStatus === 'complete' ? '✓ Complete' :
+                 fortressStats.morningStatus === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+              </span>
+            </div>
+
+            {/* 3-State Segmented Selector */}
+            <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('morning', 'not_started', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.morningStatus === 'not_started'
+                    ? 'bg-zinc-700 text-white shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Not Started
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('morning', 'in_progress', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.morningStatus === 'in_progress'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                In Progress
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('morning', 'complete', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.morningStatus === 'complete'
+                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Complete ✓
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => cycleAdhkarSessionStatus('morning', systemDate)}
+                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3 text-amber-400" />
+                <span>Tap to Cycle</span>
+              </button>
+              <button
+                onClick={() => setActiveCategory('morning')}
+                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+              >
+                <span>View Litanies</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Evening Session */}
+          <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            fortressStats.eveningStatus === 'complete'
+              ? 'bg-emerald-950/25 border-emerald-500/40 shadow-emerald-950/20'
+              : fortressStats.eveningStatus === 'in_progress'
+              ? 'bg-amber-950/30 border-amber-500/40 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  fortressStats.eveningStatus === 'complete'
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                    : fortressStats.eveningStatus === 'in_progress'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                    : 'bg-white/5 border-white/10 text-zinc-400'
+                }`}>
+                  <Moon className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-indigo-300/80 font-bold block">SACRED SUNSET LITANY</span>
+                  <h4 className="text-sm font-display font-bold text-white">Evening Adhkār (أذكار المساء)</h4>
+                  <span className="text-[10px] font-mono text-zinc-400">After ‘Asr until Maghrib</span>
+                </div>
+              </div>
+
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold capitalize ${
+                fortressStats.eveningStatus === 'complete' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                fortressStats.eveningStatus === 'in_progress' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                'bg-zinc-800 text-zinc-400 border-zinc-700'
+              }`}>
+                {fortressStats.eveningStatus === 'complete' ? '✓ Complete' :
+                 fortressStats.eveningStatus === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+              </span>
+            </div>
+
+            {/* 3-State Segmented Selector */}
+            <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('evening', 'not_started', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.eveningStatus === 'not_started'
+                    ? 'bg-zinc-700 text-white shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Not Started
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('evening', 'in_progress', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.eveningStatus === 'in_progress'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                In Progress
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('evening', 'complete', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.eveningStatus === 'complete'
+                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Complete ✓
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => cycleAdhkarSessionStatus('evening', systemDate)}
+                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3 text-indigo-400" />
+                <span>Tap to Cycle</span>
+              </button>
+              <button
+                onClick={() => setActiveCategory('evening')}
+                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+              >
+                <span>View Litanies</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Sleep Session */}
+          <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            fortressStats.sleepStatus === 'complete'
+              ? 'bg-emerald-950/25 border-emerald-500/40 shadow-emerald-950/20'
+              : fortressStats.sleepStatus === 'in_progress'
+              ? 'bg-amber-950/30 border-amber-500/40 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  fortressStats.sleepStatus === 'complete'
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                    : fortressStats.sleepStatus === 'in_progress'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                    : 'bg-white/5 border-white/10 text-zinc-400'
+                }`}>
+                  <Bed className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-purple-300/80 font-bold block">SACRED SLEEP REPOSE</span>
+                  <h4 className="text-sm font-display font-bold text-white">Sleep Adhkār (أذكار النوم)</h4>
+                  <span className="text-[10px] font-mono text-zinc-400">Bedtime Protection Shield</span>
+                </div>
+              </div>
+
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold capitalize ${
+                fortressStats.sleepStatus === 'complete' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                fortressStats.sleepStatus === 'in_progress' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                'bg-zinc-800 text-zinc-400 border-zinc-700'
+              }`}>
+                {fortressStats.sleepStatus === 'complete' ? '✓ Complete' :
+                 fortressStats.sleepStatus === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+              </span>
+            </div>
+
+            {/* 3-State Segmented Selector */}
+            <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('sleep', 'not_started', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.sleepStatus === 'not_started'
+                    ? 'bg-zinc-700 text-white shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Not Started
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('sleep', 'in_progress', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.sleepStatus === 'in_progress'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                In Progress
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('sleep', 'complete', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  fortressStats.sleepStatus === 'complete'
+                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Complete ✓
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => cycleAdhkarSessionStatus('sleep', systemDate)}
+                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3 text-purple-400" />
+                <span>Tap to Cycle</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSleepModalTab('night');
+                  setShowSleepModal(true);
+                }}
+                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+              >
+                <Shield className="h-3 w-3" />
+                <span>Read Sleep Shield</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* DEDICATED SEPARATE TASBĪḤ & ISTIGHFĀR SECTION */}
+      <div className="p-5 rounded-2xl bg-[var(--bg-surface,#141824)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] space-y-4 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[var(--accent-bright,#fef08a)]" />
+            <div>
+              <h4 className="text-sm font-display font-bold text-white uppercase tracking-wide">
+                TASBĪḤ, ISTIGHFĀR &amp; SALAWĀT • التَّسْبِيحُ وَالاسْتِغْفَار
+              </h4>
+              <span className="text-[10px] font-mono text-zinc-400">
+                Tracked separately from defense sessions • Consistency &amp; heart presence are primary
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-full">
+              Worship Over Gamification
+            </span>
           </div>
         </div>
 
-        {/* Evening Adhkār Quick Toggle */}
-        <div 
-          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
-            adhkarMasa
-              ? 'bg-indigo-950/40 border-indigo-500/50 shadow-indigo-950/20'
-              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
-                adhkarMasa ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-white/10 text-zinc-400'
-              }`}>
-                <Moon className="h-5 w-5" />
+        {/* 6 Separate Counters Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs font-mono">
+          {/* 1. SubhanAllah */}
+          {(() => {
+            const currentSubhan = spiritualLog.dhikr?.tasbeehCount || 0;
+            return (
+              <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <span className="text-[9px] text-zinc-400 uppercase block font-bold">SUBḤĀN ALLĀH</span>
+                  <span className="text-xs font-serif font-bold text-amber-200 block mt-0.5">سُبْحَانَ اللَّه</span>
+                  <div className="text-lg font-display font-bold text-white mt-1">
+                    {currentSubhan} <span className="text-[10px] text-zinc-500 font-normal">/ 33</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <button
+                    onClick={() => updateDhikrLog({ tasbeehCount: currentSubhan + 1 }, systemDate)}
+                    className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ tasbeehCount: currentSubhan + 33 }, systemDate)}
+                    className="flex-1 py-1 bg-amber-950/40 text-amber-300 border border-amber-500/30 rounded font-bold transition cursor-pointer"
+                  >
+                    +33
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ tasbeehCount: 0 }, systemDate)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-mono uppercase text-indigo-300/80 font-bold block">SACRED SUNSET LITANY</span>
-                <h4 className="text-sm font-display font-bold text-white">Evening Adhkār (أذكار المساء)</h4>
-                <span className="text-[10px] font-mono text-zinc-400">After ‘Asr until Maghrib • +75 XP</span>
+            );
+          })()}
+
+          {/* 2. Alhamdulillah */}
+          {(() => {
+            const currentHamd = spiritualLog.dhikr?.hamdCount || 0;
+            return (
+              <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <span className="text-[9px] text-zinc-400 uppercase block font-bold">AL-ḤAMDULILLĀH</span>
+                  <span className="text-xs font-serif font-bold text-emerald-200 block mt-0.5">الْحَمْدُ لِلَّه</span>
+                  <div className="text-lg font-display font-bold text-white mt-1">
+                    {currentHamd} <span className="text-[10px] text-zinc-500 font-normal">/ 33</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <button
+                    onClick={() => updateDhikrLog({ hamdCount: currentHamd + 1 }, systemDate)}
+                    className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ hamdCount: currentHamd + 33 }, systemDate)}
+                    className="flex-1 py-1 bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 rounded font-bold transition cursor-pointer"
+                  >
+                    +33
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ hamdCount: 0 }, systemDate)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 3. Allahu Akbar */}
+          {(() => {
+            const currentTakbir = spiritualLog.dhikr?.takbirCount || 0;
+            return (
+              <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <span className="text-[9px] text-zinc-400 uppercase block font-bold">ALLĀHU AKBAR</span>
+                  <span className="text-xs font-serif font-bold text-cyan-200 block mt-0.5">اللَّهُ أَكْبَر</span>
+                  <div className="text-lg font-display font-bold text-white mt-1">
+                    {currentTakbir} <span className="text-[10px] text-zinc-500 font-normal">/ 34</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <button
+                    onClick={() => updateDhikrLog({ takbirCount: currentTakbir + 1 }, systemDate)}
+                    className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ takbirCount: currentTakbir + 34 }, systemDate)}
+                    className="flex-1 py-1 bg-cyan-950/40 text-cyan-300 border border-cyan-500/30 rounded font-bold transition cursor-pointer"
+                  >
+                    +34
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ takbirCount: 0 }, systemDate)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 4. Astaghfirullah */}
+          {(() => {
+            const currentIstighfar = spiritualLog.dhikr?.istighfarCount || 0;
+            return (
+              <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <span className="text-[9px] text-zinc-400 uppercase block font-bold">ISTIGHFĀR</span>
+                  <span className="text-xs font-serif font-bold text-indigo-200 block mt-0.5">أَسْتَغْفِرُ اللَّه</span>
+                  <div className="text-lg font-display font-bold text-white mt-1">
+                    {currentIstighfar} <span className="text-[10px] text-zinc-500 font-normal">/ 100</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <button
+                    onClick={() => updateDhikrLog({ istighfarCount: currentIstighfar + 1 }, systemDate)}
+                    className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ istighfarCount: currentIstighfar + 10 }, systemDate)}
+                    className="flex-1 py-1 bg-indigo-950/40 text-indigo-300 border border-indigo-500/30 rounded font-bold transition cursor-pointer"
+                  >
+                    +10
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ istighfarCount: 0 }, systemDate)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 5. La Ilaha Illallah */}
+          {(() => {
+            const currentTahlil = spiritualLog.dhikr?.tahlilCount || 0;
+            return (
+              <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+                <div>
+                  <span className="text-[9px] text-zinc-400 uppercase block font-bold">TAHLĪL</span>
+                  <span className="text-xs font-serif font-bold text-violet-200 block mt-0.5">لَا إِلَهَ إِلَّا اللَّه</span>
+                  <div className="text-lg font-display font-bold text-white mt-1">
+                    {currentTahlil} <span className="text-[10px] text-zinc-500 font-normal">/ 100</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pt-1">
+                  <button
+                    onClick={() => updateDhikrLog({ tahlilCount: currentTahlil + 1 }, systemDate)}
+                    className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ tahlilCount: currentTahlil + 10 }, systemDate)}
+                    className="flex-1 py-1 bg-violet-950/40 text-violet-300 border border-violet-500/30 rounded font-bold transition cursor-pointer"
+                  >
+                    +10
+                  </button>
+                  <button
+                    onClick={() => updateDhikrLog({ tahlilCount: 0 }, systemDate)}
+                    className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 6. Salawat */}
+          <div className="p-3 bg-[var(--bg-card,#0c0e14)] rounded-xl border border-white/5 space-y-2 flex flex-col justify-between">
+            <div>
+              <span className="text-[9px] text-zinc-400 uppercase block font-bold">SALAWĀT PROPHETIC</span>
+              <span className="text-xs font-serif font-bold text-rose-300 block mt-0.5">صَلَّى اللَّهُ عَلَيْهِ وَسَلَّم</span>
+              <div className="text-lg font-display font-bold text-white mt-1">
+                {salawatCount} <span className="text-[10px] text-zinc-500 font-normal">/ 70</span>
               </div>
             </div>
-            <button
-              onClick={() => toggleAdhkar('masa', systemDate)}
-              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
-                adhkarMasa ? 'bg-indigo-500 border-indigo-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
-              }`}
-            >
-              {adhkarMasa && <Check className="h-4 w-4 stroke-[3]" />}
-            </button>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-            <span className={adhkarMasa ? 'text-indigo-300 font-bold' : 'text-zinc-500'}>
-              {adhkarMasa ? '✓ Sunset Shield Completed' : 'Pending Recitation'}
-            </span>
-            <button
-              onClick={() => { setActiveCategory('evening'); }}
-              className="text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer"
-            >
-              <span>View Adhkār</span>
-            </button>
+            <div className="flex items-center gap-1 pt-1">
+              <button
+                onClick={() => incrementSalawat(1, systemDate)}
+                className="flex-1 py-1 bg-white/5 hover:bg-white/10 text-white rounded font-bold transition cursor-pointer"
+              >
+                +1
+              </button>
+              <button
+                onClick={() => incrementSalawat(10, systemDate)}
+                className="flex-1 py-1 bg-rose-950/40 text-rose-300 border border-rose-500/30 rounded font-bold transition cursor-pointer"
+              >
+                +10
+              </button>
+              <button
+                onClick={() => setSalawatCount(0, systemDate)}
+                className="p-1 text-zinc-500 hover:text-zinc-300 rounded cursor-pointer"
+                title="Reset"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Noon Sleep / Qaylūlah Adhkār */}
-        <div 
-          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
-            adhkarSleepDhohr
-              ? 'bg-amber-950/30 border-amber-500/50 shadow-amber-950/20'
-              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
-                adhkarSleepDhohr ? 'bg-amber-500/20 border-amber-500 text-amber-300' : 'bg-white/5 border-white/10 text-zinc-400'
-              }`}>
-                <Sun className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono uppercase text-amber-300/80 font-bold block">SUNNAH MIDDAY REST</span>
-                <h4 className="text-sm font-display font-bold text-white">Noon Sleep / Qaylūlah (القيلولة)</h4>
-                <span className="text-[10px] font-mono text-zinc-400">Midday Nap Sunnah • +50 XP</span>
-              </div>
-            </div>
-            <button
-              onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
-              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
-                adhkarSleepDhohr ? 'bg-amber-500 border-amber-400 text-black' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
-              }`}
-            >
-              {adhkarSleepDhohr && <Check className="h-4 w-4 stroke-[3]" />}
-            </button>
+        {/* Post-Salah Quick Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/5 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-400">Post-Salah Adhkār (5 Obligatory Farā&apos;iḍ):</span>
+            <span className="text-emerald-400 font-bold">{completedPostPrayersCount}/5 Prayers Sealed</span>
           </div>
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-            <span className={adhkarSleepDhohr ? 'text-amber-300 font-bold' : 'text-zinc-500'}>
-              {adhkarSleepDhohr ? '✓ Qaylūlah Shield Done' : 'Midday Rest Adhkār'}
-            </span>
-            <button
-              onClick={() => {
-                setSleepModalTab('dhohr');
-                setShowSleepModal(true);
-              }}
-              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-            >
-              <BookOpen className="h-3 w-3" />
-              <span>Read 4 Adhkār</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Night Bedtime Fortress Adhkār */}
-        <div 
-          className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
-            adhkarSleepNight
-              ? 'bg-purple-950/40 border-purple-500/50 shadow-purple-950/20'
-              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
-                adhkarSleepNight ? 'bg-purple-500/20 border-purple-500 text-purple-300' : 'bg-white/5 border-white/10 text-zinc-400'
-              }`}>
-                <Bed className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono uppercase text-purple-300/80 font-bold block">NOCTURNAL BEDTIME FORTRESS</span>
-                <h4 className="text-sm font-display font-bold text-white">Night Sleep Adhkār (نوم الليل)</h4>
-                <span className="text-[10px] font-mono text-zinc-400">Bedtime Protection Shield • +75 XP</span>
-              </div>
-            </div>
-            <button
-              onClick={() => toggleAdhkar('sleepNight', systemDate)}
-              className={`h-7 w-7 rounded-lg border flex items-center justify-center transition cursor-pointer ${
-                adhkarSleepNight ? 'bg-purple-500 border-purple-400 text-white' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
-              }`}
-            >
-              {adhkarSleepNight && <Check className="h-4 w-4 stroke-[3]" />}
-            </button>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-            <span className={adhkarSleepNight ? 'text-purple-300 font-bold' : 'text-zinc-500'}>
-              {adhkarSleepNight ? '✓ Night Fortress Done' : '7 Bedtime Protections'}
-            </span>
-            <button
-              onClick={() => {
-                setSleepModalTab('night');
-                setShowSleepModal(true);
-              }}
-              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-            >
-              <Shield className="h-3 w-3" />
-              <span>Read 7 Adhkār</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Post-Salah Adhkār Master Card */}
-        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">5 OBLIGATORY FARĀ&apos;IḌ</span>
-                <h4 className="text-sm font-display font-bold text-white">Post-Salah Adhkār (بعد الصلاة)</h4>
-              </div>
-            </div>
-            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-              completedPostPrayersCount === 5 
-                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' 
-                : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              {completedPostPrayersCount}/5 Prayers
-            </span>
-          </div>
-
-          {/* 5 Prayers Mini Badges */}
-          <div className="grid grid-cols-5 gap-1 pt-1">
+          <div className="flex items-center gap-2">
             {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(p => {
               const mode = postMap[p];
               return (
@@ -469,89 +855,16 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                     setSelectedPostPrayer(p);
                     setShowPostSalahModal(true);
                   }}
-                  className={`py-1 rounded text-[10px] font-mono font-bold border transition text-center cursor-pointer ${
-                    mode === 'standard33'
-                      ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
-                      : mode === 'mini10'
-                      ? 'bg-teal-950 border-teal-500 text-teal-300'
-                      : 'bg-black/30 border-white/5 text-zinc-500 hover:text-zinc-300'
+                  className={`px-2 py-1 rounded text-[10px] font-bold border uppercase transition cursor-pointer ${
+                    mode === 'standard33' ? 'bg-emerald-950 border-emerald-500 text-emerald-300' :
+                    mode === 'mini10' ? 'bg-teal-950 border-teal-500 text-teal-300' :
+                    'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
                   }`}
-                  title={`${p.toUpperCase()}: ${mode || 'Pending'}`}
                 >
-                  <span className="block uppercase">{p.slice(0, 3)}</span>
-                  <span className="text-[8px] opacity-80">{mode === 'standard33' ? '33x' : mode === 'mini10' ? '10x' : '—'}</span>
+                  {p.slice(0, 3)}
                 </button>
               );
             })}
-          </div>
-
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-            <span className="text-zinc-400">
-              {completedPostPrayersCount === 5 ? 'All 5 Sealed (+25 Bonus)' : '33-33-33-1 Tasbīḥ'}
-            </span>
-            <button
-              onClick={() => {
-                setSelectedPostPrayer('fajr');
-                setShowPostSalahModal(true);
-              }}
-              className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-            >
-              <span>Open Fortress</span>
-              <BookOpen className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-
-        {/* Salawāt Quick Dial */}
-        <div className="p-4 rounded-2xl border border-[var(--border-subtle,rgba(197,160,89,0.2))] bg-[var(--bg-card,#0c0e14)] shadow-md flex flex-col justify-between space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300">
-                <Heart className={`h-4 w-4 ${salawatTargetReached ? 'text-rose-400 fill-rose-400' : 'text-rose-400'}`} />
-              </div>
-              <div>
-                <span className="text-[10px] font-mono font-bold text-rose-400 uppercase">PROPHETIC BLESSINGS</span>
-                <h4 className="text-sm font-display font-bold text-white">Salawāt upon Prophet ﷺ</h4>
-              </div>
-            </div>
-            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-              salawatTargetReached ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'text-zinc-400'
-            }`}>
-              {salawatCount} / 70
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 pt-1">
-            <button
-              onClick={() => incrementSalawat(1, systemDate)}
-              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
-            >
-              +1
-            </button>
-            <button
-              onClick={() => incrementSalawat(10, systemDate)}
-              className="flex-1 py-1.5 bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-300 border border-white/10 hover:border-emerald-500/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
-            >
-              +10
-            </button>
-            <button
-              onClick={() => incrementSalawat(33, systemDate)}
-              className="flex-1 py-1.5 bg-emerald-950/60 hover:bg-emerald-800/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-lg transition cursor-pointer"
-            >
-              +33
-            </button>
-            <button
-              onClick={() => setSalawatCount(0, systemDate)}
-              className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg hover:bg-white/5 cursor-pointer"
-              title="Reset Salawat Count"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono text-zinc-400">
-            <span>اللَّهُمَّ صَلِّ عَلَى مُحَمَّد</span>
-            <span className="text-zinc-400">{salawatTargetReached ? '✓ Daily Goal Met' : `${Math.max(0, 70 - salawatCount)} left`}</span>
           </div>
         </div>
       </div>
