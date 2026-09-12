@@ -82,6 +82,7 @@ export interface Goal {
   linkedCampaigns?: string[];
   linkedCodexDocs?: string[];
   latestReview?: DestinyReview;
+  requiredCapabilities?: RequiredCapability[]; // Explicit competency requirements
 }
 
 export interface Project {
@@ -108,6 +109,8 @@ export interface Project {
   linkedCodexDocs?: string[];
   updates?: CampaignUpdate[];
   campaignUpdates?: CampaignUpdate[];
+  requiredSkills?: string[]; // skill IDs
+  requiredCapabilities?: RequiredCapability[]; // Explicit competency requirements
 }
 
 export interface Doctrine {
@@ -271,9 +274,19 @@ export interface Quest {
   archivedAt?: string | null;
 }
 
+export type MasteryDimensionStage = 'Exposure' | 'Practice' | 'Application' | 'Demonstration';
+
+export interface RequiredCapability {
+  skillId: string;
+  targetLevel: number;
+  importance: 'Essential' | 'Important' | 'Supporting';
+  notes?: string;
+}
+
 export interface Skill {
   id: string;
   name: string;
+  description?: string;
   level: number;
   xp: number;
   mastery: number; // calculated, e.g. 0-100 or independent
@@ -285,6 +298,15 @@ export interface Skill {
   parentId?: string | null;
   createdAt?: string;
   archived?: boolean;
+  // Capability Intelligence Fields
+  primaryAttributeId?: string; // e.g. 'a-6' (Knowledge)
+  secondaryAttributeIds?: string[]; // e.g. ['a-4', 'a-5'] (Focus, Discipline)
+  masteryStage?: MasteryDimensionStage;
+  targetLevel?: number;
+  subSpecializations?: string[]; // Nested micro-specializations
+  recommendedActions?: string[];
+  codexDocIds?: string[]; // Links to Codex planning documents
+  tags?: string[];
 }
 
 export interface Attribute {
@@ -293,6 +315,9 @@ export interface Attribute {
   level: number;
   progress: number; // 0 to 100% to next level
   description: string;
+  definition?: string;
+  category?: string;
+  suggestedActions?: string[];
   icon?: string;
   baseLevel?: number;
   earnedBonus?: number;
@@ -954,6 +979,20 @@ export interface POSState {
   strategicExperiments?: StrategicExperiment[];
   strategicPostmortems?: StrategicPostmortem[];
   strategicFreeze?: boolean;
+  capabilityReviews?: CapabilityReviewNote[];
+}
+
+export interface CapabilityReviewNote {
+  id: string;
+  date: string; // YYYY-MM-DD
+  improvedSkillIds: string[];
+  stagnatedSkillIds: string[];
+  decliningSkillIds: string[];
+  blockingGap: string;
+  nextTrainingPriority: string;
+  stopTrainingNotes?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export type CodexThemeId = 'imperial-gold' | 'shadow-blue' | 'emerald-manuscript' | 'obsidian-silver' | 'astral-violet' | 'crimson-sovereign';

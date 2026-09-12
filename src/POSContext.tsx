@@ -13,7 +13,8 @@ import {
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
   RestPass, DailyWakingCapital, LeisureTransaction,
   AppUsageLimit, AppUsageLogEntry,
-  Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem
+  Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem,
+  RequiredCapability, CapabilityReviewNote
 } from './types';
 import {
   buildQuestMintKey,
@@ -175,6 +176,10 @@ interface POSContextType {
   deleteUnusedSkills: () => number;
   clearAllSkills: () => void;
   equipSkillTitle: (id: string, title: string) => void;
+  updateSkillAttributes: (id: string, primaryAttributeId?: string, secondaryAttributeIds?: string[]) => void;
+  updateSkillDetails: (id: string, updates: Partial<Skill>) => void;
+  setRequiredCapabilities: (entityType: 'goal' | 'project', entityId: string, capabilities: RequiredCapability[]) => void;
+  saveCapabilityReview: (review: Omit<CapabilityReviewNote, 'id' | 'createdAt'>) => void;
   
   // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
   updateAttributeBase: (id: string, level: number) => void;
@@ -1898,6 +1903,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let baseCost = 14;
       let growth = 4;
 
+      // Check if this event was linked to a skill associated with this attribute
+      const isLinkedToAttr = (e: typeof completedEvents[0], targetAttrId: string) => {
+        if (!e.skillIds || e.skillIds.length === 0) return 0;
+        let rank = 0;
+        for (const sid of e.skillIds) {
+          const sk = state.skills.find(s => s.id === sid);
+          if (!sk) continue;
+          if (sk.primaryAttributeId === targetAttrId) return 2;
+          if (sk.secondaryAttributeIds && sk.secondaryAttributeIds.includes(targetAttrId)) rank = Math.max(rank, 1);
+        }
+        return rank;
+      };
+
       if (attr.name === 'Strength') {
         baseCost = 14;
         growth = 4;
@@ -1907,9 +1925,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return skill?.name === 'Fitness' || skill?.name?.toLowerCase().includes('fitness') || skill?.name?.toLowerCase().includes('workout');
           });
           const isBoss = e.type === 'Boss' || e.difficulty === 'Boss';
-          if (isFitness || isBoss) {
+          const link = isLinkedToAttr(e, 'a-1');
+          if (isFitness || isBoss || link > 0) {
             const pts = isBoss ? 8 : (e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2));
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Endurance') {
@@ -1918,8 +1937,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         baseCost = 24;
         growth = 8;
         eligibleEvents.forEach(e => {
+          const link = isLinkedToAttr(e, 'a-2');
           const pts = e.difficulty === 'Boss' ? 6 : (e.difficulty === 'Hard' ? 3 : (e.difficulty === 'Easy' ? 1 : 1.5));
-          totalPoints += pts;
+          totalPoints += (link === 2 ? pts + 1 : pts);
         });
         if (state.profile.focusMinutesToday && state.profile.focusMinutesToday > 0) {
           totalPoints += Math.min(10, Math.floor(state.profile.focusMinutesToday / 25));
@@ -1929,9 +1949,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         baseCost = 14;
         growth = 4;
         eligibleEvents.forEach(e => {
-          if (e.type === 'Side' || e.type === 'Optional') {
+          const link = isLinkedToAttr(e, 'a-3');
+          if (e.type === 'Side' || e.type === 'Optional' || link > 0) {
             const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Focus') {
@@ -1939,9 +1960,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         baseCost = 16;
         growth = 5;
         eligibleEvents.forEach(e => {
-          if (e.type === 'Main') {
+          const link = isLinkedToAttr(e, 'a-4');
+          if (e.type === 'Main' || link > 0) {
             const pts = e.difficulty === 'Boss' ? 8 : (e.difficulty === 'Hard' ? 5 : (e.difficulty === 'Easy' ? 1.5 : 3));
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
         if (state.profile.focusStreak && state.profile.focusStreak > 0) {
@@ -1952,10 +1974,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         baseCost = 16;
         growth = 5;
         eligibleEvents.forEach(e => {
-          if (e.type === 'Habit' || e.type === 'Side') {
+          const link = isLinkedToAttr(e, 'a-5');
+          if (e.type === 'Habit' || e.type === 'Side' || link > 0) {
             const streakBonus = Math.min(2, Math.floor((e.streak || 0) / 3));
             const pts = (e.type === 'Habit' ? 2 : 1.5) + streakBonus;
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Knowledge') {
@@ -1968,18 +1991,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               skill?.name?.toLowerCase().includes(k.toLowerCase())
             );
           });
-          if (isKnowledge) {
+          const link = isLinkedToAttr(e, 'a-6');
+          if (isKnowledge || link > 0) {
             const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Wisdom') {
         baseCost = 16;
         growth = 5;
         eligibleEvents.forEach(e => {
-          if (e.goalId !== null) {
+          const link = isLinkedToAttr(e, 'a-7');
+          if (e.goalId !== null || link > 0) {
             const pts = e.difficulty === 'Hard' ? 5 : (e.difficulty === 'Easy' ? 1.5 : 3);
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Social') {
@@ -1992,9 +2017,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               skill?.name?.toLowerCase().includes(k.toLowerCase())
             );
           });
-          if (isSocial) {
+          const link = isLinkedToAttr(e, 'a-8');
+          if (isSocial || link > 0) {
             const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1 : 2);
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       } else if (attr.name === 'Faith') {
@@ -2007,9 +2033,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               skill?.name?.toLowerCase().includes(k.toLowerCase())
             );
           });
-          if (isFaith) {
+          const link = isLinkedToAttr(e, 'a-9');
+          if (isFaith || link > 0) {
             const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
-            totalPoints += pts;
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
       }
@@ -3421,15 +3448,39 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const targetSkill = prev.skills.find(s => s.id === targetSkillId);
       if (!sourceSkill || !targetSkill) return prev;
 
-      // Transfer related skills in goals and quests
+      // Transfer related skills and requiredCapabilities in goals
       const updatedGoals = prev.goals.map(g => {
+        let modified = false;
+        let newRelated = g.relatedSkills;
         if (g.relatedSkills.includes(sourceSkillId)) {
-          const newSkills = Array.from(new Set([...g.relatedSkills.filter(id => id !== sourceSkillId), targetSkillId]));
-          return { ...g, relatedSkills: newSkills };
+          newRelated = Array.from(new Set([...g.relatedSkills.filter(id => id !== sourceSkillId), targetSkillId]));
+          modified = true;
         }
-        return g;
+        let newReqCaps = g.requiredCapabilities;
+        if (g.requiredCapabilities && g.requiredCapabilities.some(rc => rc.skillId === sourceSkillId)) {
+          newReqCaps = g.requiredCapabilities.map(rc => rc.skillId === sourceSkillId ? { ...rc, skillId: targetSkillId } : rc);
+          modified = true;
+        }
+        return modified ? { ...g, relatedSkills: newRelated, requiredCapabilities: newReqCaps } : g;
       });
 
+      // Transfer requiredSkills and requiredCapabilities in projects
+      const updatedProjects = (prev.projects || []).map(p => {
+        let modified = false;
+        let newReqSkills = p.requiredSkills;
+        if (p.requiredSkills && p.requiredSkills.includes(sourceSkillId)) {
+          newReqSkills = Array.from(new Set([...p.requiredSkills.filter(id => id !== sourceSkillId), targetSkillId]));
+          modified = true;
+        }
+        let newReqCaps = p.requiredCapabilities;
+        if (p.requiredCapabilities && p.requiredCapabilities.some(rc => rc.skillId === sourceSkillId)) {
+          newReqCaps = p.requiredCapabilities.map(rc => rc.skillId === sourceSkillId ? { ...rc, skillId: targetSkillId } : rc);
+          modified = true;
+        }
+        return modified ? { ...p, requiredSkills: newReqSkills, requiredCapabilities: newReqCaps } : p;
+      });
+
+      // Transfer related skills in quests
       const updatedQuests = prev.quests.map(q => {
         if (q.relatedSkills.includes(sourceSkillId)) {
           const newSkills = Array.from(new Set([...q.relatedSkills.filter(id => id !== sourceSkillId), targetSkillId]));
@@ -3447,16 +3498,93 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return h;
       });
 
-      // Remove source skill
-      const remainingSkills = prev.skills.filter(s => s.id !== sourceSkillId);
+      // Re-parent any child specializations attached to sourceSkillId
+      const remainingSkills = prev.skills
+        .filter(s => s.id !== sourceSkillId)
+        .map(s => {
+          if (s.parentId === sourceSkillId) {
+            return { ...s, parentId: targetSkillId };
+          }
+          if (s.id === targetSkillId) {
+            return {
+              ...s,
+              codexDocIds: Array.from(new Set([...(s.codexDocIds || []), ...(sourceSkill.codexDocIds || [])])),
+              tags: Array.from(new Set([...(s.tags || []), ...(sourceSkill.tags || [])]))
+            };
+          }
+          return s;
+        });
 
       return {
         ...prev,
         goals: updatedGoals,
+        projects: updatedProjects,
         quests: updatedQuests,
         xpHistory: updatedXpHistory,
         skills: remainingSkills
       };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'log',
+      title: 'Discipline Merged',
+      content: `Discipline merged successfully. All directives, campaigns, and historical XP migrated to target track.`,
+      priority: 'low'
+    });
+  };
+
+  const updateSkillAttributes = (id: string, primaryAttributeId?: string, secondaryAttributeIds?: string[]) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { 
+        ...s, 
+        primaryAttributeId: primaryAttributeId || s.primaryAttributeId,
+        secondaryAttributeIds: secondaryAttributeIds !== undefined ? secondaryAttributeIds : s.secondaryAttributeIds
+      } : s)
+    }));
+  };
+
+  const updateSkillDetails = (id: string, updates: Partial<Skill>) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, ...updates } : s)
+    }));
+  };
+
+  const setRequiredCapabilities = (entityType: 'goal' | 'project', entityId: string, capabilities: RequiredCapability[]) => {
+    setState(prev => {
+      if (entityType === 'goal') {
+        return {
+          ...prev,
+          goals: prev.goals.map(g => g.id === entityId ? { ...g, requiredCapabilities: capabilities } : g)
+        };
+      } else {
+        return {
+          ...prev,
+          projects: prev.projects.map(p => p.id === entityId ? { ...p, requiredCapabilities: capabilities } : p)
+        };
+      }
+    });
+  };
+
+  const saveCapabilityReview = (review: Omit<CapabilityReviewNote, 'id' | 'createdAt'>) => {
+    const id = `cap-rev-${Date.now()}`;
+    const newEntry: CapabilityReviewNote = {
+      ...review,
+      id,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      capabilityReviews: [newEntry, ...(prev.capabilityReviews || [])]
+    }));
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: 'Capability Audit Recorded',
+      content: `Weekly capability review logged for ${review.date}. Training priorities calibrated.`,
+      priority: 'medium'
     });
   };
 
@@ -7100,6 +7228,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteUnusedSkills,
       clearAllSkills,
       equipSkillTitle,
+      updateSkillAttributes,
+      updateSkillDetails,
+      setRequiredCapabilities,
+      saveCapabilityReview,
       updateAttributeBase,
       restartAttribute,
       addXp,
