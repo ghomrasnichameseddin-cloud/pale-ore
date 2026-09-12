@@ -14,8 +14,14 @@ import {
   RestPass, DailyWakingCapital, LeisureTransaction,
   AppUsageLimit, AppUsageLogEntry,
   Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem,
-  RequiredCapability, CapabilityReviewNote
+  RequiredCapability, CapabilityReviewNote,
+  StandardXPEventType, XPAnalytics
 } from './types';
+import {
+  dispatchXPEventPure,
+  getXPAnalytics,
+  DispatchXPResult
+} from './utils/xpCirculation';
 import {
   buildQuestMintKey,
   isQuestAlreadyMinted,
@@ -187,6 +193,23 @@ interface POSContextType {
   
   // XP Actions
   addXp: (amount: number, reason?: string, skillIds?: string[]) => void;
+  dispatchXPEvent: (params: {
+    type: StandardXPEventType;
+    questName: string;
+    baseXp: number;
+    questId?: string | null;
+    sourceId?: string;
+    activityId?: string;
+    timestamp?: string;
+    date?: string;
+    skillIds?: string[];
+    difficulty?: string;
+    quality?: number;
+    isCampaignRelated?: boolean;
+    isCriticalGap?: boolean;
+    notes?: string;
+  }) => DispatchXPResult;
+  getXPAnalytics: () => XPAnalytics;
   
   // Temporal Currency & Leisure Bank
   addTimeCredits: (minutes: number, reason: string, type?: TimeTransactionType, relatedId?: string) => void;
@@ -1191,17 +1214,24 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
       const focusXpMult = getFocusXpMultiplier(activeJob);
-      const focusXpEarned = Math.round(15 * focusXpMult);
+      const baseFocusXp = Math.round(15 * focusXpMult);
 
-      const xpHistoryId = `h-focus-${Date.now()}`;
-      const focusXpEntry: XPHistoryEntry = {
-        id: xpHistoryId,
-        questId: null,
+      const focusDispatch = dispatchXPEventPure({
+        currentHistory: state.xpHistory,
+        type: 'focus',
         questName: `🧘 Focus Session: Completed ${cycleMinutes} min work block on "${activeFocusSession.questName}"`,
-        xp: focusXpEarned,
+        baseXp: baseFocusXp,
+        questId: activeFocusSession.questId || null,
+        sourceId: `h-focus-${Date.now()}`,
+        activityId: 'focus-session',
         timestamp: new Date().toISOString(),
-        skillIds: []
-      };
+        date: todayStr,
+        skillIds: [],
+        quality: 1.15,
+        isCampaignRelated: Boolean(activeFocusSession.questId)
+      });
+      const focusXpEarned = focusDispatch.earnedXp;
+      const focusXpEntry = focusDispatch.createdEntry;
 
       // Automatically complete the associated quest ONLY when ALL estimated cycles for the session are finished!
       if (activeFocusSession.mode === 'rest' && activeFocusSession.questId && activeFocusSession.completedCycles >= activeFocusSession.estimatedCycles) {
@@ -1237,7 +1267,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const updatedHistory = resolveRecoveredPenalties([focusXpEntry, ...prev.xpHistory]);
+        const rawHistory = focusXpEntry ? [focusXpEntry, ...prev.xpHistory] : prev.xpHistory;
+        const updatedHistory = resolveRecoveredPenalties(rawHistory);
         const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
         const level = calculatePlayerLevel(totalXp);
 
@@ -2703,18 +2734,28 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? (questToComplete.xp !== 0 ? Math.abs(questToComplete.xp) : (questToComplete.difficulty === 'Boss' ? 250 : questToComplete.difficulty === 'Hard' ? 100 : questToComplete.difficulty === 'Easy' ? 25 : 50))
       : Math.max(0, questToComplete.xp);
 
-    let earnedXp = Math.round(baseQuestXp * habitXpMultiplier * questPerkXpMultiplier);
+    const isCampaignRelated = Boolean(questToComplete.goalId || questToComplete.projectId);
+    const eventType = questToComplete.type === 'Boss' || questToComplete.difficulty === 'Boss'
+      ? 'boss'
+      : (isRecurringOrHabit ? 'habit' : 'quest');
 
-    // Create XP History entry
-    const xpHistoryId = `h-${Date.now()}`;
-    const newHistoryEntry: XPHistoryEntry = {
-      id: xpHistoryId,
-      questId: questToComplete.id,
+    const dispatchResult = dispatchXPEventPure({
+      currentHistory: state.xpHistory,
+      type: eventType,
       questName: questToComplete.name,
-      xp: earnedXp,
+      baseXp: baseQuestXp,
+      questId: questToComplete.id,
+      activityId: questToComplete.id,
       timestamp: completedTimestamp,
-      skillIds: questToComplete.relatedSkills
-    };
+      date: state.systemDate || getLocalDateString(),
+      skillIds: questToComplete.relatedSkills || [],
+      difficulty: questToComplete.difficulty,
+      quality: habitXpMultiplier * questPerkXpMultiplier,
+      isCampaignRelated
+    });
+
+    const earnedXp = dispatchResult.earnedXp;
+    const newHistoryEntry = dispatchResult.createdEntry;
 
     // Calculate momentum boost (+10% on completion + Perk Multiplier, cap 100)
     const momentumPerkMult = getMomentumMultiplier(activeJob);
@@ -2796,7 +2837,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       // Add XP history and dynamically resolve any negative penalties if they earned the XP back!
-      const updatedHistory = resolveRecoveredPenalties([newHistoryEntry, ...prev.xpHistory]);
+      const rawHistory = newHistoryEntry ? [newHistoryEntry, ...prev.xpHistory] : prev.xpHistory;
+      const updatedHistory = resolveRecoveredPenalties(rawHistory);
 
       // Re-calculate user profile level and total XP dynamically based on completed quests history!
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
@@ -2971,6 +3013,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       questName: isDailyOrHabit ? `💀 PENALTY: Failed habit "${questToFail.name}"` : `💀 PENALTY: Failed "${questToFail.name}"`,
       xp: -Math.round(finalPenaltyXp),
       timestamp: failedTimestamp,
+      date: state.systemDate || failedTimestamp.split('T')[0],
+      type: 'penalty',
+      source: 'penalty_failed',
+      sourceId: `fail-${questToFail.id}-${failedTimestamp}`,
+      activityId: questToFail.id,
       skillIds: questToFail.relatedSkills
     };
 
@@ -4378,19 +4425,103 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  const addXp = (amount: number, reason?: string, skillIds: string[] = []) => {
-    const entry: XPHistoryEntry = {
-      id: `xp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      questId: null,
-      questName: reason || 'System XP Gain',
-      xp: amount,
-      timestamp: new Date().toISOString(),
-      skillIds
+  const dispatchXPEvent = (params: {
+    type: StandardXPEventType;
+    questName: string;
+    baseXp: number;
+    questId?: string | null;
+    sourceId?: string;
+    activityId?: string;
+    timestamp?: string;
+    date?: string;
+    skillIds?: string[];
+    difficulty?: string;
+    quality?: number;
+    isCampaignRelated?: boolean;
+    isCriticalGap?: boolean;
+    notes?: string;
+  }): DispatchXPResult => {
+    let result: DispatchXPResult = {
+      updatedHistory: state.xpHistory,
+      createdEntry: null,
+      wasDuplicate: false,
+      earnedXp: 0
     };
-    setState(prev => ({
-      ...prev,
-      xpHistory: [entry, ...(prev.xpHistory || [])]
-    }));
+
+    setState(prev => {
+      const dispatchResult = dispatchXPEventPure({
+        currentHistory: prev.xpHistory,
+        type: params.type,
+        questName: params.questName,
+        baseXp: params.baseXp,
+        questId: params.questId,
+        sourceId: params.sourceId,
+        activityId: params.activityId,
+        timestamp: params.timestamp || getSystemTimestamp(prev.systemDate),
+        date: params.date || prev.systemDate || getLocalDateString(),
+        skillIds: params.skillIds || [],
+        difficulty: params.difficulty || 'Normal',
+        quality: params.quality || 1.0,
+        isCampaignRelated: params.isCampaignRelated,
+        isCriticalGap: params.isCriticalGap,
+        notes: params.notes
+      });
+
+      result = dispatchResult;
+
+      if (dispatchResult.wasDuplicate || !dispatchResult.createdEntry) {
+        return prev;
+      }
+
+      const updatedHistory = resolveRecoveredPenalties(dispatchResult.updatedHistory);
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      const updatedSkills = prev.skills.map(skill => {
+        const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
+        const skillLevel = calculatePlayerLevel(skillXp);
+        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        return {
+          ...skill,
+          level: skillLevel,
+          xp: skillXp,
+          mastery
+        };
+      });
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        skills: updatedSkills,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level
+        }
+      };
+    });
+
+    return result;
+  };
+
+  const addXp = (amount: number, reason?: string, skillIds: string[] = []) => {
+    dispatchXPEvent({
+      type: 'quest',
+      questName: reason || 'System XP Gain',
+      baseXp: amount,
+      skillIds
+    });
+  };
+
+  const getXPAnalyticsInfo = (): XPAnalytics => {
+    const sysDate = state.systemDate || getLocalDateString();
+    return getXPAnalytics({
+      xpHistory: state.xpHistory || [],
+      systemDate: sysDate,
+      skills: state.skills,
+      quests: state.quests
+    });
   };
 
   // --- TEMPORAL CURRENCY & CAPITAL ALLOCATION ENGINE ---
@@ -5765,6 +5896,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
             xp: reward.fardhXp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: `${prayerPrefix}-fardh`,
+            activityId: `prayer-${prayer}-fardh`,
             skillIds: []
           };
           updatedHistory = [fardhEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-fardh`)];
@@ -5777,6 +5913,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
               xp: reward.onTimeXp,
               timestamp: completedTimestamp,
+              date: targetDate,
+              type: 'salah',
+              source: 'quest',
+              sourceId: `${prayerPrefix}-onTime`,
+              activityId: `prayer-${prayer}-ontime`,
               skillIds: []
             };
             updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`)];
@@ -5851,6 +5992,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `⚠️ LATE / DELAYED PRAYER PENALTY: ${reward.name} (تأخير الصلاة)`,
             xp: -reward.delayedPenaltyXp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'penalty',
+            source: 'penalty_failed',
+            sourceId: `${prayerPrefix}-delayed`,
+            activityId: `prayer-${prayer}-delayed`,
             skillIds: []
           };
           updatedHistory = [delayedEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`)];
@@ -5884,6 +6030,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `🕌 PRAYER: Masjid / Jamā'ah bonus for ${reward.name}`,
             xp: reward.masjidXp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: qId,
+            activityId: `prayer-${prayer}-masjid`,
             skillIds: []
           };
           updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
@@ -5905,6 +6056,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `📿 PRAYER: Sunnah Qabliyyah: 4 Rak'ahs Before Dhuhr (قبل الظهر)`,
             xp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: qId,
+            activityId: `prayer-dhuhr-sunnah-before`,
             skillIds: []
           };
           updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
@@ -5926,6 +6082,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `📿 PRAYER: Sunnah Ba'diyyah: 2 Rak'ahs After Dhuhr (بعد الظهر)`,
             xp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: qId,
+            activityId: `prayer-dhuhr-sunnah-after`,
             skillIds: []
           };
           updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
@@ -5945,6 +6106,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             questName: `📿 PRAYER: Sunan Rawātib for ${reward.name}`,
             xp: reward.sunnahXp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: qId,
+            activityId: `prayer-${prayer}-sunnah-rawatib`,
             skillIds: []
           };
           updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
@@ -6044,6 +6210,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           questName: `📿 ADHKĀR: ${label}`,
           xp: xpReward,
           timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'adhkar',
+          source: 'quest',
+          sourceId: questIdentifier,
+          activityId: `adhkar-${type}`,
           skillIds: []
         };
         updatedHistory = [entry, ...updatedHistory];
@@ -7235,6 +7406,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateAttributeBase,
       restartAttribute,
       addXp,
+      dispatchXPEvent,
+      getXPAnalytics: getXPAnalyticsInfo,
       addTimeCredits,
       spendTimeCredits,
       redeemRestPass,

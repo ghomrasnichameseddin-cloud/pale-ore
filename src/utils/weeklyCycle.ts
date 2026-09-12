@@ -6,6 +6,7 @@ import {
   MuhasabahEntry,
   SpiritualDailyLog
 } from '../types';
+import { getXPAnalytics } from './xpCirculation';
 
 /**
  * ═════════════════════════════════════════════════════════════════════════════
@@ -185,7 +186,7 @@ ${summary.recommendations.map(r => `- ${r}`).join('\n')}
  * Pure function to generate a WeeklyMuhasabahSummary from state and target date.
  */
 export function generateWeeklyMuhasabahSummaryPure(
-  state: Pick<POSState, 'muhasabahEntries' | 'spiritualLogs' | 'xpHistory' | 'quests' | 'profile'>,
+  state: Pick<POSState, 'muhasabahEntries' | 'spiritualLogs' | 'xpHistory' | 'quests' | 'profile'> & { skills?: POSState['skills'] },
   targetFridayDate?: string
 ): WeeklyMuhasabahSummary {
   const boundaries = targetFridayDate ? getWeekBoundaries(targetFridayDate) : getWeekBoundaries();
@@ -451,6 +452,13 @@ export function generateWeeklyMuhasabahSummaryPure(
 
   const summaryReflection = `Weekly Muḥāsabah Audit (${startDate} → ${endDate}): Judged ${totalWeeklyScore}/10 [${gradeAr} — ${gradeEn}]. Completed Fardh prayers: ${prayersCount}/35 (${prayersOnTimeCount} on-time, ${prayersDelayedCount} delayed). Audited Slips: ${effectiveSlips.length}. Positive XP: +${totalEarnedXP} XP vs. Lost XP: −${totalLostXP} XP (Net: ${totalNetXP >= 0 ? '+' : ''}${totalNetXP} XP).`;
 
+  const xpAnalytics = getXPAnalytics({
+    xpHistory: state.xpHistory || [],
+    systemDate: anchorDate,
+    skills: state.skills || [],
+    quests: state.quests || []
+  });
+
   return {
     id: `weekly-summary-${anchorDate}-${Date.now()}`,
     generatedDate: anchorDate,
@@ -481,6 +489,7 @@ export function generateWeeklyMuhasabahSummaryPure(
     spiritualRating,
     scoreOutOf10: totalWeeklyScore,
     weeklyScoreBreakdown,
+    xpAnalytics,
     summaryReflection,
     recommendations,
     archivedAt: new Date().toISOString()

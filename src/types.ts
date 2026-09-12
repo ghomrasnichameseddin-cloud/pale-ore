@@ -370,17 +370,60 @@ export type XPSourceCategory =
   | 'manual_adjustment'
   | 'system';
 
+export type StandardXPEventType =
+  | 'quest'
+  | 'focus'
+  | 'habit'
+  | 'salah'
+  | 'adhkar'
+  | 'boss'
+  | 'penalty'
+  | 'reversal';
+
+export interface XPModifiers {
+  difficultyMultiplier?: number;
+  qualityMultiplier?: number;
+  relevanceBonus?: number;
+  diminishingReturnFactor?: number;
+}
+
 export interface XPHistoryEntry {
   id: string;
   questId: string | null;
   questName: string;
   xp: number;
   timestamp: string; // ISO String
+  date?: string; // YYYY-MM-DD
   skillIds: string[];
+  type?: StandardXPEventType | string;
   source?: XPSourceCategory;
   category?: string;
   notes?: string;
   balanceAfter?: number;
+  sourceId?: string; // Unique transaction/source key for duplicate protection
+  activityId?: string; // Tracking key for diminishing returns & anti-farming
+  modifiers?: XPModifiers;
+}
+
+export interface XPAnalytics {
+  sevenDayXP: number;
+  priorSevenDayXP: number;
+  dailyVelocity: number;
+  velocityDeltaPercent: number;
+  sourceDistribution: {
+    type: StandardXPEventType | 'other';
+    label: string;
+    xp: number;
+    percentage: number;
+  }[];
+  attributeDistribution: Record<string, { points: number; percentage: number }>;
+  skillMomentum: {
+    fresh: { skillId: string; name: string; daysInactive: number; xpRecent: number }[];
+    steady: { skillId: string; name: string; daysInactive: number; xpRecent: number }[];
+    cooling: { skillId: string; name: string; daysInactive: number; xpRecent: number }[];
+    dormant: { skillId: string; name: string; daysInactive: number; xpRecent: number }[];
+  };
+  diminishedActivitiesCount: number;
 }
 
 export interface SystemMessage {
@@ -856,6 +899,7 @@ export interface WeeklyMuhasabahSummary {
   spiritualRating: 'Mumtaz (Exceptional)' | 'Jayyid Jiddan (Very Good)' | 'Jayyid (Good)' | 'Maqbool (Passing)' | 'Needs Immediate Reform';
   scoreOutOf10?: number;
   weeklyScoreBreakdown?: WeeklyScoreBreakdown;
+  xpAnalytics?: XPAnalytics;
   summaryReflection: string;
   weeklyReflection?: string;
   recommendations: string[];

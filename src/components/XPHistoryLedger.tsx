@@ -6,7 +6,8 @@ import {
   Download, Calendar, Award, Zap, ShieldAlert, Clock, 
   RotateCcw, ChevronLeft, ChevronRight, CheckCircle2,
   AlertTriangle, HelpCircle, Layers, PlusCircle, MinusCircle,
-  ExternalLink, FileSpreadsheet, Sparkles, Scale, Swords
+  ExternalLink, FileSpreadsheet, Sparkles, Scale, Swords,
+  Activity, ShieldCheck
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { getLocalDateString } from '../utils/dateUtils';
@@ -18,6 +19,27 @@ export const deriveXpSourceInfo = (entry: XPHistoryEntry, questMap: Map<string, 
   badgeClass: string;
   icon: any;
 } => {
+  if (entry.type) {
+    switch (entry.type) {
+      case 'salah':
+        return { category: 'quest', label: 'Ṣalāh Fulfilled', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RubElHizbIcon };
+      case 'adhkar':
+        return { category: 'quest', label: 'Adhkār Fortress', badgeClass: 'bg-teal-950/60 border-teal-500/30 text-teal-300', icon: Sparkles };
+      case 'boss':
+        return { category: 'boss', label: 'Boss Trial', badgeClass: 'bg-yellow-950/60 border-yellow-500/40 text-yellow-300', icon: Award };
+      case 'habit':
+        return { category: 'habit', label: 'Habit Rite', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RotateCcw };
+      case 'focus':
+        return { category: 'focus', label: 'Focus Session', badgeClass: 'bg-cyan-950/60 border-cyan-500/30 text-cyan-300', icon: Clock };
+      case 'penalty':
+        return { category: 'penalty_failed', label: 'Penalty Deduction', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: ShieldAlert };
+      case 'reversal':
+        return { category: 'quest', label: 'XP Reversal', badgeClass: 'bg-zinc-900 border-zinc-700 text-zinc-300', icon: RotateCcw };
+      default:
+        break;
+    }
+  }
+
   if (entry.source) {
     switch (entry.source) {
       case 'focus':
@@ -79,7 +101,15 @@ interface XPHistoryLedgerProps {
 }
 
 export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) => {
-  const { state, addXp, getPlayerLevelInfo } = usePOS();
+  const { state, addXp, getPlayerLevelInfo, getXPAnalytics } = usePOS();
+  const [showAnalyticsPanel, setShowAnalyticsPanel] = useState(true);
+
+  const xpAnalytics = useMemo(() => {
+    if (typeof getXPAnalytics === 'function') {
+      return getXPAnalytics();
+    }
+    return null;
+  }, [state.xpHistory, state.systemDate, state.skills, state.quests, getXPAnalytics]);
 
   // Filter and Search States
   const [searchTerm, setSearchTerm] = useState('');
@@ -405,6 +435,137 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
         </div>
 
       </div>
+
+      {/* XP CIRCULATION & VELOCITY INTELLIGENCE PANEL */}
+      {xpAnalytics && (
+        <div className="glass-panel rounded-xl p-4 border border-[#c5a059]/25 bg-[#080a10]/95 space-y-3.5 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-[#c5a059]" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                XP CIRCULATION & VELOCITY INTELLIGENCE
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                Single Source of Truth: xpHistory
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {xpAnalytics.diminishedActivitiesCount > 0 ? (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/40 text-amber-300 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 text-amber-400" />
+                  <span>{xpAnalytics.diminishedActivitiesCount} Action(s) Normalized</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                  <span>Equilibrium Stable</span>
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowAnalyticsPanel(prev => !prev)}
+                className="text-[10px] font-mono text-zinc-400 hover:text-white px-2 py-0.5 rounded border border-white/10 hover:border-white/20 transition-colors cursor-pointer"
+              >
+                {showAnalyticsPanel ? 'COLLAPSE' : 'EXPAND'}
+              </button>
+            </div>
+          </div>
+
+          {showAnalyticsPanel && (
+            <div className="space-y-4 pt-1 animate-fadeIn">
+              {/* Top Sub-Grid: Velocity & Equilibrium */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#0b0d13] p-2.5 rounded-lg border border-white/5">
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase">7-Day Net Flux</div>
+                  <div className={`text-base font-display font-bold mt-0.5 ${xpAnalytics.sevenDayXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {xpAnalytics.sevenDayXP >= 0 ? '+' : ''}{xpAnalytics.sevenDayXP.toLocaleString()} XP
+                  </div>
+                  <div className="text-[9px] font-mono text-zinc-300 mt-0.5">
+                    {xpAnalytics.velocityDeltaPercent >= 0 ? '+' : ''}{xpAnalytics.velocityDeltaPercent}% vs prior week
+                  </div>
+                </div>
+
+                <div className="bg-[#0b0d13] p-2.5 rounded-lg border border-white/5">
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase">Daily Burn/Run Rate</div>
+                  <div className="text-base font-display font-bold text-[#fef08a] mt-0.5">
+                    {xpAnalytics.dailyVelocity} XP/day
+                  </div>
+                  <div className="text-[9px] font-mono text-zinc-300 mt-0.5">
+                    Rolling 7-day average
+                  </div>
+                </div>
+
+                <div className="bg-[#0b0d13] p-2.5 rounded-lg border border-white/5">
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase">Prior 7-Day Baseline</div>
+                  <div className="text-base font-display font-bold text-cyan-300 mt-0.5">
+                    {xpAnalytics.priorSevenDayXP >= 0 ? '+' : ''}{xpAnalytics.priorSevenDayXP.toLocaleString()} XP
+                  </div>
+                  <div className="text-[9px] font-mono text-zinc-300 mt-0.5">
+                    Comparative momentum period
+                  </div>
+                </div>
+
+                <div className="bg-[#0b0d13] p-2.5 rounded-lg border border-white/5">
+                  <div className="text-[10px] font-mono text-zinc-400 uppercase">Anti-Farming State</div>
+                  <div className="text-base font-display font-bold text-amber-300 mt-0.5">
+                    {xpAnalytics.diminishedActivitiesCount} Reps
+                  </div>
+                  <div className="text-[9px] font-mono text-zinc-300 mt-0.5">
+                    Diminishing returns applied
+                  </div>
+                </div>
+              </div>
+
+              {/* Source Distribution Progress Bars */}
+              <div className="bg-[#0b0d13] p-3 rounded-lg border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                  <span className="uppercase font-bold text-zinc-300">XP Source Ecosystem</span>
+                  <span>Total Ledger Events: {metrics.totalTransactions}</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-1">
+                  {xpAnalytics.sourceDistribution.map(src => (
+                    <div key={src.type} className="p-2 rounded bg-white/5 border border-white/10">
+                      <div className="text-[9px] font-mono text-zinc-400 uppercase truncate" title={src.label}>
+                        {src.label}
+                      </div>
+                      <div className="text-sm font-display font-bold text-white mt-0.5">
+                        {src.percentage}%
+                      </div>
+                      <div className="text-[9px] font-mono text-[#fef08a]">{src.xp.toLocaleString()} XP</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Attribute Circulation Flow */}
+              <div className="bg-[#0b0d13] p-3 rounded-lg border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                  <span className="uppercase font-bold text-zinc-300">Attribute XP Circulation Flow</span>
+                  <span className="text-[9px] text-zinc-400">Dynamic 3-Way Weighting (Max 50% Primary)</span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {Object.entries(xpAnalytics.attributeDistribution)
+                    .sort(([, a], [, b]) => b.points - a.points)
+                    .map(([attrName, data]) => (
+                      <div
+                        key={attrName}
+                        className="px-2.5 py-1 rounded bg-[#141824] border border-white/10 flex items-center gap-1.5 text-xs font-mono"
+                      >
+                        <span className="text-zinc-300 font-medium">{attrName}</span>
+                        <span className="text-[#fef08a] font-bold">+{data.points} XP</span>
+                        <span className="text-[10px] text-zinc-400">({data.percentage}%)</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* FILTER AND SEARCH CONTROLS */}
       <div className="glass-panel rounded-xl p-4 border border-[#c5a059]/20 bg-[#07080c]/90 space-y-3.5 shadow-md">
