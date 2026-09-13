@@ -613,6 +613,10 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Sparkles className="h-2.5 w-2.5 text-emerald-400" />
+              <span>Post-Salah Auto-Sync Active</span>
+            </span>
             <span className="text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-full">
               Worship Over Gamification
             </span>

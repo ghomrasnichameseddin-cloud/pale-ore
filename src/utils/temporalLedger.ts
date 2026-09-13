@@ -5,32 +5,50 @@ import {
   DailyWakingCapital,
   ActiveRestSession,
   AppUsageLimit,
-  AppUsageLogEntry
+  AppUsageLogEntry,
+  TemporalStatus,
+  TemporalAccounting,
+  TemporalFeasibilityResult,
+  TemporalForecast,
+  RestCategory
 } from '../types';
+import { addDays } from './dateUtils';
 
 /**
  * ═════════════════════════════════════════════════════════════════════════════
- * TEMPORAL LEDGER & REST ENGINE (Ra's al-Māl / Sacred Time Capital)
+ * TEMPORAL CONTROL SYSTEM v2 (Ra's al-Māl / Sacred Time Capital & Solvency)
  * ═════════════════════════════════════════════════════════════════════════════
  * 
  * CORE RULES & ARCHITECTURAL INVARIANTS:
- * 1. Balance Invariant: Leisure bank balance represents earned rest currency
- *    and CANNOT go negative during redemptions. Redemptions strictly require
- *    sufficient coins AND sufficient minutes.
- * 2. Permanent Ledger: Time credits do NOT expire, decay, or wipe after multi-day
- *    inactivity. Rest earned is rest owed to the operator's soul.
- * 3. Multi-Day Resilience: When the app is opened after multi-day gaps, balance
- *    remains completely intact. Daily Waking Capital resets to the new day
- *    without accumulating phantom deficits.
- * 4. Invested Definition: "Invested so far" strictly measures logged minutes
- *    (focus sessions completed today + estimated time of completed quests today).
- * 5. Double-Minting Guard: Minting keys on `questId + completedAt` to ensure
- *    idempotent credit granting.
- * 6. Early-Finish Refund: Pro-rata by time remaining based on the cost paid.
+ * 1. Solvency Over Occupancy: Treat waking time as finite non-renewable capital.
+ * 2. Balance Invariant: Leisure bank balance represents earned rest equity
+ *    and CANNOT go negative during redemptions.
+ * 3. Daily Allowance Separation: Permanent Rest Bank ≠ Daily Rest Allowance.
+ *    Rest Bank never expires. Daily Rest Allowance regulates daily consumption.
+ * 4. Early-Finish Refund Invariant:
+ *    When a pass finishes early, unspent rest returns to the Rest Bank (+25m),
+ *    while Daily Rest Consumed is only actual elapsed time (20m).
+ * 5. Temporal Accounting:
+ *    Waking Capital - Used - Committed - Required = Raw Available.
+ *    Raw Available - Protected Buffer = Safely Allocatable.
+ * 6. Four Operational States:
+ *    - STABLE: Safely Allocatable > 0
+ *    - TIGHT: Safely Allocatable <= 0 and Raw Available >= 0
+ *    - OVERCOMMITTED: Raw Available < 0 but <= Waking Capital
+ *    - OVERDRAFT: Used + Committed + Required > Waking Capital
  * ═════════════════════════════════════════════════════════════════════════════
  */
 
 export const DEFAULT_DAILY_WAKING_BUDGET_MINUTES = 960; // 16 waking hours (16 * 60)
+export const DEFAULT_PROTECTED_BUFFER_PERCENT = 10;     // 10% protected safety margin
+export const DEFAULT_REQUIRED_MINUTES_BASELINE = 120;   // 2h baseline for fardh, prayer transitions, hygiene
+export const DEFAULT_DAILY_REST_ALLOWANCE_MINUTES = 120;// 2h standard daily rest ceiling
+
+export const REST_ALLOWANCE_PRESETS = {
+  low: 60,       // Strict focus / sprint day (1 hour)
+  normal: 120,   // Balanced operational day (2 hours)
+  recovery: 180  // Deep restoration / post-boss rest day (3 hours)
+} as const;
 
 export const REST_DECISION_THRESHOLDS = {
   DEFICIT: 0,
@@ -101,8 +119,6 @@ export interface QuestLaborMintResult {
 /**
  * Calculates rest minted upon quest completion, integrating actual elapsed work time.
  * Reconciles against prior focus_mint transactions linked to this quest to prevent double-counting.
- * The rule is explicitly reflected in the reason field: labor-based rest supersedes previously
- * minted focus blocks, awarding only the net incremental unminted rest.
  */
 export function calculateQuestMintingWithLabor(params: QuestLaborMintParams): QuestLaborMintResult {
   const { quest, timeHistory = [] } = params;
@@ -182,16 +198,26 @@ export interface AtomicRedeemResult {
 
 /**
  * Atomically validates and deducts both coins and leisure minutes for a rest pass.
- * Guarantees that neither coins nor rest minutes can drop below zero.
+ * Validates against Rest Bank balance, Daily Rest Allowance, and app usage blockers.
  */
 export function redeemRestPassAtomic(params: {
   currentCoins: number;
   currentLeisureBalance: number;
+  remainingDailyAllowance?: number;
   pass: RestPass;
   timestamp: string;
   blockedByAppUsage?: { isBlocked: boolean; appName?: string; overdraftMinutes?: number };
+  isBypassAllowance?: boolean;
 }): AtomicRedeemResult {
-  const { currentCoins, currentLeisureBalance, pass, timestamp, blockedByAppUsage } = params;
+  const { 
+    currentCoins, 
+    currentLeisureBalance, 
+    remainingDailyAllowance, 
+    pass, 
+    timestamp, 
+    blockedByAppUsage,
+    isBypassAllowance = false
+  } = params;
 
   if (blockedByAppUsage?.isBlocked) {
     return {
@@ -214,7 +240,22 @@ export function redeemRestPassAtomic(params: {
   if (currentLeisureBalance < pass.costMinutes) {
     return {
       success: false,
-      error: `Insufficient Rest Bank: Requires ${pass.costMinutes}m leisure credits, but you have ${currentLeisureBalance}m.`,
+      error: `Insufficient Rest Bank: Requires ${pass.costMinutes}m leisure credits in your permanent bank, but you have ${currentLeisureBalance}m.`,
+      newCoins: currentCoins,
+      newLeisureBalance: currentLeisureBalance
+    };
+  }
+
+  // Daily Allowance Gate (unless bypassed or marked as essential recovery)
+  if (
+    remainingDailyAllowance !== undefined && 
+    !isBypassAllowance && 
+    !pass.isEssentialRecovery &&
+    remainingDailyAllowance < pass.costMinutes
+  ) {
+    return {
+      success: false,
+      error: `Daily Rest Ceiling Reached: You have ${remainingDailyAllowance}m remaining in today's rest allowance. Redeeming this ${pass.costMinutes}m pass would exceed your daily rest ceiling. Switch to low-dopamine restorative rest or adjust daily allowance.`,
       newCoins: currentCoins,
       newLeisureBalance: currentLeisureBalance
     };
@@ -234,7 +275,8 @@ export function redeemRestPassAtomic(params: {
     timestamp,
     minutes: -pass.costMinutes,
     balanceAfter: newLeisureBalance,
-    relatedId: pass.id
+    relatedId: pass.id,
+    category: pass.restType || 'intentional_leisure'
   };
 
   const activeRestSession: ActiveRestSession = {
@@ -245,7 +287,8 @@ export function redeemRestPassAtomic(params: {
     startedAt: timestamp,
     paused: false,
     costMinutes: pass.costMinutes,
-    passId: pass.id
+    passId: pass.id,
+    restType: pass.restType || 'intentional_leisure'
   };
 
   return {
@@ -293,40 +336,386 @@ export function createRefundTransaction(params: {
     timestamp: params.timestamp,
     minutes: params.refundMinutes,
     balanceAfter: endingBalance,
-    relatedId: params.sessionId
+    relatedId: params.sessionId,
+    category: 'restorative'
   };
 }
 
 /**
- * Computes Daily Waking Capital and checks for Overdraft.
- * Overdraft formula: committed > budget - invested-so-far
- * Where invested-so-far = logged minutes today (focus + completed quests).
+ * Computes complete Temporal Accounting v2 with four distinct solvency states:
+ * STABLE, TIGHT, OVERCOMMITTED, OVERDRAFT.
+ */
+export function calculateTemporalAccounting(params: {
+  budgetMinutes?: number;
+  investedMinutesToday: number;
+  committedMinutesToday: number;
+  requiredMinutesToday?: number;
+  protectedBufferPercent?: number;
+  appUsageLogs?: AppUsageLogEntry[];
+  appUsageLimits?: AppUsageLimit[];
+  todayDate?: string;
+}): TemporalAccounting {
+  const wakingCapitalMinutes = params.budgetMinutes ?? DEFAULT_DAILY_WAKING_BUDGET_MINUTES;
+  const usedMinutes = Math.max(0, params.investedMinutesToday);
+  const committedMinutes = Math.max(0, params.committedMinutesToday);
+  const requiredMinutes = Math.max(0, params.requiredMinutesToday ?? 0);
+  
+  const protectedBufferPercent = params.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT;
+  const protectedBufferMinutes = Math.round(wakingCapitalMinutes * (protectedBufferPercent / 100));
+
+  const totalAllocated = usedMinutes + committedMinutes + requiredMinutes;
+  const rawAvailableMinutes = wakingCapitalMinutes - totalAllocated;
+  const safelyAllocatableMinutes = rawAvailableMinutes - protectedBufferMinutes;
+
+  const isOverdrawn = totalAllocated > wakingCapitalMinutes;
+  const overdraftMinutes = Math.max(0, totalAllocated - wakingCapitalMinutes);
+  const utilizationPercent = wakingCapitalMinutes > 0 
+    ? Math.min(200, Math.round((totalAllocated / wakingCapitalMinutes) * 100)) 
+    : 100;
+
+  // Determine Temporal Status
+  let status: TemporalStatus;
+  if (isOverdrawn) {
+    status = 'OVERDRAFT';
+  } else if (rawAvailableMinutes < 0) {
+    status = 'OVERCOMMITTED';
+  } else if (safelyAllocatableMinutes <= 0) {
+    status = 'TIGHT';
+  } else {
+    status = 'STABLE';
+  }
+
+  // Calculate Digital Temporal Leakage
+  let temporalLeakageMinutes = 0;
+  if (params.appUsageLogs && params.appUsageLimits && params.todayDate) {
+    const todayLogs = params.appUsageLogs.filter(l => l.date === params.todayDate);
+    for (const limit of params.appUsageLimits) {
+      const usageForLimit = todayLogs
+        .filter(l => l.limitId === limit.id)
+        .reduce((sum, l) => sum + (l.minutesUsed || 0), 0);
+      if (usageForLimit > limit.dailyLimitMinutes) {
+        temporalLeakageMinutes += (usageForLimit - limit.dailyLimitMinutes);
+      }
+    }
+  }
+
+  const temporalEfficiencyPercent = wakingCapitalMinutes > 0
+    ? Math.max(0, Math.min(100, Math.round(((wakingCapitalMinutes - temporalLeakageMinutes) / wakingCapitalMinutes) * 100)))
+    : 100;
+
+  return {
+    wakingCapitalMinutes,
+    usedMinutes,
+    committedMinutes,
+    requiredMinutes,
+    protectedBufferMinutes,
+    protectedBufferPercent,
+    rawAvailableMinutes,
+    safelyAllocatableMinutes,
+    status,
+    isOverdrawn,
+    overdraftMinutes,
+    utilizationPercent,
+    temporalLeakageMinutes,
+    temporalEfficiencyPercent
+  };
+}
+
+/**
+ * Backwards-compatible calculation for Daily Waking Capital.
  */
 export function calculateDailyWakingCapital(params: {
   budgetMinutes?: number;
   investedMinutesToday: number;
   committedMinutesToday: number;
+  requiredMinutesToday?: number;
+  protectedBufferPercent?: number;
 }): DailyWakingCapital {
   const budget = params.budgetMinutes ?? DEFAULT_DAILY_WAKING_BUDGET_MINUTES;
   const invested = Math.max(0, params.investedMinutesToday);
   const committed = Math.max(0, params.committedMinutesToday);
-  const remainingBudgetAfterInvested = Math.max(0, budget - invested);
-  const totalAllocated = invested + committed;
+  const required = Math.max(0, params.requiredMinutesToday ?? 0);
+  const protectedBufferPercent = params.protectedBufferPercent ?? 0;
+  const protectedBufferMinutes = Math.round(budget * (protectedBufferPercent / 100));
 
-  const isOverdrawn = committed > remainingBudgetAfterInvested;
+  const totalAllocated = invested + committed + required;
+  const remainingBudgetAfterInvested = Math.max(0, budget - invested);
+  const isOverdrawn = committed + required > remainingBudgetAfterInvested;
   const overdraftMinutes = Math.max(0, totalAllocated - budget);
   const slackMinutes = Math.max(0, budget - totalAllocated);
+  const safelyAllocatableMinutes = slackMinutes - protectedBufferMinutes;
   const utilizationPercent = budget > 0 ? Math.min(200, Math.round((totalAllocated / budget) * 100)) : 100;
+
+  let status: TemporalStatus = 'STABLE';
+  if (isOverdrawn) status = 'OVERDRAFT';
+  else if (slackMinutes < 0) status = 'OVERCOMMITTED';
+  else if (safelyAllocatableMinutes <= 0) status = 'TIGHT';
 
   return {
     budgetMinutes: budget,
     investedMinutes: invested,
     committedMinutes: committed,
+    requiredMinutes: required,
+    protectedBufferMinutes,
+    safelyAllocatableMinutes,
+    status,
     slackMinutes,
     isOverdrawn,
     overdraftMinutes,
     utilizationPercent
   };
+}
+
+/**
+ * Calculates immediate temporal impact and feasibility of adding a new quest or commitment.
+ */
+export function calculateTemporalFeasibility(params: {
+  currentSafelyAllocatable: number;
+  currentRawAvailable: number;
+  questMinutes: number;
+  wakingCapitalMinutes: number;
+  totalAllocatedMinutes: number;
+}): TemporalFeasibilityResult {
+  const { currentSafelyAllocatable, currentRawAvailable, questMinutes, wakingCapitalMinutes, totalAllocatedMinutes } = params;
+  const newTotalAllocated = totalAllocatedMinutes + questMinutes;
+  const projectedSafeCapacity = currentSafelyAllocatable - questMinutes;
+  const projectedRawAvailable = currentRawAvailable - questMinutes;
+
+  let projectedStatus: TemporalStatus;
+  if (newTotalAllocated > wakingCapitalMinutes) {
+    projectedStatus = 'OVERDRAFT';
+  } else if (projectedRawAvailable < 0) {
+    projectedStatus = 'OVERCOMMITTED';
+  } else if (projectedSafeCapacity <= 0) {
+    projectedStatus = 'TIGHT';
+  } else {
+    projectedStatus = 'STABLE';
+  }
+
+  const conflictMinutes = Math.max(0, questMinutes - Math.max(0, currentSafelyAllocatable));
+  const feasible = projectedStatus === 'STABLE' || projectedStatus === 'TIGHT';
+
+  const recommendations: string[] = [];
+  if (conflictMinutes > 0) {
+    recommendations.push(`Split this directive into 2 focused sub-directives (e.g. ${Math.round(questMinutes / 2)}m each).`);
+    recommendations.push(`Postpone secondary non-essential quests to tomorrow.`);
+    recommendations.push(`Reduce planned recreation by ${conflictMinutes}m to protect sleep.`);
+  } else if (projectedStatus === 'TIGHT') {
+    recommendations.push(`Feasible, but enters TIGHT status (dips into your protected buffer).`);
+    recommendations.push(`Guard against task scope creep and log real elapsed time.`);
+  } else {
+    recommendations.push(`Safely allocatable within today's non-renewable capital.`);
+  }
+
+  return {
+    feasible,
+    currentSafeCapacity: currentSafelyAllocatable,
+    newCommitment: questMinutes,
+    projectedSafeCapacity,
+    projectedStatus,
+    conflictMinutes,
+    recommendations
+  };
+}
+
+/**
+ * Calculates the operator's daily rest allowance consumption and categorizations.
+ */
+export function calculateDailyRestState(params: {
+  dailyAllowanceMinutes?: number;
+  history?: LeisureTransaction[];
+  todayDate: string;
+}): {
+  dailyAllowanceMinutes: number;
+  restConsumedToday: number;
+  remainingAllowance: number;
+  restorativeMinutes: number;
+  leisureMinutes: number;
+  neutralMinutes: number;
+} {
+  const dailyAllowanceMinutes = params.dailyAllowanceMinutes ?? DEFAULT_DAILY_REST_ALLOWANCE_MINUTES;
+  const history = params.history || [];
+  
+  const todayTransactions = history.filter(tx => tx.timestamp && tx.timestamp.startsWith(params.todayDate));
+
+  let restorativeMinutes = 0;
+  let leisureMinutes = 0;
+  let neutralMinutes = 0;
+  let netRestElapsed = 0;
+
+  for (const tx of todayTransactions) {
+    if (tx.type === 'leisure_redemption' || tx.type === 'rest_allowance_consume') {
+      const minutesSpent = Math.abs(tx.minutesDelta ?? tx.minutes ?? 0);
+      netRestElapsed += minutesSpent;
+      if (tx.category === 'restorative') restorativeMinutes += minutesSpent;
+      else if (tx.category === 'neutral_recovery') neutralMinutes += minutesSpent;
+      else leisureMinutes += minutesSpent;
+    } else if (tx.type === 'rest_refund') {
+      // Early finish refund subtracts from net rest consumed today!
+      const refunded = Math.abs(tx.minutesDelta ?? tx.minutes ?? 0);
+      netRestElapsed = Math.max(0, netRestElapsed - refunded);
+      // Proportionally deduct from leisure
+      leisureMinutes = Math.max(0, leisureMinutes - refunded);
+    }
+  }
+
+  const remainingAllowance = Math.max(0, dailyAllowanceMinutes - netRestElapsed);
+
+  return {
+    dailyAllowanceMinutes,
+    restConsumedToday: netRestElapsed,
+    remainingAllowance,
+    restorativeMinutes,
+    leisureMinutes,
+    neutralMinutes
+  };
+}
+
+/**
+ * Evaluates personal estimation calibration from completed quests.
+ */
+export function calculateEstimationCalibration(
+  completedQuests: { estimatedTime?: number; actualMinutesWorked?: number; status?: string }[]
+): {
+  completedCount: number;
+  avgEstimated: number;
+  avgActual: number;
+  variancePercent: number;
+  multiplier: number;
+} {
+  const eligible = completedQuests.filter(
+    q => (q.status === 'Completed' || (q.actualMinutesWorked || 0) > 0) &&
+         (q.estimatedTime || 0) > 0 &&
+         (q.actualMinutesWorked || 0) > 0
+  );
+
+  if (eligible.length === 0) {
+    return {
+      completedCount: 0,
+      avgEstimated: 30,
+      avgActual: 30,
+      variancePercent: 0,
+      multiplier: 1.0
+    };
+  }
+
+  const totalEst = eligible.reduce((sum, q) => sum + (q.estimatedTime || 0), 0);
+  const totalAct = eligible.reduce((sum, q) => sum + (q.actualMinutesWorked || 0), 0);
+
+  const avgEstimated = Math.round(totalEst / eligible.length);
+  const avgActual = Math.round(totalAct / eligible.length);
+  const multiplier = Number((totalAct / totalEst).toFixed(2));
+  const variancePercent = Math.round(((totalAct - totalEst) / totalEst) * 100);
+
+  return {
+    completedCount: eligible.length,
+    avgEstimated,
+    avgActual,
+    variancePercent,
+    multiplier
+  };
+}
+
+/**
+ * Generates forward-looking temporal forecast guidance.
+ */
+export function calculateTemporalForecast(params: {
+  remainingWakingMinutes: number;
+  committedMinutes: number;
+  requiredMinutes: number;
+  plannedRestMinutes: number;
+  protectedBufferMinutes: number;
+}): TemporalForecast {
+  const { remainingWakingMinutes, committedMinutes, requiredMinutes, plannedRestMinutes, protectedBufferMinutes } = params;
+  const freeSafeMarginMinutes = remainingWakingMinutes - committedMinutes - requiredMinutes - plannedRestMinutes - protectedBufferMinutes;
+
+  let recommendationText: string;
+  if (freeSafeMarginMinutes > 120) {
+    recommendationText = `Generous solvency: You can safely accept approximately ${Math.floor(freeSafeMarginMinutes / 60)}h ${freeSafeMarginMinutes % 60}m of additional work or strategic exploration today.`;
+  } else if (freeSafeMarginMinutes > 30) {
+    recommendationText = `Healthy solvency: You have a comfortable safe margin of ${freeSafeMarginMinutes}m. Protect planned recovery.`;
+  } else if (freeSafeMarginMinutes >= 0) {
+    recommendationText = `Tight solvency: You have ${freeSafeMarginMinutes}m margin left. Avoid accepting new high-friction commitments today.`;
+  } else {
+    recommendationText = `Temporal overextension: You are overbooked by ${Math.abs(freeSafeMarginMinutes)}m against your safe capacity. Cut or reschedule secondary quests.`;
+  }
+
+  return {
+    remainingWakingMinutes,
+    committedMinutes,
+    requiredMinutes,
+    plannedRestMinutes,
+    protectedBufferMinutes,
+    freeSafeMarginMinutes,
+    recommendationText
+  };
+}
+
+export interface MultiDayForecastDay {
+  date: string;
+  dayLabel: string;
+  wakingCapitalMinutes: number;
+  committedMinutes: number;
+  safelyAllocatableMinutes: number;
+  projectedStatus: TemporalStatus;
+  recommendationText: string;
+}
+
+/**
+ * Multi-day forward forecast (Today, Tomorrow, Day After) projecting solvency and overcommitment.
+ */
+export function calculateMultiDayForecast(params: {
+  quests: { dueDate?: string; estimatedTime?: number; status?: string }[];
+  wakingCapitalMinutes: number;
+  requiredMinutesBaseline: number;
+  protectedBufferPercent: number;
+  startDate: string;
+}): MultiDayForecastDay[] {
+  const { quests, wakingCapitalMinutes, requiredMinutesBaseline, protectedBufferPercent, startDate } = params;
+  const days: MultiDayForecastDay[] = [];
+  const protectedBufferMinutes = Math.round(wakingCapitalMinutes * (protectedBufferPercent / 100));
+
+  for (let i = 0; i < 3; i++) {
+    const targetDate = addDays(startDate, i);
+    const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : 'Day After';
+
+    const dayQuests = quests.filter(q => q.dueDate === targetDate && q.status !== 'Completed');
+    const committedMinutes = dayQuests.reduce((sum, q) => sum + (q.estimatedTime || 30), 0);
+    const totalAllocated = committedMinutes + requiredMinutesBaseline;
+    const rawAvailable = wakingCapitalMinutes - totalAllocated;
+    const safelyAllocatable = Math.max(0, rawAvailable - protectedBufferMinutes);
+
+    let projectedStatus: TemporalStatus;
+    if (totalAllocated > wakingCapitalMinutes) {
+      projectedStatus = 'OVERDRAFT';
+    } else if (rawAvailable < 0) {
+      projectedStatus = 'OVERCOMMITTED';
+    } else if (safelyAllocatable <= 0) {
+      projectedStatus = 'TIGHT';
+    } else {
+      projectedStatus = 'STABLE';
+    }
+
+    const forecast = calculateTemporalForecast({
+      remainingWakingMinutes: wakingCapitalMinutes,
+      committedMinutes,
+      requiredMinutes: requiredMinutesBaseline,
+      plannedRestMinutes: 0,
+      protectedBufferMinutes
+    });
+
+    days.push({
+      date: targetDate,
+      dayLabel,
+      wakingCapitalMinutes,
+      committedMinutes,
+      safelyAllocatableMinutes: safelyAllocatable,
+      projectedStatus,
+      recommendationText: forecast.recommendationText
+    });
+  }
+
+  return days;
 }
 
 /**
@@ -411,6 +800,7 @@ export interface AppUsageStatus {
   appName: string;
   category: string;
   dailyLimitMinutes: number;
+  sessionLimitMinutes?: number;
   usedMinutes: number;
   remainingMinutes: number;
   overdraftMinutes: number;
@@ -442,6 +832,7 @@ export function calculateAppUsageStatus(
     appName: limit.name,
     category: limit.category,
     dailyLimitMinutes: limit.dailyLimitMinutes,
+    sessionLimitMinutes: limit.sessionLimitMinutes,
     usedMinutes,
     remainingMinutes,
     overdraftMinutes,
@@ -485,6 +876,7 @@ export const DEFAULT_APP_USAGE_LIMITS: AppUsageLimit[] = [
     name: 'Steam & Video Games',
     category: 'gaming',
     dailyLimitMinutes: 45,
+    sessionLimitMinutes: 30,
     consequence: 'informational',
     icon: '🎮',
     createdAt: '2026-01-01T00:00:00.000Z'
@@ -494,6 +886,7 @@ export const DEFAULT_APP_USAGE_LIMITS: AppUsageLimit[] = [
     name: 'YouTube & Video Streaming',
     category: 'video_streaming',
     dailyLimitMinutes: 45,
+    sessionLimitMinutes: 30,
     consequence: 'deduct_leisure_bank',
     icon: '📺',
     createdAt: '2026-01-01T00:00:00.000Z'
@@ -503,14 +896,25 @@ export const DEFAULT_APP_USAGE_LIMITS: AppUsageLimit[] = [
     name: 'Social Media & Infinite Feeds',
     category: 'social_media',
     dailyLimitMinutes: 30,
+    sessionLimitMinutes: 15,
     consequence: 'block_rest_passes',
     icon: '📱',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  },
+  {
+    id: 'limit-browsing',
+    name: 'Discretionary Web Browsing',
+    category: 'browsing',
+    dailyLimitMinutes: 30,
+    sessionLimitMinutes: 20,
+    consequence: 'deduct_leisure_bank',
+    icon: '🌐',
     createdAt: '2026-01-01T00:00:00.000Z'
   }
 ];
 
 /**
- * Default Rest Passes Catalog.
+ * Default Rest Passes Catalog (Sacred Rest v2).
  */
 export const DEFAULT_REST_PASSES: RestPass[] = [
   {
@@ -521,17 +925,9 @@ export const DEFAULT_REST_PASSES: RestPass[] = [
     costMinutes: 25,
     description: 'A 25-minute midday restorative sleep to revitalize soul, mental clarity, and focus.',
     category: 'Restoration',
+    restType: 'restorative',
+    isEssentialRecovery: true,
     icon: '😴'
-  },
-  {
-    id: 'rest-reading',
-    name: 'Guilt-Free Contemplative Reading',
-    durationMinutes: 45,
-    costCoins: 35,
-    costMinutes: 30,
-    description: '45 minutes immersed in uplifting literature, history, or creative writing.',
-    category: 'Leisure',
-    icon: '📖'
   },
   {
     id: 'rest-walk',
@@ -541,7 +937,20 @@ export const DEFAULT_REST_PASSES: RestPass[] = [
     costMinutes: 20,
     description: '30 minutes outdoors without digital inputs to recalibrate dopamine baselines.',
     category: 'Restoration',
+    restType: 'restorative',
+    isEssentialRecovery: true,
     icon: '🌿'
+  },
+  {
+    id: 'rest-reading',
+    name: 'Guilt-Free Contemplative Reading',
+    durationMinutes: 45,
+    costCoins: 35,
+    costMinutes: 30,
+    description: '45 minutes immersed in uplifting literature, history, or creative writing.',
+    category: 'Leisure',
+    restType: 'neutral_recovery',
+    icon: '📖'
   },
   {
     id: 'rest-coffee',
@@ -551,6 +960,7 @@ export const DEFAULT_REST_PASSES: RestPass[] = [
     costMinutes: 20,
     description: 'A 20-minute mindful coffee or herbal tea pause between deep focus sprints.',
     category: 'Leisure',
+    restType: 'intentional_leisure',
     icon: '☕'
   },
   {
@@ -561,6 +971,8 @@ export const DEFAULT_REST_PASSES: RestPass[] = [
     costMinutes: 60,
     description: '1 hour of guilt-free video games or high-immersion digital leisure.',
     category: 'Recreation',
+    restType: 'intentional_leisure',
     icon: '🎮'
   }
 ];
+

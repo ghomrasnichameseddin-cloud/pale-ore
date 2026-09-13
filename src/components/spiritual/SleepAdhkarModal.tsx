@@ -26,9 +26,132 @@ interface DhikrItem {
   targetCount: number;
 }
 
-export const DHOHR_SLEEP_ADHKAR: DhikrItem[] = [];
+export const DHOHR_SLEEP_ADHKAR: DhikrItem[] = [
+  {
+    id: 'dhohr-bismika',
+    titleEn: '1. The Foundational Sleep Intention (باسمك اللهم أموت وأحيا)',
+    titleAr: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
+    source: 'Sahih al-Bukhari (6312, 6324)',
+    arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا.',
+    transliteration: 'Bismikallāhumma amūtu wa aḥyā.',
+    translation: 'In Your Name, O Allah, I die and I live.',
+    virtue: 'Recited by the Prophet ﷺ whenever retiring to his bed for rest during the day or night to anchor the soul in Allah.',
+    targetCount: 1
+  },
+  {
+    id: 'dhohr-rabbi-wada\'tu',
+    titleEn: '2. Divine Entrustment on Right Side (باسمك ربي وضعت جنبي)',
+    titleAr: 'تَفْوِيضُ الأَمْرِ وَالدُّعَاءُ عِنْدَ وَضْعِ الجَنْبِ',
+    source: 'Sahih al-Bukhari (6320) & Sahih Muslim (2714)',
+    arabic: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ.',
+    transliteration: 'Bismika Rabbī waḍa‘tu janbī wa bika arfa‘uh, in amsakta nafsī farḥamhā, wa in arsaltahā faḥfaẓhā bimā taḥfaẓu bihī ‘ibādakaṣ-ṣāliḥīn.',
+    translation: 'In Your Name, my Lord, I lay my side down and in Your Name I raise it up. If You hold back my soul, have mercy upon it, and if You release it, protect it as You protect Your righteous servants.',
+    virtue: 'The Prophet ﷺ instructed the believer to dust the resting place and recite this while resting on the right side.',
+    targetCount: 1
+  },
+  {
+    id: 'dhohr-ayat-kursi',
+    titleEn: '3. Āyat al-Kursī Midday Fortress (آية الكرسي)',
+    titleAr: 'آيَةُ الكُرْسِيِّ لِلْحِفْظِ مِنَ الشَّيَاطِينِ',
+    source: 'Sahih al-Bukhari (2311)',
+    arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
+    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm, lā ta’khuḏhuhū sinatuw-wa lā nawm, lahū mā fis-samāwāti wa mā fil-arḍ...',
+    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+    virtue: 'A guardian protector from Allah remains over you and no devil can approach you until you wake.',
+    targetCount: 1
+  },
+  {
+    id: 'dhohr-waking-hamd',
+    titleEn: '4. Prophetic Awakening from Qaylūlah (الحمد لله الذي أحيانا)',
+    titleAr: 'دُعَاءُ الاسْتِيقَاظِ مِنَ القَيْلُولَةِ',
+    source: 'Sahih al-Bukhari (6312)',
+    arabic: 'الحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ.',
+    transliteration: 'Al-ḥamdu lillāhilladhī aḥyānā ba‘da mā amātanā wa ilayhin-nushūr.',
+    translation: 'All praise is due to Allah who gave us life after causing us to die, and unto Him is the resurrection.',
+    virtue: 'Recited by the Prophet ﷺ immediately upon waking from midday rest or sleep, expressing gratitude for revitalized life.',
+    targetCount: 1
+  }
+];
 
-export const NIGHT_SLEEP_ADHKAR: DhikrItem[] = [];
+export const NIGHT_SLEEP_ADHKAR: DhikrItem[] = [
+  {
+    id: 'night-quls-cupped',
+    titleEn: '1. Three Quls with Cupped Hands & Nafth (المعوذات مع النفث والمسح)',
+    titleAr: 'قِرَاءَةُ المُعَوِّذَاتِ الثَّلَاثِ وَالنَّفْثُ فِي الكَفَّيْنِ وَالمَسْحُ ثَلَاثًا',
+    source: 'Sahih al-Bukhari (5017)',
+    arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ (يَنْفُثُ فِي كَفَّيْهِ وَيَمْسَحُ جَسَدَهُ ٣ مَرَّاتٍ).',
+    transliteration: 'Recite Surah Al-Ikhlāṣ, Al-Falaq, and An-Nās into cupped hands, lightly puff/blow (nafth), then wipe over the head, face, and front of body. Repeat 3 times.',
+    translation: 'Say: He is Allah, [who is] One... Say: I seek refuge in the Lord of daybreak... Say: I seek refuge in the Lord of mankind...',
+    virtue: 'Aisha (RA) narrated that every single night when the Prophet ﷺ went to bed, he joined his hands, puffed into them, recited the three Surahs, and wiped as much of his body as he could, starting with head and face, doing this thrice.',
+    targetCount: 3
+  },
+  {
+    id: 'night-ayat-kursi',
+    titleEn: '2. Āyat al-Kursī (The Night Shield - 2:255)',
+    titleAr: 'آيَةُ الكُرْسِيِّ حَارِسُ اللَّيْل',
+    source: 'Sahih al-Bukhari (2311) • Hadith of Abu Hurayrah (RA)',
+    arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
+    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm, lā ta’khuḏhuhū sinatuw-wa lā nawm, lahū mā fis-samāwāti wa mā fil-arḍ...',
+    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence...',
+    virtue: 'The Prophet ﷺ confirmed: "When you go to bed, recite Ayat al-Kursi, for then there will remain over you a guardian from Allah, and no devil will come near you until morning."',
+    targetCount: 1
+  },
+  {
+    id: 'night-baqarah-last2',
+    titleEn: '3. Last Two Verses of Surah Al-Baqarah (خواتيم سورة البقرة 285-286)',
+    titleAr: 'خَوَاتِيمُ سُورَةِ البَقَرَةِ (آمَنَ الرَّسُولُ)',
+    source: 'Sahih al-Bukhari (5009) & Sahih Muslim (808)',
+    arabic: 'آمَنَ الرَّسُولُ بِمَا أُنزِلَ إِلَيْهِ مِن رَّبِّهِ وَالْمُؤْمِنُونَ ۚ كُلٌّ آمَنَ بِاللَّهِ وَمَلَائِكَتِهِ وَكُتُبِهِ وَرُسُلِهِ لَا نُفَرِّقُ بَيْنَ أَحَدٍ مِّن رُّسُلِهِ ۚ وَقَالُوا سَمِعْنَا وَأَطَعْنَا ۖ غُفْرَانَكَ رَبَّنَا وَإِلَيْكَ الْمَصِيرُ ۝ لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا ۚ لَهَا مَا كَسَبَتْ وَعَلَيْهَا مَا اكْتَسَبَتْ ۗ رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا ۚ رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَا إِصْرًا كَمَا حَمَلْتَهُ عَلَى الَّذِينَ مِن قَبْلِنَا ۚ رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِ ۖ وَاعْفُ عَنَّا وَاغْفِرْ لَنَا وَارْحَمْنَا ۚ أَنتَ مَوْلَانَا فَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ',
+    transliteration: 'Āmanar-Rasūlu bimā unzila ilayhi mir-Rabbihī wal-mu’minūn... Lā yukallifullāhu nafsan illā wus‘ahā...',
+    translation: 'The Messenger has believed in what was revealed to him from his Lord, and [so have] the believers... Allah does not charge a soul except [with that within] its capacity...',
+    virtue: 'The Prophet ﷺ said: "Whoever recites the last two verses of Surah Al-Baqarah at night, they will suffice him (against every evil, affliction, and shayṭān)."',
+    targetCount: 1
+  },
+  {
+    id: 'night-fatimah-tasbih',
+    titleEn: '4. The Bedtime Gift to Fatimah: 33-33-34 Tasbīḥ (تسبيح فاطمة الزهراء)',
+    titleAr: 'تَسْبِيحُ فَاطِمَةَ: ٣٣ سُبْحَانَ الله - ٣٣ الحَمْدُ لله - ٣٤ اللهُ أَكْبَر',
+    source: 'Sahih al-Bukhari (3705) & Sahih Muslim (2727)',
+    arabic: 'سُبْحَانَ اللَّهِ (٣٣ مَرَّةً) • الحَمْدُ لِلَّهِ (٣٣ مَرَّةً) • اللَّهُ أَكْبَرُ (٣٤ مَرَّةً).',
+    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (34x) — total 100.',
+    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (34 times).',
+    virtue: 'When Ali and Fatimah (RA) asked the Prophet ﷺ for a servant, he said: "Shall I not guide you to that which is better for you than a servant? When you take to your bed, say SubhanAllah 33 times, Alhamdulillah 33 times, and Allahu Akbar 34 times. That is better for you than a servant."',
+    targetCount: 100
+  },
+  {
+    id: 'night-bismika-wada\'tu',
+    titleEn: '5. Laying Down on Right Side Supplication (باسمك ربي وضعت جنبي)',
+    titleAr: 'دُعَاءُ وَضْعِ الجَنْبِ عَلَى الشِّقِّ الأَيْمَنِ',
+    source: 'Sahih al-Bukhari (6320) & Sahih Muslim (2714)',
+    arabic: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي وَبِكَ أَرْفَعُهُ، إِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ.',
+    transliteration: 'Bismika Rabbī waḍa‘tu janbī wa bika arfa‘uh, in amsakta nafsī farḥamhā, wa in arsaltahā faḥfaẓhā bimā taḥfaẓu bihī ‘ibādakaṣ-ṣāliḥīn.',
+    translation: 'In Your Name, my Lord, I lay my side down and in Your Name I raise it up. If You hold back my soul, have mercy upon it, and if You release it, protect it as You protect Your righteous servants.',
+    virtue: 'The Prophet ﷺ commanded: "When one of you goes to his bed, let him dust it with the inside of his garment, lie on his right side and recite this supplication."',
+    targetCount: 1
+  },
+  {
+    id: 'night-qini-adhabak',
+    titleEn: '6. Protection from Recompense: 3x (اللهم قني عذابك)',
+    titleAr: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ (٣ مَرَّاتٍ)',
+    source: 'Sunan Abi Dawud (5045) & Jami‘ at-Tirmidhi (3398) • Sahih',
+    arabic: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.',
+    transliteration: 'Allāhumma qinī ‘adhābaka yawma tab‘athu ‘ibādak (3 times).',
+    translation: 'O Allah, protect me from Your punishment on the Day You resurrect Your servants.',
+    virtue: 'Whenever the Prophet ﷺ intended to sleep, he placed his right hand under his cheek and recited this supplication three times.',
+    targetCount: 3
+  },
+  {
+    id: 'night-concluding-fitrah',
+    titleEn: '7. The Crowning Supplication of Fitrah (اللهم أسلمت نفسي إليك)',
+    titleAr: 'وَصِيَّةُ خِتَامِ اللَّيْلِ وَالمَوْتِ عَلَى الفِطْرَةِ',
+    source: 'Sahih al-Bukhari (6311) & Sahih Muslim (2710)',
+    arabic: 'اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَوَجَّهْتُ وَجْهِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ، رَغْبَةً وَرَهْبَةً إِلَيْكَ، لَا مَلْجَأَ وَلَا مَنْجَا مِنْكَ إِلَّا إِلَيْكَ، آمَنْتُ بِكِتَابِكَ الَّذِي أَنْزَلْتَ، وَبِنَبِيِّكَ الَّذِي أَرْسَلْتَ.',
+    transliteration: 'Allāhumma aslamtu nafsī ilayka, wa fawwaḍtu amrī ilayka, wa wajjahtu wajhī ilayka, wa alja’tu ẓahrī ilayka, raghbatan wa rahbatan ilayk, lā malja’a wa lā manjā minka illā ilayk. Āmantu bikitābikalladhī anzalta, wa bi-nabiyyikalladhī arsalt.',
+    translation: 'O Allah, I surrender my soul to You, I entrust my affair to You, I turn my face to You, and I commit my back to You out of hope and fear of You. There is no refuge and no escape from You except to You. I believe in Your Book which You have revealed and in Your Prophet whom You have sent.',
+    virtue: 'The Prophet ﷺ said to al-Bara\' ibn \'Azib: "Make these your very last words before sleeping. For if you die that night, you die upon the pure natural religion (Fitrah)."',
+    targetCount: 1
+  }
+];
 
 export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
   isOpen,

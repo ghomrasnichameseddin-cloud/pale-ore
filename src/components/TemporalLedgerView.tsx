@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Zap, Check,
   Play, Flame, BarChart3, Info, Lock, Unlock, Smartphone, Globe,
   Gamepad2, Film, MessageSquare, Trash2, Edit3, X, SlidersHorizontal,
-  History, PlusCircle, AlertOctagon, Copy
+  History, PlusCircle, AlertOctagon, Copy, ShieldCheck, Compass
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { 
@@ -20,7 +20,12 @@ import {
   DEFAULT_REST_PASSES,
   REST_DECISION_THRESHOLDS,
   calculateAppUsageStatus,
-  getActiveUsageBlocker
+  getActiveUsageBlocker,
+  calculateTemporalFeasibility,
+  calculateTemporalForecast,
+  calculateMultiDayForecast,
+  DEFAULT_PROTECTED_BUFFER_PERCENT,
+  DEFAULT_REQUIRED_MINUTES_BASELINE
 } from '../utils/temporalLedger';
 
 interface TemporalLedgerViewProps {
@@ -33,6 +38,8 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
     addTimeCredits, 
     redeemRestPass, 
     getDailyWakingCapital,
+    getTemporalAccounting,
+    getDailyRestState,
     addAppUsageLimit,
     updateAppUsageLimit,
     deleteAppUsageLimit,
@@ -48,6 +55,10 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [isCalibrateModalOpen, setIsCalibrateModalOpen] = useState(false);
   const [selectedPassForRedeem, setSelectedPassForRedeem] = useState<RestPass | null>(null);
+
+  // v2 Feasibility Simulator State
+  const [candidateMinutes, setCandidateMinutes] = useState<number>(45);
+  const [candidateLabel, setCandidateLabel] = useState<string>('Deep Focus Directive / Meeting');
 
   // Calibrate Form State
   const [calibrateMinutes, setCalibrateMinutes] = useState<number>(30);
@@ -108,6 +119,30 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
     overdraftMinutes: 0,
     utilizationPercent: 0
   };
+
+  // v2 Accounting & Rest State
+  const accounting = getTemporalAccounting();
+  const dailyRest = getDailyRestState();
+
+  const candidateFeasibility = useMemo(() => {
+    return calculateTemporalFeasibility({
+      currentSafelyAllocatable: accounting.safelyAllocatableMinutes,
+      currentRawAvailable: accounting.rawAvailableMinutes,
+      questMinutes: candidateMinutes,
+      wakingCapitalMinutes: accounting.wakingCapitalMinutes,
+      totalAllocatedMinutes: accounting.usedMinutes + accounting.committedMinutes + accounting.requiredMinutes
+    });
+  }, [accounting, candidateMinutes]);
+
+  const temporalForecast = useMemo(() => {
+    return calculateMultiDayForecast({
+      quests: state.quests || [],
+      wakingCapitalMinutes: accounting.wakingCapitalMinutes,
+      requiredMinutesBaseline: profile.requiredMinutesBaseline ?? DEFAULT_REQUIRED_MINUTES_BASELINE,
+      protectedBufferPercent: profile.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT,
+      startDate: todayKey
+    });
+  }, [state.quests, accounting.wakingCapitalMinutes, profile, todayKey]);
 
   // Today's Decision calculation (incorporates digital overdraft minutes)
   const todayTransactions = transactions.filter(tx => tx.timestamp.startsWith(todayKey));
@@ -438,75 +473,91 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
         </div>
       </div>
 
-      {/* OVERDRAFT ALARM (STEP 6: committed > budget − invested-so-far) */}
-      {wakingCapital.isOverdrawn ? (
-        <div className="glass-panel rounded-xl p-4 border border-rose-500/50 bg-rose-950/25 shadow-lg">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 shrink-0 mt-0.5 sm:mt-0">
-                <AlertTriangle className="h-5 w-5 animate-pulse" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono tracking-wider text-rose-400 uppercase font-black">
-                    OVERDRAFT ALARM TRIGGERED
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/30 text-rose-200 font-mono font-bold">
-                    +{wakingCapital.overdraftMinutes}m OVER BUDGET
-                  </span>
-                </div>
-                <p className="text-xs text-rose-200 font-sans mt-1">
-                  Committed tasks ({wakingCapital.committedMinutes}m) exceed remaining waking capacity ({Math.max(0, wakingCapital.budgetMinutes - wakingCapital.investedMinutes)}m). 
-                  You are borrowing from tomorrow's sleep or essential rest. Rebalance your day now.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 shrink-0 font-mono text-xs border-t sm:border-t-0 border-rose-500/20 pt-2 sm:pt-0 w-full sm:w-auto justify-between sm:justify-end">
-              <div className="text-right">
-                <span className="text-[9px] text-zinc-400 uppercase block">Utilization</span>
-                <span className="font-black text-rose-300">{wakingCapital.utilizationPercent}%</span>
-              </div>
-              {onNavigate && (
-                <button
-                  onClick={() => onNavigate('quests')}
-                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 text-[11px] font-bold transition"
-                >
-                  Trim Quests
-                </button>
+      {/* PALE ORE OS v2: TEMPORAL SOLVENCY AUDIT CONTROLLER */}
+      <div className={`glass-panel rounded-2xl p-4 sm:p-5 border shadow-lg transition ${
+        accounting.status === 'OVERDRAFT'
+          ? 'border-rose-500/50 bg-rose-950/20'
+          : accounting.status === 'OVERCOMMITTED'
+            ? 'border-orange-500/50 bg-orange-950/20'
+            : accounting.status === 'TIGHT'
+              ? 'border-amber-500/40 bg-amber-950/15'
+              : 'border-emerald-500/30 bg-[#090d14]'
+      }`}>
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+              accounting.status === 'OVERDRAFT'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                : accounting.status === 'OVERCOMMITTED'
+                  ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40'
+                  : accounting.status === 'TIGHT'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+            }`}>
+              {accounting.status === 'OVERDRAFT' ? (
+                <AlertOctagon className="h-5 w-5 animate-pulse text-rose-400" />
+              ) : accounting.status === 'OVERCOMMITTED' || accounting.status === 'TIGHT' ? (
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+              ) : (
+                <ShieldCheck className="h-5 w-5 text-emerald-400" />
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="glass-panel rounded-xl p-3 sm:p-4 border border-white/10 bg-[#090d14] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
-              <ShieldAlert className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase font-bold">
-                  DAILY WAKING CAPITAL (BUDGET: {Math.round(wakingCapital.budgetMinutes / 60)}H)
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono tracking-wider font-black uppercase text-zinc-300">
+                  TEMPORAL SOLVENCY AUDIT
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-                  SLACK: {wakingCapital.slackMinutes}M
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                  accounting.status === 'OVERDRAFT'
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : accounting.status === 'OVERCOMMITTED'
+                      ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+                      : accounting.status === 'TIGHT'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                }`}>
+                  STATUS: {accounting.status}
+                </span>
+                <span className="text-[10px] font-mono text-zinc-400">
+                  {accounting.utilizationPercent}% Capital Allocated
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
-                Invested: <strong className="text-zinc-200">{wakingCapital.investedMinutes}m</strong> | Committed: <strong className="text-zinc-200">{wakingCapital.committedMinutes}m</strong> | Capacity Honored.
+              <p className="text-xs text-zinc-300 font-sans max-w-3xl leading-relaxed">
+                {accounting.status === 'OVERDRAFT' 
+                  ? `Active deficit of +${accounting.overdraftMinutes}m! Waking commitments have completely breached capital and are borrowing from nocturnal sleep and tomorrow's energy.`
+                  : accounting.status === 'OVERCOMMITTED'
+                    ? `Current commitments (${accounting.committedMinutes}m) plus required baseline (${accounting.requiredMinutes}m) exceed available waking hours. Prune or postpone secondary tasks.`
+                    : accounting.status === 'TIGHT'
+                      ? `Raw uncommitted time (${accounting.rawAvailableMinutes}m) is scarce; committing further will encroach directly into your ${accounting.protectedBufferMinutes}m safety friction buffer.`
+                      : `Solvent and resilient. You have ${accounting.safelyAllocatableMinutes}m of uncommitted capital that can be safely scheduled without jeopardizing sleep, worship, or recovery.`}
               </p>
             </div>
           </div>
-          <div className="w-full sm:w-48 bg-black/40 h-2 rounded-full overflow-hidden border border-white/5 shrink-0">
-            <div 
-              className={`h-full transition-all duration-500 ${
-                wakingCapital.utilizationPercent > 85 ? 'bg-amber-500' : 'bg-emerald-500'
-              }`}
-              style={{ width: `${Math.min(100, wakingCapital.utilizationPercent)}%` }}
-            />
+
+          <div className="flex items-center gap-4 shrink-0 font-mono text-xs border-t lg:border-t-0 border-white/10 pt-2 lg:pt-0 w-full lg:w-auto justify-between lg:justify-end">
+            <div className="text-left lg:text-right">
+              <span className="text-[9px] text-zinc-400 uppercase block">Safely Allocatable</span>
+              <span className={`font-black text-sm ${accounting.safelyAllocatableMinutes > 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                {accounting.safelyAllocatableMinutes}m
+              </span>
+            </div>
+            <div className="text-left lg:text-right">
+              <span className="text-[9px] text-zinc-400 uppercase block">Protected Buffer</span>
+              <span className="font-bold text-zinc-200 text-sm">
+                {accounting.protectedBufferMinutes}m ({state.profile.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT}%)
+              </span>
+            </div>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('quests')}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-zinc-200 border border-white/15 text-[11px] font-bold transition"
+              >
+                Review Directives
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* TODAY'S REST DECISION WIDGET & 7-DAY RHYTHM */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -626,14 +677,19 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
 
       </div>
 
-      {/* METRIC SUMMARY CARDS */}
+      {/* METRIC SUMMARY CARDS (DUAL-LEDGER & EFFICIENCY) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        {/* Card 1: Available Leisure Bank */}
+        {/* Card 1: Permanent Rest Bank (Equity) */}
         <div className="glass-panel p-4 rounded-xl border border-emerald-500/30 bg-[#0c1018] relative shadow-md">
-          <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
-            <Moon className="h-3 w-3" />
-            AVAILABLE REST BANK
+          <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Moon className="h-3 w-3" />
+              PERMANENT REST BANK
+            </span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+              EQUITY
+            </span>
           </span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-mono font-black text-emerald-300">
@@ -642,14 +698,60 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             <span className="text-xs font-mono font-bold text-emerald-400/70">MINS</span>
           </div>
           <p className="text-[10px] text-zinc-400 mt-1">
-            Guilt-free leisure currency ready to redeem
+            Minted via focus work & victories. Never expires.
           </p>
         </div>
 
-        {/* Card 2: Lifetime Deep Work Invested */}
+        {/* Card 2: Daily Rest Allowance (Today's Ceiling) */}
+        <div className="glass-panel p-4 rounded-xl border border-teal-500/20 bg-[#0d1017]">
+          <span className="text-[10px] font-mono text-teal-400 uppercase font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Coffee className="h-3 w-3 text-teal-400" />
+              DAILY REST ALLOWANCE
+            </span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-300">
+              CEILING
+            </span>
+          </span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-mono font-black text-teal-300">
+              {dailyRest.restConsumedToday} / {dailyRest.dailyAllowanceMinutes}
+            </span>
+            <span className="text-xs font-mono font-bold text-zinc-400">MINS</span>
+          </div>
+          <p className="text-[10px] text-zinc-400 mt-1">
+            {dailyRest.remainingAllowance}m remaining today • Non-cumulative
+          </p>
+        </div>
+
+        {/* Card 3: Temporal Efficiency & Leakage */}
+        <div className="glass-panel p-4 rounded-xl border border-white/10 bg-[#0d1017]">
+          <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center justify-between">
+            <span className="flex items-center gap-1">
+              <Zap className="h-3 w-3 text-amber-400" />
+              TEMPORAL EFFICIENCY
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.2 rounded ${
+              accounting.temporalLeakageMinutes > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-white/10 text-zinc-300'
+            }`}>
+              {accounting.temporalLeakageMinutes > 0 ? `+${accounting.temporalLeakageMinutes}m Leak` : 'Zero Leak'}
+            </span>
+          </span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-mono font-black text-amber-300">
+              {accounting.temporalEfficiencyPercent}%
+            </span>
+            <span className="text-xs font-mono font-bold text-zinc-400">INDEX</span>
+          </div>
+          <p className="text-[10px] text-zinc-400 mt-1">
+            (Focus + Intentional Rest) / Total Waking Time
+          </p>
+        </div>
+
+        {/* Card 4: Lifetime Deep Work Invested */}
         <div className="glass-panel p-4 rounded-xl border border-white/10 bg-[#0d1017]">
           <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center gap-1">
-            <Zap className="h-3 w-3 text-amber-400" />
+            <ArrowUpRight className="h-3 w-3 text-cyan-400" />
             LIFETIME DEEP WORK
           </span>
           <div className="mt-2 flex items-baseline gap-2">
@@ -659,42 +761,211 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             <span className="text-xs font-mono font-bold text-zinc-400">MINS ({Math.round(((profile.totalTimeInvested || 0) / 60) * 10) / 10}h)</span>
           </div>
           <p className="text-[10px] text-zinc-400 mt-1">
-            Total focused work blocks completed
+            Total completed focus directives logged
           </p>
         </div>
 
-        {/* Card 3: Total Leisure Minted */}
-        <div className="glass-panel p-4 rounded-xl border border-white/10 bg-[#0d1017]">
-          <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center gap-1">
-            <ArrowUpRight className="h-3 w-3 text-teal-400" />
-            CUMULATIVE MINTED
-          </span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-mono font-black text-teal-300">
-              +{profile.totalTimeEarned || currentCredits}
-            </span>
-            <span className="text-xs font-mono font-bold text-zinc-400">MINS</span>
+      </div>
+
+      {/* PALE ORE OS v2: COMMITMENT FEASIBILITY SIMULATOR & 3-DAY LOOKAHEAD */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* MODULE 1: TEMPORAL FEASIBILITY SIMULATOR ("What-If Commitment Checker") */}
+        <div className="glass-panel rounded-xl p-4 border border-emerald-500/30 bg-[#0b0f17] shadow-md flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5 mb-3">
+              <div>
+                <span className="text-[10px] font-mono tracking-widest text-emerald-400 uppercase font-bold flex items-center gap-1.5">
+                  <Hourglass className="h-3.5 w-3.5 text-emerald-400" />
+                  TEMPORAL FEASIBILITY SIMULATOR
+                </span>
+                <h4 className="text-xs font-serif font-bold text-zinc-100 mt-0.5">
+                  "What-If" Commitment Feasibility Test
+                </h4>
+              </div>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                candidateFeasibility.projectedStatus === 'STABLE'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : candidateFeasibility.projectedStatus === 'TIGHT'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+              }`}>
+                {candidateFeasibility.projectedStatus === 'STABLE' ? 'FEASIBLE: SAFE' : candidateFeasibility.projectedStatus === 'TIGHT' ? 'FEASIBLE: TIGHT MARGIN' : 'INSUFFICIENT CAPITAL'}
+              </span>
+            </div>
+
+            {/* Simulator Inputs */}
+            <div className="space-y-2.5">
+              <div>
+                <label className="text-[10px] font-mono text-zinc-400 uppercase block mb-1">
+                  Candidate Task / Event Title:
+                </label>
+                <input
+                  type="text"
+                  value={candidateLabel}
+                  onChange={e => setCandidateLabel(e.target.value)}
+                  placeholder="e.g. Client architecture review or writing sprint"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500/60 font-sans"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 mb-1">
+                  <span>DURATION COMMITMENT:</span>
+                  <span className="text-emerald-400 font-bold">{candidateMinutes} MINUTES ({Math.round(candidateMinutes / 60 * 10) / 10}h)</span>
+                </div>
+                {/* Preset Chips */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[15, 30, 45, 60, 90, 120, 180].map(mins => (
+                    <button
+                      key={mins}
+                      onClick={() => setCandidateMinutes(mins)}
+                      className={`px-2 py-1 rounded text-xs font-mono transition border ${
+                        candidateMinutes === mins
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-bold'
+                          : 'bg-white/5 hover:bg-white/10 text-zinc-400 border-transparent'
+                      }`}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Simulation Result Breakdown */}
+              <div className={`p-3 rounded-xl border text-xs font-mono space-y-2 ${
+                candidateFeasibility.projectedStatus === 'STABLE'
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                  : candidateFeasibility.projectedStatus === 'TIGHT'
+                    ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                    : 'bg-rose-950/25 border-rose-500/40 text-rose-200'
+              }`}>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span>Post-Commitment Safe Capacity:</span>
+                  <strong className="text-zinc-100">{candidateFeasibility.projectedSafeCapacity}m</strong>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span>Safety Buffer Encroached:</span>
+                  <strong className={candidateFeasibility.projectedSafeCapacity <= 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                    {candidateFeasibility.projectedSafeCapacity <= 0 ? 'YES (Encroaches into buffer)' : 'NO (Buffer preserved)'}
+                  </strong>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span>Sleep / Obligation Encroached:</span>
+                  <strong className={candidateFeasibility.projectedStatus === 'OVERDRAFT' ? 'text-rose-400' : 'text-emerald-400'}>
+                    {candidateFeasibility.projectedStatus === 'OVERDRAFT' ? 'YES (Overdraft hazard!)' : 'NO (Safe)'}
+                  </strong>
+                </div>
+                <p className="text-[11px] font-sans pt-1 border-t border-white/10 leading-relaxed text-zinc-300">
+                  <strong>Advice:</strong> {candidateFeasibility.recommendations[0] || 'Evaluate commitment against remaining capital.'}
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-[10px] text-zinc-400 mt-1">
-            From focus sessions & quest victories
-          </p>
+
+          {/* Quick Schedule action */}
+          <div className="pt-3 border-t border-white/5 mt-3 flex justify-between items-center">
+            <span className="text-[10px] font-mono text-zinc-500">
+              Evaluates against current {accounting.wakingCapitalMinutes}m budget.
+            </span>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('quests')}
+                className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5"
+              >
+                <span>Commit as Directive</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Card 4: Total Rest Redeemed */}
-        <div className="glass-panel p-4 rounded-xl border border-white/10 bg-[#0d1017]">
-          <span className="text-[10px] font-mono text-zinc-400 uppercase font-bold flex items-center gap-1">
-            <Coffee className="h-3 w-3 text-indigo-400" />
-            REST REDEEMED
-          </span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-mono font-black text-indigo-300">
-              {profile.totalTimeSpent || 0}
-            </span>
-            <span className="text-xs font-mono font-bold text-zinc-400">MINS</span>
+        {/* MODULE 2: 3-DAY FORWARD TEMPORAL FORECAST */}
+        <div className="glass-panel rounded-xl p-4 border border-white/10 bg-[#0b0e14] shadow-md flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5 mb-3">
+              <div>
+                <span className="text-[10px] font-mono tracking-widest text-zinc-300 uppercase font-bold flex items-center gap-1.5">
+                  <Compass className="h-3.5 w-3.5 text-zinc-400" />
+                  3-DAY FORWARD TEMPORAL FORECAST
+                </span>
+                <h4 className="text-xs font-serif font-bold text-zinc-100 mt-0.5">
+                  Multi-Day Solvency & Overcommitment Lookahead
+                </h4>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-400">
+                Next 72 Hours
+              </span>
+            </div>
+
+            <p className="text-xs text-zinc-400 font-sans leading-relaxed mb-3">
+              Predictive solvency mapping detects compounding debt before tomorrow begins, guaranteeing sleep and spiritual baseline protection.
+            </p>
+
+            {/* 3 Day Forecast Cards */}
+            <div className="grid grid-cols-3 gap-2">
+              {temporalForecast.map((day, idx) => {
+                const isOver = day.projectedStatus === 'OVERDRAFT' || day.projectedStatus === 'OVERCOMMITTED';
+                const isTight = day.projectedStatus === 'TIGHT';
+                const dayLabel = idx === 0 ? 'TODAY' : idx === 1 ? 'TOMORROW' : 'DAY AFTER';
+
+                return (
+                  <div 
+                    key={day.date}
+                    className={`p-3 rounded-xl border text-center flex flex-col justify-between transition ${
+                      isOver 
+                        ? 'bg-rose-950/20 border-rose-500/40 text-rose-200'
+                        : isTight
+                          ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                          : 'bg-white/[0.02] border-white/10 text-zinc-300'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[9px] font-mono tracking-widest font-black block uppercase text-zinc-400">
+                        {dayLabel}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-500 block">
+                        {day.date}
+                      </span>
+
+                      <div className="mt-2 text-base font-mono font-black">
+                        <span className={isOver ? 'text-rose-300' : isTight ? 'text-amber-300' : 'text-emerald-300'}>
+                          {day.committedMinutes}m
+                        </span>
+                        <span className="text-[10px] text-zinc-500 font-normal block">
+                          / {day.wakingCapitalMinutes}m Waking
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded block border ${
+                        isOver
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                          : isTight
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      }`}>
+                        {day.projectedStatus}
+                      </span>
+                      <span className="text-[9px] font-mono text-zinc-400 block">
+                        {day.safelyAllocatableMinutes}m allocatable
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <p className="text-[10px] text-zinc-400 mt-1">
-            Active rest sessions & vault vouchers
-          </p>
+
+          <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span>
+              Baseline Routine: <strong>{state.profile.requiredMinutesBaseline ?? DEFAULT_REQUIRED_MINUTES_BASELINE}m</strong>
+            </span>
+            <span>
+              Safety Buffer: <strong>{state.profile.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT}%</strong>
+            </span>
+          </div>
         </div>
 
       </div>

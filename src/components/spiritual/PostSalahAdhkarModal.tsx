@@ -58,9 +58,21 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
     targetCount: 1
   },
   {
-    id: 'post-ayat-kursi',
+    id: 'post-zubayr-tahlil',
     stepNumber: 3,
-    titleEn: '3. Āyat al-Kursī (The Throne Verse - 2:255)',
+    titleEn: '3. Declaration of Pure Devotion (Ibn az-Zubayr Tahlīl)',
+    titleAr: 'تَهْلِيلُ الإِخْلَاصِ وَالثَّنَاءِ الحَسَنِ',
+    source: 'Sahih Muslim (594)',
+    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعْبُدُ إِلَّا إِيَّاهُ، لَهُ النِّعْمَةُ وَلَهُ الفَضْلُ وَلَهُ الثَّنَاءُ الحَسَنُ، لَا إِلَهَ إِلَّا اللَّهُ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الكَافِرُونَ.',
+    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa Huwa ‘alā kulli shay’in Qadīr. Lā ḥawla wa lā quwwata illā billāh. Lā ilāha illAllāh, wa lā na‘budu illā iyyāh, lahun-ni‘matu wa lahul-faḍlu wa lahuth-thanā’ul-ḥasan. Lā ilāha illAllāhu mukhliṣīna lahud-dīna wa law karihal-kāfirūn.',
+    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He is over all things competent. There is no might nor power except with Allah. None has the right to be worshipped except Allah, and we worship none but Him. To Him belongs all grace, virtue, and beautiful praise. None has the right to be worshipped except Allah, keeping religion sincerely for Him alone, even if the disbelievers detest it.',
+    virtue: '‘Abdullah ibn az-Zubayr reported: "The Messenger of Allah ﷺ used to recite these words aloud following the Taslīm of each prayer." (Sahih Muslim 594)',
+    targetCount: 1
+  },
+  {
+    id: 'post-ayat-kursi',
+    stepNumber: 4,
+    titleEn: '4. Āyat al-Kursī (The Throne Verse - 2:255)',
     titleAr: 'آيَةُ الكُرْسِيِّ دُبُرَ كُلِّ صَلَاةٍ مَكْتُوبَةٍ',
     source: 'An-Nasa’i As-Sunan al-Kubra (9848) • Sahih al-Jami‘ (6464)',
     arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
@@ -71,20 +83,20 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-tasbih-standard',
-    stepNumber: 4,
-    titleEn: '4. Sunnah Tasbīḥ (33x SubḥānAllāh, 33x Alḥamdulillāh, 33x Allāhu Akbar + 1x Tahlīl)',
-    titleAr: 'التَّسْبِيحُ الكَامِلُ المَأْثُورُ (33 - 33 - 33 - 1)',
-    source: 'Sahih Muslim (597)',
+    stepNumber: 5,
+    titleEn: '5. Sunnah Tasbīḥ (Counted on the Right Hand Fingers)',
+    titleAr: 'التَّسْبِيحُ الكَامِلُ المَأْثُورُ بِاليَمِينِ (33 - 33 - 33 - 1)',
+    source: 'Sahih Muslim (597) & Sunan Abi Dawud (1502)',
     arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣) • تَمَامُ المِائَة: لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
     transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x) + Lā ilāha illAllāhu waḥdahū lā sharīka lah (1x).',
     translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times), sealed with the Shahādah to complete 100.',
-    virtue: 'The Prophet ﷺ said: "Whoever recites this following every obligatory prayer, his sins will be forgiven even if they are like the foam of the sea."',
+    virtue: 'Forgives sins even if like sea foam. The Sunnah is to count on the fingers of the right hand: «كَانَ يَعْقِدُ التَّسْبِيحَ بِيَمِينِهِ» (Abu Dawud 1502).',
     targetCount: 100
   },
   {
     id: 'post-fajr-maghrib-10x',
-    stepNumber: 5,
-    titleEn: '5. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
+    stepNumber: 6,
+    titleEn: '6. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
     titleAr: 'ذِكْرُ التَّهْلِيلِ المَخْصُوصُ عَقِبَ الفَجْرِ وَالمَغْرِبِ (١٠ مَرَّاتٍ)',
     source: 'Jami‘ at-Tirmidhi (3474) & Sahih at-Targhib (472)',
     arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
@@ -96,8 +108,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-muawwidhat',
-    stepNumber: 6,
-    titleEn: '6. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
+    stepNumber: 7,
+    titleEn: '7. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
     titleAr: 'المُعَوِّذَاتُ الثَّلَاثُ (الإِخْلَاص وَالفَلَق وَالنَّاس)',
     source: 'Sunan Abi Dawud (1523) & Jami‘ at-Tirmidhi (2903)',
     arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
@@ -109,8 +121,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-muadh-dua',
-    stepNumber: 7,
-    titleEn: '7. Beloved Supplication of Mu‘ādh ibn Jabal',
+    stepNumber: 8,
+    titleEn: '8. Beloved Supplication of Mu‘ādh ibn Jabal',
     titleAr: 'وَصِيَّةُ النَّبِيِّ ﷺ لِمُعَاذٍ عَقِبَ كُلِّ صَلَاةٍ',
     source: 'Sunan Abi Dawud (1522) & An-Nasa’i (1303)',
     arabic: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ، وَشُكْرِكَ، وَحُسْنِ عِبَادَتِكَ.',
@@ -298,6 +310,19 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
         {/* 3. SCROLLABLE AUTHENTIC ADHKAR BODY */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 font-sans">
           
+          {/* POST-SALAH TO ADHKAR FORTRESS SYNC BADGE */}
+          <div className="p-2.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-emerald-300">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>Connected to Sacred Protocol:</strong> Marking Standard 33x or Mini 10x automatically synchronizes +33 SubḥānAllāh, +33 Ḥamd, +33 Takbīr, +3 Istighfār &amp; +1 Tahlīl into your daily fortress counters.
+              </span>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 shrink-0 font-bold">
+              LIVE SYNC
+            </span>
+          </div>
+
           {/* SPECIAL ADVICE BANNER FOR FAJR & MAGHRIB */}
           {isFajrOrMaghrib && (
             <div className="p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-xl flex items-start gap-3">

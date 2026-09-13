@@ -11,6 +11,11 @@ import {
   calculateEarlyFinishRefund,
   createRefundTransaction,
   calculateDailyWakingCapital,
+  calculateTemporalAccounting,
+  calculateTemporalFeasibility,
+  calculateDailyRestState,
+  calculateEstimationCalibration,
+  calculateTemporalForecast,
   evaluateTodayRestDecision,
   DEFAULT_REST_PASSES
 } from '../temporalLedger';
@@ -287,6 +292,193 @@ describe('Temporal Ledger & Rest Engine (Core Money-Math)', () => {
       expect(qaylulah?.durationMinutes).toBe(25);
       expect(qaylulah?.costMinutes).toBe(25);
       expect(qaylulah?.costCoins).toBe(25);
+    });
+  });
+
+  describe('7. Temporal Solvency v2 & Operational States', () => {
+    it('determines STABLE state when safely allocatable > 0', () => {
+      // 960m budget, 180m used, 240m committed, 120m required = 540m allocated
+      // Raw available = 420m, 10% buffer = 96m -> Safely allocatable = 324m
+      const accounting = calculateTemporalAccounting({
+        budgetMinutes: 960,
+        investedMinutesToday: 180,
+        committedMinutesToday: 240,
+        requiredMinutesToday: 120,
+        protectedBufferPercent: 10
+      });
+
+      expect(accounting.status).toBe('STABLE');
+      expect(accounting.rawAvailableMinutes).toBe(420);
+      expect(accounting.protectedBufferMinutes).toBe(96);
+      expect(accounting.safelyAllocatableMinutes).toBe(324);
+      expect(accounting.isOverdrawn).toBe(false);
+    });
+
+    it('determines TIGHT state when dipping into protected buffer but raw available >= 0', () => {
+      // 960m budget, 400m used, 400m committed, 120m required = 920m allocated
+      // Raw available = 40m, Buffer = 96m -> Safely allocatable = -56m (<= 0)
+      const accounting = calculateTemporalAccounting({
+        budgetMinutes: 960,
+        investedMinutesToday: 400,
+        committedMinutesToday: 400,
+        requiredMinutesToday: 120,
+        protectedBufferPercent: 10
+      });
+
+      expect(accounting.status).toBe('TIGHT');
+      expect(accounting.rawAvailableMinutes).toBe(40);
+      expect(accounting.safelyAllocatableMinutes).toBeLessThanOrEqual(0);
+      expect(accounting.isOverdrawn).toBe(false);
+    });
+
+    it('determines OVERCOMMITTED state when raw available < 0 but total allocated within waking limits', () => {
+      // 960m budget, 500m used, 350m committed, 120m required = 970m allocated
+      // totalAllocated > 960 -> OVERDRAFT
+      const overdraftAcc = calculateTemporalAccounting({
+        budgetMinutes: 960,
+        investedMinutesToday: 500,
+        committedMinutesToday: 350,
+        requiredMinutesToday: 120
+      });
+      expect(overdraftAcc.status).toBe('OVERDRAFT');
+      expect(overdraftAcc.isOverdrawn).toBe(true);
+      expect(overdraftAcc.overdraftMinutes).toBe(10);
+    });
+  });
+
+  describe('8. Daily Rest Allowance vs Permanent Rest Bank', () => {
+    it('tracks daily rest consumption independently from bank balance', () => {
+      const history: LeisureTransaction[] = [
+        {
+          id: 'tx-1',
+          type: 'leisure_redemption',
+          minutesDelta: -45,
+          reason: 'Redeemed Rest Pass: Reading (45m)',
+          timestamp: '2026-09-13T10:00:00Z',
+          minutes: -45,
+          balanceAfter: 100,
+          category: 'neutral_recovery'
+        },
+        {
+          id: 'tx-2',
+          type: 'rest_refund',
+          minutesDelta: 25,
+          reason: 'Early Rest Conclusion: +25m unspent',
+          timestamp: '2026-09-13T10:20:00Z',
+          minutes: 25,
+          balanceAfter: 125,
+          category: 'restorative'
+        }
+      ];
+
+      const restState = calculateDailyRestState({
+        dailyAllowanceMinutes: 120,
+        history,
+        todayDate: '2026-09-13'
+      });
+
+      // 45m redeemed, 25m refunded -> net 20m consumed today
+      expect(restState.restConsumedToday).toBe(20);
+      expect(restState.remainingAllowance).toBe(100);
+    });
+
+    it('enforces dual gate during atomic redemption (coins + rest bank + daily allowance)', () => {
+      const pass: RestPass = {
+        id: 'pass-game',
+        name: 'Gaming Pass',
+        durationMinutes: 60,
+        costCoins: 50,
+        costMinutes: 60,
+        category: 'Recreation',
+        restType: 'intentional_leisure'
+      };
+
+      // Fails when daily allowance is lower than pass cost
+      const res = redeemRestPassAtomic({
+        currentCoins: 100,
+        currentLeisureBalance: 120,
+        remainingDailyAllowance: 30, // Only 30m remaining today!
+        pass,
+        timestamp: '2026-09-13T12:00:00Z'
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('Daily Rest Ceiling Reached');
+      expect(res.newLeisureBalance).toBe(120);
+
+      // Essential recovery passes bypass daily ceiling
+      const essentialPass: RestPass = {
+        ...pass,
+        isEssentialRecovery: true
+      };
+
+      const resEssential = redeemRestPassAtomic({
+        currentCoins: 100,
+        currentLeisureBalance: 120,
+        remainingDailyAllowance: 30,
+        pass: essentialPass,
+        timestamp: '2026-09-13T12:00:00Z'
+      });
+
+      expect(resEssential.success).toBe(true);
+      expect(resEssential.newLeisureBalance).toBe(60);
+    });
+  });
+
+  describe('9. Temporal Feasibility & Quest Cost Engine', () => {
+    it('evaluates feasibility and produces warnings for over-commitments', () => {
+      const feasible = calculateTemporalFeasibility({
+        currentSafelyAllocatable: 90,
+        currentRawAvailable: 186,
+        questMinutes: 45,
+        wakingCapitalMinutes: 960,
+        totalAllocatedMinutes: 774
+      });
+
+      expect(feasible.feasible).toBe(true);
+      expect(feasible.projectedStatus).toBe('STABLE');
+      expect(feasible.conflictMinutes).toBe(0);
+
+      const conflict = calculateTemporalFeasibility({
+        currentSafelyAllocatable: 30,
+        currentRawAvailable: 126,
+        questMinutes: 90,
+        wakingCapitalMinutes: 960,
+        totalAllocatedMinutes: 834
+      });
+
+      expect(conflict.conflictMinutes).toBe(60);
+      expect(conflict.projectedStatus).toBe('TIGHT');
+      expect(conflict.recommendations.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('10. Estimation Calibration & Temporal Forecast', () => {
+    it('calculates personal calibration multiplier from completed quests', () => {
+      const completed = [
+        { estimatedTime: 30, actualMinutesWorked: 36, status: 'Completed' }, // +20%
+        { estimatedTime: 50, actualMinutesWorked: 60, status: 'Completed' }, // +20%
+        { estimatedTime: 20, actualMinutesWorked: 24, status: 'Completed' }  // +20%
+      ];
+
+      const cal = calculateEstimationCalibration(completed);
+      expect(cal.completedCount).toBe(3);
+      expect(cal.multiplier).toBe(1.2);
+      expect(cal.variancePercent).toBe(20);
+    });
+
+    it('generates forward-looking temporal forecast', () => {
+      const forecast = calculateTemporalForecast({
+        remainingWakingMinutes: 600,
+        committedMinutes: 180,
+        requiredMinutes: 120,
+        plannedRestMinutes: 60,
+        protectedBufferMinutes: 96
+      });
+
+      // 600 - 180 - 120 - 60 - 96 = 144m
+      expect(forecast.freeSafeMarginMinutes).toBe(144);
+      expect(forecast.recommendationText).toContain('Generous solvency');
     });
   });
 });

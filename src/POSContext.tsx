@@ -15,6 +15,7 @@ import {
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
   RestPass, DailyWakingCapital, LeisureTransaction,
   AppUsageLimit, AppUsageLogEntry,
+  TemporalAccounting, TemporalStatus, RestCategory, TemporalFeasibilityResult,
   Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem,
   RequiredCapability, CapabilityReviewNote,
   StandardXPEventType, XPAnalytics
@@ -33,10 +34,15 @@ import {
   redeemRestPassAtomic,
   calculateEarlyFinishRefund,
   calculateDailyWakingCapital,
+  calculateTemporalAccounting,
+  calculateDailyRestState,
   calculateAppUsageStatus,
   getActiveUsageBlocker,
   DEFAULT_REST_PASSES,
-  DEFAULT_APP_USAGE_LIMITS
+  DEFAULT_APP_USAGE_LIMITS,
+  DEFAULT_PROTECTED_BUFFER_PERCENT,
+  DEFAULT_REQUIRED_MINUTES_BASELINE,
+  DEFAULT_DAILY_REST_ALLOWANCE_MINUTES
 } from './utils/temporalLedger';
 import { INITIAL_STATE, DEFAULT_SHOP_ITEMS, DEFAULT_QURAN_TRACKER, getLocalDateString, createDefaultSpiritualLog } from './initialState';
 import {
@@ -219,14 +225,19 @@ interface POSContextType {
   }) => DispatchXPResult;
   getXPAnalytics: () => XPAnalytics;
   
-  // Temporal Currency & Leisure Bank
+  // Temporal Currency & Leisure Bank (Sacred Rest v2)
   addTimeCredits: (minutes: number, reason: string, type?: TimeTransactionType, relatedId?: string) => void;
   spendTimeCredits: (minutes: number, reason: string, relatedId?: string) => { success: boolean; message: string };
-  redeemRestPass: (pass: RestPass) => { success: boolean; message: string };
+  redeemRestPass: (pass: RestPass, isBypassAllowance?: boolean) => { success: boolean; message: string };
   setDailyWakingHours: (hours: number) => void;
+  setProtectedBufferPercent: (percent: number) => void;
+  setDailyRestAllowance: (minutes: number) => void;
+  setRequiredMinutesBaseline: (minutes: number) => void;
   repayTimeDebt: (minutes: number) => void;
   getTemporalCapitalInfo: () => TemporalCapitalInfo;
   getDailyWakingCapital: () => DailyWakingCapital;
+  getTemporalAccounting: () => TemporalAccounting;
+  getDailyRestState: () => ReturnType<typeof calculateDailyRestState>;
   startActiveRestSession: (title: string, minutes: number, passId?: string, costMinutes?: number) => void;
   stopActiveRestSession: () => void;
   pauseActiveRestSession: () => void;
@@ -4615,18 +4626,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: `Redeemed ${minutes}m of earned leisure.` };
   };
 
-  const redeemRestPass = (pass: RestPass): { success: boolean; message: string } => {
+  const redeemRestPass = (pass: RestPass, isBypassAllowance: boolean = false): { success: boolean; message: string } => {
     const currentCoins = state.profile.coins ?? 150;
     const currentLeisure = state.profile.timeCredits ?? 60;
     const timestamp = getSystemTimestamp(state.systemDate);
     const usageBlocker = getActiveUsageBlocker(state.appUsageLimits || [], state.appUsageLogs || [], state.systemDate);
+    const dailyRest = getDailyRestState();
 
     const result = redeemRestPassAtomic({
       currentCoins,
       currentLeisureBalance: currentLeisure,
+      remainingDailyAllowance: dailyRest.remainingAllowance,
       pass,
       timestamp,
-      blockedByAppUsage: usageBlocker
+      blockedByAppUsage: usageBlocker,
+      isBypassAllowance
     });
 
     if (!result.success) {
@@ -4649,7 +4663,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       sender: 'SANCTUM_GUARDIAN',
       category: 'achievement',
       title: '🌿 Active Rest Initiated',
-      content: `Redeemed ${pass.name} (${pass.durationMinutes}m). Balance remaining: ${result.newLeisureBalance}m rest, ${result.newCoins} coins.`,
+      content: `Redeemed ${pass.name} (${pass.durationMinutes}m). Balance remaining: ${result.newLeisureBalance}m bank, ${result.newCoins} coins. Daily allowance remaining: ${Math.max(0, dailyRest.remainingAllowance - pass.costMinutes)}m.`,
       priority: 'low'
     });
 
@@ -4663,6 +4677,39 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       profile: {
         ...prev.profile,
         dailyWakingHours: clamped
+      }
+    }));
+  };
+
+  const setProtectedBufferPercent = (percent: number) => {
+    const clamped = Math.max(0, Math.min(30, percent));
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        protectedBufferPercent: clamped
+      }
+    }));
+  };
+
+  const setDailyRestAllowance = (minutes: number) => {
+    const clamped = Math.max(15, Math.min(480, minutes));
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        dailyRestAllowanceMinutes: clamped
+      }
+    }));
+  };
+
+  const setRequiredMinutesBaseline = (minutes: number) => {
+    const clamped = Math.max(0, Math.min(360, minutes));
+    setState(prev => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        requiredMinutesBaseline: clamped
       }
     }));
   };
@@ -4695,17 +4742,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const getDailyWakingCapital = (): DailyWakingCapital => {
+  const getTemporalAccounting = (): TemporalAccounting => {
     const wakingHours = state.profile.dailyWakingHours || 16;
     const budgetMinutes = wakingHours * 60;
     const todayStr = state.systemDate;
 
-    // Invested minutes today: focus time + actual time on quests completed today
-    const focusMinutesToday = state.profile.focusMinutesToday || 0;
+    // Invested minutes today: focus time (only if recorded today) + actual time on quests completed today
+    const focusMinutesToday = (state.profile.lastFocusDate === todayStr) ? (state.profile.focusMinutesToday || 0) : 0;
     const completedQuestsToday = (state.quests || []).filter(
       q => q.lastCompletedDate === todayStr || (q.status === 'Completed' && q.completedAt?.startsWith(todayStr))
     );
-    const questMinutesToday = completedQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 15), 0);
+    const questMinutesToday = completedQuestsToday.reduce((sum, q) => sum + (q.actualMinutesWorked || q.estimatedTime || 15), 0);
     const investedMinutesToday = Math.max(focusMinutesToday, questMinutesToday);
 
     // Committed minutes today: active quests scheduled for today
@@ -4716,25 +4763,93 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const committedMinutesToday = activeQuestsToday.reduce((sum, q) => sum + (q.estimatedTime || 30), 0);
 
-    return calculateDailyWakingCapital({
+    const requiredMinutesBaseline = state.profile.requiredMinutesBaseline ?? DEFAULT_REQUIRED_MINUTES_BASELINE;
+    const protectedBufferPercent = state.profile.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT;
+
+    const baseAccounting = calculateTemporalAccounting({
       budgetMinutes,
       investedMinutesToday,
-      committedMinutesToday
+      committedMinutesToday,
+      requiredMinutesToday: requiredMinutesBaseline,
+      protectedBufferPercent,
+      appUsageLogs: state.appUsageLogs || [],
+      appUsageLimits: state.appUsageLimits || [],
+      todayDate: todayStr
+    });
+
+    return {
+      ...baseAccounting,
+      breakdown: {
+        focusMinutes: focusMinutesToday,
+        completedQuestMinutes: questMinutesToday,
+        completedQuestsList: completedQuestsToday.map(q => ({
+          id: q.id,
+          title: q.name,
+          minutes: q.actualMinutesWorked || q.estimatedTime || 15
+        })),
+        activeQuestsList: activeQuestsToday.map(q => ({
+          id: q.id,
+          title: q.name,
+          minutes: q.estimatedTime || 30,
+          priority: q.difficulty
+        })),
+        requiredBaselineDescription: 'Fixed baseline for 5 obligatory prayers, prophetic morning & evening adhkār, wudu, and essential daily meals/hygiene.',
+        resetSchedule: 'Refreshes every morning at 00:00. Unused waking capital expires at midnight (Ra’s al-Māl cannot be hoarded).',
+        activeDate: todayStr
+      }
+    };
+  };
+
+  const getDailyRestState = () => {
+    return calculateDailyRestState({
+      dailyAllowanceMinutes: state.profile.dailyRestAllowanceMinutes ?? DEFAULT_DAILY_REST_ALLOWANCE_MINUTES,
+      history: state.timeHistory,
+      todayDate: state.systemDate
     });
   };
 
-  const getTemporalCapitalInfo = (): TemporalCapitalInfo => {
-    const capital = getDailyWakingCapital();
+  const getDailyWakingCapital = (): DailyWakingCapital => {
+    const accounting = getTemporalAccounting();
     return {
-      dailyWakingMinutes: capital.budgetMinutes,
-      investedMinutesToday: capital.investedMinutes,
-      committedMinutesToday: capital.committedMinutes,
-      uncommittedMinutes: capital.slackMinutes,
+      budgetMinutes: accounting.wakingCapitalMinutes,
+      investedMinutes: accounting.usedMinutes,
+      committedMinutes: accounting.committedMinutes,
+      requiredMinutes: accounting.requiredMinutes,
+      protectedBufferMinutes: accounting.protectedBufferMinutes,
+      safelyAllocatableMinutes: accounting.safelyAllocatableMinutes,
+      status: accounting.status,
+      slackMinutes: Math.max(0, accounting.rawAvailableMinutes),
+      isOverdrawn: accounting.isOverdrawn,
+      overdraftMinutes: accounting.overdraftMinutes,
+      utilizationPercent: accounting.utilizationPercent
+    };
+  };
+
+  const getTemporalCapitalInfo = (): TemporalCapitalInfo => {
+    const accounting = getTemporalAccounting();
+    const restState = getDailyRestState();
+    return {
+      dailyWakingMinutes: accounting.wakingCapitalMinutes,
+      investedMinutesToday: accounting.usedMinutes,
+      committedMinutesToday: accounting.committedMinutes,
+      requiredMinutesToday: accounting.requiredMinutes,
+      protectedBufferMinutes: accounting.protectedBufferMinutes,
+      protectedBufferPercent: state.profile.protectedBufferPercent ?? DEFAULT_PROTECTED_BUFFER_PERCENT,
+      safelyAllocatableMinutes: accounting.safelyAllocatableMinutes,
+      rawAvailableMinutes: accounting.rawAvailableMinutes,
+      temporalStatus: accounting.status,
+      uncommittedMinutes: Math.max(0, accounting.rawAvailableMinutes),
       leisureMinutesBalance: state.profile.timeCredits ?? 60,
+      dailyRestAllowanceMinutes: restState.dailyAllowanceMinutes,
+      dailyRestUsedToday: restState.restConsumedToday,
+      dailyRestRemainingToday: restState.remainingAllowance,
       timeDebt: state.profile.timeDebt || 0,
-      isOverdrawn: capital.isOverdrawn,
-      overdraftMinutes: capital.overdraftMinutes,
-      utilizationPercent: capital.utilizationPercent
+      isOverdrawn: accounting.isOverdrawn,
+      overdraftMinutes: accounting.overdraftMinutes,
+      utilizationPercent: accounting.utilizationPercent,
+      temporalLeakageMinutes: accounting.temporalLeakageMinutes,
+      temporalEfficiencyPercent: accounting.temporalEfficiencyPercent,
+      recoveredMinutesToday: restState.restorativeMinutes
     };
   };
 
@@ -7025,9 +7140,62 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hawqalaCount: 0
     };
 
+    // Calculate delta for individual Dhikr beads if postSalahAdhkar was updated
+    const oldPostMap = currentDhikr.postSalahAdhkar || {};
+    const newPostMap = updates.postSalahAdhkar !== undefined ? updates.postSalahAdhkar : oldPostMap;
+
+    let deltaTasbeeh = 0;
+    let deltaHamd = 0;
+    let deltaTakbir = 0;
+    let deltaIstighfar = 0;
+    let deltaTahlil = 0;
+
+    if (updates.postSalahAdhkar !== undefined) {
+      const getPostCounts = (map: Partial<PostSalahAdhkarMap>) => {
+        let tasbeeh = 0;
+        let hamd = 0;
+        let takbir = 0;
+        let istighfar = 0;
+        let tahlil = 0;
+
+        const prayers: (keyof PostSalahAdhkarMap)[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+        prayers.forEach(p => {
+          const mode = map[p];
+          if (mode === 'standard33') {
+            tasbeeh += 33;
+            hamd += 33;
+            takbir += 33;
+            istighfar += 3;
+            tahlil += 1;
+          } else if (mode === 'mini10') {
+            tasbeeh += 10;
+            hamd += 10;
+            takbir += 10;
+            istighfar += 3;
+            tahlil += 1;
+          }
+        });
+        return { tasbeeh, hamd, takbir, istighfar, tahlil };
+      };
+
+      const oldCounts = getPostCounts(oldPostMap);
+      const newCounts = getPostCounts(newPostMap);
+
+      deltaTasbeeh = newCounts.tasbeeh - oldCounts.tasbeeh;
+      deltaHamd = newCounts.hamd - oldCounts.hamd;
+      deltaTakbir = newCounts.takbir - oldCounts.takbir;
+      deltaIstighfar = newCounts.istighfar - oldCounts.istighfar;
+      deltaTahlil = newCounts.tahlil - oldCounts.tahlil;
+    }
+
     const updatedDhikr: DhikrTasbeehLog = {
       ...currentDhikr,
-      ...updates
+      ...updates,
+      tasbeehCount: updates.tasbeehCount !== undefined ? updates.tasbeehCount : Math.max(0, (currentDhikr.tasbeehCount || 0) + deltaTasbeeh),
+      hamdCount: updates.hamdCount !== undefined ? updates.hamdCount : Math.max(0, (currentDhikr.hamdCount || 0) + deltaHamd),
+      takbirCount: updates.takbirCount !== undefined ? updates.takbirCount : Math.max(0, (currentDhikr.takbirCount || 0) + deltaTakbir),
+      istighfarCount: updates.istighfarCount !== undefined ? updates.istighfarCount : Math.max(0, (currentDhikr.istighfarCount || 0) + deltaIstighfar),
+      tahlilCount: updates.tahlilCount !== undefined ? updates.tahlilCount : Math.max(0, (currentDhikr.tahlilCount || 0) + deltaTahlil),
     };
 
     let dhikrXp = 0;
@@ -7050,6 +7218,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         postSalahCount++;
       }
     });
+
+    if (postSalahCount > 0) {
+      updatedDhikr.tasbeehAfterSalah = true;
+    }
 
     if (postSalahCount === 5) {
       dhikrXp += 25; // 5/5 all prayers post-adhkar bonus
@@ -7714,9 +7886,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       spendTimeCredits,
       redeemRestPass,
       setDailyWakingHours,
+      setProtectedBufferPercent,
+      setDailyRestAllowance,
+      setRequiredMinutesBaseline,
       repayTimeDebt,
       getTemporalCapitalInfo,
       getDailyWakingCapital,
+      getTemporalAccounting,
+      getDailyRestState,
       startActiveRestSession,
       stopActiveRestSession,
       pauseActiveRestSession,

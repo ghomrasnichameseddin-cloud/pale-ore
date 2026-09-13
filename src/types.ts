@@ -334,6 +334,13 @@ export interface UserProfile {
   coins: number;
   timeCredits?: number; // Temporal Leisure Balance in minutes (earned rest currency)
   dailyWakingHours?: number; // Configurable daily waking capital in hours (default 16)
+  protectedBufferPercent?: number; // Configurable protected buffer % (5, 10, 15, 20, default 10)
+  dailyRestAllowanceMinutes?: number; // Daily rest ceiling (60m low, 120m normal, 180m recovery)
+  dailyRestType?: 'low' | 'normal' | 'recovery';
+  requiredMinutesBaseline?: number; // Baseline daily required time (prayers, hygiene, essential obligations, default 120)
+  dailyResetHour?: number; // Daily temporal reset hour (default 3 for 03:00)
+  estimationMultiplier?: number; // Rolling personal estimation calibration factor (e.g. 1.15)
+  recoveredMinutesToday?: number; // Time saved from enforced boundaries & discipline
   timeDebt?: number; // Temporal deficit / penalty in minutes
   totalTimeInvested?: number; // All-time focus & quest minutes completed
   totalTimeEarned?: number; // All-time leisure minutes minted
@@ -546,7 +553,12 @@ export type LeisureTransactionType =
   | 'leisure_redemption'  // Spent on leisure voucher or active rest
   | 'rest_refund'         // Pro-rata unspent rest refund
   | 'time_debt_penalty'   // Deducted / debt incurred from lapse
-  | 'manual_adjustment';  // Operator calibrated
+  | 'manual_adjustment'   // Operator calibrated
+  | 'app_usage_deduction' // Deducted due to digital limit breach
+  | 'budget_adjust'       // Waking budget / buffer recalibrated
+  | 'rest_allowance_grant'// Daily rest ceiling initialized/adjusted
+  | 'rest_allowance_consume' // Daily rest allowance spent
+  | 'temporal_correction'; // Audit adjustment
 
 export type TimeTransactionType = LeisureTransactionType;
 
@@ -562,9 +574,12 @@ export interface LeisureTransaction {
   minutes: number;
   balanceAfter: number;
   relatedId?: string;
+  category?: 'restorative' | 'intentional_leisure' | 'neutral_recovery' | 'uncontrolled_usage';
 }
 
 export type TimeTransaction = LeisureTransaction;
+
+export type RestCategory = 'restorative' | 'intentional_leisure' | 'neutral_recovery' | 'uncontrolled_usage';
 
 export interface RestPass {
   id: string;
@@ -575,6 +590,8 @@ export interface RestPass {
   description?: string;
   category?: string;
   icon?: string;
+  restType?: RestCategory;
+  isEssentialRecovery?: boolean; // If true, can be redeemed even on strict low-rest days
 }
 
 export interface LeisureBankState {
@@ -584,10 +601,42 @@ export interface LeisureBankState {
   totalSpent?: number;
 }
 
+export type TemporalStatus = 'STABLE' | 'TIGHT' | 'OVERCOMMITTED' | 'OVERDRAFT';
+
+export interface TemporalAccounting {
+  wakingCapitalMinutes: number; // e.g. 16 * 60 = 960m
+  usedMinutes: number;          // Completed work + logged focus today
+  committedMinutes: number;     // Active directives scheduled for today
+  requiredMinutes: number;      // Fixed baseline (prayer, fardh, essential routines, default 120m)
+  protectedBufferMinutes: number; // Configured % of waking capital (default 10% = 96m)
+  protectedBufferPercent: number; // 5, 10, 15, 20
+  rawAvailableMinutes: number;  // wakingCapital - used - committed - required
+  safelyAllocatableMinutes: number; // rawAvailable - protectedBuffer
+  status: TemporalStatus;
+  isOverdrawn: boolean;
+  overdraftMinutes: number;
+  utilizationPercent: number;
+  temporalLeakageMinutes: number;
+  temporalEfficiencyPercent: number;
+  breakdown?: {
+    focusMinutes: number;
+    completedQuestMinutes: number;
+    completedQuestsList: { id: string; title: string; minutes: number }[];
+    activeQuestsList: { id: string; title: string; minutes: number; priority?: string }[];
+    requiredBaselineDescription: string;
+    resetSchedule: string;
+    activeDate: string;
+  };
+}
+
 export interface DailyWakingCapital {
   budgetMinutes: number; // e.g. 16 * 60 = 960m
   investedMinutes: number; // logged focus + completed quests today
   committedMinutes: number; // estimated time of remaining active quests today
+  requiredMinutes?: number; // baseline essential routines
+  protectedBufferMinutes?: number; // protected margin
+  safelyAllocatableMinutes?: number;
+  status?: TemporalStatus;
   slackMinutes: number; // remaining free waking capital
   isOverdrawn: boolean; // committed > budget - invested
   overdraftMinutes: number;
@@ -598,12 +647,44 @@ export interface TemporalCapitalInfo {
   dailyWakingMinutes: number; // e.g. 16 * 60 = 960m
   investedMinutesToday: number; // actual focus and completed work today
   committedMinutesToday: number; // estimated time of remaining active quests today
-  uncommittedMinutes: number; // remaining free waking capital
-  leisureMinutesBalance: number; // bank of earned rest minutes
+  requiredMinutesToday: number; // baseline prayer, obligations, routines
+  protectedBufferMinutes: number; // non-allocatable safety margin
+  protectedBufferPercent: number; // 5, 10, 15, 20
+  rawAvailableMinutes: number; // waking - used - committed - required
+  safelyAllocatableMinutes: number; // rawAvailable - protectedBuffer
+  temporalStatus: TemporalStatus;
+  uncommittedMinutes: number; // alias for rawAvailableMinutes
+  leisureMinutesBalance: number; // permanent bank of earned rest minutes
+  dailyRestAllowanceMinutes: number; // daily ceiling (e.g. 120m)
+  dailyRestUsedToday: number; // rest elapsed today
+  dailyRestRemainingToday: number; // allowance - used
   timeDebt: number; // deficit minutes
-  isOverdrawn: boolean; // true if committed + invested > waking budget
+  isOverdrawn: boolean; // true if committed + invested + required > waking budget
   overdraftMinutes: number;
-  utilizationPercent: number; // (invested + committed) / dailyWakingMinutes * 100
+  utilizationPercent: number; // (invested + committed + required) / dailyWakingMinutes * 100
+  temporalLeakageMinutes: number;
+  temporalEfficiencyPercent: number;
+  recoveredMinutesToday: number;
+}
+
+export interface TemporalFeasibilityResult {
+  feasible: boolean;
+  currentSafeCapacity: number; // in minutes
+  newCommitment: number;       // in minutes
+  projectedSafeCapacity: number; // in minutes
+  projectedStatus: TemporalStatus;
+  conflictMinutes: number;     // > 0 if over capacity
+  recommendations: string[];
+}
+
+export interface TemporalForecast {
+  remainingWakingMinutes: number;
+  committedMinutes: number;
+  requiredMinutes: number;
+  plannedRestMinutes: number;
+  protectedBufferMinutes: number;
+  freeSafeMarginMinutes: number;
+  recommendationText: string;
 }
 
 export interface ActiveRestSession {
@@ -615,9 +696,19 @@ export interface ActiveRestSession {
   paused?: boolean;
   costMinutes?: number;
   passId?: string;
+  restType?: RestCategory;
 }
 
-export type UsageLimitCategory = 'gaming' | 'social_media' | 'video_streaming' | 'browsing' | 'other';
+export type UsageLimitCategory = 
+  | 'gaming' 
+  | 'social_media' 
+  | 'video_streaming' 
+  | 'browsing' 
+  | 'entertainment'
+  | 'communication'
+  | 'productivity'
+  | 'other';
+
 export type AppUsageLimitCategory = UsageLimitCategory;
 
 export type UsageConsequenceMode = 'informational' | 'deduct_leisure_bank' | 'block_rest_passes';
@@ -628,6 +719,7 @@ export interface AppUsageLimit {
   name: string;
   category: UsageLimitCategory;
   dailyLimitMinutes: number;
+  sessionLimitMinutes?: number; // Continuous single session limit
   consequence: UsageConsequenceMode;
   icon?: string;
   enabled?: boolean;

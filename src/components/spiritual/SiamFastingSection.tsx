@@ -377,10 +377,10 @@ export const SiamFastingSection: React.FC<SiamFastingSectionProps> = ({
               «ذَهَبَ الظَّمَأُ، وَابْتَلَّتِ العُرُوقُ، وَثَبَتَ الأَجْرُ إِنْ شَاءَ الله»
             </p>
             <p className="text-[11px] text-zinc-300 font-sans italic">
-              &ldquo;Dhahaba adh-Dhama'u, wabtallat al-'urooqu, wa thabata al-ajru in sha Allah.&rdquo;
+              &ldquo;Dhahaba adh-Dhama&apos;u, wabtallat al-&apos;urooqu, wa thabata al-ajru in sha Allah.&rdquo;
             </p>
             <span className="text-[10px] text-zinc-500 font-mono block">
-              &ldquo;The thirst is gone, the veins are moistened, and the reward is confirmed, if Allah wills.&rdquo; (Abu Dawud 2357)
+              &ldquo;The thirst is gone, the veins are moistened, and the reward is confirmed, if Allah wills.&rdquo; (Abu Dawud 2357 - Hasan)
             </span>
           </div>
 
@@ -390,11 +390,86 @@ export const SiamFastingSection: React.FC<SiamFastingSectionProps> = ({
               «اللَّهُمَّ إِنِّي لَكَ صُمْتُ، وَعَلَى رِزْقِكَ أَفْطَرْتُ»
             </p>
             <p className="text-[11px] text-zinc-300 font-sans italic">
-              &ldquo;Allahumma inni laka sumtu, wa 'ala rizqika aftartu.&rdquo;
+              &ldquo;Allahumma inni laka sumtu, wa &apos;ala rizqika aftartu.&rdquo;
             </p>
             <span className="text-[10px] text-zinc-500 font-mono block">
-              &ldquo;O Allah, for You I have fasted, and upon Your provision I have broken my fast.&rdquo; (Abu Dawud)
+              &ldquo;O Allah, for You I have fasted, and upon Your provision I have broken my fast.&rdquo; (Abu Dawud 2358)
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 5 PROPHETIC FASTING SUNAN & ETIQUETTES (آدَابُ الصِّيَامِ النَّبَوِيَّة) */}
+      <div className="p-4 bg-gradient-to-br from-[#141209] to-[#0a0904] border border-[#c5a059]/30 rounded-xl space-y-3">
+        <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#c5a059]" />
+            <h4 className="font-display font-bold text-sm text-zinc-100">
+              Prophetic Fasting Sunan &amp; Etiquettes (آدَابُ الصِّيَامِ النَّبَوِيَّة)
+            </h4>
+          </div>
+          <span className="text-[10px] font-mono text-[#c5a059] bg-[#1a150a] px-2 py-0.5 rounded-full border border-[#c5a059]/30">
+            5 Authentic Prophetic Practices
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {/* 1. Hastening Iftar */}
+          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold text-amber-300">1. Hastening Iftār (تَعْجِيلُ الفِطْر)</span>
+              <span className="text-[9px] font-mono text-zinc-500">Bukhari 1957</span>
+            </div>
+            <p className="text-[11px] text-zinc-300 font-sans">
+              «لَا يَزَالُ النَّاسُ بِخَيْرٍ مَا عَجَّلُوا الفِطْرَ» — &ldquo;People will remain well as long as they hasten the breaking of the fast immediately upon sunset.&rdquo;
+            </p>
+          </div>
+
+          {/* 2. Delaying Suhur */}
+          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold text-amber-300">2. Delaying Suhūr (تَأْخِيرُ السُّحُور)</span>
+              <span className="text-[9px] font-mono text-zinc-500">Bukhari 1921</span>
+            </div>
+            <p className="text-[11px] text-zinc-300 font-sans">
+              Delaying Suhur until close to Fajr: the gap between the Prophet&apos;s Suhur and prayer was approximately 50 recited verses.
+            </p>
+          </div>
+
+          {/* 3. Dates & Water */}
+          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold text-amber-300">3. Fresh Dates or Water (الرُّطَب وَالمَاء)</span>
+              <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 2356</span>
+            </div>
+            <p className="text-[11px] text-zinc-300 font-sans">
+              The Prophet ﷺ broke fast with fresh dates before praying; if none, dry dates (tamr); if none, sips of water.
+            </p>
+          </div>
+
+          {/* 4. Guarding Tongue */}
+          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold text-amber-300">4. Responding &ldquo;I am Fasting&rdquo; (إِنِّي صَائِم)</span>
+              <span className="text-[9px] font-mono text-zinc-500">Bukhari 1894</span>
+            </div>
+            <p className="text-[11px] text-zinc-300 font-sans">
+              &ldquo;If someone reviles him or fights him, let him say twice: &apos;Indeed, I am fasting&apos; (إِنِّي صَائِمٌ).&rdquo;
+            </p>
+          </div>
+
+          {/* 5. Host Dua */}
+          <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-mono font-bold text-amber-300">5. Guest Du‘ā’ for the Host (دُعَاءُ الإِفْطَارِ عِنْدَ قَوْم)</span>
+              <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 3854 • Sahih</span>
+            </div>
+            <p className="text-xs font-display text-amber-100 text-right leading-relaxed" dir="rtl">
+              «أَفْطَرَ عِنْدَكُمُ الصَّائِمُونَ، وَأَكَلَ طَعَامَكُمُ الأَبْرَارُ، وَصَلَّتْ عَلَيْكُمُ المَلَائِكَةُ»
+            </p>
+            <p className="text-[10px] text-zinc-400 font-sans">
+              &ldquo;May the fasting break their fast with you, may the righteous eat your food, and may the angels pray upon you.&rdquo;
+            </p>
           </div>
         </div>
       </div>

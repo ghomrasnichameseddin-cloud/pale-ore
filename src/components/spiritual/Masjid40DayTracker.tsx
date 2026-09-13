@@ -30,6 +30,7 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
   } = usePOS();
 
   const [showHadithExplanation, setShowHadithExplanation] = useState(false);
+  const [showMasjidEtiquettes, setShowMasjidEtiquettes] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideInput, setOverrideInput] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -127,18 +128,26 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setShowHadithExplanation(!showHadithExplanation)}
-                className="px-3 py-1.5 bg-[#2a2211] hover:bg-[#382d17] border border-[#c5a059]/40 text-[#fef08a] text-xs font-mono font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-[#2a2211] hover:bg-[#382d17] border border-[#c5a059]/40 text-[#fef08a] text-xs font-mono font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <BookOpen className="h-3.5 w-3.5 text-[#c5a059]" />
                 <span>{showHadithExplanation ? 'HIDE EXEGESIS' : 'HADITH EXEGESIS'}</span>
               </button>
 
               <button
+                onClick={() => setShowMasjidEtiquettes(!showMasjidEtiquettes)}
+                className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                <span>{showMasjidEtiquettes ? 'HIDE SUNAN' : 'MASJID JOURNEY & SUNAN'}</span>
+              </button>
+
+              <button
                 onClick={() => setShowOverrideModal(true)}
-                className="px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-300 text-xs font-mono rounded-xl transition flex items-center gap-1"
+                className="px-2.5 py-1.5 bg-zinc-900/80 hover:bg-zinc-800 border border-white/10 text-zinc-300 text-xs font-mono rounded-xl transition flex items-center gap-1 cursor-pointer"
                 title="Adjust or calibrate current count"
               >
                 <span>Adjust</span>
@@ -158,6 +167,90 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
               <span>[ Jāmiʿ at-Tirmidhī #241 • Sunan al-Tirmidhi • Graded Ḥasan ]</span>
             </div>
           </div>
+
+          {/* EXPANDABLE PROPHETIC MASJID JOURNEY & ETIQUETTES */}
+          <AnimatePresence>
+            {showMasjidEtiquettes && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-4 bg-gradient-to-br from-[#0c1410] to-[#070b09] border border-emerald-500/40 rounded-2xl text-xs text-zinc-300 space-y-3.5 leading-relaxed font-sans"
+              >
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <div className="flex items-center gap-2 font-display font-bold text-emerald-300 text-sm">
+                    <Sparkles className="h-4 w-4 text-emerald-400" />
+                    <span>Prophetic Adab &amp; Journey to the Masjid (هَدْيُ النَّبِيِّ ﷺ فِي المَسْجِد)</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-400">Sahih al-Bukhari &amp; Sahih Muslim</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* 1. Walking Du'a */}
+                  <div className="p-3 bg-black/40 border border-emerald-500/20 rounded-xl space-y-1.5 md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold text-emerald-300">
+                        1. Supplication while Walking to Mosque: Du‘ā’ an-Nūr (دُعَاءُ الذَّهَابِ إِلَى المَسْجِدِ)
+                      </span>
+                      <span className="text-[9px] font-mono text-zinc-500">Sahih Muslim 763</span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-arabic text-emerald-100 text-right leading-relaxed" dir="rtl">
+                      «اللَّهُمَّ اجْعَلْ فِي قَلْبِي نُورًا، وَفِي لِسَانِي نُورًا، وَفِي سَمْعِي نُورًا، وَفِي بَصَرِي نُورًا، وَمِنْ فَوْقِي نُورًا، وَمِنْ تَحْتِي نُورًا، وَعَنْ يَمِينِي نُورًا، وَعَنْ شِمَالِي نُورًا، وَمِنْ أَمَامِي نُورًا، وَمِنْ خَلْفِي نُورًا، وَاجْعَلْ فِي نَفْسِي نُورًا، وَأَعْظِمْ لِي نُورًا»
+                    </p>
+                    <p className="text-[11px] text-zinc-300 font-sans italic">
+                      &ldquo;O Allah, place light in my heart, light on my tongue, light in my hearing, light in my sight, light above me, light below me, light on my right, light on my left, light in front of me, light behind me, place light in my soul, and make my light magnificent.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* 2. Walking with Serenity */}
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="text-[11px] font-mono font-bold text-amber-300 block">
+                      2. Walk with Serenity &amp; Dignity (السَّكِينَةُ وَالوَقَار)
+                    </span>
+                    <p className="text-[11px] text-zinc-300 font-sans">
+                      &ldquo;When the prayer is called, do not come rushing. Come walking with calm tranquility and dignity. Whatever you catch, pray; whatever you missed, complete.&rdquo; (Bukhari 636, Muslim 602)
+                    </p>
+                  </div>
+
+                  {/* 3. Steps Reward */}
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="text-[11px] font-mono font-bold text-amber-300 block">
+                      3. Two Virtues per Every Step (فَضْلُ الخُطَى)
+                    </span>
+                    <p className="text-[11px] text-zinc-300 font-sans">
+                      For every two steps taken toward the house of Allah in purity: one wipes out a sin and the other raises a degree in rank in Paradise. (Sahih Muslim 666)
+                    </p>
+                  </div>
+
+                  {/* 4. Entering the Mosque */}
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="text-[11px] font-mono font-bold text-cyan-300 block">
+                      4. Entering Mosque (Right Foot First)
+                    </span>
+                    <p className="text-xs font-arabic text-cyan-100 text-right leading-relaxed" dir="rtl">
+                      «بِسْمِ اللَّهِ، وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ، اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ»
+                    </p>
+                    <p className="text-[10px] text-zinc-400">
+                      Step with right foot: &ldquo;In the Name of Allah, and blessings and peace upon the Messenger of Allah. O Allah, open for me the gates of Your mercy.&rdquo; (Muslim 713)
+                    </p>
+                  </div>
+
+                  {/* 5. Exiting the Mosque */}
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="text-[11px] font-mono font-bold text-cyan-300 block">
+                      5. Exiting Mosque (Left Foot First)
+                    </span>
+                    <p className="text-xs font-arabic text-cyan-100 text-right leading-relaxed" dir="rtl">
+                      «بِسْمِ اللَّهِ، وَالصَّلَاةُ وَالسَّلَامُ عَلَى رَسُولِ اللَّهِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ»
+                    </p>
+                    <p className="text-[10px] text-zinc-400">
+                      Step with left foot: &ldquo;In the Name of Allah, and blessings upon the Messenger of Allah. O Allah, I ask You from Your bounty.&rdquo; (Muslim 713)
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* EXPANDABLE HADITH COMMENTARY */}
           <AnimatePresence>

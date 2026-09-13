@@ -63,6 +63,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
 
   // Add Passage Modal / Inline Form
   const [showAddPassageModal, setShowAddPassageModal] = useState(false);
+  const [showPropheticSunnah, setShowPropheticSunnah] = useState(false);
   const [passageSurahName, setPassageSurahName] = useState('');
   const [passageSurahNumber, setPassageSurahNumber] = useState<number | ''>('');
   const [passageAyahStart, setPassageAyahStart] = useState<number | ''>('');
@@ -182,6 +183,14 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button
+              onClick={() => setShowPropheticSunnah(!showPropheticSunnah)}
+              className="px-3 py-2 bg-[#2a2211] hover:bg-[#382d17] border border-[#c5a059]/40 text-[#fef08a] font-mono text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" />
+              <span>{showPropheticSunnah ? 'HIDE SUNAN' : 'PROPHETIC QUR’ĀN SUNAN'}</span>
+            </button>
+
+            <button
               onClick={() => setShowAddPassageModal(true)}
               className="px-4 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] hover:brightness-110 text-[var(--bg-void,#050608)] font-mono font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-1.5 cursor-pointer"
             >
@@ -208,6 +217,88 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
             )}
           </div>
         </div>
+
+        {/* EXPANDABLE PROPHETIC QURAN SUNAN DRAWER */}
+        <AnimatePresence>
+          {showPropheticSunnah && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 p-4 bg-gradient-to-br from-[#141209] to-[#0a0904] border border-[#c5a059]/40 rounded-2xl text-xs text-zinc-300 space-y-3.5 leading-relaxed font-sans"
+            >
+              <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                <div className="flex items-center gap-2 font-display font-bold text-[#fef08a] text-sm">
+                  <BookOpen className="h-4 w-4 text-[#c5a059]" />
+                  <span>The Prophetic Way of Engaging with the Qur’ān (هَدْيُ النَّبِيِّ ﷺ فِي القُرْآن)</span>
+                </div>
+                <span className="text-[10px] font-mono text-[#c5a059] bg-[#1a150a] px-2 py-0.5 rounded-full border border-[#c5a059]/30">
+                  Authentic Sunnah Protocols
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* 1. Constant Review */}
+                <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300">1. Systematic Review (تَعَاهُدُ القُرْآن)</span>
+                    <span className="text-[9px] font-mono text-zinc-500">Bukhari 5033</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-sans">
+                    «تَعَاهَدُوا هَذَا القُرْآنَ، فَوَالَّذِي نَفْسُ مُحَمَّدٍ بِيَدِهِ لَهُوَ أَشَدُّ تَفَلُّتًا مِنَ الإِبِلِ فِي عُقُلِهَا»
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-sans italic">
+                    &ldquo;Keep reviewing this Qur’ān, for by Him in Whose Hand is the soul of Muhammad, it escapes faster than camels from their ties.&rdquo;
+                  </p>
+                </div>
+
+                {/* 2. Prophetic Khatmah Bounds */}
+                <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300">2. Khatmah Boundaries (مُدَّةُ الخَتْم)</span>
+                    <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 1390</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-sans">
+                    «لَا يَفْقَهُ مَنْ قَرَأَهُ فِي أَقَلَّ مِنْ ثَلَاثٍ» — The Prophet ﷺ cautioned against completing in under 3 days (preventing lack of contemplation), and encouraged cycles of 7, 30, or 40 days.
+                  </p>
+                </div>
+
+                {/* 3. Prophetic Division */}
+                <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300">3. The 7-Day Tahzīb (فَمِي بِشَوْق)</span>
+                    <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 1393</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-sans">
+                    The Sahabah grouped the Qur’ān for a 7-day completion: 3 Surahs, then 5, 7, 9, 11, 13, and the Mufassal section (Surah Qaf to an-Nas).
+                  </p>
+                </div>
+
+                {/* 4. Beautiful Recitation */}
+                <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300">4. Melodious Voice (تَزْيِينُ الصَّوْت)</span>
+                    <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 1468</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-sans">
+                    «زَيِّنُوا القُرْآنَ بِأَصْوَاتِكُمْ» — &ldquo;Beautify the Qur’ān with your voices.&rdquo; Recite with calm tartīl, distinct letters, and reverent pause at verse endings.
+                  </p>
+                </div>
+
+                {/* 5. Responsive Tadabbur */}
+                <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-amber-300">5. Interactive Contemplation (التَّرْتِيلُ وَالتَّدَبُّر)</span>
+                    <span className="text-[9px] font-mono text-zinc-500">Sahih Muslim 772</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-sans">
+                    When the Prophet ﷺ recited at night, when he passed an ayah of Tasbīḥ, he glorified Allah; when he passed an ayah of petition/mercy, he asked; and when he passed an ayah of warning/punishment, he sought refuge with Allah.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* METRICS & FRESHNESS STRIP */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[var(--border-subtle,rgba(197,160,89,0.2))] text-xs font-mono">

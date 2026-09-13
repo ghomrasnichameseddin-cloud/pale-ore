@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   Sun, Moon, Compass, ShieldCheck, Heart, Sparkles, 
   CheckCircle2, Plus, Minus, BookOpen, AlertCircle, 
-  HelpCircle, ChevronDown, Check
+  HelpCircle, ChevronDown, Check, Award
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { SunnahPrayersLog, SpiritualDailyLog } from '../../types';
@@ -24,9 +24,11 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
   onOpenGuide,
   onOpenMuhasabahAudit
 }) => {
-  const { updateSunnahPrayers, setQiyamRakats, getSpiritualLog } = usePOS();
+  const { updateSunnahPrayers, setQiyamRakats, getSpiritualLog, togglePrayer } = usePOS();
   const [showDuhaInfo, setShowDuhaInfo] = useState(false);
   const [showQiyamInfo, setShowQiyamInfo] = useState(false);
+  const [showWitrDua, setShowWitrDua] = useState(false);
+  const [showRawatibInfo, setShowRawatibInfo] = useState(false);
   const [showIstikharaDua, setShowIstikharaDua] = useState(false);
 
   const activeLog = spiritualLog || getSpiritualLog(systemDate);
@@ -74,6 +76,19 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
     const current = !!sunnahLog?.[field];
     updateSunnahPrayers({ [field]: !current }, systemDate);
   };
+
+  const fajrRawatib = !!activeLog?.fajr?.sunnahRawatib;
+  const dhuhrRawatib = !!activeLog?.dhuhr?.sunnahRawatib;
+  const asrRawatib = !!activeLog?.asr?.sunnahRawatib;
+  const maghribRawatib = !!activeLog?.maghrib?.sunnahRawatib;
+  const ishaRawatib = !!activeLog?.isha?.sunnahRawatib;
+
+  const rawatibRakatsCompleted = 
+    (fajrRawatib ? 2 : 0) +
+    (dhuhrRawatib ? 6 : 0) + // 4 before, 2 after
+    (maghribRawatib ? 2 : 0) +
+    (ishaRawatib ? 2 : 0);
+  const houseInJannahAchieved = rawatibRakatsCompleted >= 12;
 
   return (
     <div className="p-5 sm:p-6 bg-gradient-to-br from-[#121019] via-[#0d0a14] to-[#08060d] border border-amber-500/30 rounded-2xl relative overflow-hidden shadow-xl space-y-6" id="sunnah-nawafil-sanctuary">
@@ -175,19 +190,91 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
           </div>
         </div>
 
-        {/* Hadith Citation */}
-        <div className="pt-2 border-t border-indigo-500/10 flex items-center justify-between text-xs">
+        {/* Hadith Citation & Sunnah Toggles */}
+        <div className="pt-2 border-t border-indigo-500/10 flex flex-wrap items-center justify-between gap-2 text-xs">
           <p className="text-[11px] font-sans text-indigo-200/80 italic">
             &ldquo;Make the last of your prayer at night Witr (an odd number of rak&apos;ahs).&rdquo; (Sahih Bukhari &amp; Muslim)
           </p>
-          <button
-            onClick={() => setShowQiyamInfo(!showQiyamInfo)}
-            className="text-[10px] font-mono text-indigo-400 hover:underline flex items-center gap-1 shrink-0 ml-2"
-          >
-            <HelpCircle className="h-3 w-3" />
-            <span>{showQiyamInfo ? 'Hide Details' : 'Qiyām Guidance'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowWitrDua(!showWitrDua)}
+              className="text-[10px] font-mono text-amber-400 hover:underline flex items-center gap-1 cursor-pointer font-bold"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>{showWitrDua ? 'Hide Witr Sunan' : 'Witr Sunnah Recitation & Du‘ā’'}</span>
+            </button>
+            <button
+              onClick={() => setShowQiyamInfo(!showQiyamInfo)}
+              className="text-[10px] font-mono text-indigo-400 hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <HelpCircle className="h-3 w-3" />
+              <span>{showQiyamInfo ? 'Hide Details' : 'Qiyām Guidance'}</span>
+            </button>
+          </div>
         </div>
+
+        {/* PROPHETIC WITR SUNAN ACCORDING TO HADITH */}
+        {showWitrDua && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="p-4 bg-[#090b16] border border-amber-500/30 rounded-xl space-y-3 text-xs"
+          >
+            <div className="border-b border-amber-500/20 pb-2 flex items-center justify-between">
+              <span className="font-mono text-amber-300 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>Prophetic Witr Blueprint (هَدْيُ النَّبِيِّ ﷺ فِي الوِتْر)</span>
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400">Sunan an-Nasa&apos;i 1700, 1732 • Abu Dawud 1425</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <div className="p-2.5 rounded-lg bg-[#0e1222] border border-indigo-500/20 space-y-1">
+                <span className="text-[10px] font-mono text-indigo-300 font-bold block">1. 1st Rak‘ah (الرَّكْعَةُ الأُولَى)</span>
+                <p className="text-zinc-200 font-serif text-sm">سَبِّحِ اسْمَ رَبِّكَ الْأَعْلَى</p>
+                <p className="text-[10px] font-mono text-zinc-400">Surah Al-A‘lā (Ch. 87)</p>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-[#0e1222] border border-indigo-500/20 space-y-1">
+                <span className="text-[10px] font-mono text-indigo-300 font-bold block">2. 2nd Rak‘ah (الرَّكْعَةُ الثَّانِيَة)</span>
+                <p className="text-zinc-200 font-serif text-sm">قُلْ يَا أَيُّهَا الْكَافِرُونَ</p>
+                <p className="text-[10px] font-mono text-zinc-400">Surah Al-Kāfirūn (Ch. 109)</p>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-[#0e1222] border border-indigo-500/20 space-y-1">
+                <span className="text-[10px] font-mono text-indigo-300 font-bold block">3. 3rd Rak‘ah (الرَّكْعَةُ الثَّالِثَة)</span>
+                <p className="text-zinc-200 font-serif text-sm">قُلْ هُوَ اللَّهُ أَحَدٌ</p>
+                <p className="text-[10px] font-mono text-zinc-400">Surah Al-Ikhlāṣ (Ch. 112)</p>
+              </div>
+            </div>
+
+            {/* Post Witr Dhikr */}
+            <div className="p-3 rounded-lg bg-indigo-950/40 border border-indigo-500/30 space-y-1.5">
+              <span className="text-[10px] font-mono text-indigo-300 font-bold block">
+                Post-Witr Dhikr (الذِّكْرُ المَسْنُونُ عَقِبَ الوِتْرِ - ثَلَاثَ مَرَّات):
+              </span>
+              <p className="text-sm font-serif text-zinc-100 leading-relaxed">
+                «سُبْحَانَ المَلِكِ القُدُّوسِ» (ثلاث مرات، يجهر ويمد بها صوته في الثالثة ويقول: «رَبِّ المَلَائِكَةِ وَالرُّوحِ»)
+              </p>
+              <p className="text-[10px] font-mono text-zinc-300">
+                Transliteration: Subḥānal-Malikil-Quddūs (3x), raising and elongating on the third: Rabbi-l-Malā’ikati war-Rūḥ. (Sunan an-Nasa&apos;i 1732, Sahih)
+              </p>
+            </div>
+
+            {/* Qunut Supplication */}
+            <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30 space-y-1.5">
+              <span className="text-[10px] font-mono text-amber-300 font-bold block">
+                Du‘ā’ al-Qunūt (دُعَاءُ القُنُوتِ فِي الوِتْرِ - عَلَّمَهُ النَّبِيُّ ﷺ لِلْحَسَنِ بْنِ عَلِيّ):
+              </span>
+              <p className="text-sm font-serif text-amber-100 leading-relaxed">
+                «اللَّهُمَّ اهْدِنِي فِيمَنْ هَدَيْتَ، وَعَافِنِي فِيمَنْ عَافَيْتَ، وَتَوَلَّنِي فِيمَنْ تَوَلَّيْتَ، وَبَارِكْ لِي فِيمَا أَعْطَيْتَ، وَقِنِي شَرَّ مَا قَضَيْتَ، فَإِنَّكَ تَقْضِي وَلَا يُقْضَى عَلَيْكَ، وَإِنَّهُ لَا يَذِلُّ مَنْ وَالَيْتَ، وَلَا يَعِزُّ مَنْ عَادَيْتَ، تَبَارَكْتَ رَبَّنَا وَتَعَالَيْتَ»
+              </p>
+              <p className="text-[10px] font-sans text-zinc-300">
+                “O Allah, guide me among those You have guided, grant me health among those You have granted health, look after me among those You have looked after, bless me in what You have given, and protect me from the evil of what You have decreed...” (Sunan Abi Dawud 1425, Jami‘ at-Tirmidhi 464 - Sahih)
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {showQiyamInfo && (
           <motion.div 
@@ -196,12 +283,220 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
             className="p-3 bg-[#070912] border border-indigo-500/20 rounded-xl text-xs text-zinc-300 font-sans space-y-1.5"
           >
             <p><strong>Baseline Sunnah:</strong> 2 Rak&apos;ahs baseline (+100 XP) followed by pairs of two (up to 8 or 10 rak&apos;ahs), concluded with 1 or 3 Rak&apos;ahs of Witr.</p>
-            <p><strong>Prime Time:</strong> The last third of the night when Allah descends to the lowest heaven, asking: &ldquo;Who is calling upon Me that I may answer him?&rdquo;</p>
+            <p><strong>Prime Time:</strong> The last third of the night when Allah descends to the lowest heaven, asking: &ldquo;Who is calling upon Me that I may answer him?&rdquo; (Sahih Bukhari 1145)</p>
           </motion.div>
         )}
       </div>
 
-      {/* 2. FEATURED: SALAT AD-DUHA (صلاة الضحى / الأوابين) */}
+      {/* 2. THE 12 CONFIRMED SUNAN RAWĀTIB (السُّنَنُ الرَّوَاتِبُ الاثْنَتَا عَشْرَةَ • بَيْتٌ فِي الجَنَّةِ) */}
+      <div className="p-5 bg-gradient-to-r from-[#17120a] via-[#110e08] to-[#0a0805] border border-[#c5a059]/40 rounded-2xl relative overflow-hidden shadow-xl space-y-4" id="sunan-rawatib-section">
+        
+        {/* Header & Hadith Callout */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#c5a059]/20 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono bg-[#c5a059]/20 text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1">
+                <Award className="h-3 w-3 text-[#c5a059]" />
+                <span>12 SUNAN RAWĀTIB • بَيْتٌ فِي الجَنَّةِ</span>
+              </span>
+              {houseInJannahAchieved && (
+                <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                  🏰 House in Jannah Earned!
+                </span>
+              )}
+            </div>
+
+            <h3 className="font-display font-bold text-lg text-zinc-100 flex items-center gap-2">
+              <span>The 12 Confirmed Daily Sunan</span>
+              <span className="text-xs font-mono text-[#c5a059]">({rawatibRakatsCompleted}/12 Rak‘ahs)</span>
+            </h3>
+
+            <p className="text-xs font-sans text-zinc-300">
+              «مَنْ صَلَّى فِي يَوْمٍ وَلَيْلَةٍ ثِنْتَيْ عَشْرَةَ رَكْعَةً بُنِيَ لَهُ بَيْتٌ فِي الجَنَّةِ» — Sahih Muslim 728
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <span className="text-2xl font-display font-bold text-[#fef08a]">{rawatibRakatsCompleted}</span>
+              <span className="text-xs font-mono text-zinc-400">/12 R.</span>
+            </div>
+            <button
+              onClick={() => setShowRawatibInfo(!showRawatibInfo)}
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-[#c5a059]/30 text-amber-300 transition"
+              title="Learn about Sunan Rawatib"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {showRawatibInfo && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="p-3 bg-[#0a0805] border border-[#c5a059]/30 rounded-xl text-xs text-zinc-300 space-y-1.5 font-sans"
+          >
+            <p><strong>The Prophetic 12 Rak‘ahs (Sahih Muslim 728):</strong> 2 before Fajr, 4 before Dhuhr (in two pairs of two), 2 after Dhuhr, 2 after Maghrib, and 2 after Isha.</p>
+            <p><strong>Additional Merit:</strong> &ldquo;Whoever guards 4 rak&apos;ahs before Dhuhr and 4 after it, Allah forbids him to the Fire.&rdquo; (Jami‘ at-Tirmidhi 428)</p>
+            <p><strong>Before ‘Aṣr (Ghayr Mu’akkadah):</strong> &ldquo;May Allah have mercy on a person who prays four rak&apos;ahs before ‘Asr.&rdquo; (Sunan Abi Dawud 1271)</p>
+          </motion.div>
+        )}
+
+        {/* PROGRESS BAR */}
+        <div className="space-y-1">
+          <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden border border-white/5">
+            <div
+              className={`h-full transition-all duration-500 ${
+                houseInJannahAchieved ? 'bg-gradient-to-r from-amber-400 to-emerald-400' : 'bg-[#c5a059]'
+              }`}
+              style={{ width: `${Math.min(100, (rawatibRakatsCompleted / 12) * 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+            <span>2 Fajr • 6 Dhuhr • 2 Maghrib • 2 Isha</span>
+            <span>{houseInJannahAchieved ? '100% Complete ✓' : `${12 - rawatibRakatsCompleted} Rak‘ahs Remaining`}</span>
+          </div>
+        </div>
+
+        {/* 5 PRAYERS RAWATIB INTERACTIVE GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
+          
+          {/* Fajr */}
+          <div className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+            fajrRawatib ? 'bg-indigo-950/60 border-indigo-500/50 shadow-sm' : 'bg-black/40 border-white/10'
+          }`}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-indigo-300">Fajr • الفجر</span>
+                <span className="text-[10px] font-mono text-amber-300 font-bold">2 R. Before</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                &ldquo;Better than this world and everything in it&rdquo; (Muslim 725)
+              </p>
+            </div>
+            <button
+              onClick={() => togglePrayer('fajr', 'sunnahRawatib', systemDate)}
+              className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                fajrRawatib
+                  ? 'bg-indigo-900 text-indigo-100 border-indigo-400'
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/10 hover:border-indigo-500/40'
+              }`}
+            >
+              <CheckCircle2 className={`h-3 w-3 ${fajrRawatib ? 'text-indigo-300' : 'text-zinc-600'}`} />
+              <span>{fajrRawatib ? '2 R. Done ✓' : 'Log 2 R. Sunnah'}</span>
+            </button>
+          </div>
+
+          {/* Dhuhr */}
+          <div className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+            dhuhrRawatib ? 'bg-amber-950/60 border-amber-500/50 shadow-sm' : 'bg-black/40 border-white/10'
+          }`}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-amber-300">Dhuhr • الظهر</span>
+                <span className="text-[10px] font-mono text-amber-300 font-bold">4 Bef + 2 Aft</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Total 6 Rak‘ahs (Tirmidhi 428). Palatial foundation.
+              </p>
+            </div>
+            <button
+              onClick={() => togglePrayer('dhuhr', 'sunnahRawatib', systemDate)}
+              className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                dhuhrRawatib
+                  ? 'bg-amber-900 text-amber-100 border-amber-400'
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/10 hover:border-amber-500/40'
+              }`}
+            >
+              <CheckCircle2 className={`h-3 w-3 ${dhuhrRawatib ? 'text-amber-300' : 'text-zinc-600'}`} />
+              <span>{dhuhrRawatib ? '6 R. Done ✓' : 'Log 4+2 R. Sunnah'}</span>
+            </button>
+          </div>
+
+          {/* Asr */}
+          <div className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+            asrRawatib ? 'bg-orange-950/60 border-orange-500/50 shadow-sm' : 'bg-black/40 border-white/10'
+          }`}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-orange-300">‘Aṣr • العصر</span>
+                <span className="text-[10px] font-mono text-zinc-400">4 R. Before</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Sunnah Ghayr Mu&apos;akkadah: &ldquo;May Allah have mercy&rdquo; (Abu Dawud)
+              </p>
+            </div>
+            <button
+              onClick={() => togglePrayer('asr', 'sunnahRawatib', systemDate)}
+              className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                asrRawatib
+                  ? 'bg-orange-900 text-orange-100 border-orange-400'
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/10 hover:border-orange-500/40'
+              }`}
+            >
+              <CheckCircle2 className={`h-3 w-3 ${asrRawatib ? 'text-orange-300' : 'text-zinc-600'}`} />
+              <span>{asrRawatib ? '4 R. Done ✓' : 'Log 4 R. Sunnah'}</span>
+            </button>
+          </div>
+
+          {/* Maghrib */}
+          <div className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+            maghribRawatib ? 'bg-rose-950/60 border-rose-500/50 shadow-sm' : 'bg-black/40 border-white/10'
+          }`}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-rose-300">Maghrib • المغرب</span>
+                <span className="text-[10px] font-mono text-amber-300 font-bold">2 R. After</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Confirmed Mu&apos;akkadah. Optional 2 before also rewarded.
+              </p>
+            </div>
+            <button
+              onClick={() => togglePrayer('maghrib', 'sunnahRawatib', systemDate)}
+              className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                maghribRawatib
+                  ? 'bg-rose-900 text-rose-100 border-rose-400'
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/10 hover:border-rose-500/40'
+              }`}
+            >
+              <CheckCircle2 className={`h-3 w-3 ${maghribRawatib ? 'text-rose-300' : 'text-zinc-600'}`} />
+              <span>{maghribRawatib ? '2 R. Done ✓' : 'Log 2 R. Sunnah'}</span>
+            </button>
+          </div>
+
+          {/* Isha */}
+          <div className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-2 ${
+            ishaRawatib ? 'bg-blue-950/60 border-blue-500/50 shadow-sm' : 'bg-black/40 border-white/10'
+          }`}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-blue-300">‘Ishā’ • العشاء</span>
+                <span className="text-[10px] font-mono text-amber-300 font-bold">2 R. After</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Confirmed Mu&apos;akkadah. Final 2 of the 12 Jannah Rawātib.
+              </p>
+            </div>
+            <button
+              onClick={() => togglePrayer('isha', 'sunnahRawatib', systemDate)}
+              className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition flex items-center justify-center gap-1 ${
+                ishaRawatib
+                  ? 'bg-blue-900 text-blue-100 border-blue-400'
+                  : 'bg-zinc-900/80 text-zinc-300 border-white/10 hover:border-blue-500/40'
+              }`}
+            >
+              <CheckCircle2 className={`h-3 w-3 ${ishaRawatib ? 'text-blue-300' : 'text-zinc-600'}`} />
+              <span>{ishaRawatib ? '2 R. Done ✓' : 'Log 2 R. Sunnah'}</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* 3. FEATURED: SALAT AD-DUHA (صلاة الضحى / الأوابين) */}
       <div className="p-5 bg-gradient-to-r from-[#1c140c] via-[#140e08] to-[#0c0805] border border-amber-500/40 rounded-2xl relative overflow-hidden shadow-md space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
