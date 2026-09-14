@@ -196,17 +196,31 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
   // ==========================================
   {
     id: 'adhkar-postsalah-1',
-    title: 'Post-Prayer Istighfār & As-Salām',
-    titleAr: 'الاسْتِغْفَارُ وَدُعَاءُ السَّلَامِ عَقِبَ الصَّلَاةِ',
-    arabic: 'أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ. اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الجَلَالِ وَالإِكْرَامِ.',
-    transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh. Allāhumma Antas-Salāmu wa minkas-Salām, tabārakta yā Dhal-Jalāli wal-Ikrām.',
-    translation: 'I ask Allah for forgiveness (3 times). O Allah, You are Peace and from You comes peace. Blessed are You, O Owner of Majesty and Honor.',
+    title: '3x Post-Salah Istighfār',
+    titleAr: 'الاسْتِغْفَارُ ثَلَاثًا عَقِبَ كُلِّ صَلَاةٍ',
+    arabic: 'أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ.',
+    transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh.',
+    translation: 'I ask Allah for forgiveness (3 times).',
     category: 'postSalah',
     prayerTarget: 'all',
     targetCount: 3,
-    virtue: 'The first Sunnah recited immediately upon completing the Taslim of every obligatory prayer.',
+    virtue: 'Recited immediately upon completing the Taslīm of every obligatory prayer before any other supplication.',
     hadithSource: 'Sahih Muslim 591',
     order: 1
+  },
+  {
+    id: 'adhkar-postsalah-1b',
+    title: 'Du‘ā As-Salām',
+    titleAr: 'دُعَاءُ السَّلَامِ عَقِبَ الصَّلَاةِ',
+    arabic: 'اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الجَلَالِ وَالإِكْرَامِ.',
+    transliteration: 'Allāhumma Antas-Salāmu wa minkas-Salām, tabārakta yā Dhal-Jalāli wal-Ikrām.',
+    translation: 'O Allah, You are Peace and from You comes peace. Blessed are You, O Owner of Majesty and Honor.',
+    category: 'postSalah',
+    prayerTarget: 'all',
+    targetCount: 1,
+    virtue: 'Recited directly following the 3 Istighfārs.',
+    hadithSource: 'Sahih Muslim 591',
+    order: 2
   },
   {
     id: 'adhkar-postsalah-2',
@@ -220,7 +234,7 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
     targetCount: 1,
     virtue: 'Affirms absolute divine predetermination and sovereignty after each prayer.',
     hadithSource: 'Sahih al-Bukhari 844, Sahih Muslim 593',
-    order: 2
+    order: 3
   },
   {
     id: 'adhkar-postsalah-3',
@@ -234,21 +248,35 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
     targetCount: 1,
     virtue: 'Whoever recites Ayat al-Kursi after every obligatory prayer, nothing stands between him and entering Paradise except death.',
     hadithSource: 'An-Nasa’i As-Sunan al-Kubra 9848, Sahih al-Jami‘ 6464 (Sahih)',
-    order: 3
+    order: 4
   },
   {
     id: 'adhkar-postsalah-4',
-    title: 'Standard Sunnah Tasbīḥ (33x SubhanAllah, 33x Alhamdulillah, 33x Allahu Akbar + 1x Tahlil)',
-    titleAr: 'التَّسْبِيحُ الكَامِلُ (٣٣-٣٣-٣٣-١)',
-    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣) • لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x) + Lā ilāha illAllāhu waḥdahū lā sharīka lah...',
-    translation: 'Glory be to Allah (33), Praise be to Allah (33), Allah is the Greatest (33), completed with the testimony of Tawhid to make 100.',
+    title: 'Standard Post-Salah Tasbīḥ (33x Tasbīḥ, 33x Ḥamd, 33x Takbīr Only)',
+    titleAr: 'التَّسْبِيحُ الرَّاتِبُ (٣٣ تَسْبِيح، ٣٣ تَحْمِيد، ٣٣ تَكْبِير فَقَط)',
+    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣)',
+    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x)',
+    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times) — 99 glorifications only.',
     category: 'postSalah',
     prayerTarget: 'all',
-    targetCount: 100,
-    virtue: 'Whoever recites this after every prayer, his sins will be forgiven even if they were like the foam of the sea.',
+    targetCount: 99,
+    virtue: 'Authentic Sunnah: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr only.',
     hadithSource: 'Sahih Muslim 597',
-    order: 4
+    order: 5
+  },
+  {
+    id: 'adhkar-postsalah-4-mini',
+    title: 'Mini Post-Salah Tasbīḥ (10x Tasbīḥ, 10x Ḥamd, 10x Takbīr Only)',
+    titleAr: 'التَّسْبِيحُ المُوجَزُ (١٠ تَسْبِيح، ١٠ تَحْمِيد، ١٠ تَكْبِير فَقَط)',
+    arabic: 'سُبْحَانَ اللَّهِ (١٠) • الحَمْدُ لِلَّهِ (١٠) • اللَّهُ أَكْبَرُ (١٠)',
+    transliteration: 'SubḥānAllāh (10x), Alḥamdulillāh (10x), Allāhu Akbar (10x)',
+    translation: 'Glory be to Allah (10 times), Praise be to Allah (10 times), Allah is the Greatest (10 times) — 30 glorifications only.',
+    category: 'postSalah',
+    prayerTarget: 'all',
+    targetCount: 30,
+    virtue: 'Hadith of Abdullah ibn Amr: 10 SubhanAllah, 10 Alhamdulillah, 10 Allahu Akbar after each prayer (150 on the tongue, 1500 on the Scale).',
+    hadithSource: 'Sunan Abi Dawud 1502, Jami‘ at-Tirmidhi 3410 (Sahih)',
+    order: 6
   },
   {
     id: 'adhkar-postsalah-5',
@@ -262,7 +290,7 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
     targetCount: 10,
     virtue: 'Whoever says it 10 times while sitting in place before speaking after Fajr and Maghrib receives 10 good deeds, 10 sins erased, 10 ranks elevated, and safety from Satan all day.',
     hadithSource: 'Sunan at-Tirmidhi 3474, Sahih at-Targhib 472 (Hasan)',
-    order: 5
+    order: 7
   },
   {
     id: 'adhkar-postsalah-6',
@@ -276,7 +304,7 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
     targetCount: 1,
     virtue: 'Prophetic morning invocation recited immediately after the Fajr prayer greeting.',
     hadithSource: 'Sunan Ibn Majah 925, Sahih',
-    order: 6
+    order: 8
   },
   {
     id: 'adhkar-postsalah-7',
@@ -290,7 +318,7 @@ export const DEFAULT_ADHKAR_LIST: AdhkarItem[] = [
     targetCount: 1,
     virtue: 'The Messenger of Allah ﷺ commanded Uqbah ibn ‘Amir to recite the Mu‘awwidhat after every prayer.',
     hadithSource: 'Sunan Abi Dawud 1523, Sunan at-Tirmidhi 2903',
-    order: 7
+    order: 9
   },
 
   // ==========================================

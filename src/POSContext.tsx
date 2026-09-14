@@ -5433,7 +5433,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sender: 'SYSTEM',
           category: 'warning',
           title: `⛓️ BEHAVIORAL CHAIN ACTIVE: ${matchingWeakness.name}`,
-          content: `5 repeated occurrences recorded under ${matchingWeakness.category}. This pattern has been elevated to an Active Chain. Bind into a Power Seal to forge spiritual mastery.`,
+          content: `5 repeated occurrences recorded under ${matchingWeakness.category}. This pattern has been elevated to an Active Chronic Chain (+25% penalty floor). Define and enforce your Preventive Protocol in Patterns to Prevent Recurrence to neutralize this trigger.`,
           priority: 'high'
         });
       }
@@ -6163,6 +6163,48 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedPrayerState.inMasjid = newMasjid;
         const qId = `${prayerPrefix}-inMasjid`;
         if (newMasjid) {
+          // If Fardh was not yet completed, praying in congregation implies Fardh is completed!
+          if (!curr.fardh) {
+            const autoOnTime = !curr.delayed;
+            updatedPrayerState.fardh = true;
+            updatedPrayerState.onTime = autoOnTime;
+            updatedPrayerState.completedAt = curr.completedAt || completedTimestamp;
+
+            const fardhEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-fardh`,
+              questId: `${prayerPrefix}-fardh`,
+              questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+              xp: reward.fardhXp,
+              timestamp: completedTimestamp,
+              date: targetDate,
+              type: 'salah',
+              source: 'quest',
+              sourceId: `${prayerPrefix}-fardh`,
+              activityId: `prayer-${prayer}-fardh`,
+              skillIds: []
+            };
+            updatedHistory = [fardhEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-fardh`)];
+            deltaCoins += reward.fardhCoins;
+
+            if (autoOnTime) {
+              const onTimeEntry: XPHistoryEntry = {
+                id: `h-pray-${Date.now()}-ontime`,
+                questId: `${prayerPrefix}-onTime`,
+                questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
+                xp: reward.onTimeXp,
+                timestamp: completedTimestamp,
+                date: targetDate,
+                type: 'salah',
+                source: 'quest',
+                sourceId: `${prayerPrefix}-onTime`,
+                activityId: `prayer-${prayer}-ontime`,
+                skillIds: []
+              };
+              updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`)];
+              deltaCoins += reward.onTimeCoins;
+            }
+          }
+
           const entry: XPHistoryEntry = {
             id: `h-pray-${Date.now()}-masjid`,
             questId: qId,
@@ -6342,12 +6384,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         evening: log.adhkarMasa ? 'complete' : 'not_started',
         sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
       };
+      
+      const newSleepStatus = (field === 'adhkarSleepDhohr' ? (newValue || log.adhkarSleepNight) : (newValue || log.adhkarSleepDhohr)) ? 'complete' : 'not_started';
       const updatedLog: SpiritualDailyLog = {
         ...log,
         [field]: newValue,
         adhkarSessions: {
           ...currentSessions,
-          [sessionKey]: newValue ? 'complete' : 'not_started'
+          [sessionKey]: sessionKey === 'sleep' ? newSleepStatus : (newValue ? 'complete' : 'not_started')
         }
       };
 
@@ -7166,13 +7210,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             hamd += 33;
             takbir += 33;
             istighfar += 3;
-            tahlil += 1;
+            tahlil += 0; // Standard 33x is 33 tasbih, 33 hamd, 33 takbir ONLY
           } else if (mode === 'mini10') {
             tasbeeh += 10;
             hamd += 10;
             takbir += 10;
             istighfar += 3;
-            tahlil += 1;
+            tahlil += 0; // Mini 10x is 10 tasbih, 10 hamd, 10 takbir ONLY
           }
         });
         return { tasbeeh, hamd, takbir, istighfar, tahlil };
@@ -7284,9 +7328,30 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
 
+      // Sync Adhkar Fortress catalog recitations for post-salah items
+      const currentRecs = prev.adhkarRecitations?.[targetDate] || {};
+      let updatedRecs = { ...currentRecs };
+      if (updates.postSalahAdhkar) {
+        if (postSalahCount > 0) {
+          updatedRecs['adhkar-postsalah-1'] = Math.max(updatedRecs['adhkar-postsalah-1'] || 0, postSalahCount * 3);
+          updatedRecs['adhkar-postsalah-1b'] = Math.max(updatedRecs['adhkar-postsalah-1b'] || 0, postSalahCount);
+          updatedRecs['adhkar-postsalah-3'] = Math.max(updatedRecs['adhkar-postsalah-3'] || 0, postSalahCount);
+          updatedRecs['adhkar-postsalah-4'] = Math.max(updatedRecs['adhkar-postsalah-4'] || 0, postSalahCount * 99);
+        } else {
+          delete updatedRecs['adhkar-postsalah-1'];
+          delete updatedRecs['adhkar-postsalah-1b'];
+          delete updatedRecs['adhkar-postsalah-3'];
+          delete updatedRecs['adhkar-postsalah-4'];
+        }
+      }
+
       return {
         ...prev,
         xpHistory: updatedHistory,
+        adhkarRecitations: {
+          ...(prev.adhkarRecitations || {}),
+          [targetDate]: updatedRecs
+        },
         spiritualLogs: {
           ...(prev.spiritualLogs || {}),
           [targetDate]: updatedLog

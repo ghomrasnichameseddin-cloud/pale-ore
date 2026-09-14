@@ -41,6 +41,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     syncWithRealClock, 
     getSpiritualLog,
     togglePrayer,
+    toggleAllPrayersInMasjid,
     updateQiyam,
     setKhushuRating,
     toggleAdhkar,
@@ -205,6 +206,61 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   const fortressStats = getAdhkarFortressStats ? getAdhkarFortressStats(systemDate) : null;
   const quranFreshness = getQuranFreshnessScore ? getQuranFreshnessScore(systemDate) : null;
 
+  // 12 Sunan Rawātib calculation
+  const fajrRawatib = !!currentLog.fajr?.sunnahRawatib;
+  const dhuhrRawatib = !!currentLog.dhuhr?.sunnahRawatib;
+  const maghribRawatib = !!currentLog.maghrib?.sunnahRawatib;
+  const ishaRawatib = !!currentLog.isha?.sunnahRawatib;
+  const rawatibRakatsCompleted = 
+    (fajrRawatib ? 2 : 0) +
+    (dhuhrRawatib ? 6 : 0) +
+    (maghribRawatib ? 2 : 0) +
+    (ishaRawatib ? 2 : 0);
+  const houseInJannahAchieved = rawatibRakatsCompleted >= 12;
+
+  // 10 Pillars Live Quality Score calculation for Daily Hub
+  const prayersArr = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+  const pDelayedCount = prayersArr.filter(p => currentLog[p]?.delayed).length;
+  const rawP1 = Math.max(0, Math.min(10, Math.round((completedFardhCount * 1.6 + onTimeCount * 0.4 - pDelayedCount * 1.0) * 10) / 10));
+  const rawP2 = Math.min(10, masjidCount * 2);
+  const rawP3 = Math.min(10, Math.round((rawatibRakatsCompleted / 12) * 10));
+  let rawP4 = 0;
+  if (qiyamRakats >= 4 && qiyamWitr) rawP4 = 10;
+  else if (qiyamRakats >= 2 && qiyamWitr) rawP4 = 8.5;
+  else if (qiyamRakats >= 2) rawP4 = 6.0;
+  else if (qiyamWitr) rawP4 = 4.0;
+  const isFastingToday = !!currentLog.fasting?.isFasting;
+  const rawP5 = isFastingToday 
+    ? (4 + (currentLog.fasting?.suhurTaken ? 2 : 0) + (currentLog.fasting?.iftarCompleted ? 2.5 : 0) + (currentLog.fasting?.duaMadeAtIftar ? 1.5 : 0))
+    : 7;
+  const rawP6 = fortressStats ? Math.min(10, Math.round((fortressStats.integrityScore / 10) * 10) / 10) : 0;
+  const postRemembrance = currentLog.dhikr?.postSalahAdhkar || {};
+  const postDoneCount = prayersArr.filter(p => postRemembrance[p] === 'standard33' || postRemembrance[p] === 'mini10').length;
+  const rawP7 = Math.min(10, postDoneCount * 2);
+  const rawP8 = Math.min(10, Math.round((salawatCount / 70) * 100) / 10);
+  const qPages = currentLog.quran?.pagesRead || 0;
+  let rawP9 = Math.min(5, qPages * 0.5);
+  if (currentLog.quran?.juzRead) rawP9 = 5;
+  if (currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) rawP9 += 2.5;
+  if (currentLog.quran?.memorizationReviewed) rawP9 += 2.5;
+  rawP9 = Math.min(10, Math.round(rawP9 * 10) / 10);
+  const rawP10 = Math.min(10, khushuRating);
+
+  const totalQualityScore = Math.round((rawP1 + rawP2 + rawP3 + rawP4 + rawP5 + rawP6 + rawP7 + rawP8 + rawP9 + rawP10) * 10) / 10;
+  const qualityScoreOutOf10 = (totalQualityScore / 10).toFixed(1);
+  const qualityPercentage = Math.min(100, Math.round(totalQualityScore));
+
+  const getRecommendedFasting = (): { type: any; labelEn: string; labelAr: string } => {
+    if (hijriInfo.hijriMonth === 9) return { type: 'Ramadan', labelEn: 'Ramadan (Obligatory)', labelAr: 'رمضان المبارك' };
+    if (hijriInfo.hijriMonth === 12 && hijriInfo.hijriDay === 9) return { type: 'Arafah', labelEn: 'Day of Arafah', labelAr: 'يوم عرفة' };
+    if (hijriInfo.hijriMonth === 1 && (hijriInfo.hijriDay === 9 || hijriInfo.hijriDay === 10)) return { type: 'Ashura_Tasua', labelEn: 'Ashura & Tasua', labelAr: 'عاشوراء وتاسوعاء' };
+    if (hijriInfo.hijriDay >= 13 && hijriInfo.hijriDay <= 15) return { type: 'Ayyam_al_Beed', labelEn: 'White Days (13-15)', labelAr: 'الأيام البيض' };
+    if (hijriInfo.dayOfWeekEn === 'Monday' || hijriInfo.dayOfWeekEn === 'Thursday') return { type: 'Monday_Thursday', labelEn: 'Mon & Thu Sunnah', labelAr: 'الإثنين والخميس' };
+    if (hijriInfo.hijriMonth === 10) return { type: 'Shawwal_Six', labelEn: '6 Days of Shawwal', labelAr: 'الست من شوال' };
+    return { type: 'Monday_Thursday', labelEn: 'Voluntary Sunnah', labelAr: 'صيام التطوع' };
+  };
+  const recFasting = getRecommendedFasting();
+
   const getKhushuLabel = (val: number) => {
     if (val >= 9) return { label: 'Mumtāz / Deep Presence (حضور تام وخشوع عالٍ)', color: 'text-emerald-300' };
     if (val >= 7) return { label: 'Jayyid Jiddan / Attentive & Still (حضور جيد وطمأنينة)', color: 'text-amber-300' };
@@ -220,7 +276,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     { id: 'siam' as const, label: 'Siam & Fasting', labelAr: 'الصيام', icon: Moon, badge: currentLog.fasting?.isFasting ? 'Fasting' : undefined },
     { id: 'adhkar' as const, label: 'Adhkār Fortress', labelAr: 'الأذكار', icon: Heart, badge: fortressStats ? `${fortressStats.integrityScore}%` : `${salawatCount}ﷺ` },
     { id: 'quran' as const, label: 'Qur’an Sanctum', labelAr: 'القرآن الكريم', icon: BookOpen, badge: `${currentLog.quran?.pagesRead || 0}p` },
-    { id: 'audit' as const, label: 'Quality Scorecard', labelAr: 'ميزان الجودة', icon: Award }
+    { id: 'audit' as const, label: 'Quality Scorecard', labelAr: 'ميزان الجودة', icon: Award, badge: `${qualityScoreOutOf10}/10` }
   ];
 
   return (
@@ -481,6 +537,175 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         {activeTab === 'overview' && (
           <div className="space-y-6">
             
+            {/* MASTER SYNCHRONIZATION COMMAND CENTER: QUALITY SCORECARD & 40-DAY SANCTUARY */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" id="daily-hub-sync-center">
+              
+              {/* POD 1: SACRED QUALITY SCORECARD AUDIT */}
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-[#12141c] via-[#0b0d13] to-[#07080c] border border-[#c5a059]/40 rounded-2xl relative overflow-hidden shadow-xl space-y-3.5 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono bg-[#c5a059]/20 text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 shadow-[0_0_10px_rgba(197,160,89,0.15)]">
+                        <Award className="h-3 w-3 text-[#c5a059]" />
+                        <span>QUALITY SCORECARD • مِيزَانُ الجَوْدَة</span>
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setShowScorecardModal(true)}
+                      className="text-xs font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                    >
+                      <span>Audit 10 Pillars</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div>
+                      <h4 className="font-display font-bold text-base text-zinc-100">
+                        Today&apos;s Divine Discipline Score
+                      </h4>
+                      <span className="text-xs text-zinc-400 font-sans">
+                        Synchronized across all 10 Sacred Protocol pillars
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-display font-black text-[#fef08a] bg-[#1a140a] px-3 py-0.5 rounded-xl border border-[#c5a059]/50">
+                        {qualityScoreOutOf10} <span className="text-xs font-mono font-normal text-[#c5a059]">/ 10</span>
+                      </span>
+                      <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-1 rounded-lg">
+                        {qualityPercentage}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 10-PIP MINI STRIP */}
+                  <div className="pt-1 space-y-1.5">
+                    <div className="grid grid-cols-10 gap-1">
+                      {[
+                        { id: 1, tab: 'salaat', val: rawP1, label: 'Salaat' },
+                        { id: 2, tab: 'masjid40', val: rawP2, label: '40D Sanctuary' },
+                        { id: 3, tab: 'sunnah', val: rawP3, label: '12 Rawātib' },
+                        { id: 4, tab: 'sunnah', val: rawP4, label: 'Qiyām' },
+                        { id: 5, tab: 'siam', val: rawP5, label: 'Siam' },
+                        { id: 6, tab: 'adhkar', val: rawP6, label: 'Fortress' },
+                        { id: 7, tab: 'adhkar', val: rawP7, label: 'Post-Salah' },
+                        { id: 8, tab: 'adhkar', val: rawP8, label: 'Salawāt' },
+                        { id: 9, tab: 'quran', val: rawP9, label: 'Qur\'an' },
+                        { id: 10, tab: 'overview', val: rawP10, label: 'Khushū\'' }
+                      ].map(pip => (
+                        <button
+                          key={pip.id}
+                          onClick={() => setActiveTab(pip.tab as any)}
+                          className={`h-2 rounded-full transition-all cursor-pointer ${
+                            pip.val >= 9.5
+                              ? 'bg-gradient-to-r from-emerald-500 to-[#c5a059] shadow-[0_0_6px_rgba(197,160,89,0.4)]'
+                              : pip.val >= 5.0
+                              ? 'bg-amber-500/80'
+                              : 'bg-zinc-800'
+                          }`}
+                          title={`Pillar 0${pip.id} (${pip.label}): ${pip.val.toFixed(1)}/10 - Click to Open`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                      <span>Interactive: Click pip to inspect pillar</span>
+                      <span>10/10 Standard</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                  <button
+                    onClick={() => setActiveTab('audit')}
+                    className="text-xs font-mono text-zinc-300 hover:text-white flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Scale className="h-3.5 w-3.5 text-[#c5a059]" />
+                    <span>View Quality Scorecard Tab</span>
+                  </button>
+                  <button
+                    onClick={() => setShowScorecardModal(true)}
+                    className="px-2.5 py-1 bg-[#c5a059]/20 hover:bg-[#c5a059]/30 border border-[#c5a059]/40 text-[#fef08a] text-xs font-mono font-bold rounded-lg transition cursor-pointer"
+                  >
+                    Scorecard Modal
+                  </button>
+                </div>
+              </div>
+
+              {/* POD 2: 40-DAY MASJID SANCTUARY LIVE HUB */}
+              <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0c131d] via-[#091017] to-[#070b10] border border-emerald-500/40 rounded-2xl relative overflow-hidden shadow-xl space-y-3.5 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                        <Shield className="h-3 w-3 text-emerald-400" />
+                        <span>40-DAY SANCTUARY • عَهْدُ الأَرْبَعِينَ فِي المَسْجِد</span>
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('masjid40')}
+                      className="text-xs font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-1 font-bold cursor-pointer"
+                    >
+                      <span>Full Matrix</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div>
+                      <h4 className="font-display font-bold text-base text-zinc-100">
+                        Consecutive Congregation Covenant
+                      </h4>
+                      <span className="text-xs text-zinc-400 font-sans">
+                        Al-Barā&apos;atān: Freedom from Hellfire &amp; Hypocrisy
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-display font-black text-emerald-300 bg-emerald-950/60 px-3 py-0.5 rounded-xl border border-emerald-500/40">
+                        {masjid40Stats.currentStreak} <span className="text-xs font-mono font-normal text-emerald-400">/ 40 D</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* TODAY'S ATTENDANCE & STAGE */}
+                  <div className="p-2.5 bg-black/40 border border-white/5 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2.5 w-2.5 rounded-full ${masjidCount === 5 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-amber-400'}`} />
+                      <span className="text-xs font-mono text-zinc-300">
+                        Today: <strong className="text-white">{masjidCount}/5</strong> in Masjid
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-400 font-bold">
+                      Stage {masjid40Stats.currentStage?.stageNumber || 1}: {masjid40Stats.currentStage?.stageNameEn || 'The Anchor'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => toggleAllPrayersInMasjid(systemDate, true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      masjidCount === 5 
+                        ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300' 
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-black shadow-sm'
+                    }`}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>{masjidCount === 5 ? 'All 5 in Masjid Fulfilled ✓' : '1-Click All 5 in Masjid'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('masjid40')}
+                    className="text-xs font-mono text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                  >
+                    View 40-Day Tracker →
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
             {/* 1. THE 5 OBLIGATORY PRAYERS SECTION */}
             <div className="p-5 sm:p-6 bg-[#0a0c12] border border-white/10 rounded-2xl relative overflow-hidden shadow-xl space-y-5" id="five-daily-salaat">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
@@ -708,9 +933,15 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                   </div>
 
                   <div className="space-y-2">
+                    {/* Hijri Calendar Recommendation */}
+                    <div className="flex items-center justify-between text-[10px] font-mono bg-emerald-950/40 border border-emerald-500/20 px-2 py-1 rounded-lg">
+                      <span className="text-zinc-400">Recommended:</span>
+                      <span className="text-emerald-300 font-bold">{recFasting.labelEn}</span>
+                    </div>
+
                     <button
-                      onClick={() => toggleFasting('isFasting', currentLog.fasting?.fastingType || 'Monday_Thursday', systemDate)}
-                      className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold transition flex items-center justify-between ${
+                      onClick={() => toggleFasting('isFasting', currentLog.fasting?.fastingType || recFasting.type, systemDate)}
+                      className={`w-full py-2 px-3 rounded-xl border text-xs font-mono font-bold transition flex items-center justify-between cursor-pointer ${
                         currentLog.fasting?.isFasting
                           ? 'bg-emerald-950/90 border-emerald-500/60 text-emerald-200 shadow-sm'
                           : 'bg-[#07090e] border-white/10 text-zinc-400 hover:text-zinc-200'
@@ -718,35 +949,46 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     >
                       <span className="flex items-center gap-1.5">
                         <CheckCircle2 className={`h-4 w-4 ${currentLog.fasting?.isFasting ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                        <span>Fasting Today</span>
+                        <span>Fasting Today ({currentLog.fasting?.fastingType ? currentLog.fasting.fastingType.replace('_', ' ') : recFasting.labelEn})</span>
                       </span>
-                      <span className="text-[10px] text-emerald-300">
+                      <span className="text-[10px] text-emerald-300 font-bold">
                         {currentLog.fasting?.isFasting ? '+200 XP' : 'Start Fast'}
                       </span>
                     </button>
 
                     {currentLog.fasting?.isFasting && (
-                      <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="grid grid-cols-3 gap-1.5 pt-1">
                         <button
                           onClick={() => toggleFasting('suhurTaken', undefined, systemDate)}
-                          className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
+                          className={`py-1.5 px-1.5 rounded-lg border text-[10px] font-mono font-bold transition text-center cursor-pointer ${
                             currentLog.fasting?.suhurTaken
                               ? 'bg-amber-950/80 border-amber-500/50 text-amber-200'
                               : 'bg-zinc-900/60 border-white/5 text-zinc-400'
                           }`}
                         >
-                          {currentLog.fasting?.suhurTaken ? '✓ Suhoor Eaten' : 'Suhūr (+25 XP)'}
+                          {currentLog.fasting?.suhurTaken ? '✓ Suhūr' : 'Suhūr +25'}
                         </button>
 
                         <button
                           onClick={() => toggleFasting('iftarCompleted', undefined, systemDate)}
-                          className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
+                          className={`py-1.5 px-1.5 rounded-lg border text-[10px] font-mono font-bold transition text-center cursor-pointer ${
                             currentLog.fasting?.iftarCompleted
                               ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
                               : 'bg-zinc-900/60 border-white/5 text-zinc-400'
                           }`}
                         >
-                          {currentLog.fasting?.iftarCompleted ? '✓ Iftar Done' : 'Ifṭār (+50 XP)'}
+                          {currentLog.fasting?.iftarCompleted ? '✓ Ifṭār' : 'Ifṭār +50'}
+                        </button>
+
+                        <button
+                          onClick={() => toggleFasting('duaMadeAtIftar', undefined, systemDate)}
+                          className={`py-1.5 px-1.5 rounded-lg border text-[10px] font-mono font-bold transition text-center cursor-pointer ${
+                            currentLog.fasting?.duaMadeAtIftar
+                              ? 'bg-purple-950/80 border-purple-500/50 text-purple-200'
+                              : 'bg-zinc-900/60 border-white/5 text-zinc-400'
+                          }`}
+                        >
+                          {currentLog.fasting?.duaMadeAtIftar ? '✓ Du‘ā' : 'Du‘ā +25'}
                         </button>
                       </div>
                     )}
@@ -754,7 +996,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 </div>
 
                 <div className="text-[10px] font-mono text-zinc-400 border-t border-white/5 pt-2 flex items-center justify-between">
-                  <span>Sunnah Fasting: Mon/Thu, White Days</span>
+                  <span>9 Fasting Modalities Connected</span>
+                  <span className="text-emerald-400 font-bold">{currentLog.fasting?.isFasting ? 'Active Sanctuary' : 'Voluntary Track'}</span>
                 </div>
               </div>
 
@@ -827,11 +1070,41 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         {duhaRakats > 0 ? `✓ Ḍuḥā (${duhaRakats}R)` : 'Ḍuḥā (+35 XP)'}
                       </button>
                     </div>
+
+                    {/* 12 Sunan Rawātib Integration Bar */}
+                    <div className="p-2.5 bg-[#07090e] border border-white/10 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono">
+                        <span className="text-zinc-400">12 Sunan Rawātib:</span>
+                        <span className={`font-bold ${houseInJannahAchieved ? 'text-emerald-400' : 'text-amber-300'}`}>
+                          {rawatibRakatsCompleted}/12 Rak&apos;ahs
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            houseInJannahAchieved ? 'bg-gradient-to-r from-emerald-500 to-[#c5a059]' : 'bg-amber-400'
+                          }`}
+                          style={{ width: `${Math.min(100, (rawatibRakatsCompleted / 12) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] font-mono">
+                        <span className="text-zinc-500">Hadith: House in Jannah</span>
+                        <span className={houseInJannahAchieved ? 'text-emerald-400 font-bold' : 'text-zinc-500'}>
+                          {houseInJannahAchieved ? 'Earned Today 🏰' : `${12 - rawatibRakatsCompleted}R remaining`}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-[10px] font-mono text-zinc-400 border-t border-white/5 pt-2 flex items-center justify-between">
-                  <span>12 Rawātib House in Jannah</span>
+                  <span>Qiyām + 12 Rawātib Linked</span>
+                  <button
+                    onClick={() => setActiveTab('sunnah')}
+                    className="text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>Full Sunan Suite →</span>
+                  </button>
                 </div>
               </div>
 
@@ -844,18 +1117,29 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         <Heart className="h-4 w-4" />
                       </div>
                       <div>
-                        <h4 className="font-display font-bold text-sm text-zinc-100">Adhkār &amp; Prophetic Shields</h4>
+                        <h4 className="font-display font-bold text-sm text-zinc-100">Adhkār Fortress</h4>
                         <span className="text-[10px] font-mono text-rose-400">حُصُونُ الأَذْكَارِ وَالصَّلَاةُ عَلَى النَّبِيّ</span>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => setActiveTab('adhkar')}
-                      className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
-                    >
-                      <span>Adhkār Hub</span>
-                      <ArrowUpRight className="h-3 w-3" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                        (fortressStats?.integrityScore || 0) >= 80
+                          ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                          : (fortressStats?.integrityScore || 0) >= 40
+                          ? 'bg-amber-950/80 border-amber-500/50 text-amber-300'
+                          : 'bg-rose-950/80 border-rose-500/50 text-rose-300'
+                      }`}>
+                        {fortressStats?.integrityScore || 0}% Shield
+                      </span>
+                      <button
+                        onClick={() => setActiveTab('adhkar')}
+                        className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                      >
+                        <span>Hub</span>
+                        <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* 4 PROPHETIC TIME-LITANIES */}
@@ -1075,10 +1359,28 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  {quranFreshness && (
+                    <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${
+                      quranFreshness.score >= 80 
+                        ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300'
+                        : quranFreshness.score >= 50
+                        ? 'bg-amber-950/80 border-amber-500/40 text-amber-300'
+                        : 'bg-rose-950/80 border-rose-500/40 text-rose-300'
+                    }`}>
+                      Freshness: {quranFreshness.score}% ({quranFreshness.dueCount} due)
+                    </span>
+                  )}
                   <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full">
                     {currentLog.quran?.pagesRead || 0} Pages Read Today
                   </span>
+                  <button
+                    onClick={() => setActiveTab('quran')}
+                    className="text-xs font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-1 font-bold cursor-pointer ml-1"
+                  >
+                    <span>Full Sanctum</span>
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
 

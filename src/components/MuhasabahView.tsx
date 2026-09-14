@@ -12,7 +12,7 @@ import {
   Sparkles, Plus, Search, Filter, CheckCircle2, 
   ChevronRight, Lock, Trash2, Eye, EyeOff, HeartHandshake, Coins, Zap, ShieldAlert,
   ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info,
-  FileText, BookOpen, CalendarDays, History, Check, ArrowRight, Repeat
+  FileText, BookOpen, CalendarDays, History, Check, ArrowRight, Repeat, Edit3, Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -46,7 +46,7 @@ interface MuhasabahViewProps {
 export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpenGuide }) => {
   const { 
     state, getTodayMuhasabahStats, deleteMuhasabahEntry, 
-    deleteWeakness, updateWeakness,
+    addWeakness, deleteWeakness, updateWeakness,
     addQuest, completeQuest, generateWeeklyMuhasabahSummary, saveAndArchiveWeeklySummary,
     clearAllWeeklyArchives, deleteWeeklyArchive, getRecurringSins
   } = usePOS();
@@ -60,6 +60,82 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [groupMode, setGroupMode] = useState<GroupMode>('none');
   const [entryToDelete, setEntryToDelete] = useState<MuhasabahEntry | null>(null);
+
+  // Patterns & Behavioral Boundary states
+  const [patternStatusFilter, setPatternStatusFilter] = useState<'ALL' | 'Active' | 'Under Control' | 'Overcome'>('ALL');
+  const [isAddPatternModalOpen, setIsAddPatternModalOpen] = useState(false);
+  const [editingPattern, setEditingPattern] = useState<Weakness | null>(null);
+
+  // Form states for Pattern Modal
+  const [patternFormName, setPatternFormName] = useState('');
+  const [patternFormCategory, setPatternFormCategory] = useState<MuhasabahCategory>('Obligations');
+  const [patternFormTrigger, setPatternFormTrigger] = useState('');
+  const [patternFormProtocol, setPatternFormProtocol] = useState('');
+  const [patternFormStatus, setPatternFormStatus] = useState<'Active' | 'Under Control' | 'Overcome'>('Active');
+  const [patternFormError, setPatternFormError] = useState<string | null>(null);
+
+  const handleOpenAddPatternModal = () => {
+    setEditingPattern(null);
+    setPatternFormName('');
+    setPatternFormCategory('Obligations');
+    setPatternFormTrigger('');
+    setPatternFormProtocol('');
+    setPatternFormStatus('Active');
+    setPatternFormError(null);
+    setIsAddPatternModalOpen(true);
+  };
+
+  const handleOpenEditPatternModal = (w: Weakness) => {
+    setEditingPattern(w);
+    setPatternFormName(w.name);
+    setPatternFormCategory(w.category);
+    setPatternFormTrigger(w.triggerCause || '');
+    setPatternFormProtocol(w.preventiveProtocol || w.correctiveStrategy || '');
+    setPatternFormStatus(w.status);
+    setPatternFormError(null);
+    setIsAddPatternModalOpen(true);
+  };
+
+  const handleSavePattern = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!patternFormName.trim()) {
+      setPatternFormError('Please enter a name for the pattern/weakness.');
+      return;
+    }
+    if (!patternFormTrigger.trim()) {
+      setPatternFormError('Please identify the root trigger cue.');
+      return;
+    }
+    if (!patternFormProtocol.trim()) {
+      setPatternFormError('Please define a concrete preventive protocol / rule.');
+      return;
+    }
+
+    if (editingPattern) {
+      updateWeakness(editingPattern.id, {
+        name: patternFormName.trim(),
+        category: patternFormCategory,
+        triggerCause: patternFormTrigger.trim(),
+        correctiveStrategy: patternFormProtocol.trim(),
+        preventiveProtocol: patternFormProtocol.trim(),
+        status: patternFormStatus
+      });
+    } else {
+      addWeakness({
+        name: patternFormName.trim(),
+        category: patternFormCategory,
+        triggerCause: patternFormTrigger.trim(),
+        correctiveStrategy: patternFormProtocol.trim(),
+        preventiveProtocol: patternFormProtocol.trim(),
+        occurrenceCount: 0,
+        lastOccurrenceDate: '',
+        status: patternFormStatus,
+        historyDates: []
+      });
+    }
+    setIsAddPatternModalOpen(false);
+    setEditingPattern(null);
+  };
 
   // Weekly Summary states
   const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
@@ -265,13 +341,24 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]') || q.type === 'Recovery')
   );
 
-  const activeWeaknesses = weaknesses.filter(w => w.status === 'Active');
+  const activeWeaknesses = useMemo(() => weaknesses.filter(w => w.status === 'Active'), [weaknesses]);
+  const underControlWeaknesses = useMemo(() => weaknesses.filter(w => w.status === 'Under Control'), [weaknesses]);
+  const overcomeWeaknesses = useMemo(() => weaknesses.filter(w => w.status === 'Overcome'), [weaknesses]);
+  const activeChainsCount = useMemo(() => weaknesses.filter(w => (w.occurrenceCount || 0) >= 5 && w.status !== 'Overcome').length, [weaknesses]);
+
+  const displayedWeaknesses = useMemo(() => {
+    if (patternStatusFilter === 'Active') return activeWeaknesses;
+    if (patternStatusFilter === 'Under Control') return underControlWeaknesses;
+    if (patternStatusFilter === 'Overcome') return overcomeWeaknesses;
+    return weaknesses;
+  }, [patternStatusFilter, activeWeaknesses, underControlWeaknesses, overcomeWeaknesses, weaknesses]);
+
   const realmPatternSummary = useMemo(() => {
     const realms: MuhasabahCategory[] = ['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'];
     return realms.map(category => {
       const realmEntries = entries.filter(entry => entry.category === category);
       const latestEntry = [...realmEntries].sort((a, b) => (b.timestamp || b.date).localeCompare(a.timestamp || a.date))[0];
-      const pattern = activeWeaknesses.find(weakness => weakness.category === category);
+      const pattern = weaknesses.find(weakness => weakness.category === category && weakness.status !== 'Overcome') || weaknesses.find(weakness => weakness.category === category);
       return {
         category,
         count: realmEntries.length,
@@ -279,7 +366,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         latestTitle: latestEntry?.title || 'No audit recorded'
       };
     });
-  }, [entries, activeWeaknesses]);
+  }, [entries, weaknesses]);
 
   const handleOpenAuditModal = (weaknessId?: string, cat?: MuhasabahCategory) => {
     setPrefillWeaknessId(weaknessId);
@@ -917,19 +1004,69 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 </div>
                 <div>
                   <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
-                    PATTERNS TO PREVENT RECURRENCE ({activeWeaknesses.length})
+                    PATTERNS TO PREVENT RECURRENCE ({weaknesses.length})
                   </h3>
                   <span className="text-[10px] font-mono text-zinc-400">
-                    Link repeated slips to one trigger and one preventive action.
+                    Define root triggers and enforce concrete preventive protocols.
                   </span>
                 </div>
               </div>
               <button
-                onClick={() => handleOpenAuditModal()}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 text-xs transition cursor-pointer"
-                title="Add slip or weakness"
+                onClick={handleOpenAddPatternModal}
+                className="px-2.5 py-1.5 rounded-lg bg-[#c5a059]/15 hover:bg-[#c5a059]/25 border border-[#c5a059]/40 text-[#c5a059] text-[10.5px] font-mono font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+                title="Add a new pattern & preventive protocol"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
+                <span>+ NEW PROTOCOL</span>
+              </button>
+            </div>
+
+            {/* Filter Tabs: All, Active, Under Control, Overcome */}
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 text-[10px] font-mono">
+              <button
+                onClick={() => setPatternStatusFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'ALL'
+                    ? 'bg-white/15 border-white/30 text-white font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                ALL ({weaknesses.length})
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Active')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                  patternStatusFilter === 'Active'
+                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                ACTIVE ({activeWeaknesses.length})
+                {activeChainsCount > 0 && (
+                  <span className="px-1.5 py-0.2 bg-rose-600 text-white text-[9px] rounded-full font-bold animate-pulse">
+                    {activeChainsCount} CHAINS
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Under Control')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'Under Control'
+                    ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                UNDER CONTROL ({underControlWeaknesses.length})
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Overcome')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'Overcome'
+                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                OVERCOME ({overcomeWeaknesses.length})
               </button>
             </div>
 
@@ -991,48 +1128,130 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               })}
             </div>
 
-            {activeWeaknesses.length > 0 ? (
+            {displayedWeaknesses.length > 0 ? (
               <div className="space-y-3">
-                {activeWeaknesses.map(weakness => {
+                {displayedWeaknesses.map(weakness => {
                   const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
+                  const CategoryIcon = catColor.icon;
                   const isOvercome = weakness.status === 'Overcome';
+                  const isUnderControl = weakness.status === 'Under Control';
+                  const isActiveChain = (weakness.occurrenceCount || 0) >= 5;
+
+                  // Calculate restraint days
+                  const daysInRestraint = weakness.lastOccurrenceDate
+                    ? Math.max(0, getDaysDifference(weakness.lastOccurrenceDate, todayDateStr))
+                    : null;
+
+                  const currentProtocol = weakness.preventiveProtocol || weakness.correctiveStrategy;
 
                   return (
                     <div 
                       key={weakness.id}
-                      className={`p-3.5 rounded-xl border transition ${
+                      className={`p-3.5 sm:p-4 rounded-xl border transition ${
                         isOvercome
-                          ? 'bg-emerald-950/15 border-emerald-500/30'
-                          : 'bg-[#090b10] border-white/10'
+                          ? 'bg-emerald-950/20 border-emerald-500/40'
+                          : isUnderControl
+                            ? 'bg-[#0a1018] border-cyan-500/35'
+                            : isActiveChain
+                              ? 'bg-[#150a0e] border-rose-500/50 shadow-sm shadow-rose-950/50'
+                              : 'bg-[#090b10] border-white/10'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-xs text-zinc-100 font-mono truncate">
-                          {weakness.name}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const nextStatus = weakness.status === 'Active' ? 'Under Control' : weakness.status === 'Under Control' ? 'Overcome' : 'Active';
-                            updateWeakness(weakness.id, { status: nextStatus });
-                          }}
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded border cursor-pointer transition ${
-                            weakness.status === 'Overcome'
-                              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' 
-                              : weakness.status === 'Under Control'
-                                ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
-                                : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
-                          }`}
-                          title="Click to toggle status"
-                        >
-                          {weakness.status}
-                        </button>
+                      {/* Top Bar: Name, Realm Badge, Status Toggle & Actions */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-xs text-zinc-100 font-mono truncate">
+                              {weakness.name}
+                            </span>
+                            <span className={`text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-1 ${catColor.border} ${catColor.bg} ${catColor.text}`}>
+                              <CategoryIcon className="h-2.5 w-2.5" />
+                              {weakness.category}
+                            </span>
+                          </div>
+
+                          {/* Restraint streak / last occurrence */}
+                          <div className="text-[10px] font-mono mt-1.5 flex items-center gap-2 flex-wrap">
+                            {daysInRestraint === null ? (
+                              <span className="text-zinc-400">🌱 Proactive boundary (0 recorded slips)</span>
+                            ) : daysInRestraint === 0 ? (
+                              <span className="text-rose-400 font-semibold flex items-center gap-1">
+                                <Flame className="h-3 w-3 text-rose-500 shrink-0" /> Slipped today ({weakness.lastOccurrenceDate})
+                              </span>
+                            ) : (
+                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                                <Shield className="h-3 w-3 text-emerald-400 shrink-0" />
+                                {daysInRestraint} {daysInRestraint === 1 ? 'day' : 'days'} in restraint (Thabāt)
+                              </span>
+                            )}
+
+                            {/* Eligibility shortcuts */}
+                            {daysInRestraint !== null && daysInRestraint >= 7 && weakness.status === 'Active' && (
+                              <button
+                                onClick={() => updateWeakness(weakness.id, { status: 'Under Control' })}
+                                className="text-[9px] text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/40 hover:bg-cyan-900/60 transition cursor-pointer"
+                                title="7+ days clean without slip"
+                              >
+                                ⚡ Move to Under Control
+                              </button>
+                            )}
+                            {daysInRestraint !== null && daysInRestraint >= 21 && weakness.status === 'Under Control' && (
+                              <button
+                                onClick={() => updateWeakness(weakness.id, { status: 'Overcome' })}
+                                className="text-[9px] text-emerald-300 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-500/40 hover:bg-emerald-900/60 transition cursor-pointer"
+                                title="21+ days clean: Habit loop broken"
+                              >
+                                🌟 Mark Overcome
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Switcher & Buttons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              const nextStatus = weakness.status === 'Active' ? 'Under Control' : weakness.status === 'Under Control' ? 'Overcome' : 'Active';
+                              updateWeakness(weakness.id, { status: nextStatus });
+                            }}
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border cursor-pointer transition ${
+                              isOvercome
+                                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300' 
+                                : isUnderControl
+                                  ? 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300'
+                                  : 'bg-rose-950/70 border-rose-500/50 text-rose-300'
+                            }`}
+                            title="Click to toggle status: Active → Under Control → Overcome"
+                          >
+                            {weakness.status}
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditPatternModal(weakness)}
+                            className="p-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                            title="Edit Trigger & Preventive Protocol"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => deleteWeakness(weakness.id)}
+                            className="p-1 rounded bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-300 transition cursor-pointer shrink-0"
+                            title="Delete pattern"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Slip Frequency Meter */}
-                      <div className="my-2">
+                      <div className="my-2.5">
                         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                          <span>Recorded Frequency:</span>
-                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                          <span className="flex items-center gap-1">
+                            <span>Recorded Frequency:</span>
+                            {weakness.occurrenceCount >= 5 && (
+                              <span className="text-rose-400 font-bold uppercase">(Active Chronic Chain)</span>
+                            )}
+                          </span>
+                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : isUnderControl ? 'text-cyan-300' : 'text-zinc-200'}`}>
                             {weakness.occurrenceCount} Slips Logged
                           </span>
                         </div>
@@ -1042,7 +1261,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                               key={idx}
                               className={`h-1.5 rounded-full transition ${
                                 idx <= weakness.occurrenceCount
-                                  ? idx >= 5 ? 'bg-rose-400 shadow-sm shadow-rose-400' : 'bg-amber-400'
+                                  ? idx >= 5 ? 'bg-rose-500 shadow-sm shadow-rose-500' : 'bg-amber-400'
                                   : 'bg-zinc-800'
                               }`}
                             />
@@ -1050,39 +1269,87 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                         </div>
                       </div>
 
+                      {/* Active Chronic Chain Warning Banner (Self-contained, non-power seal) */}
+                      {isActiveChain && !isOvercome && (
+                        <div className="my-2.5 p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/40 text-[10.5px] font-mono">
+                          <div className="flex items-center justify-between text-rose-300 font-bold mb-1">
+                            <span className="flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                              CHRONIC CHAIN ACTIVE (5+ SLIPS)
+                            </span>
+                            <span className="text-[9.5px] bg-rose-900/80 px-1.5 py-0.2 rounded border border-rose-500/40 text-rose-200">
+                              +25% Penalty Floor
+                            </span>
+                          </div>
+                          <p className="text-zinc-300 text-[10px] leading-relaxed">
+                            Repeated recurrence confirms an unchecked habit loop. The system enforces a +25% penalty floor. Enforce your concrete Preventive Protocol below to neutralize the trigger and rebuild steadfastness.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Recurrence Cadence & Escalation Status */}
                       {weakness.recurrenceCadence && (
-                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/40 border border-rose-500/30 text-[10.5px] font-mono flex items-center justify-between">
+                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/30 border border-rose-500/30 text-[10px] font-mono flex items-center justify-between">
                           <span className="text-rose-300 font-bold flex items-center gap-1.5">
-                            <Repeat className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                            <Repeat className="h-3 w-3 text-rose-400 animate-pulse" />
                             {weakness.recurrenceCadence}
                           </span>
-                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9.5px]">
+                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9px]">
                             Tier {weakness.escalationTier || 1} • {((weakness.penaltyMultiplier || 1.0)).toFixed(2)}x Penalties
                           </span>
                         </div>
                       )}
 
-                      {weakness.triggerCause && (
-                        <p className="text-[10px] font-mono text-zinc-400 line-clamp-1 mb-2.5">
-                          Trigger: {weakness.triggerCause}
-                        </p>
-                      )}
+                      {/* Behavioral Boundary & Trigger Box */}
+                      <div className="my-2.5 p-2.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-mono space-y-2">
+                        {/* Trigger Cue */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] uppercase font-bold text-amber-400/90 shrink-0 mt-0.5">
+                            TRIGGER CUE:
+                          </span>
+                          <span className="text-zinc-300 text-[10.5px]">
+                            {weakness.triggerCause || 'No root cue specified'}
+                          </span>
+                        </div>
+
+                        {/* Preventive Protocol */}
+                        <div className="flex items-start gap-2 pt-1.5 border-t border-white/5">
+                          <span className="text-[10px] uppercase font-bold text-emerald-400/90 shrink-0 mt-0.5 flex items-center gap-1">
+                            <Shield className="h-2.5 w-2.5 text-emerald-400" />
+                            PREVENTIVE PROTOCOL:
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            {currentProtocol ? (
+                              <p className="text-zinc-200 text-[10.5px] leading-relaxed">
+                                {currentProtocol}
+                              </p>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenEditPatternModal(weakness)}
+                                className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono flex items-center gap-1 cursor-pointer"
+                              >
+                                + Define Preventive Protocol (Rule of Restraint)
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Action buttons */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 pt-1">
                         <button
                           onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
-                          className="flex-1 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 transition text-center cursor-pointer"
+                          className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 hover:text-white transition text-center cursor-pointer flex items-center justify-center gap-1"
                         >
-                          + Record Slip
+                          <Plus className="h-3 w-3" />
+                          Record Slip
                         </button>
                         <button
-                          onClick={() => deleteWeakness(weakness.id)}
-                          className="p-1 rounded bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-300 transition cursor-pointer shrink-0"
-                          title="Delete weakness"
+                          onClick={() => handleOpenEditPatternModal(weakness)}
+                          className="px-3 py-1.5 rounded-lg bg-[#c5a059]/10 hover:bg-[#c5a059]/20 border border-[#c5a059]/30 text-[#c5a059] text-[10.5px] font-mono transition cursor-pointer flex items-center gap-1"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Edit3 className="h-3 w-3" />
+                          Edit Protocol
                         </button>
                       </div>
                     </div>
@@ -1090,10 +1357,20 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 })}
               </div>
             ) : (
-              <div className="text-center py-5 px-3 rounded-xl bg-[#07090e] border border-white/5">
-                <p className="text-[11px] text-zinc-500 font-mono">
-                  No active pattern to resolve. A pattern is useful only when it changes the next action; isolated slips remain in the life ledger.
+              <div className="text-center py-6 px-4 rounded-xl bg-[#07090e] border border-white/5">
+                <p className="text-xs text-zinc-400 font-mono">
+                  {patternStatusFilter === 'ALL'
+                    ? 'No behavioral patterns recorded yet. Click "+ NEW PROTOCOL" to proactively establish boundary rules.'
+                    : `No patterns currently matching status "${patternStatusFilter}".`}
                 </p>
+                {patternStatusFilter !== 'ALL' && (
+                  <button
+                    onClick={() => setPatternStatusFilter('ALL')}
+                    className="mt-2 text-[10.5px] text-[#c5a059] hover:underline font-mono cursor-pointer"
+                  >
+                    View All Patterns →
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -2404,6 +2681,147 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ADD / EDIT PREVENTIVE PATTERN & PROTOCOL MODAL */}
+      <AnimatePresence>
+        {isAddPatternModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="bg-[#0b0e15] border border-[#c5a059]/50 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden font-mono text-zinc-200 my-8 flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-4 bg-gradient-to-r from-[#1c160a] via-[#121622] to-[#090b10] border-b border-[#c5a059]/30 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#3a2e12] border border-[#c5a059]/60 text-[#fef08a]">
+                    <Shield className="h-4 w-4 text-[#c5a059]" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-sm font-bold text-white tracking-wider">
+                      {editingPattern ? 'EDIT PREVENTIVE PROTOCOL' : 'NEW PREVENTIVE PATTERN & PROTOCOL'}
+                    </h3>
+                    <p className="text-[10px] text-zinc-400">
+                      Formulate an actionable boundary rule to prevent recurring lapses.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAddPatternModalOpen(false)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleSavePattern} className="p-5 space-y-4">
+                {patternFormError && (
+                  <div className="p-2.5 rounded-lg bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{patternFormError}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    PATTERN NAME <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={patternFormName}
+                    onChange={e => setPatternFormName(e.target.value)}
+                    placeholder="e.g. Uncontrolled Midnight Scrolling, Fajr Hesitation..."
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-[#c5a059] focus:outline-none text-xs text-white placeholder-zinc-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      REALM / CATEGORY
+                    </label>
+                    <select
+                      value={patternFormCategory}
+                      onChange={e => setPatternFormCategory(e.target.value as MuhasabahCategory)}
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-[#c5a059] focus:outline-none text-xs text-white"
+                    >
+                      {(['Obligations', 'Desires', 'Speech', 'Heart', 'Rights', 'Wasted Potential'] as MuhasabahCategory[]).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      OPERATIONAL STATUS
+                    </label>
+                    <select
+                      value={patternFormStatus}
+                      onChange={e => setPatternFormStatus(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-[#c5a059] focus:outline-none text-xs text-white"
+                    >
+                      <option value="Active">Active (Under Scrutiny)</option>
+                      <option value="Under Control">Under Control (Guarded)</option>
+                      <option value="Overcome">Overcome (Mastered)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-amber-300 mb-1">
+                    ROOT TRIGGER CUE (الـمُثِير) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={patternFormTrigger}
+                    onChange={e => setPatternFormTrigger(e.target.value)}
+                    placeholder="What environmental cue, fatigue state, or timing sparks this?"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-amber-400/60 focus:outline-none text-xs text-white placeholder-zinc-500"
+                  />
+                  <span className="text-[9.5px] text-zinc-500 mt-0.5 block">
+                    Example: "Alone with phone after 11 PM", "Fatigued before Asr", "Idle chat".
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-emerald-300 mb-1">
+                    PREVENTIVE PROTOCOL / BOUNDARY (إِجْرَاء الوِقَايَة) <span className="text-rose-400">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={patternFormProtocol}
+                    onChange={e => setPatternFormProtocol(e.target.value)}
+                    placeholder="If [Trigger Cue occurs], I will immediately [Concrete Alternative Action / Friction Barrier]..."
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-emerald-400/60 focus:outline-none text-xs text-white placeholder-zinc-500 resize-none leading-relaxed"
+                  />
+                  <span className="text-[9.5px] text-zinc-500 mt-0.5 block">
+                    Define an enforceable physical boundary or If-Then substitute rule to prevent recurrence.
+                  </span>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddPatternModalOpen(false)}
+                    className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-[#c5a059] hover:bg-[#d6b068] text-black font-bold text-xs transition cursor-pointer shadow-lg shadow-[#c5a059]/20"
+                  >
+                    {editingPattern ? 'Update Protocol' : 'Establish Protocol'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

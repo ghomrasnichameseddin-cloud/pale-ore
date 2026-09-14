@@ -410,7 +410,7 @@ export const Masjid40DayTracker: React.FC<Masjid40DayTrackerProps> = ({
           <div className="space-y-2">
             {prayers.map(prayer => {
               const prayState = currentLog[prayer.id];
-              const isInMasjid = prayState?.inMasjid && prayState?.fardh;
+              const isInMasjid = !!(prayState?.inMasjid && (prayState?.fardh !== false));
               const Icon = prayer.icon;
 
               return (

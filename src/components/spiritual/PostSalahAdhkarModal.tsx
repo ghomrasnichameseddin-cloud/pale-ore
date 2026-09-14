@@ -36,19 +36,31 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   {
     id: 'post-istighfar',
     stepNumber: 1,
-    titleEn: '1. Istighfār & Divine Peace Supplication',
-    titleAr: 'الاسْتِغْفَارُ وَدُعَاءُ السَّلَامِ',
+    titleEn: '1. 3x Istighfār After Salah',
+    titleAr: 'الاسْتِغْفَارُ ثَلَاثًا عَقِبَ كُلِّ صَلَاةٍ',
     source: 'Sahih Muslim (591)',
-    arabic: 'أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ. اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الجَلَالِ وَالإِكْرَامِ.',
-    transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh. Allāhumma Antas-Salāmu wa minkas-Salām, tabārakta yā Dhal-Jalāli wal-Ikrām.',
-    translation: 'I seek the forgiveness of Allah (3 times). O Allah, You are Peace and from You comes peace. Blessed are You, O Possessor of Majesty and Honor.',
-    virtue: 'Recited immediately following the final Taslīm of every obligatory prayer to cleanse any deficiencies during the prayer.',
+    arabic: 'أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ.',
+    transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh.',
+    translation: 'I seek the forgiveness of Allah (3 times).',
+    virtue: 'Recited immediately upon completing the final Taslīm of every obligatory prayer before reciting any other supplication.',
     targetCount: 3
   },
   {
-    id: 'post-tahlil',
+    id: 'post-salam-dua',
     stepNumber: 2,
-    titleEn: '2. Testimony of Sovereign Grace (La Mani‘a lima A‘tayt)',
+    titleEn: '2. Du‘ā As-Salām (Supplication of Divine Peace)',
+    titleAr: 'دُعَاءُ السَّلَامِ عَقِبَ الصَّلَاةِ',
+    source: 'Sahih Muslim (591)',
+    arabic: 'اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الجَلَالِ وَالإِكْرَامِ.',
+    transliteration: 'Allāhumma Antas-Salāmu wa minkas-Salām, tabārakta yā Dhal-Jalāli wal-Ikrām.',
+    translation: 'O Allah, You are Peace and from You comes peace. Blessed are You, O Possessor of Majesty and Honor.',
+    virtue: 'Recited directly following the 3 Istighfārs after the Taslīm.',
+    targetCount: 1
+  },
+  {
+    id: 'post-tahlil',
+    stepNumber: 3,
+    titleEn: '3. Testimony of Sovereign Grace (La Mani‘a lima A‘tayt)',
     titleAr: 'التَّهْلِيلُ وَتَفْوِيضُ المُلْكِ لِلَّهِ',
     source: 'Sahih al-Bukhari (844) & Muslim (593)',
     arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، اللَّهُمَّ لَا مَانِعَ لِمَا أَعْطَيْتَ، وَلَا مُعْطِيَ لِمَا مَنَعْتَ، وَلَا يَنْفَعُ ذَا الجَدِّ مِنْكَ الجَدُّ.',
@@ -59,8 +71,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-zubayr-tahlil',
-    stepNumber: 3,
-    titleEn: '3. Declaration of Pure Devotion (Ibn az-Zubayr Tahlīl)',
+    stepNumber: 4,
+    titleEn: '4. Declaration of Pure Devotion (Ibn az-Zubayr Tahlīl)',
     titleAr: 'تَهْلِيلُ الإِخْلَاصِ وَالثَّنَاءِ الحَسَنِ',
     source: 'Sahih Muslim (594)',
     arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعْبُدُ إِلَّا إِيَّاهُ، لَهُ النِّعْمَةُ وَلَهُ الفَضْلُ وَلَهُ الثَّنَاءُ الحَسَنُ، لَا إِلَهَ إِلَّا اللَّهُ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الكَافِرُونَ.',
@@ -71,8 +83,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-ayat-kursi',
-    stepNumber: 4,
-    titleEn: '4. Āyat al-Kursī (The Throne Verse - 2:255)',
+    stepNumber: 5,
+    titleEn: '5. Āyat al-Kursī (The Throne Verse - 2:255)',
     titleAr: 'آيَةُ الكُرْسِيِّ دُبُرَ كُلِّ صَلَاةٍ مَكْتُوبَةٍ',
     source: 'An-Nasa’i As-Sunan al-Kubra (9848) • Sahih al-Jami‘ (6464)',
     arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
@@ -83,20 +95,32 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-tasbih-standard',
-    stepNumber: 5,
-    titleEn: '5. Sunnah Tasbīḥ (Counted on the Right Hand Fingers)',
-    titleAr: 'التَّسْبِيحُ الكَامِلُ المَأْثُورُ بِاليَمِينِ (33 - 33 - 33 - 1)',
-    source: 'Sahih Muslim (597) & Sunan Abi Dawud (1502)',
-    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣) • تَمَامُ المِائَة: لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x) + Lā ilāha illAllāhu waḥdahū lā sharīka lah (1x).',
-    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times), sealed with the Shahādah to complete 100.',
-    virtue: 'Forgives sins even if like sea foam. The Sunnah is to count on the fingers of the right hand: «كَانَ يَعْقِدُ التَّسْبِيحَ بِيَمِينِهِ» (Abu Dawud 1502).',
-    targetCount: 100
+    stepNumber: 6,
+    titleEn: '6. Standard 33x Tasbīḥ (33 Tasbīḥ, 33 Ḥamd, 33 Takbīr Only)',
+    titleAr: 'التَّسْبِيحُ الرَّاتِبُ (٣٣ تَسْبِيح، ٣٣ تَحْمِيد، ٣٣ تَكْبِير فَقَط)',
+    source: 'Sahih Muslim (597)',
+    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣)',
+    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x)',
+    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times) — 99 glorifications only.',
+    virtue: 'Standard authentic formula: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr only. Sunnah is counting on the fingers of the right hand.',
+    targetCount: 99
+  },
+  {
+    id: 'post-tasbih-mini',
+    stepNumber: 7,
+    titleEn: '7. Mini 10x Tasbīḥ (10 Tasbīḥ, 10 Ḥamd, 10 Takbīr Only)',
+    titleAr: 'التَّسْبِيحُ المُوجَزُ (١٠ تَسْبِيح، ١٠ تَحْمِيد، ١٠ تَكْبِير فَقَط)',
+    source: 'Sunan Abi Dawud (1502) & at-Tirmidhi (3410)',
+    arabic: 'سُبْحَانَ اللَّهِ (١٠) • الحَمْدُ لِلَّهِ (١٠) • اللَّهُ أَكْبَرُ (١٠)',
+    transliteration: 'SubḥānAllāh (10x), Alḥamdulillāh (10x), Allāhu Akbar (10x)',
+    translation: 'Glory be to Allah (10 times), Praise be to Allah (10 times), Allah is the Greatest (10 times) — 30 glorifications only.',
+    virtue: 'Prophetic formula: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr only (150 on the tongue, 1500 on the Scale of good deeds).',
+    targetCount: 30
   },
   {
     id: 'post-fajr-maghrib-10x',
-    stepNumber: 6,
-    titleEn: '6. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
+    stepNumber: 8,
+    titleEn: '8. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
     titleAr: 'ذِكْرُ التَّهْلِيلِ المَخْصُوصُ عَقِبَ الفَجْرِ وَالمَغْرِبِ (١٠ مَرَّاتٍ)',
     source: 'Jami‘ at-Tirmidhi (3474) & Sahih at-Targhib (472)',
     arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
@@ -108,8 +132,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-muawwidhat',
-    stepNumber: 7,
-    titleEn: '7. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
+    stepNumber: 9,
+    titleEn: '9. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
     titleAr: 'المُعَوِّذَاتُ الثَّلَاثُ (الإِخْلَاص وَالفَلَق وَالنَّاس)',
     source: 'Sunan Abi Dawud (1523) & Jami‘ at-Tirmidhi (2903)',
     arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
@@ -121,8 +145,8 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   },
   {
     id: 'post-muadh-dua',
-    stepNumber: 8,
-    titleEn: '8. Beloved Supplication of Mu‘ādh ibn Jabal',
+    stepNumber: 10,
+    titleEn: '10. Beloved Supplication of Mu‘ādh ibn Jabal',
     titleAr: 'وَصِيَّةُ النَّبِيِّ ﷺ لِمُعَاذٍ عَقِبَ كُلِّ صَلَاةٍ',
     source: 'Sunan Abi Dawud (1522) & An-Nasa’i (1303)',
     arabic: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ، وَشُكْرِكَ، وَحُسْنِ عِبَادَتِكَ.',
@@ -144,10 +168,10 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Interactive mini bead counters for the active session
+  const [istighfarCount, setIstighfarCount] = useState(0);
   const [subhanallahCount, setSubhanallahCount] = useState(0);
   const [alhamdulillahCount, setAlhamdulillahCount] = useState(0);
   const [allahuakbarCount, setAllahuakbarCount] = useState(0);
-  const [tahlilCount, setTahlilCount] = useState(0);
 
   useEffect(() => {
     if (isOpen && initialPrayer) {
@@ -155,11 +179,31 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
     }
   }, [isOpen, initialPrayer]);
 
-  if (!isOpen) return null;
-
   const currentLog = getSpiritualLog(systemDate);
   const postMap = currentLog.dhikr?.postSalahAdhkar || {};
   const currentPrayerMode: PostSalahDhikrMode = postMap[activePrayer] || 'none';
+
+  // Sync beads when active prayer or current prayer mode changes
+  useEffect(() => {
+    if (currentPrayerMode === 'standard33') {
+      setIstighfarCount(3);
+      setSubhanallahCount(33);
+      setAlhamdulillahCount(33);
+      setAllahuakbarCount(33);
+    } else if (currentPrayerMode === 'mini10') {
+      setIstighfarCount(3);
+      setSubhanallahCount(10);
+      setAlhamdulillahCount(10);
+      setAllahuakbarCount(10);
+    } else {
+      setIstighfarCount(0);
+      setSubhanallahCount(0);
+      setAlhamdulillahCount(0);
+      setAllahuakbarCount(0);
+    }
+  }, [activePrayer, currentPrayerMode]);
+
+  if (!isOpen) return null;
 
   const isFajrOrMaghrib = activePrayer === 'fajr' || activePrayer === 'maghrib';
 
@@ -172,12 +216,71 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
   };
 
   const handleSetMode = (mode: PostSalahDhikrMode) => {
+    if (mode === 'standard33') {
+      setIstighfarCount(3);
+      setSubhanallahCount(33);
+      setAlhamdulillahCount(33);
+      setAllahuakbarCount(33);
+    } else if (mode === 'mini10') {
+      setIstighfarCount(3);
+      setSubhanallahCount(10);
+      setAlhamdulillahCount(10);
+      setAllahuakbarCount(10);
+    } else {
+      setIstighfarCount(0);
+      setSubhanallahCount(0);
+      setAlhamdulillahCount(0);
+      setAllahuakbarCount(0);
+    }
+
     updateDhikrLog({
       postSalahAdhkar: {
         ...postMap,
         [activePrayer]: mode
       }
     }, systemDate);
+  };
+
+  const incrementBead = (type: 'istighfar' | 'subhanallah' | 'alhamdulillah' | 'allahuakbar') => {
+    let nextIstighfar = istighfarCount;
+    let nextSub = subhanallahCount;
+    let nextHamd = alhamdulillahCount;
+    let nextTakbir = allahuakbarCount;
+
+    if (type === 'istighfar') {
+      nextIstighfar = Math.min(3, istighfarCount + 1);
+      setIstighfarCount(nextIstighfar);
+      updateDhikrLog({ istighfarCount: (currentLog.dhikr?.istighfarCount || 0) + 1 }, systemDate);
+    } else if (type === 'subhanallah') {
+      nextSub = Math.min(33, subhanallahCount + 1);
+      setSubhanallahCount(nextSub);
+      updateDhikrLog({ tasbeehCount: (currentLog.dhikr?.tasbeehCount || 0) + 1 }, systemDate);
+    } else if (type === 'alhamdulillah') {
+      nextHamd = Math.min(33, alhamdulillahCount + 1);
+      setAlhamdulillahCount(nextHamd);
+      updateDhikrLog({ hamdCount: (currentLog.dhikr?.hamdCount || 0) + 1 }, systemDate);
+    } else if (type === 'allahuakbar') {
+      nextTakbir = Math.min(33, allahuakbarCount + 1);
+      setAllahuakbarCount(nextTakbir);
+      updateDhikrLog({ takbirCount: (currentLog.dhikr?.takbirCount || 0) + 1 }, systemDate);
+    }
+
+    // Auto-advance mode to standard33 if completed 33x tasbih, 33x hamd, 33x takbir ONLY
+    if (nextSub === 33 && nextHamd === 33 && nextTakbir === 33 && currentPrayerMode !== 'standard33') {
+      updateDhikrLog({
+        postSalahAdhkar: {
+          ...postMap,
+          [activePrayer]: 'standard33'
+        }
+      }, systemDate);
+    } else if (nextSub === 10 && nextHamd === 10 && nextTakbir === 10 && currentPrayerMode === 'none') {
+      updateDhikrLog({
+        postSalahAdhkar: {
+          ...postMap,
+          [activePrayer]: 'mini10'
+        }
+      }, systemDate);
+    }
   };
 
   const handleCopy = (item: DhikrItem) => {
@@ -188,10 +291,10 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
   };
 
   const resetBeads = () => {
+    setIstighfarCount(0);
     setSubhanallahCount(0);
     setAlhamdulillahCount(0);
     setAllahuakbarCount(0);
-    setTahlilCount(0);
   };
 
   return (
@@ -315,7 +418,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>
-                <strong>Connected to Sacred Protocol:</strong> Marking Standard 33x or Mini 10x automatically synchronizes +33 SubḥānAllāh, +33 Ḥamd, +33 Takbīr, +3 Istighfār &amp; +1 Tahlīl into your daily fortress counters.
+                <strong>Connected to Sacred Protocol:</strong> Standard 33x logs 33 SubḥānAllāh, 33 Ḥamd, 33 Takbīr <strong>only</strong> (99 total). Mini 10x logs 10 SubḥānAllāh, 10 Ḥamd, 10 Takbīr <strong>only</strong> (30 total). 3x Istighfār is logged separately.
               </span>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 shrink-0 font-bold">
@@ -347,21 +450,49 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                   DIGITAL POST-SALAH TASBĪḤ COUNTER (المِسْبَحَةُ الإِلِكْتُرُونِيَّة)
                 </span>
               </div>
-              <button
-                onClick={resetBeads}
-                className="text-[10px] font-mono text-zinc-400 hover:text-white flex items-center gap-1"
-              >
-                <RotateCcw className="h-3 w-3" />
-                <span>Reset Beads</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIstighfarCount(3);
+                    updateDhikrLog({ istighfarCount: Math.max((currentLog.dhikr?.istighfarCount || 0), 3) }, systemDate);
+                  }}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded border border-amber-500/30 bg-amber-950/40 text-amber-300 hover:text-amber-200"
+                >
+                  3x Istighfār ✓
+                </button>
+                <button
+                  onClick={resetBeads}
+                  className="text-[10px] font-mono text-zinc-400 hover:text-white flex items-center gap-1"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Reset Beads</span>
+                </button>
+              </div>
             </div>
 
+            {/* BEADS GRID: 3x Istighfar + 33/10 SubhanAllah, Alhamdulillah, Allahu Akbar ONLY */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {/* 3x ISTIGHFAR */}
+              <button
+                onClick={() => incrementBead('istighfar')}
+                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between cursor-pointer active:scale-95 ${
+                  istighfarCount >= 3
+                    ? 'bg-amber-950/60 border-amber-500/80 text-amber-200 shadow-sm'
+                    : 'bg-black/40 border-white/10 hover:border-amber-500/40 text-zinc-200'
+                }`}
+              >
+                <span className="text-xs font-display font-bold">أَسْتَغْفِرُ الله</span>
+                <span className="text-[10px] font-mono text-zinc-400">3x Istighfār</span>
+                <div className="mt-2 text-base font-mono font-extrabold text-amber-400">
+                  {istighfarCount} <span className="text-[10px] text-zinc-500">/ 3</span>
+                </div>
+              </button>
+
               {/* SUBHANALLAH */}
               <button
-                onClick={() => setSubhanallahCount(c => (c >= 33 ? 33 : c + 1))}
-                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between ${
-                  subhanallahCount >= 33
+                onClick={() => incrementBead('subhanallah')}
+                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between cursor-pointer active:scale-95 ${
+                  subhanallahCount >= (currentPrayerMode === 'mini10' ? 10 : 33)
                     ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
                     : 'bg-black/40 border-white/10 hover:border-emerald-500/40 text-zinc-200'
                 }`}
@@ -369,15 +500,15 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                 <span className="text-xs font-display font-bold">سُبْحَانَ الله</span>
                 <span className="text-[10px] font-mono text-zinc-400">SubḥānAllāh</span>
                 <div className="mt-2 text-base font-mono font-extrabold text-emerald-400">
-                  {subhanallahCount} <span className="text-[10px] text-zinc-500">/ 33</span>
+                  {subhanallahCount} <span className="text-[10px] text-zinc-500">/ {currentPrayerMode === 'mini10' ? 10 : 33}</span>
                 </div>
               </button>
 
               {/* ALHAMDULILLAH */}
               <button
-                onClick={() => setAlhamdulillahCount(c => (c >= 33 ? 33 : c + 1))}
-                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between ${
-                  alhamdulillahCount >= 33
+                onClick={() => incrementBead('alhamdulillah')}
+                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between cursor-pointer active:scale-95 ${
+                  alhamdulillahCount >= (currentPrayerMode === 'mini10' ? 10 : 33)
                     ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
                     : 'bg-black/40 border-white/10 hover:border-emerald-500/40 text-zinc-200'
                 }`}
@@ -385,15 +516,15 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                 <span className="text-xs font-display font-bold">الحَمْدُ لله</span>
                 <span className="text-[10px] font-mono text-zinc-400">Alḥamdulillāh</span>
                 <div className="mt-2 text-base font-mono font-extrabold text-emerald-400">
-                  {alhamdulillahCount} <span className="text-[10px] text-zinc-500">/ 33</span>
+                  {alhamdulillahCount} <span className="text-[10px] text-zinc-500">/ {currentPrayerMode === 'mini10' ? 10 : 33}</span>
                 </div>
               </button>
 
               {/* ALLAHU AKBAR */}
               <button
-                onClick={() => setAllahuakbarCount(c => (c >= 33 ? 33 : c + 1))}
-                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between ${
-                  allahuakbarCount >= 33
+                onClick={() => incrementBead('allahuakbar')}
+                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between cursor-pointer active:scale-95 ${
+                  allahuakbarCount >= (currentPrayerMode === 'mini10' ? 10 : 33)
                     ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
                     : 'bg-black/40 border-white/10 hover:border-emerald-500/40 text-zinc-200'
                 }`}
@@ -401,23 +532,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                 <span className="text-xs font-display font-bold">اللهُ أَكْبَر</span>
                 <span className="text-[10px] font-mono text-zinc-400">Allāhu Akbar</span>
                 <div className="mt-2 text-base font-mono font-extrabold text-emerald-400">
-                  {allahuakbarCount} <span className="text-[10px] text-zinc-500">/ 33</span>
-                </div>
-              </button>
-
-              {/* TAHLIL 100TH */}
-              <button
-                onClick={() => setTahlilCount(c => (c >= 1 ? 1 : c + 1))}
-                className={`p-3 rounded-xl border text-center transition flex flex-col justify-between ${
-                  tahlilCount >= 1
-                    ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
-                    : 'bg-black/40 border-white/10 hover:border-emerald-500/40 text-zinc-200'
-                }`}
-              >
-                <span className="text-xs font-display font-bold">لَا إِلَهَ إِلَّا الله</span>
-                <span className="text-[10px] font-mono text-zinc-400">Seal 100th</span>
-                <div className="mt-2 text-base font-mono font-extrabold text-emerald-400">
-                  {tahlilCount} <span className="text-[10px] text-zinc-500">/ 1</span>
+                  {allahuakbarCount} <span className="text-[10px] text-zinc-500">/ {currentPrayerMode === 'mini10' ? 10 : 33}</span>
                 </div>
               </button>
             </div>

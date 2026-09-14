@@ -839,6 +839,7 @@ export interface Weakness {
   lastOccurrenceDate: string;
   status: WeaknessStatus;
   correctiveStrategy?: string; // What the operator will do when triggered
+  preventiveProtocol?: string; // Concrete If-Then boundary rule or behavioral protocol
   createdAt: string;
   recurrenceCadence?: RecurrenceCadence;
   recurrenceCadenceLabel?: string;

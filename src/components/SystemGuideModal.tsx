@@ -420,7 +420,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     2. System Ranks, Levels & Progression Scale
                   </h3>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    Definitive reference for Hunter System Ranks, 7-Tier Career Jobs & Titles, Quest Threat levels, Skill proficiencies, and Power Seals.
+                    Definitive reference for Hunter System Ranks, 7-Tier Career Jobs & Titles, Quest Threat levels, and Skill proficiencies.
                   </p>
                 </div>
 
@@ -1686,140 +1686,307 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </p>
                 </div>
 
-                {/* THE 4 PILLARS OF SACRED PROTOCOL */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {/* PILLAR 1: 5 SALAATS */}
-                  <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
-                        🕌 1. The 5 Mandatory Salaats (الصَّلَوَاتُ الخَمْس)
+                {/* THE 10 PILLARS OF SACRED PROTOCOL */}
+                <div className="space-y-4">
+                  <div className="p-3 bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-mono font-bold text-emerald-300 flex items-center gap-2">
+                        <span>✨ THE 10 SACRED PILLARS OF DIVINE DISCIPLINE (مَحَاوِرُ المِيثَاقِ الإِيمَانِيِّ العَشَرَة)</span>
+                      </h4>
+                      <p className="text-[11px] text-zinc-400 font-sans mt-0.5">
+                        A fully unified prophetic operating system: every prayer, rawātib set, bead recitation, and tilawah page synchronizes bidirectionally across the Daily Hub, Adhkar Fortress, and the Daily Balance Scale.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full shrink-0">
+                      10/10 PILLARS
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {/* PILLAR 1: 5 SALAATS */}
+                    <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
+                          🕌 1. 5 Mandatory Salaats (الصَّلَوَاتُ الخَمْس)
+                        </span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          BEDROCK
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        The non-negotiable bedrock of daily discipline: <strong>Fajr, Dhuhr, Asr, Maghrib, and Isha</strong>.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-zinc-200 font-bold">Base Prayer Completion</span>
+                            <span className="text-emerald-400 font-bold">+50 to +100 XP / prayer</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Fulfilled on time; establishes daily divine anchoring and anchors temporal rhythm.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 2: MASJID CONGREGATION & 40-DAY COVENANT */}
+                    <div className="p-4 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-cyan-300 uppercase text-xs flex items-center gap-1.5">
+                          🏛️ 2. Masjid Congregation & 40-Day Covenant (جَمَاعَةُ المَسْجِدِ)
+                        </span>
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          CONGREGATION
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Praying in the house of Allah with the Muslim body, pursuing the prophetic 40-day covenant of Takbīrat al-Iḥrām.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-cyan-300 font-bold">Masjid Bonus Per Salah</span>
+                            <span className="text-cyan-400 font-bold">+30 Bonus XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">27x spiritual multiplication represented through elevated positive scale weight.</p>
+                        </div>
+                        <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-zinc-200 font-bold">40-Day Masjid Milestone</span>
+                            <span className="text-amber-400 font-bold">Divine Shield</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Tracks consecutive days with full 5-prayer masjid attendance.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 3: SUNAN RAWATIB */}
+                    <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-purple-300 uppercase text-xs flex items-center gap-1.5">
+                          📿 3. Sunan Rawātib & Nawāfil (السُّنَنُ الرَّوَاتِبُ)
+                        </span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          12_RAKAAT
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        The 12 confirmed prophetic sunan building a palace in Jannah: Fajr sunnah (2), Dhuhr before (4) & after (2), Maghrib after (2), Isha after (2), plus Duha & Witr.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-300 font-bold">Independent Dhuhr Sunan</span>
+                            <span className="text-purple-400 font-bold">+25 XP / +20 XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">
+                            Tracks <strong>Sunnah Before (4 Rak'ahs, 2+2)</strong> and <strong>Sunnah After (2 Rak'ahs)</strong> separately.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 4: POST-SALAH ADHKAR FORTRESS & BEAD SYNCHRONIZER */}
+                    <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
+                          🤲 4. Post-Salah Adhkār Fortress (أَذْكَارُ بَعْدَ الصَّلَاةِ)
+                        </span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          LIVE_SYNC
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Authentic prophetic remembrances immediately following the taslīm. Features a real-time bead synchronizer.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-300 font-bold">Standard 33x Set / Mini 10x Set</span>
+                            <span className="text-emerald-400 font-bold">+25 XP to +35 XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">
+                            Checking a post-salah set in the Daily Hub automatically populates 33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar, and 1 Tahlil directly into your daily Dhikr ledger and Adhkar Fortress catalog.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 5: ADHKAR SABAH & MASAH */}
+                    <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
+                          🌅 5. Adhkār al-Sabāh wal-Masā' (أَذْكَارُ الصَّبَاحِ وَالمَسَاءِ)
+                        </span>
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          DIVINE SHIELD
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Sacred morning and evening fortresses guarding spiritual state between dawn and sunset.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-amber-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-300 font-bold">Morning & Evening Completion</span>
+                            <span className="text-amber-400 font-bold">+60 XP each</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Includes authentic hadiths, phonetic transliterations, and deep spiritual meanings.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 6: SLEEP & QAYLULAH SANCTUM */}
+                    <div className="p-4 bg-zinc-900/90 border border-indigo-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-indigo-300 uppercase text-xs flex items-center gap-1.5">
+                          🛌 6. Sleep & Qaylūlah Sanctum (أَذْكَارُ النَّوْمِ وَالقَيْلُولَةِ)
+                        </span>
+                        <span className="text-[9px] bg-indigo-950 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          REST_REVEILLE
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Sunnah rest protocols: 20-30 min midday Qaylūlah cognitive recharge, and nocturnal sleep adhkar protection (Surah al-Mulk, 3 Quls, Ayat al-Kursi).
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-indigo-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-indigo-300 font-bold">Midday Qaylūlah & Bedtime Adhkar</span>
+                            <span className="text-indigo-400 font-bold">+35 XP / +50 XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Synchronizes directly with your daily Rest Bank recovery allowance.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 7: 70+ SALAWAT */}
+                    <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-[#fef08a] uppercase text-xs flex items-center gap-1.5">
+                          ✨ 7. Prophetic Salawāt Engine (الصَّلَاةُ عَلَى النَّبِيِّ ﷺ)
+                        </span>
+                        <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-1.5 py-0.5 rounded font-mono font-bold">
+                          70_TARGET
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        <em>"Whoever sends blessings upon me once, Allah will send blessings upon him tenfold."</em> (Muslim).
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-zinc-200 font-bold">Daily 70 Target Unlocked</span>
+                            <span className="text-[#fef08a] font-bold">+75 XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Multi-tap rosary with fast +1, +10, +33, and +100 increment modes.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 8: QIYAM AL-LAYL */}
+                    <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-purple-300 uppercase text-xs flex items-center gap-1.5">
+                          🌙 8. Qiyām al-Layl & Tahajjud Vigil (قِيَامُ اللَّيْلِ)
+                        </span>
+                        <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          NIGHT_VIGIL
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Standing in the sacred depths of the final third of the night before Fajr.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/30 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-300 font-bold">2 Baseline Raka'āt + Pairs</span>
+                            <span className="text-purple-400 font-bold">+100 XP base (+30/pair)</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Fulfills the pinnacle spiritual vigil and heavily weights the positive scale pan.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 9: QURAN SANCTUM */}
+                    <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
+                          📖 9. Quran Sanctum & Tilawah Pace Engine (مِحْرَابُ القُرْآنِ)
+                        </span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          VELOCITY
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Tracks daily pages read, juz completions, and calculates real-time Khatmah velocity (projected days to complete 604 pages).
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-300 font-bold">Daily Tilawah Target</span>
+                            <span className="text-emerald-400 font-bold">+50 to +120 XP</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Surah selector, page milestone logging, and consecutive day reading streak.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PILLAR 10: KHUSHU AUDIT & SIAM/FASTING */}
+                    <div className="p-4 bg-zinc-900/90 border border-rose-500/30 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                        <span className="font-mono font-bold text-rose-300 uppercase text-xs flex items-center gap-1.5">
+                          ⚖️ 10. Khushū‘ Audit & Siam/Fasting Hub (خُشُوعُ الصَّلَاةِ وَالصِّيَام)
+                        </span>
+                        <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-mono font-bold">
+                          MINDFULNESS
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                        Rigorous 1-10 heart presence grading across the 5 prayers, plus sunnah fasting tracking for White Days (Ayyām al-Bīḍ) and Mondays/Thursdays.
+                      </p>
+                      <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-rose-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-rose-300 font-bold">Fasting Rites & Khushū‘ Multiplier</span>
+                            <span className="text-rose-400 font-bold">+150 XP Fasting</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">High khushū‘ scores (&gt; 8/10) amplify daily XP yields and safeguard moral balance.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DAILY HUB LIVE CONNECTIVITY ARCHITECTURE */}
+                  <div className="p-4 bg-zinc-950 border border-emerald-500/40 rounded-xl space-y-2.5 font-mono text-xs">
+                    <div className="flex items-center justify-between text-emerald-400 font-bold">
+                      <span className="flex items-center gap-2">
+                        <RotateCcw className="h-4 w-4 text-emerald-400" />
+                        DAILY HUB LIVE CONNECTIVITY ARCHITECTURE (التَّرَابُطُ الشَّامِلُ لِلْمَرْكَزِ اليَوْمِيّ)
                       </span>
-                      <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                        BEDROCK
+                      <span className="text-[9px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                        TWO_WAY_SYNC
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      The non-negotiable bedrock of daily discipline: <strong>Fajr, Dhuhr, Asr, Maghrib, and Isha</strong>.
+                    <p className="text-zinc-300 font-sans text-xs leading-relaxed">
+                      The <strong>Daily Hub</strong> is not an isolated checklist; it is the <strong>central nervous system</strong> of the Sacred Protocol. When you toggle or complete an action in the Daily Hub:
                     </p>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-zinc-200 font-bold">Base Prayer Completion</span>
-                          <span className="text-emerald-400 font-bold">+50 to +100 XP / prayer</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Fulfilled on time; establishes daily divine anchoring.</p>
-                      </div>
-
-                      <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-cyan-300 font-bold">🕌 Masjid Congregation Bonus</span>
-                          <span className="text-cyan-400 font-bold">+30 Bonus XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Prayed in congregation with the community at the masjid.</p>
-                      </div>
-
-                      <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-purple-300 font-bold">📿 Sunan Rawātib (الرواتب)</span>
-                          <span className="text-purple-400 font-bold">+20 to +45 Bonus XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">
-                          Completed alongside confirmed prophetic sunnah prayers (12 confirmed raka'āt daily). For <strong>Dhuhr</strong>, the system tracks <strong>Sunnah Before (السُّنَّة القَبْلِيَّة - 4 Rak'ahs 2+2, +25 XP)</strong> and <strong>Sunnah After (السُّنَّة البَعْدِيَّة - 2 Rak'ahs, +20 XP)</strong> independently.
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                      <div className="p-2.5 bg-black/60 rounded border border-white/5 space-y-1">
+                        <span className="text-emerald-400 font-bold block text-[11px]">1. Dhikr Rosary Integration</span>
+                        <p className="text-zinc-400 font-sans text-[10.5px]">
+                          Checking a post-salah set updates your cumulative Tasbeeh, Hamd, and Takbir counts and sets the bead counters in the Post-Salah Fortress modal automatically.
                         </p>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* PILLAR 2: ADHKĀR SABAH & MASAH */}
-                  <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
-                        🌅 2. Adhkār al-Sabāh wal-Masā' (أَذْكَارُ الصَّبَاحِ وَالمَسَاءِ)
-                      </span>
-                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                        DIVINE SHIELD
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Sacred prophetic morning and evening protective fortresses against heedlessness and spiritual decline.
-                    </p>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="p-2.5 bg-zinc-950 rounded border border-amber-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-amber-300 font-bold">Morning Adhkār (Sabāh)</span>
-                          <span className="text-amber-400 font-bold">+60 XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Recited between Fajr dawn and Sunrise to guard the day's intent.</p>
+                      <div className="p-2.5 bg-black/60 rounded border border-white/5 space-y-1">
+                        <span className="text-cyan-400 font-bold block text-[11px]">2. 10-Pillar Scorecard</span>
+                        <p className="text-zinc-400 font-sans text-[10.5px]">
+                          Your Sacred Protocol fulfillment percentage updates live on the HUD (from 0% to 100%), factoring in fardh, masjid, rawātib, and adhkar.
+                        </p>
                       </div>
-
-                      <div className="p-2.5 bg-zinc-950 rounded border border-indigo-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-indigo-300 font-bold">Evening Adhkār (Masā')</span>
-                          <span className="text-indigo-400 font-bold">+60 XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Recited between Asr and Maghrib sunset to seal the night with serenity.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PILLAR 3: 70+ SALAWAT */}
-                  <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="font-mono font-bold text-[#fef08a] uppercase text-xs flex items-center gap-1.5">
-                        ✨ 3. Daily 70+ Salawāt upon Rasoulullah ﷺ
-                      </span>
-                      <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-1.5 py-0.5 rounded font-mono font-bold">
-                        70_TARGET
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      <em>"Whoever sends blessings upon me once, Allah will send blessings upon him tenfold."</em> (Muslim).
-                    </p>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-zinc-200 font-bold">Daily 70 Target Unlocked</span>
-                          <span className="text-[#fef08a] font-bold">+75 XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Interactive 1-tap digital rosary with +1, +10, +33, and +100 fast increments.</p>
-                      </div>
-                      <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-emerald-300 font-bold">Spiritual Radiance Multiplier</span>
-                          <span className="text-emerald-400 font-bold">Positive Balance</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Consistently fulfilling your daily 70 Salawāt infuses positive weight into your daily balance scale.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PILLAR 4: QIYAM AL-LAYL */}
-                  <div className="p-4 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="font-mono font-bold text-purple-300 uppercase text-xs flex items-center gap-1.5">
-                        🌙 4. Qiyām al-Layl & Tahajjud (قِيَامُ اللَّيْلِ)
-                      </span>
-                      <span className="text-[9px] bg-purple-950 text-purple-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                        VIGIL
-                      </span>
-                    </div>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Standing in the tranquil depths of the third portion of the night.
-                    </p>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="p-2.5 bg-zinc-950 rounded border border-purple-500/30 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-purple-300 font-bold">2 Mandatory Raka'āt (Base)</span>
-                          <span className="text-purple-400 font-bold">+100 XP</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">The foundational baseline vigil requirement for Qiyām.</p>
-                      </div>
-                      <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-cyan-300 font-bold">Scalable Pair Bonuses</span>
-                          <span className="text-cyan-400 font-bold">+30 XP / pair</span>
-                        </div>
-                        <p className="text-[10.5px] text-zinc-400 font-sans">Each additional pair of raka'āt (4, 6, 8, 10+) stacks +30 bonus XP and amplifies positive practice XP.</p>
+                      <div className="p-2.5 bg-black/60 rounded border border-white/5 space-y-1">
+                        <span className="text-[#fef08a] font-bold block text-[11px]">3. Balance Scale Calibration</span>
+                        <p className="text-zinc-400 font-sans text-[10.5px]">
+                          Completions instantly register positive weight on the emerald pan of the Daily Balance Scale, offsetting slip friction in real time.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -2500,6 +2667,45 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <strong>Deterministic Multi-Week Catch-Up Engine:</strong> If the app is not opened on Sunday (e.g. opened on Monday or after 2+ weeks away), the engine automatically detects all elapsed Friday boundaries that passed since the last reset. It chronologically generates and archives each missed week's summary markdown without losing slip records or corrupting historical data.
                     </p>
                   </div>
+
+                  {/* PREVENTIVE PROTOCOL & 5-PIP FREQUENCY METER DEEP DIVE */}
+                  <div className="p-4 bg-[#140e1b] border border-rose-500/40 rounded-xl space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
+                      <span className="font-bold text-rose-300 uppercase flex items-center gap-2">
+                        <ShieldAlert className="h-4 w-4 text-rose-400" />
+                        PREVENTIVE PROTOCOLS & THE 5-PIP RECORDED FREQUENCY METER (إِجْرَاءُ الوِقَايَةِ وَسِلْسِلَةُ الإِصْرَارِ)
+                      </span>
+                      <span className="text-[9px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-500/30">
+                        DEFENSE_ARCHITECTURE
+                      </span>
+                    </div>
+
+                    <p className="text-zinc-300 font-sans leading-relaxed text-xs">
+                      Under <strong>"Patterns to Prevent Recurrence"</strong>, vulnerabilities are not treated as moral failures, but as systemic boundary leaks requiring structured engineering:
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                      <div className="p-3 bg-zinc-950/80 rounded border border-white/5 space-y-1.5">
+                        <span className="text-amber-300 font-bold text-[11px] block">1. WHAT IS RECORDED FREQUENCY?</span>
+                        <p className="text-zinc-400 font-sans text-[10.5px] leading-relaxed">
+                          The 5-pip frequency meter (1 to 5) records how frequently a vulnerability triggers slip events. Each logged slip linked to a weakness increments its frequency pip. It provides visual telemetry on whether a vulnerability is sporadic (1-2 pips), persistent (3-4 pips), or chronically entrenched (5 pips).
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-zinc-950/80 rounded border border-rose-500/30 space-y-1.5">
+                        <span className="text-rose-400 font-bold text-[11px] block">2. WHAT HAPPENS WHEN THE METRIC IS FULL (5/5)?</span>
+                        <p className="text-zinc-400 font-sans text-[10.5px] leading-relaxed">
+                          Reaching full capacity (5/5) triggers an <strong>Active Chronic Chain (سِلْسِلَةُ الإِصْرَارِ الـمُزْمِنَة)</strong>:
+                        </p>
+                        <ul className="text-[10px] text-zinc-300 space-y-1 list-disc list-inside font-sans">
+                          <li><strong>Compounding Severity Penalty:</strong> Future slips linked to this weakness suffer an automatic <strong>+25% XP deduction compounding penalty floor</strong>.</li>
+                          <li><strong>High-Alert Red Lockout:</strong> The weakness card turns blood-red with an escalating warning banner.</li>
+                          <li><strong>Mandatory Preventive Protocol:</strong> You must articulate the exact <em>Trigger Cue (المُثِير)</em> and deploy a strict <em>Preventive Boundary Rule (قَاعِدَةُ الحَدِّ السُّلُوكِيّ)</em>.</li>
+                          <li><strong>Thabāt Restraint Streak:</strong> Daily restraint starts counting. 7 days clean transitions status to <em>"Under Control"</em>, and 21 days clean marks it <em>"Overcome"</em>, dissolving the chronic chain.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* DASHBOARD AUDIT WIDGET QUICK ACCESS */}
@@ -2622,60 +2828,102 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
                 </div>
 
-                {/* DAILY WAKING CAPITAL HUD & OVERDRAFT ALARM */}
+                {/* DAILY WAKING CAPITAL HUD & 5-WAY TEMPORAL ACCOUNTING */}
                 <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2">
                     <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-1.5 text-xs">
                       <Clock className="h-4 w-4 text-[#c5a059]" />
-                      <span>DAILY WAKING CAPITAL & 3-WAY TIME PARTITIONING</span>
+                      <span>FINANCIAL-GRADE TEMPORAL CONTROL V2 (رَأْسُ المَالِ الزَّمَنِيّ)</span>
                     </div>
                     <span className="text-[9px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 px-2 py-0.5 rounded font-bold uppercase">
-                      960_MIN_BUDGET
+                      5_SEGMENT_BUDGET
                     </span>
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    The <strong>Temporal Capital HUD</strong> on the Dashboard monitors your daily waking capital (default 16 hours = 960 minutes) divided into three distinct operational partitions. The HUD is a planning estimate, while the Temporal Ledger is the audit record.
+                    The <strong>Temporal Capital HUD</strong> applies double-entry financial discipline to your finite daily waking hours (default 16 hours = 960 minutes). Time cannot be saved, rolled over, or hoarded: unallocated minutes perish at 00:00 midnight.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-                    <div className="p-3 bg-zinc-950 rounded-lg border border-cyan-500/30 space-y-1">
-                      <div className="text-cyan-400 font-bold flex items-center gap-1">
-                        <Zap className="h-3.5 w-3.5" /> 1. INVESTED TIME
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 text-xs font-mono">
+                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-emerald-500/30 space-y-1">
+                      <div className="text-emerald-400 font-bold flex items-center gap-1 text-[11px]">
+                        <Zap className="h-3.5 w-3.5" /> 1. INVESTED
                       </div>
-                      <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Minutes spent in active, completed Pomodoro sprints and verified deep work today.
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Minutes executed in verified Pomodoro focus sprints + completed quests today. Starts at 0m every morning.
                       </p>
                     </div>
 
-                    <div className="p-3 bg-zinc-950 rounded-lg border border-amber-500/30 space-y-1">
-                      <div className="text-amber-400 font-bold flex items-center gap-1">
-                        <Target className="h-3.5 w-3.5" /> 2. COMMITTED TIME
+                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-amber-500/30 space-y-1">
+                      <div className="text-amber-400 font-bold flex items-center gap-1 text-[11px]">
+                        <Target className="h-3.5 w-3.5" /> 2. COMMITTED
                       </div>
-                      <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Estimated duration of scheduled remaining quests, routines, and prayer obligations today.
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Estimated duration of uncompleted active quests scheduled specifically for today.
                       </p>
                     </div>
 
-                    <div className="p-3 bg-zinc-950 rounded-lg border border-emerald-500/30 space-y-1">
-                      <div className="text-emerald-400 font-bold flex items-center gap-1">
-                        <Hourglass className="h-3.5 w-3.5" /> 3. UNCOMMITTED SLACK
+                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-cyan-500/30 space-y-1">
+                      <div className="text-cyan-400 font-bold flex items-center gap-1 text-[11px]">
+                        <ShieldAlert className="h-3.5 w-3.5" /> 3. REQUIRED
                       </div>
-                      <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Free reserve buffer remaining for unplanned demands, cognitive recovery, and flexibility.
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Fixed 120m non-negotiable baseline reserved for 5 Salaats, wudu, nutrition, and vital maintenance.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-zinc-700 space-y-1">
+                      <div className="text-zinc-300 font-bold flex items-center gap-1 text-[11px]">
+                        <Shield className="h-3.5 w-3.5" /> 4. BUFFER
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        10% (96m) unbreachable cushion safeguarding sleep against unexpected friction and delays.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 rounded-lg border border-emerald-400/40 space-y-1">
+                      <div className="text-emerald-300 font-bold flex items-center gap-1 text-[11px]">
+                        <Hourglass className="h-3.5 w-3.5" /> 5. ALLOCATABLE
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Safe remaining bandwidth before you infringe on health or sleep.
                       </p>
                     </div>
                   </div>
 
-                  {/* OVERDRAFT ALARM PROTOCOL */}
-                  <div className="p-3 bg-red-950/40 border border-red-500/30 rounded-lg space-y-1.5 text-xs">
-                    <div className="font-mono font-bold text-red-300 flex items-center gap-1.5">
-                      <AlertTriangle className="h-4 w-4 text-red-400" />
-                      <span>THE OVERDRAFT ALARM STATE (BURNOUT MITIGATION)</span>
+                  {/* 4 SOLVENCY STATES & DAILY MIDNIGHT RESET */}
+                  <div className="p-3 bg-zinc-950 border border-white/10 rounded-lg space-y-2 text-xs">
+                    <div className="font-mono font-bold text-amber-300 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Scale className="h-4 w-4 text-amber-400" />
+                        <span>THE 4 TEMPORAL SOLVENCY STATES:</span>
+                      </span>
+                      <span className="text-[9px] text-zinc-400 font-mono">FINANCIAL_MODEL</span>
                     </div>
-                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
-                      If your <strong>Committed Time</strong> exceeds your total remaining waking hours, the HUD triggers the <strong className="text-red-300">OVERDRAFT WARNING</strong>. When this occurs, you are overbooked. The system advises an immediate workload restructuring: downgrade secondary tasks to Optional, move deadlines to tomorrow, or liquidate backlogged items to preserve mental stamina.
-                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[10.5px] font-mono">
+                      <div className="p-2 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
+                        <strong>STABLE SOLVENCY</strong>
+                        <p className="text-[10px] text-zinc-400 font-sans mt-0.5">Safely Allocatable &gt; 0m. Healthy capacity with protected buffer intact.</p>
+                      </div>
+                      <div className="p-2 rounded bg-amber-950/40 border border-amber-500/30 text-amber-300">
+                        <strong>TIGHT MARGIN</strong>
+                        <p className="text-[10px] text-zinc-400 font-sans mt-0.5">Allocatable &le; 0m, but Raw Available &ge; 0m. You are dipping into your safety buffer.</p>
+                      </div>
+                      <div className="p-2 rounded bg-rose-950/40 border border-rose-500/30 text-rose-300">
+                        <strong>OVERCOMMITTED</strong>
+                        <p className="text-[10px] text-zinc-400 font-sans mt-0.5">Raw Available &lt; 0m. Scheduled quests exceed waking hours. Triage immediately!</p>
+                      </div>
+                      <div className="p-2 rounded bg-red-950/80 border border-red-500 text-red-200">
+                        <strong>TEMPORAL OVERDRAFT</strong>
+                        <p className="text-[10px] text-zinc-300 font-sans mt-0.5">Invested + Committed + Baseline &gt; 960m. You are actively devouring sleep and recovery!</p>
+                      </div>
+                    </div>
+
+                    <div className="p-2 bg-black/60 rounded border border-white/5 flex items-center justify-between text-[10px] font-mono text-zinc-400 mt-2">
+                      <span className="text-zinc-300 font-bold">⚡ DAILY MIDNIGHT CADENCE:</span>
+                      <span>Invested resets to 0m • Unused capital expires • Earned Leisure Bank persists</span>
+                    </div>
                   </div>
                 </div>
 

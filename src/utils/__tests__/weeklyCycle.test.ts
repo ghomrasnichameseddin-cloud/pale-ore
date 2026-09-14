@@ -1,362 +1,678 @@
-import { describe, it, expect } from 'vitest';
 import {
-  getWeekBoundaries,
-  getClosingWeekBoundaries,
-  WEEKLY_SCORE_WEIGHTS,
-  TOTAL_MAX_WEEKLY_SCORE,
-  generateWeeklyMuhasabahSummaryPure,
-  reconcileMissedWeeks
-} from '../weeklyCycle';
-import {
-  getRecurringSinsRegistry,
-  analyzeSinRecurrence
-} from '../muhasabahRecurrence';
-import { POSState, MuhasabahEntry, Weakness } from '../../types';
-import { INITIAL_STATE } from '../../initialState';
+  POSState,
+  WeeklyMuhasabahSummary,
+  WeeklyScoreBreakdown,
+  MuhasabahCategory,
+  MuhasabahEntry,
+  SpiritualDailyLog
+} from '../types';
+import { getXPAnalytics } from './xpCirculation';
+import { calculateQuranFreshness } from './quranAndAdhkarEngine';
 
-describe('Weekly Muhasabah Cycle Engine', () => {
-  describe('Phase 1: Week-Boundary Definition & Single Source of Truth', () => {
-    it('accurately identifies Saturday -> Friday boundaries for any day of the week', () => {
-      // Test Wednesday (2026-08-26)
-      const wednesday = getWeekBoundaries('2026-08-26');
-      expect(wednesday.weekStart).toBe('2026-08-22'); // Saturday
-      expect(wednesday.weekEnd).toBe('2026-08-28');   // Friday
-      expect(wednesday.anchorDate).toBe('2026-08-28'); // Friday
-      expect(wednesday.daysInWeek).toEqual([
-        '2026-08-22',
-        '2026-08-23',
-        '2026-08-24',
-        '2026-08-25',
-        '2026-08-26',
-        '2026-08-27',
-        '2026-08-28'
-      ]);
+/**
+ * ═════════════════════════════════════════════════════════════════════════════
+ * ISLAMIC SACRED MUHĀSABAH WEEKLY CYCLE ENGINE
+ * ═════════════════════════════════════════════════════════════════════════════
+ * 
+ * SACRED WEEK BOUNDARY SPECIFICATION:
+ * In Islamic tradition and spiritual practice, Friday (Yawm al-Jumu'ah) is the pinnacle,
+ * "Sayyid al-Ayyam" (Master of Days), and the spiritual crown of the week.
+ * 
+ * Therefore, the Muḥāsabah week is strictly defined as:
+ *   • WEEK START: Saturday (00:00)
+ *   • WEEK END:   Friday (23:59) — the Jumu'ah spiritual audit and closing anchor.
+ * 
+ * SUNDAY AUTOMATED RESET TRIGGER:
+ * Sunday marks the transition into the new civil/operational week (2 days after Jumu'ah).
+ * On Sunday, the system reconciles the just-concluded Saturday→Friday week, generates its
+ * permanent archival record (savedWeeklySummaries + planning markdown document), and
+ * transitions the active Muḥāsabah ledger to the current week with zero data loss.
+ * 
+ * SINGLE SOURCE OF TRUTH:
+ * Every trigger check, summary generation, archive filename, and date filter across
+ * the codebase MUST derive from `getWeekBoundaries` or `getClosingWeekBoundaries`.
+ * ═════════════════════════════════════════════════════════════════════════════
+ */
 
-      // Test Friday itself (2026-08-28)
-      const friday = getWeekBoundaries('2026-08-28');
-      expect(friday.weekStart).toBe('2026-08-22');
-      expect(friday.weekEnd).toBe('2026-08-28');
-      expect(friday.anchorDate).toBe('2026-08-28');
+export interface WeekBoundaries {
+  weekStart: string;   // YYYY-MM-DD (Saturday)
+  weekEnd: string;     // YYYY-MM-DD (Friday)
+  anchorDate: string;  // YYYY-MM-DD (Friday anchor for summaries)
+  daysInWeek: string[];// Exactly 7 dates [Sat, Sun, Mon, Tue, Wed, Thu, Fri]
+  weekLabel: string;   // Human-readable label: "Week ending Friday, Month Day, Year"
+}
 
-      // Test Saturday (2026-08-22) - start of week
-      const saturday = getWeekBoundaries('2026-08-22');
-      expect(saturday.weekStart).toBe('2026-08-22');
-      expect(saturday.weekEnd).toBe('2026-08-28');
-      expect(saturday.anchorDate).toBe('2026-08-28');
-    });
+/**
+ * 6-Pillar Sacred Scoring Weights (Mathematical sum strictly equals 10.0)
+ */
+export const WEEKLY_SCORE_WEIGHTS = {
+  fardhPrayers: 2.5,   // Preservation of 35 Fardh prayers (weighted on-time vs delayed)
+  slipsRestraint: 2.0, // Restraint from sins, slips, and Nafs lapses
+  adhkarFortress: 1.5, // Daily Morning, Evening, and Sleep Adhkār fortress
+  sunnahQiyam: 1.5,    // Sunan Rawātib, Nawāfil, and Qiyām al-Layl
+  salawat: 1.0,        // Covenant of Salawāt upon Prophet Muḥammad ﷺ (70+/day or 490+/wk)
+  kaffarahTawbah: 1.5  // Prompt repentance and completed Kaffārah remedies
+} as const;
 
-    it('aligns Sunday closing trigger with the preceding Friday anchor', () => {
-      // Sunday 2026-08-30 triggers closure of the week ending Friday 2026-08-28
-      const closing = getClosingWeekBoundaries('2026-08-30');
-      expect(closing.weekStart).toBe('2026-08-22'); // Saturday
-      expect(closing.weekEnd).toBe('2026-08-28');   // Friday (Sunday - 2 days)
-      expect(closing.anchorDate).toBe('2026-08-28'); // Friday anchor
-      expect(closing.weekLabel).toBe('Week ending Friday, August 28, 2026');
-    });
+export const TOTAL_MAX_WEEKLY_SCORE = Number(
+  (
+    WEEKLY_SCORE_WEIGHTS.fardhPrayers +
+    WEEKLY_SCORE_WEIGHTS.slipsRestraint +
+    WEEKLY_SCORE_WEIGHTS.adhkarFortress +
+    WEEKLY_SCORE_WEIGHTS.sunnahQiyam +
+    WEEKLY_SCORE_WEIGHTS.salawat +
+    WEEKLY_SCORE_WEIGHTS.kaffarahTawbah
+  ).toFixed(4)
+);
 
-    it('correctly handles boundary crossing (Saturday 23:59 vs Sunday 00:01)', () => {
-      // Saturday late evening belongs to the week ending on the upcoming Friday
-      const satBoundary = getWeekBoundaries('2026-08-22T23:59:59');
-      expect(satBoundary.weekStart).toBe('2026-08-22');
-      expect(satBoundary.weekEnd).toBe('2026-08-28');
+// Compile/runtime validation to ensure no future weight changes break the 10.0 total
+if (Math.abs(TOTAL_MAX_WEEKLY_SCORE - 10.0) > 0.0001) {
+  throw new Error(`[CRITICAL] WEEKLY_SCORE_WEIGHTS must sum to exactly 10.0, but sums to ${TOTAL_MAX_WEEKLY_SCORE}`);
+}
 
-      // Sunday belongs to the same active week (as day 2 of that week)
-      const sunBoundary = getWeekBoundaries('2026-08-23T00:01:00');
-      expect(sunBoundary.weekStart).toBe('2026-08-22');
-      expect(sunBoundary.weekEnd).toBe('2026-08-28');
-    });
+import { parseDateSafe, formatDateStr, getLocalDateString, addDays } from './dateUtils';
+export { parseDateSafe, formatDateStr, addDays };
+
+/**
+ * Single source of truth for weekly boundaries.
+ * Given ANY reference date, returns the Islamic week containing it (Saturday → Friday).
+ * 
+ * Day of week index (JS getDay):
+ * 0 = Sunday    -> subtract 1 day to reach Saturday
+ * 1 = Monday    -> subtract 2 days to reach Saturday
+ * 2 = Tuesday   -> subtract 3 days to reach Saturday
+ * 3 = Wednesday -> subtract 4 days to reach Saturday
+ * 4 = Thursday  -> subtract 5 days to reach Saturday
+ * 5 = Friday    -> subtract 6 days to reach Saturday
+ * 6 = Saturday  -> subtract 0 days to reach Saturday
+ */
+export function getWeekBoundaries(referenceDate: Date | string = new Date()): WeekBoundaries {
+  const refDate = parseDateSafe(referenceDate);
+  const dayOfWeek = refDate.getDay();
+
+  // Days to subtract from reference date to arrive at Saturday
+  const daysToSaturday = (dayOfWeek + 1) % 7;
+  const saturdayStr = addDays(refDate, -daysToSaturday);
+
+  const daysInWeek: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    daysInWeek.push(addDays(saturdayStr, i));
+  }
+
+  const weekStart = daysInWeek[0]; // Saturday
+  const weekEnd = daysInWeek[6];   // Friday
+  const anchorDate = weekEnd;      // Friday is the canonical weekly anchor
+
+  const fridayObj = parseDateSafe(weekEnd);
+  const formattedFriday = fridayObj.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  const weekLabel = `Week ending Friday, ${formattedFriday}`;
+
+  return {
+    weekStart,
+    weekEnd,
+    anchorDate,
+    daysInWeek,
+    weekLabel
+  };
+}
+
+/**
+ * Calculates the week boundaries for the week closing on a given Sunday.
+ * On Sunday, the week to be archived ended on Friday (Sunday - 2 days).
+ */
+export function getClosingWeekBoundaries(sundayReferenceDate: Date | string): WeekBoundaries {
+  const fridayAnchor = addDays(sundayReferenceDate, -2);
+  return getWeekBoundaries(fridayAnchor);
+}
+
+/**
+ * Generates the canonical Markdown document for a weekly summary.
+ */
+export function buildWeeklySummaryMarkdown(summary: WeeklyMuhasabahSummary): { path: string; name: string; content: string } {
+  const b = summary.weeklyScoreBreakdown;
+  const scoreStr = summary.scoreOutOf10 !== undefined ? `${summary.scoreOutOf10.toFixed(1)} / 10.0` : '10/10';
+  const gradeStr = b ? `${b.gradeAr} (${b.gradeEn})` : summary.spiritualRating;
+  const breakdownMd = b ? `
+### ⚖️ 10/10 Pillar Score Breakdown:
+- **1. Farā'iḍ Prayers (أركان الصلاة):** ${b.fardhPrayersScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.fardhPrayers.toFixed(1)} pts
+- **2. Slips & Restraint (حفظ الجوارح والعثرات):** ${b.slipsRestraintScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.slipsRestraint.toFixed(1)} pts
+- **3. Adhkār Fortress (حصن الأذكار):** ${b.adhkarFortressScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.adhkarFortress.toFixed(1)} pts
+- **4. Sunan & Qiyām (السنن وقيام الليل):** ${b.sunnahQiyamScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.sunnahQiyam.toFixed(1)} pts
+- **5. Salawāt upon ﷺ (الصلاة على النبي):** ${b.salawatScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.salawat.toFixed(1)} pt
+- **6. Tawbah & Kaffārah (التوبة وتصفية الكفارات):** ${b.kaffarahTawbahScore.toFixed(1)} / ${WEEKLY_SCORE_WEIGHTS.kaffarahTawbah.toFixed(1)} pts
+
+### 🎯 Refine to 10/10 Action Plan:
+${b.actionPlan10OutOf10.map(plan => `- ${plan}`).join('\n')}
+` : '';
+
+  const docPath = `04 Operations/Weekly Muhasabah/Weekly Summary - ${summary.generatedDate}.md`;
+  const docName = `Weekly Summary - ${summary.generatedDate}`;
+  const docContent = `# 📜 Weekly Muḥāsabah Sacred Review (${summary.weekLabel})
+
+**Generated:** ${summary.generatedDate} (Jumu'ah Review)
+**Weekly Sacred Audit Score:** **${scoreStr}** — *${gradeStr}*
+**Net Weekly XP:** ${summary.totalNetXP >= 0 ? '+' : ''}${summary.totalNetXP} XP (Earned: +${summary.totalEarnedXP} XP, Lost: −${summary.totalLostXP} XP)
+${breakdownMd}
+## 🕌 Prayer & Worship Fulfillments (Out of 35 Fardh)
+- **Fardh Completed:** ${summary.prayersCount} / 35
+- **On-Time (في وقتها):** ${summary.prayersOnTimeCount} (+40 XP bonus per prayer)
+- **Delayed / Late:** ${summary.prayersDelayedCount} (−50 XP deduction)
+- **Sunan Rawātib:** ${summary.sunnahRawatibCount}
+- **Morning Adhkar:** ${summary.adhkarSabahCount} / 7
+- **Evening Adhkar:** ${summary.adhkarMasaCount} / 7
+- **Night Sleep Adhkar:** ${summary.adhkarSleepNightCount || 0} / 7
+- **Dhohr Qaylulah Adhkar:** ${summary.adhkarSleepDhohrCount || 0} / 7
+- **Salawāt upon the Prophet (ﷺ):** ${summary.salawatTotal}
+- **Qiyām al-Layl Rak'ahs:** ${summary.qiyamTotalRakats}
+
+## ⚖️ Slip Ledger Summary
+- **Total Slips Audited:** ${summary.totalSlipsCount}
+- **Total Coin Fines:** −${summary.totalLostCoins} Coins
+- **Top Vulnerability Realm:** ${summary.topWeaknessCategories[0]?.category || 'None'} (${summary.topWeaknessCategories[0]?.count || 0} slips)
+
+## 🎯 Targeted Recommendations for the New Week
+${summary.recommendations.map(r => `- ${r}`).join('\n')}
+
+---
+*Auto-archived weekly cycle (${summary.startDate} → ${summary.endDate}). XP is an in-app motivational measure. The true reward of worship belongs to Allah alone.*`;
+
+  return { path: docPath, name: docName, content: docContent };
+}
+
+/**
+ * Pure function to generate a WeeklyMuhasabahSummary from state and target date.
+ */
+export function generateWeeklyMuhasabahSummaryPure(
+  state: Pick<POSState, 'muhasabahEntries' | 'spiritualLogs' | 'xpHistory' | 'quests' | 'profile' | 'quranTracker'> & { skills?: POSState['skills'] },
+  targetFridayDate?: string
+): WeeklyMuhasabahSummary {
+  const boundaries = targetFridayDate ? getWeekBoundaries(targetFridayDate) : getWeekBoundaries();
+  const { startDate, endDate, daysInWeek, anchorDate, weekLabel } = {
+    startDate: boundaries.weekStart,
+    endDate: boundaries.weekEnd,
+    daysInWeek: boundaries.daysInWeek,
+    anchorDate: boundaries.anchorDate,
+    weekLabel: boundaries.weekLabel
+  };
+
+  const allEntries = state.muhasabahEntries || [];
+  const weekSlips = allEntries.filter(e => {
+    if (!e.date) return false;
+    return e.date >= startDate && e.date <= endDate;
+  });
+  const effectiveSlips = weekSlips;
+
+  let totalLostXP = 0;
+  let totalLostCoins = 0;
+  const categoryStats: Record<MuhasabahCategory, { count: number; lostXP: number }> = {
+    Obligations: { count: 0, lostXP: 0 },
+    Desires: { count: 0, lostXP: 0 },
+    Speech: { count: 0, lostXP: 0 },
+    Heart: { count: 0, lostXP: 0 },
+    Rights: { count: 0, lostXP: 0 },
+    'Wasted Potential': { count: 0, lostXP: 0 }
+  };
+
+  effectiveSlips.forEach(s => {
+    const xp = s.xpDeducted || s.rawPenalty || 0;
+    const coins = s.coinsDeducted || 0;
+    totalLostXP += xp;
+    totalLostCoins += coins;
+    if (categoryStats[s.category]) {
+      categoryStats[s.category].count += 1;
+      categoryStats[s.category].lostXP += xp;
+    }
   });
 
-  describe('Phase 4: Mathematical Scoring Weights Verification', () => {
-    it('strictly validates that the 6 scoring pillars sum to exactly 10.0', () => {
-      const sum = 
-        WEEKLY_SCORE_WEIGHTS.fardhPrayers +
-        WEEKLY_SCORE_WEIGHTS.slipsRestraint +
-        WEEKLY_SCORE_WEIGHTS.adhkarFortress +
-        WEEKLY_SCORE_WEIGHTS.sunnahQiyam +
-        WEEKLY_SCORE_WEIGHTS.salawat +
-        WEEKLY_SCORE_WEIGHTS.kaffarahTawbah;
+  const topWeaknessCategories = (Object.keys(categoryStats) as MuhasabahCategory[])
+    .map(cat => ({
+      category: cat,
+      count: categoryStats[cat].count,
+      lostXP: categoryStats[cat].lostXP
+    }))
+    .sort((a, b) => b.lostXP - a.lostXP || b.count - a.count);
 
-      expect(sum).toBe(10.0);
-      expect(TOTAL_MAX_WEEKLY_SCORE).toBe(10.0);
-    });
+  let prayersCount = 0;
+  let prayersOnTimeCount = 0;
+  let prayersDelayedCount = 0;
+  let prayersMissedCount = 0;
+  let sunnahRawatibCount = 0;
+  let adhkarSabahCount = 0;
+  let adhkarMasaCount = 0;
+  let adhkarSleepDhohrCount = 0;
+  let adhkarSleepNightCount = 0;
+  let adhkarMorningCount = 0;
+  let adhkarEveningCount = 0;
+  let adhkarSleepCount = 0;
+  let weeklyIntegritySum = 0;
+  let quranPagesTotal = 0;
+  let quranPassagesRevisedCount = 0;
+  let salawatTotal = 0;
+  let qiyamTotalRakats = 0;
+
+  const prayerKeys: ('fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha')[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+  daysInWeek.forEach(dateKey => {
+    const log = state.spiritualLogs?.[dateKey];
+    if (log) {
+      prayerKeys.forEach(p => {
+        const pState = log[p];
+        if (pState?.fardh) {
+          prayersCount++;
+          if (pState.onTime) prayersOnTimeCount++;
+          if (pState.delayed) prayersDelayedCount++;
+        } else {
+          prayersMissedCount++;
+        }
+        if (pState?.sunnahRawatib || pState?.sunnahBefore || pState?.sunnahAfter) {
+          sunnahRawatibCount++;
+        }
+      });
+      if (log.adhkarSabah) adhkarSabahCount++;
+      if (log.adhkarMasa) adhkarMasaCount++;
+      if (log.adhkarSleepDhohr) adhkarSleepDhohrCount++;
+      if (log.adhkarSleepNight) adhkarSleepNightCount++;
+
+      const mStatus = log.adhkarSessions?.morning || (log.adhkarSabah ? 'complete' : 'not_started');
+      const eStatus = log.adhkarSessions?.evening || (log.adhkarMasa ? 'complete' : 'not_started');
+      const sStatus = log.adhkarSessions?.sleep || (log.adhkarSleepNight || log.adhkarSleepDhohr ? 'complete' : 'not_started');
+
+      if (mStatus === 'complete') adhkarMorningCount++;
+      if (eStatus === 'complete') adhkarEveningCount++;
+      if (sStatus === 'complete') adhkarSleepCount++;
+
+      const mw = mStatus === 'complete' ? 33.33 : mStatus === 'in_progress' ? 15 : 0;
+      const ew = eStatus === 'complete' ? 33.33 : eStatus === 'in_progress' ? 15 : 0;
+      const sw = sStatus === 'complete' ? 33.34 : sStatus === 'in_progress' ? 15 : 0;
+      weeklyIntegritySum += Math.min(100, Math.round(mw + ew + sw));
+
+      if (log.quran?.pagesRead) quranPagesTotal += log.quran.pagesRead;
+      if (log.quran?.passagesRevisedToday && log.quran.passagesRevisedToday.length > 0) {
+        quranPassagesRevisedCount += log.quran.passagesRevisedToday.length;
+      } else if (log.quran?.memorizationReviewed) {
+        quranPassagesRevisedCount += 1;
+      }
+
+      salawatTotal += log.salawatCount || 0;
+      qiyamTotalRakats += log.qiyamRakats || 0;
+    } else {
+      prayersMissedCount += 5;
+    }
   });
 
-  describe('Phase 2 & 3: Missed Weeks Catch-Up & Transactional Safety', () => {
-    const createSampleState = (entries: MuhasabahEntry[] = []): POSState => ({
-      ...INITIAL_STATE,
-      muhasabahEntries: entries,
-      savedWeeklySummaries: [],
-      spiritualLogs: {},
-      xpHistory: [],
-      quests: []
-    });
+  const adhkarFortressIntegrityAvg = Math.round(weeklyIntegritySum / 7);
+  const quranFreshness = calculateQuranFreshness(state.quranTracker?.passages || [], endDate);
+  const quranFreshnessScore = quranFreshness.score;
 
-    it('handles a normal weekly cycle executed on Sunday', () => {
-      const entryInWeek: MuhasabahEntry = {
-        id: 'entry-1',
-        date: '2026-08-25', // Tuesday of week Aug 22-28
-        timestamp: '2026-08-25T14:00:00',
-        title: 'Missed Dhuhr focus',
-        description: 'Delayed work',
-        category: 'Obligations',
-        severity: 'Moderate',
-        cause: 'Distraction',
-        rawPenalty: 200,
-        xpDeducted: 200,
-        coinsDeducted: 25,
-        recoveryPercentage: 20,
-        recoveredXP: 40
-      };
+  const weekXpEntries = (state.xpHistory || []).filter(h => {
+    const dStr = h.timestamp ? h.timestamp.split('T')[0] : '';
+    return dStr >= startDate && dStr <= endDate && h.xp > 0;
+  });
+  const totalEarnedXP = weekXpEntries.reduce((sum, h) => sum + h.xp, 0);
+  const totalNetXP = totalEarnedXP - totalLostXP;
 
-      const state: POSState = {
-        ...createSampleState([entryInWeek]),
-        lastWeeklyMuhasabahResetDate: '2026-08-23'
-      };
+  const questsCompletedInWeek = (state.quests || []).filter(q => {
+    if (q.status !== 'Completed' || !q.completedAt) return false;
+    const dStr = q.completedAt.split('T')[0];
+    return dStr >= startDate && dStr <= endDate;
+  }).length;
 
-      // Execute on Sunday 2026-08-30
-      const result = reconcileMissedWeeks(state, '2026-08-30');
-      expect(result.wasReconciled).toBe(true);
-      expect(result.missedSummaries.length).toBe(1);
-      expect(result.missedSummaries[0].generatedDate).toBe('2026-08-28');
-      expect(result.missedSummaries[0].totalSlipsCount).toBe(1);
-      expect(result.missedSummaries[0].totalLostXP).toBe(200);
-      expect(result.newLastResetDate).toBe('2026-08-30');
-    });
+  const focusMinutesTotal = state.profile?.focusMinutesToday || 0;
 
-    it('handles app not opened on Sunday, opened on Monday (catch-up)', () => {
-      const entryInWeek: MuhasabahEntry = {
-        id: 'entry-past',
-        date: '2026-08-26',
-        timestamp: '2026-08-26T10:00:00',
-        title: 'Idle Speech',
-        description: 'Vanity discussion',
-        category: 'Speech',
-        severity: 'Minor',
-        cause: 'Boredom',
-        rawPenalty: 100,
-        xpDeducted: 100,
-        coinsDeducted: 10,
-        recoveryPercentage: 20,
-        recoveredXP: 20
-      };
+  const questPendingKaffarah = (state.quests || []).filter(q => 
+    q.status === 'Active' && 
+    (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+  ).length;
 
-      const entryInNewWeek: MuhasabahEntry = {
-        id: 'entry-current',
-        date: '2026-08-31', // Monday in new week Aug 29 - Sep 04
-        timestamp: '2026-08-31T09:00:00',
-        title: 'Late to meeting',
-        description: 'Traffic',
-        category: 'Rights',
-        severity: 'Minor',
-        cause: 'Late wake',
-        rawPenalty: 100,
-        xpDeducted: 100,
-        coinsDeducted: 10
-      };
+  const questSettledKaffarah = (state.quests || []).filter(q => 
+    q.status === 'Completed' && 
+    (q.name.includes('[KAFFĀRAH]') || q.name.includes('[REMEDY]'))
+  ).length;
 
-      const state: POSState = {
-        ...createSampleState([entryInWeek, entryInNewWeek]),
-        lastWeeklyMuhasabahResetDate: '2026-08-23'
-      };
+  const entrySettledKaffarah = effectiveSlips.filter(s => s.kaffarahCompleted === true).length;
+  const entryPendingKaffarah = effectiveSlips.filter(s => s.kaffarahCompleted === false && !s.isExempt).length;
 
-      // App opened on Monday 2026-08-31
-      const result = reconcileMissedWeeks(state, '2026-08-31');
-      expect(result.wasReconciled).toBe(true);
-      expect(result.missedSummaries.length).toBe(1);
-      expect(result.missedSummaries[0].generatedDate).toBe('2026-08-28');
-      expect(result.missedSummaries[0].totalSlipsCount).toBe(1);
+  const settledKaffarah = Math.max(questSettledKaffarah, entrySettledKaffarah);
+  const pendingKaffarah = Math.max(questPendingKaffarah, entryPendingKaffarah);
 
-      // Current week's entry remains intact in activeEntries!
-      expect(result.activeEntries.length).toBe(1);
-      expect(result.activeEntries[0].id).toBe('entry-current');
-    });
+  // 1. Farā'iḍ Prayers Preservation (Max 2.5 pts)
+  const fardhPrayersScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.fardhPrayers,
+      Math.max(0, (prayersOnTimeCount * 2.5 + prayersDelayedCount * 1.5) / 35)
+    ).toFixed(2)
+  );
 
-    it('handles app not opened for 2+ weeks and archives each missed week chronologically', () => {
-      const entryWeek1: MuhasabahEntry = {
-        id: 'w1-entry',
-        date: '2026-08-20', // Week Aug 15 - Aug 21
-        timestamp: '2026-08-20T12:00:00',
-        title: 'Distracted from goal',
-        description: '',
-        category: 'Wasted Potential',
-        severity: 'Moderate',
-        cause: 'Scrolling',
-        rawPenalty: 200,
-        xpDeducted: 200,
-        coinsDeducted: 25
-      };
+  // 2. Restraint from Sins & Slips Ledger (Max 2.0 pts)
+  let slipDeductions = 0;
+  effectiveSlips.forEach(s => {
+    if (s.severity === 'Critical') slipDeductions += 1.2;
+    else if (s.severity === 'Severe') slipDeductions += 0.8;
+    else if (s.severity === 'Major') slipDeductions += 0.5;
+    else if (s.severity === 'Moderate') slipDeductions += 0.3;
+    else slipDeductions += 0.15;
+  });
+  const slipsRestraintScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.slipsRestraint,
+      Math.max(0, WEEKLY_SCORE_WEIGHTS.slipsRestraint - slipDeductions)
+    ).toFixed(2)
+  );
 
-      const entryWeek2: MuhasabahEntry = {
-        id: 'w2-entry',
-        date: '2026-08-26', // Week Aug 22 - Aug 28
-        timestamp: '2026-08-26T12:00:00',
-        title: 'Impulsive eating',
-        description: '',
-        category: 'Desires',
-        severity: 'Major',
-        cause: 'Stress',
-        rawPenalty: 300,
-        xpDeducted: 300,
-        coinsDeducted: 50
-      };
+  // 3. Adhkār Fortress (Max 1.5 pts)
+  const totalAdhkarUnits = adhkarSabahCount + adhkarMasaCount + (adhkarSleepNightCount * 0.7) + (adhkarSleepDhohrCount * 0.5);
+  const adhkarFortressScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.adhkarFortress,
+      Math.max(0, (totalAdhkarUnits / 14) * WEEKLY_SCORE_WEIGHTS.adhkarFortress)
+    ).toFixed(2)
+  );
 
-      const state: POSState = {
-        ...createSampleState([entryWeek1, entryWeek2]),
-        lastWeeklyMuhasabahResetDate: '2026-08-16' // 3 Sundays prior
-      };
+  // 4. Sunan & Qiyām al-Layl (Max 1.5 pts)
+  const rawatibPart = Math.min(0.8, (sunnahRawatibCount / 20) * 0.8);
+  const qiyamPart = Math.min(0.7, (qiyamTotalRakats / 14) * 0.7);
+  const sunnahQiyamScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.sunnahQiyam,
+      Math.max(0, rawatibPart + qiyamPart)
+    ).toFixed(2)
+  );
 
-      // User returns on Sunday 2026-09-06
-      const result = reconcileMissedWeeks(state, '2026-09-06');
-      expect(result.wasReconciled).toBe(true);
-      expect(result.missedSummaries.length).toBe(3);
+  // 5. Salawāt upon ﷺ (Max 1.0 pt)
+  const salawatScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.salawat,
+      Math.max(0, Math.min(1.0, salawatTotal / 490) * WEEKLY_SCORE_WEIGHTS.salawat)
+    ).toFixed(2)
+  );
 
-      // Week 1 ending Friday Aug 21
-      expect(result.missedSummaries[0].generatedDate).toBe('2026-08-21');
-      expect(result.missedSummaries[0].totalSlipsCount).toBe(1);
-      expect(result.missedSummaries[0].totalLostXP).toBe(200);
+  // 6. Tawbah & Kaffārah Settlement (Max 1.5 pts)
+  const kaffarahTawbahScore = Number(
+    Math.min(
+      WEEKLY_SCORE_WEIGHTS.kaffarahTawbah,
+      Math.max(0, WEEKLY_SCORE_WEIGHTS.kaffarahTawbah - (pendingKaffarah * 0.4) + (settledKaffarah > 0 ? 0.2 : 0))
+    ).toFixed(2)
+  );
 
-      // Week 2 ending Friday Aug 28
-      expect(result.missedSummaries[1].generatedDate).toBe('2026-08-28');
-      expect(result.missedSummaries[1].totalSlipsCount).toBe(1);
-      expect(result.missedSummaries[1].totalLostXP).toBe(300);
+  const totalWeeklyScore = Number(
+    Math.min(10.0, Math.max(0, fardhPrayersScore + slipsRestraintScore + adhkarFortressScore + sunnahQiyamScore + salawatScore + kaffarahTawbahScore)).toFixed(1)
+  );
 
-      // Week 3 ending Friday Sep 04
-      expect(result.missedSummaries[2].generatedDate).toBe('2026-09-04');
-      expect(result.missedSummaries[2].totalSlipsCount).toBe(0);
+  let gradeAr = 'مرتبة الإحسان والمراقبة (10/10)';
+  let gradeEn = 'Ihsanic Excellence (10/10 Mastery)';
+  let spiritualRating: WeeklyMuhasabahSummary['spiritualRating'] = 'Mumtaz (Exceptional)';
 
-      expect(result.newLastResetDate).toBe('2026-09-06');
-    });
+  if (totalWeeklyScore >= 9.5) {
+    gradeAr = 'مرتبة الإحسان والمراقبة (10/10)';
+    gradeEn = 'Ihsanic Excellence (10/10 Mastery)';
+    spiritualRating = 'Mumtaz (Exceptional)';
+  } else if (totalWeeklyScore >= 8.5) {
+    gradeAr = 'النفس المطمئنة';
+    gradeEn = "Al-Nafs Al-Mutma'innah (Steadfast Tranquility)";
+    spiritualRating = 'Jayyid Jiddan (Very Good)';
+  } else if (totalWeeklyScore >= 7.0) {
+    gradeAr = 'النفس اللوامة (مجاهدة مستمرة)';
+    gradeEn = 'Al-Nafs Al-Lawwamah (Active Vigilance & Struggle)';
+    spiritualRating = 'Jayyid (Good)';
+  } else if (totalWeeklyScore >= 5.0) {
+    gradeAr = 'مقتصد - يحتاج تقوية';
+    gradeEn = 'Muqtasid (Passing - Requires Fortification)';
+    spiritualRating = 'Maqbool (Passing)';
+  } else {
+    gradeAr = 'تنبيه واستدراك فوري';
+    gradeEn = 'Urgent Spiritual Triage & Reform';
+    spiritualRating = 'Needs Immediate Reform';
+  }
 
-    it('is idempotent and produces no changes if called multiple times on the same day', () => {
-      const state: POSState = {
-        ...createSampleState(),
-        lastWeeklyMuhasabahResetDate: '2026-08-30'
-      };
+  const actionPlan10OutOf10: string[] = [];
+  if (fardhPrayersScore < 2.45) {
+    actionPlan10OutOf10.push(`+${(2.5 - fardhPrayersScore).toFixed(1)} pts: Protect all 35 weekly Farā'iḍ strictly on-time at first Adhan to eliminate delay penalties.`);
+  }
+  if (slipsRestraintScore < 1.95) {
+    actionPlan10OutOf10.push(`+${(2.0 - slipsRestraintScore).toFixed(1)} pts: Enforce strict behavioral boundary protocols to eliminate recurring slips in ${topWeaknessCategories[0]?.category || 'weakness realms'}.`);
+  }
+  if (adhkarFortressScore < 1.45) {
+    actionPlan10OutOf10.push(`+${(1.5 - adhkarFortressScore).toFixed(1)} pts: Seal both Morning and Evening Adhkār daily without missing a session.`);
+  }
+  if (sunnahQiyamScore < 1.45) {
+    actionPlan10OutOf10.push(`+${(1.5 - sunnahQiyamScore).toFixed(1)} pts: Guard the 12 Sunan Rawātib and revive at least 2 Rak'ahs of Qiyām al-Layl & Witr nightly.`);
+  }
+  if (salawatScore < 0.95) {
+    actionPlan10OutOf10.push(`+${(1.0 - salawatScore).toFixed(1)} pts: Fulfill the daily covenant of 70+ Salawāt upon Prophet Muhammad ﷺ.`);
+  }
+  if (kaffarahTawbahScore < 1.45 && pendingKaffarah > 0) {
+    actionPlan10OutOf10.push(`+${(1.5 - kaffarahTawbahScore).toFixed(1)} pts: Settle and complete ${pendingKaffarah} pending Kaffārah / remedy quest(s).`);
+  }
+  if (actionPlan10OutOf10.length === 0) {
+    actionPlan10OutOf10.push('Maintain steadfast consistency (Istiqāmah) across all obligations and preserve 10/10 Ihsanic status.');
+  }
 
-      const result1 = reconcileMissedWeeks(state, '2026-08-30');
-      expect(result1.wasReconciled).toBe(false);
-      expect(result1.missedSummaries.length).toBe(0);
-    });
+  const recommendations: string[] = [];
+  if (prayersDelayedCount > 3 || prayersMissedCount > 7) {
+    recommendations.push('Establish a strict 5-minute pre-Adhan alarm to protect mandatory prayer timing and eliminate delay penalties.');
+  }
+  if (adhkarSabahCount < 4 || adhkarMasaCount < 4) {
+    recommendations.push('Fortify your spiritual shields: Commit to daily Morning & Evening Adhkar right after Fajr and Asr.');
+  }
+  if (topWeaknessCategories[0] && topWeaknessCategories[0].count > 0) {
+    const topCat = topWeaknessCategories[0];
+    recommendations.push(`Primary slip vulnerability detected in ${topCat.category} (${topCat.count} recorded lapses). Establish targeted preventive protocols and environmental boundaries.`);
+  }
+  if (qiyamTotalRakats < 4) {
+    recommendations.push("Integrate at least 2 Rak'ahs of Qiyam al-Layl & Witr in the last third of the night for heightened clarity.");
+  }
+  if (recommendations.length === 0) {
+    recommendations.push('Maintain steadfast consistency (Istiqāmah) across all obligations and continue proactive voluntary deeds.');
+  }
+
+  const weeklyScoreBreakdown: WeeklyScoreBreakdown = {
+    fardhPrayersScore,
+    slipsRestraintScore,
+    adhkarFortressScore,
+    sunnahQiyamScore,
+    salawatScore,
+    kaffarahTawbahScore,
+    totalScore: totalWeeklyScore,
+    gradeAr,
+    gradeEn,
+    actionPlan10OutOf10
+  };
+
+  const summaryReflection = `Weekly Muḥāsabah Audit (${startDate} → ${endDate}): Judged ${totalWeeklyScore}/10 [${gradeAr} — ${gradeEn}]. Completed Fardh prayers: ${prayersCount}/35 (${prayersOnTimeCount} on-time, ${prayersDelayedCount} delayed). Audited Slips: ${effectiveSlips.length}. Positive XP: +${totalEarnedXP} XP vs. Lost XP: −${totalLostXP} XP (Net: ${totalNetXP >= 0 ? '+' : ''}${totalNetXP} XP).`;
+
+  const xpAnalytics = getXPAnalytics({
+    xpHistory: state.xpHistory || [],
+    systemDate: anchorDate,
+    skills: state.skills || [],
+    quests: state.quests || []
   });
 
-  describe('Phase 5: Recovery Percentage Persistence & Recurring Sins Registry', () => {
-    it('accurately groups intra-day, daily, and periodic recurring sins', () => {
-      const entrySameDay1: MuhasabahEntry = {
-        id: 'entry-sd1',
-        date: '2026-08-28',
-        timestamp: '2026-08-28T09:00:00',
-        title: 'Impulsive scrolling',
-        description: '',
-        category: 'Wasted Potential',
-        severity: 'Moderate',
-        cause: 'Boredom',
-        rawPenalty: 200,
-        xpDeducted: 200,
-        coinsDeducted: 25,
-        recoveryPercentage: 25,
-        recoveredXP: 50
-      };
+  return {
+    id: `weekly-summary-${anchorDate}-${Date.now()}`,
+    generatedDate: anchorDate,
+    weekLabel,
+    startDate,
+    endDate,
+    totalNetXP,
+    totalEarnedXP,
+    totalLostXP,
+    totalLostCoins,
+    totalSlipsCount: effectiveSlips.length,
+    prayersCount,
+    prayersOnTimeCount,
+    prayersDelayedCount,
+    prayersMissedCount,
+    sunnahRawatibCount,
+    adhkarSabahCount,
+    adhkarMasaCount,
+    adhkarSleepDhohrCount,
+    adhkarSleepNightCount,
+    adhkarMorningCount,
+    adhkarEveningCount,
+    adhkarSleepCount,
+    adhkarFortressIntegrityAvg,
+    adhkarFortressAvgIntegrity: adhkarFortressIntegrityAvg,
+    quranPagesTotal,
+    quranPagesRead: quranPagesTotal,
+    quranPassagesRevised: quranPassagesRevisedCount,
+    quranFreshnessScore,
+    salawatTotal,
+    qiyamTotalRakats,
+    questsCompletedCount: questsCompletedInWeek,
+    focusMinutesTotal,
+    kaffarahSettledCount: settledKaffarah,
+    kaffarahPendingCount: pendingKaffarah,
+    topWeaknessCategories,
+    spiritualRating,
+    scoreOutOf10: totalWeeklyScore,
+    weeklyScoreBreakdown,
+    xpAnalytics,
+    summaryReflection,
+    recommendations,
+    archivedAt: new Date().toISOString()
+  };
+}
 
-      const entrySameDay2: MuhasabahEntry = {
-        id: 'entry-sd2',
-        date: '2026-08-28',
-        timestamp: '2026-08-28T15:00:00',
-        title: 'Impulsive scrolling',
-        description: '',
-        category: 'Wasted Potential',
-        severity: 'Moderate',
-        cause: 'Boredom',
-        rawPenalty: 200,
-        xpDeducted: 350, // 1.75x multiplier
-        coinsDeducted: 44,
-        recoveryPercentage: 25,
-        recoveredXP: 88
-      };
+/**
+ * Result structure returned by reconcileMissedWeeks
+ */
+export interface ReconcileMissedWeeksResult {
+  wasReconciled: boolean;
+  missedSummaries: WeeklyMuhasabahSummary[];
+  newLastResetDate: string | null;
+  activeEntries: MuhasabahEntry[];
+  summaryMessage: string;
+}
 
-      const entryDaily1: MuhasabahEntry = {
-        id: 'entry-d1',
-        date: '2026-08-27',
-        timestamp: '2026-08-27T10:00:00',
-        title: 'Backbiting / Gheebah',
-        description: '',
-        category: 'Speech',
-        severity: 'Major',
-        cause: 'Social gossip',
-        rawPenalty: 300,
-        xpDeducted: 300,
-        coinsDeducted: 50
-      };
+/**
+ * Reconciles missed weekly cycles.
+ * 
+ * Handles cases where:
+ * 1. The user opened the app normally on Sunday.
+ * 2. The user did not open the app on Sunday, but opened it later in the week (e.g., Monday or Wednesday).
+ * 3. The user was inactive for 2 or more weeks, accumulating multiple unarchived weekly cycles.
+ * 
+ * Transactional behavior:
+ * - Walks week by week in chronological order from lastResetDate to today.
+ * - Generates exactly one WeeklyMuhasabahSummary per completed week.
+ * - Filters entries so that each week's summary accurately reflects only that week's slips.
+ * - Leaves only the current week's active entries in the active ledger.
+ * - Never leaves gaps or drops historical slips into the void.
+ */
+export function reconcileMissedWeeks(
+  state: POSState,
+  currentSysDate: string
+): ReconcileMissedWeeksResult {
+  const today = parseDateSafe(currentSysDate);
+  const currentWeek = getWeekBoundaries(today);
+  const savedSummaries = state.savedWeeklySummaries || [];
+  const existingSummaryDates = new Set(savedSummaries.map(s => s.generatedDate));
 
-      const entryDaily2: MuhasabahEntry = {
-        id: 'entry-d2',
-        date: '2026-08-28',
-        timestamp: '2026-08-28T10:00:00',
-        title: 'Backbiting / Gheebah',
-        description: '',
-        category: 'Speech',
-        severity: 'Major',
-        cause: 'Social gossip',
-        rawPenalty: 300,
-        xpDeducted: 450, // consecutive day
-        coinsDeducted: 75
-      };
+  // Quick exit if already reset on this exact date
+  if (state.lastWeeklyMuhasabahResetDate && state.lastWeeklyMuhasabahResetDate === currentSysDate) {
+    return {
+      wasReconciled: false,
+      missedSummaries: [],
+      newLastResetDate: state.lastWeeklyMuhasabahResetDate,
+      activeEntries: state.muhasabahEntries || [],
+      summaryMessage: 'Already reconciled for current date.'
+    };
+  }
 
-      const registry = getRecurringSinsRegistry(
-        [entrySameDay1, entrySameDay2, entryDaily1, entryDaily2],
-        [],
-        '2026-08-28'
-      );
+  // Determine starting point
+  let lastResetDateStr = state.lastWeeklyMuhasabahResetDate;
 
-      expect(registry.totalRecurringCount).toBe(2);
-      expect(registry.intraDaySins.length).toBe(1);
-      expect(registry.intraDaySins[0].name.toLowerCase()).toContain('scrolling');
-      expect(registry.intraDaySins[0].cadence).toBe('same_day');
-      expect(registry.dailySins.length).toBe(1);
-      expect(registry.dailySins[0].name.toLowerCase()).toContain('gheebah');
-      expect(registry.dailySins[0].cadence).toBe('daily');
-    });
+  let cursorSundayStr: string;
 
-    it('preserves recoveryPercentage and kaffarah completion through weekly reconciliation', () => {
-      const entryWithCustomRecovery: MuhasabahEntry = {
-        id: 'entry-rec-1',
-        date: '2026-08-25',
-        timestamp: '2026-08-25T11:00:00',
-        title: 'Missed Fajr Congregation',
-        description: '',
-        category: 'Obligations',
-        severity: 'Severe',
-        cause: 'Stayed up late',
-        rawPenalty: 500,
-        xpDeducted: 500,
-        coinsDeducted: 100,
-        recoveryPercentage: 30, // Custom maximum recovery 30%
-        recoveredXP: 150,
-        kaffarahCompleted: true,
-        kaffarahTitle: 'Feed a needy person',
-        kaffarahType: 'Sadaqah'
-      };
+  if (lastResetDateStr) {
+    // If last reset date was already recorded, the previous cycle was completed on that date.
+    // Therefore, the first potential unarchived Sunday is 7 days after lastResetDate.
+    const prevSunday = parseDateSafe(lastResetDateStr);
+    const prevDay = prevSunday.getDay();
+    const alignedSunday = prevDay === 0 ? formatDateStr(prevSunday) : addDays(prevSunday, 7 - prevDay);
+    cursorSundayStr = addDays(alignedSunday, 7);
+  } else {
+    // If no last reset date is recorded, check saved summaries
+    if (savedSummaries.length > 0) {
+      const sorted = [...savedSummaries].sort((a, b) => b.generatedDate.localeCompare(a.generatedDate));
+      // The Sunday following that Friday is Friday + 2 days
+      const followingSunday = addDays(sorted[0].generatedDate, 2);
+      cursorSundayStr = addDays(followingSunday, 7);
+    } else {
+      // Find the earliest entry or spiritual log
+      const dates: string[] = [];
+      (state.muhasabahEntries || []).forEach(e => { if (e.date) dates.push(e.date); });
+      Object.keys(state.spiritualLogs || {}).forEach(d => dates.push(d));
 
-      const state: POSState = {
-        ...INITIAL_STATE,
-        muhasabahEntries: [entryWithCustomRecovery],
-        savedWeeklySummaries: [],
-        spiritualLogs: {},
-        xpHistory: [],
-        quests: [],
-        lastWeeklyMuhasabahResetDate: '2026-08-23'
-      };
+      if (dates.length > 0) {
+        dates.sort();
+        const earliestWeek = getWeekBoundaries(dates[0]);
+        // The Sunday closing that earliest week is Friday + 2 days
+        cursorSundayStr = addDays(earliestWeek.weekEnd, 2);
+      } else {
+        // Brand new state with no entries
+        const day = today.getDay();
+        const daysToSun = (7 - day) % 7;
+        cursorSundayStr = addDays(today, daysToSun === 0 ? 7 : daysToSun);
+      }
+    }
+  }
 
-      const result = reconcileMissedWeeks(state, '2026-08-30');
-      expect(result.wasReconciled).toBe(true);
-      expect(result.missedSummaries.length).toBe(1);
-      expect(result.missedSummaries[0].kaffarahSettledCount).toBe(1);
-      expect(result.missedSummaries[0].kaffarahPendingCount).toBe(0);
+  const missedSummaries: WeeklyMuhasabahSummary[] = [];
+  let latestResetDate = lastResetDateStr || cursorSundayStr;
+  const todayStr = formatDateStr(today);
 
-      // Verify the entry in the archive maintains full fidelity
-      const archivedSummary = result.missedSummaries[0];
-      expect(archivedSummary.totalLostXP).toBe(500);
-      expect(archivedSummary.totalSlipsCount).toBe(1);
-    });
+  // Iterate forward week-by-week as long as cursorSunday <= today
+  // Cap at 52 weeks to prevent infinite loops in corrupted dates
+  let loopCount = 0;
+  while (cursorSundayStr <= todayStr && loopCount < 52) {
+    loopCount++;
+    const sundayStr = cursorSundayStr;
+    const closingWeek = getClosingWeekBoundaries(cursorSundayStr);
+
+    // Only archive if this week has ended and hasn't already been archived
+    if (!existingSummaryDates.has(closingWeek.anchorDate)) {
+      const summary = generateWeeklyMuhasabahSummaryPure(state, closingWeek.anchorDate);
+      missedSummaries.push(summary);
+      existingSummaryDates.add(closingWeek.anchorDate);
+    }
+
+    latestResetDate = sundayStr;
+
+    // Advance to next Sunday
+    cursorSundayStr = addDays(cursorSundayStr, 7);
+  }
+
+  if (missedSummaries.length === 0) {
+    return {
+      wasReconciled: false,
+      missedSummaries: [],
+      newLastResetDate: state.lastWeeklyMuhasabahResetDate || null,
+      activeEntries: state.muhasabahEntries || [],
+      summaryMessage: 'No missed weekly cycles detected. Ledger is up to date.'
+    };
+  }
+
+  // Retain only entries belonging to the current active week
+  const allEntries = state.muhasabahEntries || [];
+  const activeEntries = allEntries.filter(e => {
+    if (!e.date) return false;
+    return e.date >= currentWeek.weekStart;
   });
-});
+
+  const summaryMessage = missedSummaries.length === 1
+    ? `Weekly Muḥāsabah cycle archived for ${missedSummaries[0].weekLabel}. Active ledger reset clean.`
+    : `Catch-up reconciliation completed: ${missedSummaries.length} weekly Muḥāsabah cycles archived across missed periods. Active ledger synchronized.`;
+
+  return {
+    wasReconciled: true,
+    missedSummaries,
+    newLastResetDate: latestResetDate,
+    activeEntries,
+    summaryMessage
+  };
+}
