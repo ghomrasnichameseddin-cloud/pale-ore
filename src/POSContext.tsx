@@ -5,7 +5,7 @@ import {
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
   MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness,
   SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
-  FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahDhikrMode,
+  FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahIstighfarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
@@ -339,6 +339,7 @@ interface POSContextType {
 
   // Muhāsabah (Self-Accountability) Operations
   healSpiritualHp: (amount: number, reason?: string) => void;
+  boostMaxHp: (amount: number, reason?: string) => void;
   addMuhasabahEntry: (entry: {
     title: string;
     description?: string;
@@ -538,7 +539,7 @@ const calculatePlayerLevel = (totalXp: number): number => {
   return Math.floor((-1 + Math.sqrt(9 + totalXp / 62.5)) / 2);
 };
 
-const getMaxHpForLevel = (level: number): number => 100 + Math.max(0, level - 1) * 5;
+export const getMaxHpForLevel = (level: number): number => 100 + Math.max(0, level - 1) * 5;
 
 export const INTERMEDIATE_RANK_LEVEL_THRESHOLD = 10; // D-Rank and above
 
@@ -3874,6 +3875,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           timestamp,
           skillIds: []
         };
+      } else if (item.effectType === 'PERK_HP_RESTORE') {
+        const currentHp = prev.profile.hp ?? 100;
+        const currentLevel = prev.profile.level || 1;
+        const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(currentLevel));
+        const healedHp = Math.min(currentMaxHp, currentHp + (item.value || 35));
+        updatedProfile.hp = healedHp;
+        updatedProfile.maxHp = currentMaxHp;
+        if (healedHp > 0 && updatedProfile.recoveryMode) {
+          updatedProfile.recoveryMode = false;
+        }
+      } else if (item.effectType === 'PERK_MAX_HP_BOOST') {
+        const currentHp = prev.profile.hp ?? 100;
+        const currentLevel = prev.profile.level || 1;
+        const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(currentLevel));
+        const addedCapacity = item.value || 10;
+        updatedProfile.maxHp = currentMaxHp + addedCapacity;
+        updatedProfile.hp = currentHp + addedCapacity;
+        if (updatedProfile.hp > 0 && updatedProfile.recoveryMode) {
+          updatedProfile.recoveryMode = false;
+        }
       }
 
       let updatedHistory = prev.xpHistory;
@@ -5591,6 +5612,36 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const boostMaxHp = (amount: number, reason?: string) => {
+    setState(prev => {
+      const currentLevel = prev.profile.level || 1;
+      const baseMaxHp = getMaxHpForLevel(currentLevel);
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, baseMaxHp);
+      const nextMaxHp = currentMaxHp + Math.max(1, amount);
+      const nextHp = (prev.profile.hp ?? currentMaxHp) + Math.max(1, amount);
+
+      if (reason) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: '🛡️ MAXIMUM SOUL VITALITY EXPANDED',
+          content: `${reason}: +${amount} Max HP capacity permanently acquired (Now: ${nextHp}/${nextMaxHp} HP).`,
+          priority: 'high'
+        });
+      }
+
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          maxHp: nextMaxHp,
+          hp: nextHp,
+          recoveryMode: nextHp > 0 ? prev.profile.recoveryMode : false
+        }
+      };
+    });
+  };
+
   const updateMuhasabahEntry = (id: string, updates: Partial<MuhasabahEntry>) => {
     setState(prev => ({
       ...prev,
@@ -6314,9 +6365,30 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         [prayer]: updatedPrayerState
       };
 
+      const previousAllFardh = Boolean(
+        log.fajr?.fardh && log.dhuhr?.fardh && log.asr?.fardh && log.maghrib?.fardh && log.isha?.fardh
+      );
+      const nextAllFardh = Boolean(
+        updatedLog.fajr?.fardh && updatedLog.dhuhr?.fardh && updatedLog.asr?.fardh && updatedLog.maghrib?.fardh && updatedLog.isha?.fardh
+      );
+
+      let prayerHpGain = 0;
+      if (!previousAllFardh && nextAllFardh) {
+        prayerHpGain = 15;
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: '🕌 5/5 DAILY PRAYERS SEALED',
+          content: 'All 5 obligatory prayers fulfilled for today! Divine fortress erected: +15 HP restored to Soul Vitality.',
+          priority: 'high'
+        });
+      }
+
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + prayerHpGain);
 
       return {
         ...prev,
@@ -6329,6 +6401,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          recoveryMode: nextHp > 0 ? (prayerHpGain > 0 && nextHp >= 50 ? false : prev.profile.recoveryMode) : false,
           coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins),
           momentum: Math.min(100, Math.max(0, prev.profile.momentum + (field === 'fardh' && updatedPrayerState.fardh ? 4 : field === 'delayed' ? -5 : 0)))
         }
@@ -6418,13 +6493,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const adhkarHpGain = (newValue && (type === 'sabah' || type === 'masa')) ? 5 : 0;
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + adhkarHpGain);
 
       if (newValue) {
         addSystemMessage({
           sender: 'SYSTEM',
           category: 'achievement',
           title: `📿 ADHKĀR COMPLETED: ${label}`,
-          content: messageContent,
+          content: adhkarHpGain > 0 ? `${messageContent} (+5 HP Soul Vitality restored)` : messageContent,
           priority: 'medium'
         });
       }
@@ -6440,6 +6518,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          recoveryMode: nextHp > 0 ? (adhkarHpGain > 0 && nextHp >= 50 ? false : prev.profile.recoveryMode) : false,
           coins: Math.max(0, (prev.profile.coins ?? 150) + (newValue ? coinsReward : -coinsReward)),
           momentum: Math.min(100, prev.profile.momentum + (newValue ? 3 : 0))
         }
@@ -6834,11 +6915,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         updatedHistory = [entry, ...updatedHistory];
 
+        const qiyamHpGain = (newRakats >= 2 && !log.qiyamCompleted) ? 15 : 0;
         addSystemMessage({
           sender: 'SYSTEM',
           category: 'achievement',
           title: `🌙 QIYĀM AL-LAYL LOGGED: ${newRakats} RAK'AHS`,
-          content: `Night devotion recorded (+${qiyamXp} XP, +${coinsEarned} Coins). Recorded on today's Daily Balance Scale.`,
+          content: `Night devotion recorded (+${qiyamXp} XP, +${coinsEarned} Coins${qiyamHpGain > 0 ? ', +15 HP Soul Vitality' : ''}). Recorded on today's Daily Balance Scale.`,
           priority: 'medium'
         });
       }
@@ -6846,6 +6928,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const qiyamHpGain = (newRakats >= 2 && !log.qiyamCompleted) ? 15 : 0;
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + qiyamHpGain);
 
       return {
         ...prev,
@@ -6858,6 +6943,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          recoveryMode: nextHp > 0 ? (qiyamHpGain > 0 && nextHp >= 50 ? false : prev.profile.recoveryMode) : false,
           coins: Math.max(0, (prev.profile.coins ?? 150) + coinsEarned),
           momentum: Math.min(100, prev.profile.momentum + (newRakats >= 2 ? 5 : 0))
         }
@@ -6921,7 +7009,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         coinsDelta = nextVal ? 20 : -20;
         if (nextVal) {
           messageTitle = `✨ IFTĀR & FAST COMPLETED (إتمام الصيام)`;
-          messageContent = `Fasting completed for Allah (+125 XP, +20 Coins, +5 Momentum). "Fasting is a shield."`;
+          messageContent = `Fasting completed for Allah (+125 XP, +20 Coins, +20 HP Soul Vitality, +5 Momentum). "Fasting is a shield."`;
         }
       } else if (field === 'duaMadeAtIftar') {
         coinsDelta = nextVal ? 5 : -5;
@@ -6974,6 +7062,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
       const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const fastingHpGain = (field === 'iftarCompleted' && updatedFasting.iftarCompleted) ? 20 : 0;
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + fastingHpGain);
 
       return {
         ...prev,
@@ -6986,6 +7077,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          recoveryMode: nextHp > 0 ? (fastingHpGain > 0 && nextHp >= 50 ? false : prev.profile.recoveryMode) : false,
           coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta),
           momentum: Math.min(100, prev.profile.momentum + (updatedFasting.iftarCompleted ? 5 : 0))
         }
@@ -7199,27 +7293,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         let tasbeeh = 0;
         let hamd = 0;
         let takbir = 0;
-        let istighfar = 0;
-        let tahlil = 0;
 
         const prayers: (keyof PostSalahAdhkarMap)[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
         prayers.forEach(p => {
           const mode = map[p];
           if (mode === 'standard33') {
+            // Standard 33x means 33 tasbih, 33 hamd, 33 takbir ONLY (99 total)
             tasbeeh += 33;
             hamd += 33;
             takbir += 33;
-            istighfar += 3;
-            tahlil += 0; // Standard 33x is 33 tasbih, 33 hamd, 33 takbir ONLY
           } else if (mode === 'mini10') {
+            // Mini 10x means 10 tasbih, 10 hamd, 10 takbir ONLY (30 total)
             tasbeeh += 10;
             hamd += 10;
             takbir += 10;
-            istighfar += 3;
-            tahlil += 0; // Mini 10x is 10 tasbih, 10 hamd, 10 takbir ONLY
           }
         });
-        return { tasbeeh, hamd, takbir, istighfar, tahlil };
+        return { tasbeeh, hamd, takbir };
       };
 
       const oldCounts = getPostCounts(oldPostMap);
@@ -7228,8 +7318,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deltaTasbeeh = newCounts.tasbeeh - oldCounts.tasbeeh;
       deltaHamd = newCounts.hamd - oldCounts.hamd;
       deltaTakbir = newCounts.takbir - oldCounts.takbir;
-      deltaIstighfar = newCounts.istighfar - oldCounts.istighfar;
-      deltaTahlil = newCounts.tahlil - oldCounts.tahlil;
+    }
+
+    // 3 Istighfars after each salah tracked separately in Post-Obligatory Prayer Remembrance
+    const oldIstighfarMap = currentDhikr.postSalahIstighfar || {};
+    const newIstighfarMap = updates.postSalahIstighfar !== undefined ? updates.postSalahIstighfar : oldIstighfarMap;
+
+    if (updates.postSalahIstighfar !== undefined) {
+      const prayers: (keyof PostSalahIstighfarMap)[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      let oldIstighfarPrayers = 0;
+      let newIstighfarPrayers = 0;
+      prayers.forEach(p => {
+        if (oldIstighfarMap[p]) oldIstighfarPrayers++;
+        if (newIstighfarMap[p]) newIstighfarPrayers++;
+      });
+      deltaIstighfar = (newIstighfarPrayers - oldIstighfarPrayers) * 3;
     }
 
     const updatedDhikr: DhikrTasbeehLog = {
@@ -7245,10 +7348,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let dhikrXp = 0;
     let coinsEarned = 0;
 
-    // Post-Salah /5 Adhkar calculation
+    // Post-Salah /5 Adhkar calculation (Tasbih, Hamd, Takbir Only)
     const postMap = updatedDhikr.postSalahAdhkar || {};
+    const istighfarMap = updatedDhikr.postSalahIstighfar || {};
     const prayersList: (keyof PostSalahAdhkarMap)[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
     let postSalahCount = 0;
+    let standardCount = 0;
+    let miniCount = 0;
+    let postIstighfarCount = 0;
 
     prayersList.forEach(p => {
       const mode = postMap[p];
@@ -7256,10 +7363,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dhikrXp += 20;
         coinsEarned += 3;
         postSalahCount++;
+        standardCount++;
       } else if (mode === 'mini10') {
         dhikrXp += 12;
         coinsEarned += 2;
         postSalahCount++;
+        miniCount++;
+      }
+
+      if (istighfarMap[p]) {
+        dhikrXp += 5;
+        coinsEarned += 1;
+        postIstighfarCount++;
       }
     });
 
@@ -7270,6 +7385,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (postSalahCount === 5) {
       dhikrXp += 25; // 5/5 all prayers post-adhkar bonus
       coinsEarned += 5;
+    }
+
+    if (postIstighfarCount === 5) {
+      dhikrXp += 15; // 5/5 post-salah istighfar completeness bonus
+      coinsEarned += 3;
     }
 
     if (updatedDhikr.tasbeehAfterSalah && postSalahCount === 0) {
@@ -7331,17 +7451,35 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Sync Adhkar Fortress catalog recitations for post-salah items
       const currentRecs = prev.adhkarRecitations?.[targetDate] || {};
       let updatedRecs = { ...currentRecs };
-      if (updates.postSalahAdhkar) {
-        if (postSalahCount > 0) {
-          updatedRecs['adhkar-postsalah-1'] = Math.max(updatedRecs['adhkar-postsalah-1'] || 0, postSalahCount * 3);
-          updatedRecs['adhkar-postsalah-1b'] = Math.max(updatedRecs['adhkar-postsalah-1b'] || 0, postSalahCount);
-          updatedRecs['adhkar-postsalah-3'] = Math.max(updatedRecs['adhkar-postsalah-3'] || 0, postSalahCount);
-          updatedRecs['adhkar-postsalah-4'] = Math.max(updatedRecs['adhkar-postsalah-4'] || 0, postSalahCount * 99);
+      
+      // 3x Istighfar after each salah tracked separately
+      if (updates.postSalahIstighfar !== undefined) {
+        if (postIstighfarCount > 0) {
+          updatedRecs['adhkar-postsalah-1'] = postIstighfarCount * 3;
         } else {
           delete updatedRecs['adhkar-postsalah-1'];
+        }
+      }
+
+      if (updates.postSalahAdhkar !== undefined) {
+        if (standardCount > 0) {
+          updatedRecs['adhkar-postsalah-4'] = standardCount * 99;
+        } else {
+          delete updatedRecs['adhkar-postsalah-4'];
+        }
+
+        if (miniCount > 0) {
+          updatedRecs['adhkar-postsalah-4-mini'] = miniCount * 30;
+        } else {
+          delete updatedRecs['adhkar-postsalah-4-mini'];
+        }
+
+        if (postSalahCount > 0) {
+          updatedRecs['adhkar-postsalah-1b'] = Math.max(updatedRecs['adhkar-postsalah-1b'] || 0, postSalahCount);
+          updatedRecs['adhkar-postsalah-3'] = Math.max(updatedRecs['adhkar-postsalah-3'] || 0, postSalahCount);
+        } else {
           delete updatedRecs['adhkar-postsalah-1b'];
           delete updatedRecs['adhkar-postsalah-3'];
-          delete updatedRecs['adhkar-postsalah-4'];
         }
       }
 
@@ -8042,6 +8180,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateBatterySettings,
       toggleBatterySaverMode,
       healSpiritualHp,
+      boostMaxHp,
       addMuhasabahEntry,
       updateMuhasabahEntry,
       deleteMuhasabahEntry,

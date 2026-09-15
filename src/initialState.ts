@@ -198,6 +198,28 @@ export const DEFAULT_SHOP_ITEMS: ShopItem[] = [
     effectType: 'PERK_XP_SURGE',
     value: 50,
     createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-vitality-elixir',
+    name: 'Shifā\' Vitality Elixir (ماء زمزم وشفاء)',
+    description: 'A pure spiritual tonic that instantly restores +35 Soul Vitality (HP).',
+    costCoins: 45,
+    category: 'System Perk',
+    icon: '💧',
+    effectType: 'PERK_HP_RESTORE',
+    value: 35,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'shop-fortitude-tonic',
+    name: 'Tonic of Divine Fortitude (إكسير العزيمة والصبر)',
+    description: 'Permanently reinforces soul resilience, raising Max HP capacity by +10 HP.',
+    costCoins: 140,
+    category: 'System Perk',
+    icon: '🛡️',
+    effectType: 'PERK_MAX_HP_BOOST',
+    value: 10,
+    createdAt: new Date().toISOString()
   }
 ];
 

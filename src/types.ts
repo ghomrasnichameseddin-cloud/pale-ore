@@ -527,7 +527,7 @@ export interface ShopItem {
   costTimeMinutes?: number; // Time currency cost in minutes of earned leisure
   category: ShopItemCategory;
   icon: string;
-  effectType?: 'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE';
+  effectType?: 'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE' | 'PERK_HP_RESTORE' | 'PERK_MAX_HP_BOOST';
   value?: number; // e.g. amount of momentum or shield
   isCustom?: boolean;
   createdAt: string;
@@ -1003,9 +1003,18 @@ export interface PostSalahAdhkarMap {
   isha?: PostSalahDhikrMode;
 }
 
+export interface PostSalahIstighfarMap {
+  fajr?: boolean;
+  dhuhr?: boolean;
+  asr?: boolean;
+  maghrib?: boolean;
+  isha?: boolean;
+}
+
 export interface DhikrTasbeehLog {
   tasbeehAfterSalah: boolean; // 33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar + 1 La ilaha illallah (+60 XP)
-  postSalahAdhkar?: PostSalahAdhkarMap; // 5 prayers post-adhkar tracking (Standard 33x vs Mini 10x)
+  postSalahAdhkar?: PostSalahAdhkarMap; // 5 prayers post-adhkar tracking (Standard 33x vs Mini 10x - Tasbih, Hamd, Takbir ONLY)
+  postSalahIstighfar?: PostSalahIstighfarMap; // 3x Istighfār after each salah tracked separately in Post-Obligatory Prayer Remembrance
   tasbeehCount?: number; // SubhanAllah count (سُبْحَانَ الله)
   hamdCount?: number; // Alhamdulillah count (الحَمْدُ لله)
   tahlilCount: number; // La ilaha illallah count (لَا إِلَهَ إِلَّا الله) (+75 XP when >= 100)

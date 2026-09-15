@@ -52,7 +52,7 @@ export const RewardShopView: React.FC = () => {
   const [editCostTime, setEditCostTime] = useState<number>(0);
   const [editCategory, setEditCategory] = useState<ShopItemCategory>('Real Life Reward');
   const [editIcon, setEditIcon] = useState('🎁');
-  const [editEffectType, setEditEffectType] = useState<'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE'>('INVENTORY');
+  const [editEffectType, setEditEffectType] = useState<'INVENTORY' | 'PERK_FOCUS_SHIELD' | 'PERK_MOMENTUM_BOOST' | 'PERK_XP_SURGE' | 'PERK_HP_RESTORE' | 'PERK_MAX_HP_BOOST'>('INVENTORY');
   const [editValue, setEditValue] = useState<number>(1);
 
   const iconsList = ['🎁', '☕', '🍕', '🎮', '🍿', '📚', '🍦', '🍩', '🛍️', '✈️', '🎟️', '💆‍♂️', '🛡️', '⚡', '✨', '👑', '🚀', '💎', '🎨', '🎯', '😴', '🌙'];
@@ -918,6 +918,8 @@ export const RewardShopView: React.FC = () => {
                         <option value="PERK_FOCUS_SHIELD">Focus Shield Token</option>
                         <option value="PERK_MOMENTUM_BOOST">Momentum Boost</option>
                         <option value="PERK_XP_SURGE">XP Surge Token</option>
+                        <option value="PERK_HP_RESTORE">Vitality Elixir (+HP Restore)</option>
+                        <option value="PERK_MAX_HP_BOOST">Fortitude Tonic (+Max HP Expansion)</option>
                       </select>
                     </div>
 

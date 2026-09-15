@@ -69,6 +69,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   const masjid40Stats = getMasjid40Stats(systemDate);
 
   const postMap = currentLog.dhikr?.postSalahAdhkar || {};
+  const postIstighfarMap = currentLog.dhikr?.postSalahIstighfar || {};
   const completedPostPrayersCount = (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter(p => {
     const mode = postMap[p];
     return mode === 'standard33' || mode === 'mini10';
@@ -79,6 +80,15 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
       postSalahAdhkar: {
         ...postMap,
         [prayerId]: mode
+      }
+    }, systemDate);
+  };
+
+  const handleTogglePostIstighfar = (prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
+    updateDhikrLog({
+      postSalahIstighfar: {
+        ...postIstighfarMap,
+        [prayerId]: !postIstighfarMap[prayerId]
       }
     }, systemDate);
   };
@@ -873,28 +883,42 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-1.5">
+                          <div className="grid grid-cols-3 gap-1">
+                            <button
+                              onClick={() => handleTogglePostIstighfar(prayer.id)}
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postIstighfarMap[prayer.id]
+                                  ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                              title="3x Istighfār immediately after prayer (+5 XP)"
+                            >
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postIstighfarMap[prayer.id] ? 'text-amber-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">3x Istighfār</span>
+                            </button>
                             <button
                               onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
-                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                                 postMap[prayer.id] === 'standard33'
                                   ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
                                   : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
                               }`}
+                              title="Standard 33x: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr ONLY (+20 XP)"
                             >
-                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                              <span>Standard 33x (+20)</span>
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">33x Only</span>
                             </button>
                             <button
                               onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
-                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                                 postMap[prayer.id] === 'mini10'
                                   ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
                                   : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
                               }`}
+                              title="Mini 10x: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr ONLY (+12 XP)"
                             >
-                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
-                              <span>Mini 10x (+12)</span>
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">10x Only</span>
                             </button>
                           </div>
                         </div>
@@ -1707,28 +1731,42 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-1.5">
+                          <div className="grid grid-cols-3 gap-1">
+                            <button
+                              onClick={() => handleTogglePostIstighfar(prayer.id)}
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                                postIstighfarMap[prayer.id]
+                                  ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm'
+                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                              }`}
+                              title="3x Istighfār immediately after prayer (+5 XP)"
+                            >
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postIstighfarMap[prayer.id] ? 'text-amber-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">3x Istighfār</span>
+                            </button>
                             <button
                               onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
-                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                                 postMap[prayer.id] === 'standard33'
                                   ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
                                   : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
                               }`}
+                              title="Standard 33x: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr ONLY (+20 XP)"
                             >
-                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                              <span>Standard 33x (+20)</span>
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">33x Only</span>
                             </button>
                             <button
                               onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
-                              className={`py-1.5 px-2 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
+                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
                                 postMap[prayer.id] === 'mini10'
                                   ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
                                   : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
                               }`}
+                              title="Mini 10x: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr ONLY (+12 XP)"
                             >
-                              <CheckCircle2 className={`h-3 w-3 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
-                              <span>Mini 10x (+12)</span>
+                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
+                              <span className="truncate">10x Only</span>
                             </button>
                           </div>
                         </div>

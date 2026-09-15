@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { PlanningDocument } from '../types';
+import { FIXED_CODEX_FOLDERS, getCodexFolderForPath } from '../data/codexFolders';
 import { 
   Folder, FolderOpen, FileText, Plus, Edit2, Trash2, 
   BookOpen, Eye, Save, Link2, Unlink, ExternalLink,
-  ChevronRight, ChevronDown, Search, Compass, CheckSquare, List
+  ChevronRight, ChevronDown, Search, Compass, CheckSquare, List, Lock, ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
@@ -22,30 +23,19 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Folder expansion state
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
-    '00 Vision': true,
-    '01 Strategies': true,
-    '02 Master Plans': false,
-    '03 Tactical Playbooks': false,
-    '04 Operations': false,
-    '05 SOPs': false,
-    '06 Frameworks': false,
-    '07 Experiments': false,
-    '08 Lessons Learned': false,
-    '09 Reviews & Archive': false,
-    'Archive': false,
+  // Folder expansion state initialized with all 10 fixed codex folders
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    FIXED_CODEX_FOLDERS.forEach((f, index) => {
+      init[f.canonicalPath] = index < 3; // First 3 expanded by default
+    });
+    return init;
   });
 
   // Creation State
   const [isCreatingFile, setIsCreatingFile] = useState<boolean>(false);
   const [newFileName, setNewFileName] = useState<string>('');
-  const [newFileFolder, setNewFileFolder] = useState<string>('00 Vision');
-  const [customFolder, setCustomFolder] = useState<string>('');
-
-  // Folder editing / renaming state
-  const [editingFolder, setEditingFolder] = useState<string | null>(null);
-  const [folderRenameValue, setFolderRenameValue] = useState<string>('');
+  const [newFileFolder, setNewFileFolder] = useState<string>(FIXED_CODEX_FOLDERS[0].canonicalPath);
 
   // Editing state for current document content
   const [editContent, setEditContent] = useState<string>('');
@@ -74,18 +64,22 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     }));
   };
 
-  // Organize documents by virtual folders
+  // 10 Fixed Codex Folders are the guaranteed, immutable foundation directories
   const folderStructure = useMemo(() => {
     const folders: Record<string, PlanningDocument[]> = {};
 
+    // Initialize all 10 fixed folders in exact sequence
+    FIXED_CODEX_FOLDERS.forEach(f => {
+      folders[f.canonicalPath] = [];
+    });
+
+    // Distribute documents to their canonical fixed folder
     state.planningDocuments.forEach(doc => {
-      // Extract top folder name
-      const parts = doc.path.split('/');
-      const topFolder = parts[0] || 'Unsorted';
-      if (!folders[topFolder]) {
-        folders[topFolder] = [];
+      const folderDef = getCodexFolderForPath(doc.path);
+      if (!folders[folderDef.canonicalPath]) {
+        folders[folderDef.canonicalPath] = [];
       }
-      folders[topFolder].push(doc);
+      folders[folderDef.canonicalPath].push(doc);
     });
 
     // Sort files within each folder alphabetically
@@ -93,22 +87,8 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       folders[k].sort((a, b) => a.name.localeCompare(b.name));
     });
 
-    // Return folders sorted alphabetically by folder name
-    const sortedFolders: Record<string, PlanningDocument[]> = {};
-    Object.keys(folders).sort().forEach(key => {
-      sortedFolders[key] = folders[key];
-    });
-
-    return sortedFolders;
+    return folders;
   }, [state.planningDocuments]);
-
-  // Sync newFileFolder to first available folder if current one is deleted/renamed
-  useEffect(() => {
-    const folders = Object.keys(folderStructure);
-    if (folders.length > 0 && !folders.includes(newFileFolder) && newFileFolder !== '__custom__') {
-      setNewFileFolder(folders[0]);
-    }
-  }, [folderStructure, newFileFolder]);
 
   // Filtered folder structure based on search
   const filteredFolderStructure = useMemo(() => {
@@ -117,34 +97,30 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
     const query = searchQuery.toLowerCase();
     const filtered: Record<string, PlanningDocument[]> = {};
 
-    Object.keys(folderStructure).forEach(folder => {
-      const docs = folderStructure[folder].filter(doc => 
+    FIXED_CODEX_FOLDERS.forEach(f => {
+      const folderKey = f.canonicalPath;
+      const allDocs = folderStructure[folderKey] || [];
+      const matches = allDocs.filter(doc => 
         doc.name.toLowerCase().includes(query) || 
         doc.content.toLowerCase().includes(query)
       );
-      if (docs.length > 0 || folder.toLowerCase().includes(query)) {
-        filtered[folder] = folderStructure[folder].filter(doc => 
-          doc.name.toLowerCase().includes(query) || 
-          doc.content.toLowerCase().includes(query)
-        );
+      if (matches.length > 0 || f.displayName.toLowerCase().includes(query) || folderKey.toLowerCase().includes(query)) {
+        filtered[folderKey] = matches;
       }
     });
 
     return filtered;
   }, [folderStructure, searchQuery]);
 
-  // Icons for main folders
+  // Icons and titles for fixed codex folders
   const getFolderEmoji = (folder: string): string => {
-    if (folder.includes('00 Vision')) return '📜';
-    if (folder.includes('01 Strategies')) return '🎯';
-    if (folder.includes('02 Master Plans')) return '🧭';
-    if (folder.includes('03 Tactical Playbooks')) return '⚔️';
-    if (folder.includes('04 Operations')) return '📅';
-    if (folder.includes('05 SOPs')) return '📖';
-    if (folder.includes('06 Frameworks')) return '💠';
-    if (folder.includes('07 Reviews')) return '🔮';
-    if (folder.includes('Archive')) return '🗃️';
-    return '📁';
+    const found = FIXED_CODEX_FOLDERS.find(f => f.canonicalPath === folder || f.displayName === folder || folder.startsWith(f.folderNumber));
+    return found ? found.icon : '📁';
+  };
+
+  const getFolderDisplayName = (folder: string): string => {
+    const found = FIXED_CODEX_FOLDERS.find(f => f.canonicalPath === folder || f.displayName === folder || folder.startsWith(f.folderNumber));
+    return found ? found.displayName : folder;
   };
 
   // Custom visual markdown renderer that converts basic markdown to premium cybernetic HTML blocks
@@ -331,16 +307,13 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
       finalName += '.md';
     }
 
-    const targetFolder = newFileFolder === '__custom__' ? customFolder.trim() : newFileFolder;
-    if (!targetFolder) return;
-
-    const fullPath = `${targetFolder}/${finalName}`;
-    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured strategies and sacred blueprints aligned with your ${targetFolder.replace(/^\d+\s+/, '')}.`;
+    const matchedFolder = FIXED_CODEX_FOLDERS.find(f => f.canonicalPath === newFileFolder || f.id === newFileFolder) || FIXED_CODEX_FOLDERS[0];
+    const fullPath = `${matchedFolder.canonicalPath}/${finalName}`;
+    const defaultMarkdown = `# ${finalName.replace('.md', '')}\n\nSeed structured strategies and sacred blueprints aligned with ${matchedFolder.displayName}.`;
     
     const newId = addPlanningDocument(fullPath, finalName, defaultMarkdown);
     
     setNewFileName('');
-    setCustomFolder('');
     setIsCreatingFile(false);
     setSelectedDocId(newId);
     setIsEditMode(true);
@@ -349,48 +322,10 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
   const handleDeleteFile = (id: string, name: string) => {
     deletePlanningDocument(id);
     if (selectedDocId === id) {
-      setSelectedDocId('pdoc-00-1');
+      const remaining = state.planningDocuments.filter(d => d.id !== id);
+      setSelectedDocId(remaining[0]?.id || 'pdoc-00-1');
       setIsEditMode(false);
     }
-  };
-
-  const handleRenameFolder = (oldFolderName: string, newFolderName: string) => {
-    const trimmedNewName = newFolderName.trim();
-    if (!trimmedNewName || trimmedNewName === oldFolderName) {
-      setEditingFolder(null);
-      return;
-    }
-
-    const docsToUpdate = state.planningDocuments.filter(doc => doc.path.startsWith(oldFolderName + '/'));
-    docsToUpdate.forEach(doc => {
-      const restOfPath = doc.path.substring(oldFolderName.length + 1);
-      updatePlanningDocument(doc.id, {
-        path: `${trimmedNewName}/${restOfPath}`
-      });
-    });
-
-    if (expandedFolders[oldFolderName] !== undefined) {
-      setExpandedFolders(prev => {
-        const copy = { ...prev };
-        const oldState = copy[oldFolderName];
-        delete copy[oldFolderName];
-        copy[trimmedNewName] = oldState;
-        return copy;
-      });
-    }
-
-    setEditingFolder(null);
-  };
-
-  const handleDeleteFolder = (folderName: string) => {
-    const filesInFolder = state.planningDocuments.filter(doc => doc.path.startsWith(folderName + '/'));
-    filesInFolder.forEach(doc => {
-      deletePlanningDocument(doc.id);
-      if (selectedDocId === doc.id) {
-        setSelectedDocId('pdoc-00-1');
-        setIsEditMode(false);
-      }
-    });
   };
 
   // Dropdown list options for linking
@@ -464,83 +399,44 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
               <div key={folderName} className="space-y-0.5">
                 {/* Folder Header Row */}
                 <div className="group/folder flex items-center justify-between rounded-lg hover:bg-white/[0.03] transition">
-                  {editingFolder === folderName ? (
-                    <div className="flex items-center gap-1.5 p-1 w-full">
-                      <input
-                        type="text"
-                        value={folderRenameValue}
-                        onChange={(e) => setFolderRenameValue(e.target.value)}
-                        className="flex-1 bg-[#07080c] border border-[#c5a059] rounded px-1.5 py-0.5 text-xs font-mono text-zinc-200 focus:outline-none"
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
-                      />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRenameFolder(folderName, folderRenameValue);
-                        }}
-                        className="px-2 py-0.5 bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] rounded text-[9px] font-mono shrink-0 cursor-pointer font-bold"
-                      >
-                        SAVE
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingFolder(null);
-                        }}
-                        className="px-1.5 py-0.5 bg-zinc-900 text-zinc-400 border border-white/10 rounded text-[9px] font-mono shrink-0 cursor-pointer"
-                      >
-                        CANCEL
-                      </button>
+                  <button
+                    onClick={() => toggleFolder(folderName)}
+                    className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-300 hover:text-white transition cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 truncate mr-2">
+                      <span className="text-[10px] text-[#c5a059]">
+                        {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
+                      </span>
+                      <span className="truncate">{folderEmoji} {getFolderDisplayName(folderName)}</span>
                     </div>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => toggleFolder(folderName)}
-                        className="flex-1 flex items-center justify-between text-left px-2 py-1.5 text-xs font-mono font-bold tracking-wide text-zinc-300 hover:text-white transition cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2 truncate mr-2">
-                          <span className="text-[10px] text-[#c5a059]">
-                            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
-                          </span>
-                          <span className="truncate">{folderEmoji} {folderName}</span>
-                        </div>
-                        <span className="text-[9px] font-mono font-bold text-zinc-400 px-1.5 py-0.5 rounded bg-black/40 border border-white/5 shrink-0">
-                          {filteredFolderStructure[folderName]?.length || 0} {filteredFolderStructure[folderName]?.length === 1 ? 'doc' : 'docs'}
-                        </span>
-                      </button>
-                      
-                      <div className="flex items-center gap-1 pr-2">
-                        {/* Folder controls - visible on hover */}
-                        <div className="opacity-0 group-hover/folder:opacity-100 flex items-center gap-1.5 mr-1.5 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingFolder(folderName);
-                              setFolderRenameValue(folderName);
-                            }}
-                            className="p-0.5 text-zinc-500 hover:text-[#e5c875] transition cursor-pointer"
-                            title="Rename"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFolder(folderName);
-                            }}
-                            className="p-0.5 text-zinc-500 hover:text-rose-400 transition cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <span className="text-[9px] bg-[#07080c] px-1.5 py-0.5 rounded border border-[#c5a059]/20 text-[#c5a059]">
-                          {filteredFolderStructure[folderName].length}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[9px] font-mono font-bold text-zinc-400 px-1.5 py-0.5 rounded bg-black/40 border border-white/5">
+                        {filteredFolderStructure[folderName]?.length || 0} {filteredFolderStructure[folderName]?.length === 1 ? 'doc' : 'docs'}
+                      </span>
+                    </div>
+                  </button>
+                  
+                  <div className="flex items-center gap-1 pr-2">
+                    {/* Quick Add Scroll to this folder */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewFileFolder(folderName);
+                        setIsCreatingFile(true);
+                      }}
+                      className="opacity-0 group-hover/folder:opacity-100 p-1 text-zinc-400 hover:text-[#fef08a] transition cursor-pointer rounded hover:bg-white/5"
+                      title={`Inscribe scroll in ${folderName}`}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                    {/* Subtle Fixed Folder Indicator */}
+                    <span 
+                      className="text-zinc-600 group-hover/folder:text-[#c5a059]/60 p-0.5" 
+                      title="Fixed Canonical Codex Directory (Immutable)"
+                    >
+                      <Lock className="h-2.5 w-2.5" />
+                    </span>
+                  </div>
                 </div>
 
                 {/* Folder Children Files */}
@@ -581,7 +477,18 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
                         );
                       })
                     ) : (
-                      <span className="text-[10px] text-zinc-600 italic pl-5 block py-1 font-mono">Empty Grimoire</span>
+                      <div className="py-2 px-2 text-center bg-black/20 rounded border border-white/5 my-1">
+                        <p className="text-[10px] text-zinc-500 font-mono italic mb-1.5">No scrolls in this vault directory yet</p>
+                        <button
+                          onClick={() => {
+                            setNewFileFolder(folderName);
+                            setIsCreatingFile(true);
+                          }}
+                          className="text-[9px] font-mono text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/40 hover:border-[#c5a059] px-2 py-0.5 rounded transition cursor-pointer"
+                        >
+                          + Inscribe Scroll
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -602,31 +509,16 @@ export const PlanningView: React.FC<PlanningViewProps> = ({ onNavigate }) => {
             >
               <form onSubmit={handleCreateFile} className="space-y-2.5">
                 <div>
-                  <label className="text-[9px] font-mono text-[#c5a059] uppercase tracking-wider block mb-1 font-bold">TARGET DIRECTORY</label>
+                  <label className="text-[9px] font-mono text-[#c5a059] uppercase tracking-wider block mb-1 font-bold">TARGET VAULT DIRECTORY</label>
                   <select 
                     value={newFileFolder}
                     onChange={(e) => setNewFileFolder(e.target.value)}
                     className="w-full bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#c5a059]"
                   >
-                    {Object.keys(folderStructure).map(f => (
-                      <option key={f} value={f}>{getFolderEmoji(f)} {f}</option>
+                    {FIXED_CODEX_FOLDERS.map(f => (
+                      <option key={f.canonicalPath} value={f.canonicalPath}>{f.icon} {f.displayName}</option>
                     ))}
-                    <option value="__custom__">📁 [+ CREATE NEW FOLDER...]</option>
                   </select>
-
-                  {newFileFolder === '__custom__' && (
-                    <div className="mt-2">
-                      <label className="text-[8px] font-mono text-zinc-400 uppercase tracking-wider block mb-1">NEW FOLDER NAME</label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. 08 Celestial Arcana"
-                        value={customFolder}
-                        onChange={(e) => setCustomFolder(e.target.value)}
-                        className="w-full bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#c5a059]"
-                        autoFocus
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div>
