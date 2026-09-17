@@ -2517,6 +2517,66 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
                 </div>
 
+                {/* WASTED TIME & DISTRACTION RECOVERY INTEGRATOR (محوّل هدر الوقت إلى كفّارة) */}
+                <div className="p-4 sm:p-5 bg-gradient-to-br from-[#120e24] via-[#0d101d] to-[#0a0c16] border border-indigo-500/40 rounded-xl space-y-3.5 relative overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2.5">
+                    <div className="font-mono font-bold text-indigo-300 uppercase flex items-center gap-2 text-xs">
+                      <Clock className="h-4 w-4 text-indigo-400" />
+                      <span>WASTED TIME & DISTRACTION RECOVERY INTEGRATOR (محوّل هدر الوقت إلى كفّارة)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      TEMPORAL_RESTITUTION
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Time wasted to accidental feed drift, reels, streaming rabbit holes, or idle chatter represents lost temporal <em>Amānah</em>. Rather than spiraling into guilt or paralysis, the <strong>Wasted Time Recovery Integrator</strong> converts temporal leakage directly into intentional penance, immediate moral friction, and dynamic restitution quests:
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-2.5 bg-zinc-950/90 rounded-lg border border-indigo-500/30 space-y-1">
+                      <strong className="text-indigo-300 block text-[11px]">1. DURATION-SCALED SEVERITY</strong>
+                      <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                        Input wasted minutes directly (15m to 180m+):
+                        <br />• <strong>15–29m</strong>: Minor (−150 XP, −5 HP)
+                        <br />• <strong>30–59m</strong>: Moderate (−300 XP, −12 HP, −15 Coins)
+                        <br />• <strong>60–89m</strong>: Major (−500 XP, −20 HP, −35 Coins)
+                        <br />• <strong>90–149m</strong>: Severe (−800 XP, −35 HP, −60 Coins)
+                        <br />• <strong>150m+</strong>: Critical (−1200 XP, −50 HP, −100 Coins)
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950/90 rounded-lg border border-rose-500/30 space-y-1">
+                      <strong className="text-rose-300 block text-[11px]">2. LEISURE BANK DEBIT</strong>
+                      <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                        Optionally deduct the exact lost minutes from your <strong>Leisure Bank</strong> in the Temporal Ledger. This treats distraction as unauthorized leisure overdraft, immediately balancing your temporal accounts.
+                      </p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950/90 rounded-lg border border-emerald-500/30 space-y-1">
+                      <strong className="text-emerald-300 block text-[11px]">3. AUTO-MINTED RESTITUTION</strong>
+                      <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
+                        Select a corrective restitution path:
+                        <br />• <strong>Deep Focus Counter-Attack</strong> (1.25× time)
+                        <br />• <strong>Physical Reset</strong> (workout / cold shower)
+                        <br />• <strong>Spiritual Cleansing</strong> (Istighfār ×100 / Tawbah)
+                        <br />• <strong>Charity &amp; Service</strong> (Ṣadaqah donation)
+                        <br />Pins an active <code>[KAFFĀRAH]</code> quest to your quest log (+35 HP &amp; +20% XP refund upon completion).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-indigo-950/40 rounded border border-indigo-500/20 flex items-center justify-between text-[11px] font-mono text-indigo-200">
+                    <span className="flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5 text-amber-300" />
+                      <span>DIRECT ACCESS POINTS:</span>
+                    </span>
+                    <span className="text-zinc-300 text-[10.5px] font-sans">
+                      Available via Daily Balance Scale header, Muḥāsabah top banner, Audited Slips tray, and Temporal Ledger app limits.
+                    </span>
+                  </div>
+                </div>
+
                 {/* WEEKLY PRACTICE SNAPSHOT & 10.0 SACRED SCORE ARCHITECTURE */}
                 <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0d0f17] via-[#141721] to-[#0b0d13] border border-cyan-500/40 rounded-xl space-y-4">
                   <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
@@ -2824,6 +2884,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="text-zinc-300">Used For:</span>
                         <span className="text-emerald-300 font-bold">Active Rest Passes</span>
                       </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-rose-500/20 flex items-center justify-between">
+                        <span className="text-rose-300">Distraction Overdraft:</span>
+                        <span className="text-rose-400 font-bold">−Exact Wasted Minutes</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3105,7 +3169,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="space-y-1.5 text-xs font-mono">
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
                         <div className="text-emerald-300 font-bold">Tracked Transactions:</div>
-                        <div className="text-[11px] text-zinc-400 font-sans">Focus Harvests (+10m), Quest Dividends, Rest Vouchers (-25m to -90m), Active Rest sessions, and Debt Restructuring.</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Focus Harvests (+10m), Quest Dividends, Rest Vouchers (-25m to -90m), Active Rest sessions, Distraction Overdrafts (-minutes), and Debt Restructuring.</div>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
                         <div className="text-emerald-300 font-bold">Audit Controls:</div>

@@ -14,6 +14,7 @@ import {
   AppUsageLimit, AppUsageLimitCategory, AppUsageLimitConsequence, AppUsageLogEntry 
 } from '../types';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
+import { WastedTimeRecoveryModal } from './WastedTimeRecoveryModal';
 import { getLocalDateString, addDays, parseDateSafe } from '../utils/dateUtils';
 import { 
   evaluateTodayRestDecision, 
@@ -79,6 +80,7 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
   const [logNotesInput, setLogNotesInput] = useState<string>('');
 
   const [isUsageHistoryDrawerOpen, setIsUsageHistoryDrawerOpen] = useState(false);
+  const [isWastedTimeModalOpen, setIsWastedTimeModalOpen] = useState(false);
 
   const transactions: LeisureTransaction[] = (state.timeHistory || []) as LeisureTransaction[];
   const profile = state.profile;
@@ -1101,6 +1103,15 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
             </button>
 
             <button
+              onClick={() => setIsWastedTimeModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 border border-rose-500/40 transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+              title="Log wasted distraction time, apply fair penalties and mint Kaffārah restitution quest"
+            >
+              <Flame className="h-3.5 w-3.5 text-rose-400" />
+              <span>Penalize &amp; Recover Distraction</span>
+            </button>
+
+            <button
               onClick={handleOpenAddLimit}
               className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#141824] hover:bg-[#1c2235] text-[#fef08a] border border-[#c5a059]/40 transition flex items-center gap-1.5 shadow-sm"
             >
@@ -1914,6 +1925,13 @@ export const TemporalLedgerView: React.FC<TemporalLedgerViewProps> = ({ onNaviga
           </div>
         )}
       </AnimatePresence>
+
+      {/* WASTED TIME & DISTRACTION RECOVERY MODAL */}
+      <WastedTimeRecoveryModal
+        isOpen={isWastedTimeModalOpen}
+        onClose={() => setIsWastedTimeModalOpen(false)}
+        onNavigateToQuests={() => onNavigate?.('quests')}
+      />
 
     </div>
   );

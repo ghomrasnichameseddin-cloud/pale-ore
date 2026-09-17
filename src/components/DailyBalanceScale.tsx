@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen, Heart, Coins, Repeat } from 'lucide-react';
+import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen, Heart, Coins, Repeat, Clock } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 interface DailyBalanceScaleProps {
@@ -19,6 +19,7 @@ interface DailyBalanceScaleProps {
   todayLostCoins?: number;
   todayRecurringSlipsCount?: number;
   onOpenAuditModal: () => void;
+  onOpenWastedTimeModal?: () => void;
   onViewRemedies?: () => void;
   onOpenGuide?: () => void;
 }
@@ -39,6 +40,7 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
   todayLostCoins = 0,
   todayRecurringSlipsCount = 0,
   onOpenAuditModal,
+  onOpenWastedTimeModal,
   onViewRemedies,
   onOpenGuide
 }) => {
@@ -152,7 +154,7 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
           {onOpenGuide && (
             <button
               onClick={onOpenGuide}
-              className="px-2.5 py-2 rounded-xl bg-[#0f1219] hover:bg-[#181d28] border border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95"
+              className="px-2.5 py-2 rounded-xl bg-[#0f1219] hover:bg-[#181d28] border border-white/10 hover:border-[#c5a059]/50 text-zinc-300 hover:text-[#fef08a] transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95 cursor-pointer"
               title="Open System Manual & Daily Balance Guide"
               id="daily-balance-guide-btn"
             >
@@ -161,9 +163,22 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
             </button>
           )}
 
+          {onOpenWastedTimeModal && (
+            <button
+              onClick={onOpenWastedTimeModal}
+              className="px-3 py-2 rounded-xl bg-[#130f1e] hover:bg-[#1b152d] border border-indigo-500/40 hover:border-indigo-400/80 text-indigo-200 hover:text-white transition flex items-center gap-1.5 text-xs font-mono font-bold shadow-md active:scale-95 cursor-pointer"
+              title="Log Distraction / Wasted Time & Generate Restitution Quest"
+              id="daily-balance-wasted-time-btn"
+            >
+              <Clock className="h-3.5 w-3.5 text-indigo-400" />
+              <span className="hidden md:inline">LOG WASTED TIME</span>
+              <span className="md:hidden">RECOVER TIME</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenAuditModal}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 hover:brightness-110 active:scale-95 text-black font-display text-xs font-bold tracking-wider transition flex items-center gap-2 shadow-lg shadow-amber-950/50 cursor-pointer"
             id="daily-balance-triage-btn"
           >
             <Flame className="h-4 w-4" />
@@ -608,6 +623,17 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
             <p className="text-[11px] text-zinc-400 font-mono mt-2 leading-relaxed">
               Delayed obligations, tongue slips, feed drift, appetites, and recurring lapses.
             </p>
+
+            {onOpenWastedTimeModal && (
+              <button
+                type="button"
+                onClick={onOpenWastedTimeModal}
+                className="mt-2.5 w-full py-1.5 px-2.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-[11px] font-mono text-rose-200 hover:text-white transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Clock className="h-3 w-3 text-amber-300" />
+                <span>Convert Wasted Time to Restitution</span>
+              </button>
+            )}
           </div>
 
           <div className="pt-2.5 border-t border-rose-500/20 flex items-center justify-between text-[11px] font-mono text-rose-300/80">
