@@ -973,7 +973,7 @@ export interface QuranLog {
 
 export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';
 
-export type AdhkarCategory = 'morning' | 'evening' | 'post_salah' | 'postSalah' | 'sleep' | 'sleep_dhohr' | 'sleep_night' | 'general';
+export type AdhkarCategory = 'morning' | 'evening' | 'post_salah' | 'postSalah' | 'sleep' | 'sleep_dhohr' | 'sleep_night' | 'general' | 'express';
 export type AdhkarPrayerTarget = 'all' | 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'fajr_maghrib';
 
 export interface AdhkarItem {
@@ -993,6 +993,9 @@ export interface AdhkarItem {
   recommendedTime?: string;
   isCustom?: boolean;
   order?: number;
+  isExpressDaily?: boolean; // Part of "نظام مختصر جدًا للأيام الصعبة" (Minimum Daily Fortress)
+  expressCategory?: 'morning' | 'evening' | 'post_salah';
+  expressOrder?: number;
 }
 
 export interface PostSalahAdhkarMap {

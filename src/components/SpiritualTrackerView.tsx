@@ -1179,11 +1179,13 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1.5">
                           <Sun className="h-3.5 w-3.5 text-amber-400" />
-                          <span>Morning (صباح)</span>
+                          <span>ورد الصباح</span>
                         </span>
-                        <span className="text-[9px] opacity-90">{currentLog.adhkarSabah ? '✓ (+75)' : '+75'}</span>
+                        <span className="text-[9px] font-bold font-sans">
+                          {currentLog.adhkarSabah ? '✓ أُنجِزَت' : 'تسجيل'}
+                        </span>
                       </button>
 
                       {/* Evening Adhkar */}
@@ -1195,89 +1197,110 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-zinc-200'
                         }`}
                       >
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1.5">
                           <Moon className="h-3.5 w-3.5 text-indigo-400" />
-                          <span>Evening (مساء)</span>
+                          <span>ورد المساء</span>
                         </span>
-                        <span className="text-[9px] opacity-90">{currentLog.adhkarMasa ? '✓ (+75)' : '+75'}</span>
+                        <span className="text-[9px] font-bold font-sans">
+                          {currentLog.adhkarMasa ? '✓ أُنجِزَت' : 'تسجيل'}
+                        </span>
                       </button>
                     </div>
 
                     {/* Dhohr Nap vs Night Bedtime Distinct Dual Section */}
                     <div className="grid grid-cols-2 gap-2 pt-0.5">
                       {/* Noon Sleep / Qaylulah Card */}
-                      <div className={`p-2 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
+                      <div className={`p-2.5 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
                         currentLog.adhkarSleepDhohr
-                          ? 'bg-amber-950/40 border-amber-500/40'
+                          ? 'bg-amber-950/40 border-amber-500/40 shadow-sm'
                           : 'bg-zinc-950/60 border-white/5'
                       }`}>
                         <div className="flex items-center justify-between">
                           <button
                             onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
-                            className="flex items-center gap-1 text-[10px] font-mono font-bold text-amber-300 hover:text-amber-200 text-left cursor-pointer"
+                            className="flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-amber-300 hover:text-amber-200 text-left cursor-pointer"
                           >
-                            <Sun className="h-3 w-3 text-amber-400 shrink-0" />
-                            <span className="truncate">Noon Nap (قيلولة)</span>
+                            <Sun className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                            <span className="truncate">أذكار القيلولة (Siesta)</span>
                           </button>
-                          <span className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer ${
-                            currentLog.adhkarSleepDhohr ? 'bg-amber-500 border-amber-400 text-black font-bold' : 'border-zinc-700 bg-black/40'
-                          }`}
-                          onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+                          <span 
+                            className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer transition ${
+                              currentLog.adhkarSleepDhohr ? 'bg-amber-500 border-amber-400 text-black font-bold' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+                            }`}
+                            onClick={() => toggleAdhkar('sleepDhohr', systemDate)}
+                            title={currentLog.adhkarSleepDhohr ? 'إلغاء التثبيت' : 'تثبيت أذكار القيلولة'}
                           >
                             {currentLog.adhkarSleepDhohr && '✓'}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                          <span className="text-[9px] font-mono text-zinc-500">+50 XP</span>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[9px] font-mono">
+                          <span className={currentLog.adhkarSleepDhohr ? 'text-emerald-400 font-bold' : 'text-zinc-500'}>
+                            {currentLog.adhkarSleepDhohr ? 'عبادة منجزة ✓' : 'تحصين ٤ أذكار'}
+                          </span>
                           <button
                             onClick={() => {
                               setSleepModalTab('dhohr');
                               setIsSleepModalOpen(true);
                             }}
-                            className="text-[9px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                            className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                            title="عرض أذكار وإرشادات القيلولة"
                           >
-                            <span>Read 4</span>
+                            <span>اقرأ (٤)</span>
                             <BookOpen className="h-2.5 w-2.5" />
                           </button>
                         </div>
                       </div>
 
                       {/* Night Bedtime Sleep Card */}
-                      <div className={`p-2 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
+                      <div className={`p-2.5 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
                         currentLog.adhkarSleepNight
-                          ? 'bg-purple-950/40 border-purple-500/40'
+                          ? 'bg-purple-950/40 border-purple-500/40 shadow-sm'
                           : 'bg-zinc-950/60 border-white/5'
                       }`}>
                         <div className="flex items-center justify-between">
                           <button
                             onClick={() => toggleAdhkar('sleepNight', systemDate)}
-                            className="flex items-center gap-1 text-[10px] font-mono font-bold text-purple-300 hover:text-purple-200 text-left cursor-pointer"
+                            className="flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-purple-300 hover:text-purple-200 text-left cursor-pointer"
                           >
-                            <Bed className="h-3 w-3 text-purple-400 shrink-0" />
-                            <span className="truncate">Night Sleep (ليل)</span>
+                            <Bed className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+                            <span className="truncate">أذكار النوم (Night)</span>
                           </button>
-                          <span className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer ${
-                            currentLog.adhkarSleepNight ? 'bg-purple-500 border-purple-400 text-white font-bold' : 'border-zinc-700 bg-black/40'
-                          }`}
-                          onClick={() => toggleAdhkar('sleepNight', systemDate)}
+                          <span 
+                            className={`h-4 w-4 rounded-md border flex items-center justify-center text-[9px] cursor-pointer transition ${
+                              currentLog.adhkarSleepNight ? 'bg-purple-500 border-purple-400 text-white font-bold' : 'border-zinc-700 bg-black/40 hover:border-zinc-500'
+                            }`}
+                            onClick={() => toggleAdhkar('sleepNight', systemDate)}
+                            title={currentLog.adhkarSleepNight ? 'إلغاء التثبيت' : 'تثبيت أذكار نوم الليل'}
                           >
                             {currentLog.adhkarSleepNight && '✓'}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                          <span className="text-[9px] font-mono text-zinc-500">+75 XP</span>
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[9px] font-mono">
+                          <span className={currentLog.adhkarSleepNight ? 'text-emerald-400 font-bold' : 'text-zinc-500'}>
+                            {currentLog.adhkarSleepNight ? 'عبادة منجزة ✓' : 'حصن الليل ٧'}
+                          </span>
                           <button
                             onClick={() => {
                               setSleepModalTab('night');
                               setIsSleepModalOpen(true);
                             }}
-                            className="text-[9px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                            className="text-[var(--accent-bright)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
+                            title="عرض أذكار النوم الصحيحة وحفظ الليل"
                           >
-                            <span>Read 7</span>
+                            <span>اقرأ (٧)</span>
                             <Shield className="h-2.5 w-2.5" />
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* WORSHIP PRINCIPLE MICRO-BANNER */}
+                    <div className="px-2 py-1 bg-black/40 border border-white/5 rounded-lg flex items-center justify-between text-[9px] font-sans text-zinc-400">
+                      <span className="flex items-center gap-1 text-[#c5a059]">
+                        <Heart className="h-2.5 w-2.5 text-rose-400" />
+                        <span>الأذكار عبادة وطاعة • توثيقٌ لعبادة منجزة</span>
+                      </span>
+                      <span className="font-mono text-zinc-500">حفظٌ وتحصين</span>
                     </div>
 
                     {/* 5 POST-SALAH ADHKĀR INTERACTIVE STRIP */}
@@ -1361,8 +1384,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 </div>
 
                 <div className="text-[10px] font-mono text-zinc-400 border-t border-white/5 pt-2 flex items-center justify-between">
-                  <span>Authentic Adhkār Fortress</span>
-                  <span className="text-emerald-400 font-bold">{completedPostPrayersCount === 5 ? '✓ 5/5 Sealed (+25 Bonus)' : `${5 - completedPostPrayersCount} to complete`}</span>
+                  <span>Authentic Adhkār Fortress • حُصُونُ الأَذْكَار</span>
+                  <span className="text-emerald-400 font-bold">{completedPostPrayersCount === 5 ? '✓ اكتملت أذكار الصلوات الخمس' : `متبقٍ ${5 - completedPostPrayersCount} صلوات`}</span>
                 </div>
               </div>
 

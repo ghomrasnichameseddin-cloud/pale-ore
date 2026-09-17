@@ -50,7 +50,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   } = usePOS();
 
   // Active Category Filter
-  const [activeCategory, setActiveCategory] = useState<AdhkarCategory | 'all'>('all');
+  const [activeCategory, setActiveCategory] = useState<AdhkarCategory | 'all' | 'express'>('all');
   const [activePrayerFilter, setActivePrayerFilter] = useState<AdhkarPrayerTarget | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -90,7 +90,9 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     return adhkarList.filter(item => {
       // Category filter
       if (activeCategory !== 'all') {
-        if (activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah') {
+        if (activeCategory === 'express') {
+          if (!item.isExpressDaily) return false;
+        } else if (activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah') {
           if (item.category !== 'post_salah' && (item.category as string) !== 'postSalah') return false;
         } else if (activeCategory === 'sleep') {
           if (item.category !== 'sleep' && item.category !== 'sleep_dhohr' && item.category !== 'sleep_night') return false;
@@ -111,8 +113,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesTitle = item.title.toLowerCase().includes(q);
-        const matchesArabic = item.arabicText.includes(searchQuery);
+        const matchesTitle = item.title.toLowerCase().includes(q) || (item.titleAr?.toLowerCase().includes(q) ?? false);
+        const matchesArabic = (item.arabicText || item.arabic || '').includes(searchQuery);
         const matchesTrans = item.transliteration?.toLowerCase().includes(q) || false;
         const matchesEng = item.translation.toLowerCase().includes(q);
         const matchesSource = item.source?.toLowerCase().includes(q) || false;
@@ -121,6 +123,15 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         }
       }
       return true;
+    }).sort((a, b) => {
+      if (activeCategory === 'express') {
+        const catOrder: Record<string, number> = { morning: 1, evening: 2, post_salah: 3 };
+        const orderA = catOrder[a.expressCategory || a.category] || 9;
+        const orderB = catOrder[b.expressCategory || b.category] || 9;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.expressOrder || 0) - (b.expressOrder || 0);
+      }
+      return 0;
     });
   }, [adhkarList, activeCategory, activePrayerFilter, searchQuery]);
 
@@ -135,6 +146,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       sleep_night: adhkarList.filter(a => a.category === 'sleep_night').length,
       sleep: adhkarList.filter(a => a.category === 'sleep' || a.category === 'sleep_dhohr' || a.category === 'sleep_night').length,
       general: adhkarList.filter(a => a.category === 'general').length,
+      express: adhkarList.filter(a => a.isExpressDaily).length,
     };
   }, [adhkarList]);
 
@@ -147,7 +159,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   }, [adhkarList, getAdhkarRecitationCount, systemDate]);
 
   const handleCopyArabic = (item: AdhkarItem) => {
-    const text = `${item.arabicText}\n\n${item.translation}\n(${item.title} - ${item.source || 'Adhkar'})`;
+    const arabic = item.arabicText || item.arabic || '';
+    const text = `${arabic}\n\n${item.translation}\n(${item.title} - ${item.source || 'Adhkar'})`;
     navigator.clipboard.writeText(text);
     setCopiedId(item.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -582,16 +595,33 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                 <RotateCcw className="h-3 w-3 text-purple-400" />
                 <span>Tap to Cycle</span>
               </button>
-              <button
-                onClick={() => {
-                  setSleepModalTab('night');
-                  setShowSleepModal(true);
-                }}
-                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-1 cursor-pointer font-bold"
-              >
-                <Shield className="h-3 w-3" />
-                <span>Read Sleep Shield</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSleepModalTab('dhohr');
+                    setShowSleepModal(true);
+                  }}
+                  className="text-amber-300 hover:text-amber-200 hover:underline flex items-center gap-1 cursor-pointer text-[10.5px]"
+                  title="أذكار وإرشادات القيلولة"
+                >
+                  <Sun className="h-3 w-3 text-amber-400" />
+                  <span>القيلولة</span>
+                </button>
+                <span className="text-zinc-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSleepModalTab('night');
+                    setShowSleepModal(true);
+                  }}
+                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-1 cursor-pointer font-bold text-[10.5px]"
+                  title="أذكار النوم ليلًا وحصن الليل"
+                >
+                  <Moon className="h-3 w-3 text-violet-400" />
+                  <span>ورد الليل</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -891,6 +921,19 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             </button>
 
             <button
+              onClick={() => { setActiveCategory('express'); setActivePrayerFilter('all'); }}
+              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                activeCategory === 'express'
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-lg shadow-amber-950/50'
+                  : 'text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 border border-amber-500/30'
+              }`}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              <span>⚡ MINIMUM (حصن الأيام الصعبة)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/30 font-bold">{categoryCounts.express}</span>
+            </button>
+
+            <button
               onClick={() => { setActiveCategory('morning'); setActivePrayerFilter('all'); }}
               className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
                 activeCategory === 'morning'
@@ -1022,6 +1065,70 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             ))}
           </motion.div>
         )}
+
+        {/* Express Minimum Daily Fortress Explanatory Card */}
+        {activeCategory === 'express' && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-amber-950/40 border border-amber-500/40 rounded-2xl space-y-3 shadow-lg"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block tracking-wider">
+                    THE SUSTAINABLE DAILY FORTRESS
+                  </span>
+                  <h3 className="text-base font-display font-bold text-white">
+                    النظام العملي للأيام الصعبة (الحد الأدنى الذي لا ينبغي تركه)
+                  </h3>
+                </div>
+              </div>
+              <span className="text-xs font-mono px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold self-start sm:self-auto">
+                ⚡ 3 Essential Windows
+              </span>
+            </div>
+
+            <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+              إن كنت مجهدًا أو مستعجلًا، لا تجعل طول القائمة سببًا لترك كل الذكر. هذا هو الحد الأدنى المحفوظ بالسنة الصحيحة في المحطات الثلاث الكبرى:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1 text-xs">
+              <div className="p-3 bg-black/50 border border-amber-500/20 rounded-xl space-y-1">
+                <div className="flex items-center justify-between text-amber-300 font-mono font-bold">
+                  <span>① بعد الفجر (صباحاً)</span>
+                  <span className="text-[10px] opacity-70">5 أذكار</span>
+                </div>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  آية الكرسي • الإخلاص والمعوذتان (3×) • سيد الاستغفار • بسم الله الذي لا يضر... (3×) • رضيت بالله رباً... (3×)
+                </p>
+              </div>
+
+              <div className="p-3 bg-black/50 border border-indigo-500/20 rounded-xl space-y-1">
+                <div className="flex items-center justify-between text-indigo-300 font-mono font-bold">
+                  <span>② بعد المغرب (مساءً)</span>
+                  <span className="text-[10px] opacity-70">5 أذكار</span>
+                </div>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  نفس الخمسة السابقة (آية الكرسي، المعوذات 3×، سيد الاستغفار، بسم الله الذي لا يضر... 3×، رضيت بالله رباً... 3×)
+                </p>
+              </div>
+
+              <div className="p-3 bg-black/50 border border-emerald-500/20 rounded-xl space-y-1">
+                <div className="flex items-center justify-between text-emerald-300 font-mono font-bold">
+                  <span>③ بعد كل صلاة مكتوبة</span>
+                  <span className="text-[10px] opacity-70">4 أذكار</span>
+                </div>
+                <p className="text-zinc-400 text-[11px] leading-relaxed">
+                  الاستغفار (3×) • اللهم أنت السلام ومنك السلام... • التسبيح والتحميد والتكبير وختم المائة • آية الكرسي
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* ADHKAR CARDS GRID */}
@@ -1078,6 +1185,12 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                         {item.category.replace('_', ' ')}
                       </span>
 
+                      {item.isExpressDaily && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1">
+                          <Zap className="h-3 w-3 text-amber-400" /> MINIMUM (حصن الأيام الصعبة)
+                        </span>
+                      )}
+
                       {item.prayerTarget && item.category === 'post_salah' && (
                         <span className="text-[10px] font-mono bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md">
                           🕌 {item.prayerTarget.toUpperCase()}
@@ -1097,8 +1210,13 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                       )}
                     </div>
 
-                    <h4 className="text-base font-display font-extrabold text-white flex items-center gap-2">
+                    <h4 className="text-base font-display font-extrabold text-white flex flex-wrap items-center gap-2">
                       <span>{item.title}</span>
+                      {item.titleAr && (
+                        <span className="text-sm font-display text-amber-300/80 font-normal">
+                          ({item.titleAr})
+                        </span>
+                      )}
                       {isCompleted && (
                         <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-bold animate-pulse">
                           <Check className="h-3 w-3" /> FULFILLED
@@ -1107,13 +1225,13 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                     </h4>
 
                     {/* Arabic Text Display */}
-                    {item.arabicText && (
+                    {(item.arabicText || item.arabic) && (
                       <div className="p-4 bg-[var(--bg-void,#050608)]/90 border border-[var(--border-accent,#c5a059)]/30 rounded-xl my-2">
                         <p 
                           dir="rtl"
                           className="font-arabic text-lg sm:text-xl text-right text-amber-100/90 leading-loose tracking-wide select-all"
                         >
-                          {item.arabicText}
+                          {item.arabicText || item.arabic}
                         </p>
                       </div>
                     )}

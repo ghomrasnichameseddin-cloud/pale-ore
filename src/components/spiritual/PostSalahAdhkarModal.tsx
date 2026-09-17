@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Check, CheckCircle2, X, Sparkles, Clock, BookOpen, 
-  RotateCcw, Shield, Heart, Copy, Plus
+  RotateCcw, Shield, Heart, Copy, Plus, Zap
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import { PostSalahDhikrMode } from '../../types';
@@ -30,6 +30,7 @@ interface DhikrItem {
   targetCount: number;
   fajrMaghribOnly?: boolean;
   repeatForFajrMaghrib?: number;
+  isExpressMinimum?: boolean;
 }
 
 const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
@@ -37,106 +38,97 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
     id: 'post-istighfar',
     stepNumber: 1,
     titleEn: '1. 3x Istighfār After Salah',
-    titleAr: 'الاسْتِغْفَارُ ثَلَاثًا عَقِبَ كُلِّ صَلَاةٍ',
+    titleAr: '① الاستغفار — 3 مرات',
     source: 'Sahih Muslim (591)',
-    arabic: 'أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ، أَسْتَغْفِرُ اللَّهَ.',
+    arabic: 'أَسْتَغْفِرُ اللَّهَ. أَسْتَغْفِرُ اللَّهَ. أَسْتَغْفِرُ اللَّهَ.',
     transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh.',
     translation: 'I seek the forgiveness of Allah (3 times).',
     virtue: 'Recited immediately upon completing the final Taslīm of every obligatory prayer before reciting any other supplication.',
-    targetCount: 3
+    targetCount: 3,
+    isExpressMinimum: true
   },
   {
     id: 'post-salam-dua',
     stepNumber: 2,
     titleEn: '2. Du‘ā As-Salām (Supplication of Divine Peace)',
-    titleAr: 'دُعَاءُ السَّلَامِ عَقِبَ الصَّلَاةِ',
+    titleAr: '② اللهم أنت السلام ومنك السلام — مرة واحدة',
     source: 'Sahih Muslim (591)',
-    arabic: 'اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الجَلَالِ وَالإِكْرَامِ.',
+    arabic: 'اللَّهُمَّ أَنْتَ السَّلَامُ، وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالإِكْرَامِ.',
     transliteration: 'Allāhumma Antas-Salāmu wa minkas-Salām, tabārakta yā Dhal-Jalāli wal-Ikrām.',
     translation: 'O Allah, You are Peace and from You comes peace. Blessed are You, O Possessor of Majesty and Honor.',
     virtue: 'Recited directly following the 3 Istighfārs after the Taslīm.',
-    targetCount: 1
+    targetCount: 1,
+    isExpressMinimum: true
   },
   {
     id: 'post-tahlil',
     stepNumber: 3,
-    titleEn: '3. Testimony of Sovereign Grace (La Mani‘a lima A‘tayt)',
-    titleAr: 'التَّهْلِيلُ وَتَفْوِيضُ المُلْكِ لِلَّهِ',
+    titleEn: '3. At-Tahlīl (Declaration of Divine Sovereignty)',
+    titleAr: '③ التهليل بعد الصلاة — مرة واحدة',
     source: 'Sahih al-Bukhari (844) & Muslim (593)',
-    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، اللَّهُمَّ لَا مَانِعَ لِمَا أَعْطَيْتَ، وَلَا مُعْطِيَ لِمَا مَنَعْتَ، وَلَا يَنْفَعُ ذَا الجَدِّ مِنْكَ الجَدُّ.',
-    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa Huwa ‘alā kulli shay’in Qadīr. Allāhumma lā māni‘a limā a‘ṭayta, wa lā mu‘ṭiya limā mana‘ta, wa lā yanfa‘u dhal-jaddi minkal-jadd.',
-    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He is over all things competent. O Allah, none can withhold what You have given, none can give what You have withheld, and wealth cannot avail the wealthy against You.',
-    virtue: 'The Prophet ﷺ regularly recited this after each prescribed prayer to ground the heart in divine decree.',
+    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
+    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu, wa Huwa ‘alā kulli shay’in Qadīr.',
+    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all kingdom and praise, and He is over all things Omnipotent.',
+    virtue: 'Foundational affirmation of pure Monotheism upon finishing the prayer.',
     targetCount: 1
   },
   {
-    id: 'post-zubayr-tahlil',
+    id: 'post-la-mania',
     stepNumber: 4,
-    titleEn: '4. Declaration of Pure Devotion (Ibn az-Zubayr Tahlīl)',
-    titleAr: 'تَهْلِيلُ الإِخْلَاصِ وَالثَّنَاءِ الحَسَنِ',
-    source: 'Sahih Muslim (594)',
-    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعْبُدُ إِلَّا إِيَّاهُ، لَهُ النِّعْمَةُ وَلَهُ الفَضْلُ وَلَهُ الثَّنَاءُ الحَسَنُ، لَا إِلَهَ إِلَّا اللَّهُ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الكَافِرُونَ.',
-    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa Huwa ‘alā kulli shay’in Qadīr. Lā ḥawla wa lā quwwata illā billāh. Lā ilāha illAllāh, wa lā na‘budu illā iyyāh, lahun-ni‘matu wa lahul-faḍlu wa lahuth-thanā’ul-ḥasan. Lā ilāha illAllāhu mukhliṣīna lahud-dīna wa law karihal-kāfirūn.',
-    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He is over all things competent. There is no might nor power except with Allah. None has the right to be worshipped except Allah, and we worship none but Him. To Him belongs all grace, virtue, and beautiful praise. None has the right to be worshipped except Allah, keeping religion sincerely for Him alone, even if the disbelievers detest it.',
-    virtue: '‘Abdullah ibn az-Zubayr reported: "The Messenger of Allah ﷺ used to recite these words aloud following the Taslīm of each prayer." (Sahih Muslim 594)',
-    targetCount: 1
-  },
-  {
-    id: 'post-ayat-kursi',
-    stepNumber: 5,
-    titleEn: '5. Āyat al-Kursī (The Throne Verse - 2:255)',
-    titleAr: 'آيَةُ الكُرْسِيِّ دُبُرَ كُلِّ صَلَاةٍ مَكْتُوبَةٍ',
-    source: 'An-Nasa’i As-Sunan al-Kubra (9848) • Sahih al-Jami‘ (6464)',
-    arabic: 'اللَّهُ لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ',
-    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm, lā ta’khuḏhuhū sinatuw-wa lā nawm, lahū mā fis-samāwāti wa mā fil-arḍ...',
-    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence. Neither drowsiness overtakes Him nor sleep...',
-    virtue: 'The Prophet ﷺ said: "Whoever recites Āyat al-Kursī after every obligatory prayer, nothing stands between him and entering Paradise except death."',
+    titleEn: '4. Submission to Divine Decree (La Mani‘a lima A‘tayt)',
+    titleAr: '④ لا مانع لما أعطيت — مرة واحدة',
+    source: 'Sahih al-Bukhari (844) & Muslim (593)',
+    arabic: 'اللَّهُمَّ لَا مَانِعَ لِمَا أَعْطَيْتَ، وَلَا مُعْطِيَ لِمَا مَنَعْتَ، وَلَا يَنْفَعُ ذَا الْجَدِّ مِنْكَ الْجَدُّ.',
+    transliteration: 'Allāhumma lā māni‘a limā a‘ṭayta, wa lā mu‘ṭiya limā mana‘ta, wa lā yanfa‘u dhal-jaddi minkal-jadd.',
+    translation: 'O Allah, none can withhold what You give, none can give what You withhold, and no fortune or status can avail the fortunate against You.',
+    virtue: 'Recited by the Prophet ﷺ regularly after finishing each prescribed prayer to ground the heart in divine decree.',
     targetCount: 1
   },
   {
     id: 'post-tasbih-standard',
-    stepNumber: 6,
-    titleEn: '6. Standard 33x Tasbīḥ (33 Tasbīḥ, 33 Ḥamd, 33 Takbīr Only)',
-    titleAr: 'التَّسْبِيحُ الرَّاتِبُ (٣٣ تَسْبِيح، ٣٣ تَحْمِيد، ٣٣ تَكْبِير فَقَط)',
+    stepNumber: 5,
+    titleEn: '5. Standard Post-Salah Tasbih, Tahmid, & Takbir (33+33+33 + Khatm)',
+    titleAr: '⑤ التسبيح والتحميد والتكبير وختم المائة (٣٣×٣ + ختم المائة)',
     source: 'Sahih Muslim (597)',
-    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣)',
-    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x)',
-    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times) — 99 glorifications only.',
-    virtue: 'Standard authentic formula: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr only. Sunnah is counting on the fingers of the right hand.',
-    targetCount: 99
+    arabic: 'سُبْحَانَ اللَّهِ (٣٣) • الْحَمْدُ لِلَّهِ (٣٣) • اللَّهُ أَكْبَرُ (٣٣)\n\nوتختم المائة بـ:\n«لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ»',
+    transliteration: 'SubḥānAllāh (33x), Alḥamdulillāh (33x), Allāhu Akbar (33x), and seal the 100th with: Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu, wa Huwa ‘alā kulli shay’in Qadīr.',
+    translation: 'Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the Greatest (33 times), and complete the hundredth with: None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He is over all things competent.',
+    virtue: 'Whoever glorifies Allah 33 times, praises Him 33 times, magnifies Him 33 times, and completes the hundred with La ilaha illAllahu wahdahu... his sins will be forgiven even if they were like the foam of the sea.',
+    targetCount: 99,
+    isExpressMinimum: true
   },
   {
     id: 'post-tasbih-mini',
-    stepNumber: 7,
-    titleEn: '7. Mini 10x Tasbīḥ (10 Tasbīḥ, 10 Ḥamd, 10 Takbīr Only)',
-    titleAr: 'التَّسْبِيحُ المُوجَزُ (١٠ تَسْبِيح، ١٠ تَحْمِيد، ١٠ تَكْبِير فَقَط)',
+    stepNumber: 5,
+    titleEn: '5-Mini. Short Post-Salah Tasbih (10x Tasbih, 10x Tahmid, 10x Takbir)',
+    titleAr: '⑤-موجز التسبيح والتحميد والتكبير (١٠×٣ فَقَط)',
     source: 'Sunan Abi Dawud (1502) & at-Tirmidhi (3410)',
-    arabic: 'سُبْحَانَ اللَّهِ (١٠) • الحَمْدُ لِلَّهِ (١٠) • اللَّهُ أَكْبَرُ (١٠)',
+    arabic: 'سُبْحَانَ اللَّهِ (١٠) • الْحَمْدُ لِلَّهِ (١٠) • اللَّهُ أَكْبَرُ (١٠)',
     transliteration: 'SubḥānAllāh (10x), Alḥamdulillāh (10x), Allāhu Akbar (10x)',
     translation: 'Glory be to Allah (10 times), Praise be to Allah (10 times), Allah is the Greatest (10 times) — 30 glorifications only.',
-    virtue: 'Prophetic formula: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr only (150 on the tongue, 1500 on the Scale of good deeds).',
+    virtue: 'Prophetic formula: 10 Tasbih, 10 Hamd, 10 Takbir after each prayer (150 on the tongue, 1500 on the Scale of good deeds).',
     targetCount: 30
   },
   {
-    id: 'post-fajr-maghrib-10x',
-    stepNumber: 8,
-    titleEn: '8. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
-    titleAr: 'ذِكْرُ التَّهْلِيلِ المَخْصُوصُ عَقِبَ الفَجْرِ وَالمَغْرِبِ (١٠ مَرَّاتٍ)',
-    source: 'Jami‘ at-Tirmidhi (3474) & Sahih at-Targhib (472)',
-    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ المُلْكُ وَلَهُ الحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
-    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu, yuḥyī wa yumītu, wa Huwa ‘alā kulli shay’in Qadīr (10 times).',
-    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all dominion and praise, He gives life and causes death, and He is over all things competent (10 times before shifting posture or speaking).',
-    virtue: 'Recited 10 times before folding legs or speaking after Fajr & Maghrib: Allah writes 10 good deeds, erases 10 bad deeds, elevates 10 ranks, and protects from Satan until evening/morning.',
-    targetCount: 10,
-    fajrMaghribOnly: true
+    id: 'post-ayat-kursi',
+    stepNumber: 6,
+    titleEn: '6. Āyat al-Kursī (The Throne Verse - 2:255)',
+    titleAr: '⑥ آية الكرسي دبر كل صلاة مكتوبة — مرة واحدة',
+    source: 'An-Nasa’i As-Sunan al-Kubra (9848) • Sahih al-Jami‘ (6464)',
+    arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ.',
+    transliteration: 'Allāhu lā ilāha illā Huwal-Ḥayyul-Qayyūm, lā ta’khudhuhū sinatuw-wa lā nawm...',
+    translation: 'Allah! There is no deity except Him, the Ever-Living, the Sustainer of all existence. Neither drowsiness overtakes Him nor sleep...',
+    virtue: 'The Prophet ﷺ said: "Whoever recites Ayat al-Kursi after every obligatory prayer, nothing stands between him and entering Paradise except death."',
+    targetCount: 1,
+    isExpressMinimum: true
   },
   {
     id: 'post-muawwidhat',
-    stepNumber: 9,
-    titleEn: '9. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
-    titleAr: 'المُعَوِّذَاتُ الثَّلَاثُ (الإِخْلَاص وَالفَلَق وَالنَّاس)',
+    stepNumber: 7,
+    titleEn: '7. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
+    titleAr: '⑦ الإخلاص والفلق والناس (مرة بعد كل صلاة، وثلاثاً بعد الفجر والمغرب)',
     source: 'Sunan Abi Dawud (1523) & Jami‘ at-Tirmidhi (2903)',
-    arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ قُلْ أَعُوذُ بِرَبِّ النَّاسِ',
+    arabic: '﴿قُلْ هُوَ اللَّهُ أَحَدٌ﴾ • ﴿قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ﴾ • ﴿قُلْ أَعُوذُ بِرَبِّ النَّاسِ﴾\n\n(تقرأ مرة واحدة بعد الظهر والعصر والعشاء، و3 مرات بعد الفجر والمغرب).',
     transliteration: 'Recite Surah Al-Ikhlas, Surah Al-Falaq, and Surah An-Nas (1x after Dhuhr, Asr, Isha; 3x each after Fajr and Maghrib).',
     translation: 'Say: He is Allah, [who is] One... Say: I seek refuge in the Lord of daybreak... Say: I seek refuge in the Lord of mankind...',
     virtue: 'The Prophet ﷺ ordered Uqbah ibn ‘Amir: "Recite the Mu‘awwidhat after every single prayer."',
@@ -144,13 +136,38 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
     repeatForFajrMaghrib: 3
   },
   {
+    id: 'post-fajr-maghrib-10x',
+    stepNumber: 8,
+    titleEn: '8. Special 10x Dhikr (Recited Specifically After Fajr & Maghrib)',
+    titleAr: '⑧ تهليل الفجر والمغرب المخصوص — 10 مرات قبل أن يثني رجليه',
+    source: 'Jami‘ at-Tirmidhi (3474) & Sahih at-Targhib (472)',
+    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.',
+    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu, yuḥyī wa yumītu, wa Huwa ‘alā kulli shay’in Qadīr (10 times).',
+    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all dominion and praise, He gives life and causes death, and He is over all things competent (10 times before shifting posture or speaking).',
+    virtue: 'Recited 10 times before folding legs or speaking after Fajr & Maghrib: Allah writes 10 good deeds, erases 10 bad deeds, elevates 10 ranks, and protects from Satan until evening/morning.',
+    targetCount: 10,
+    fajrMaghribOnly: true
+  },
+  {
+    id: 'post-zubayr-tahlil',
+    stepNumber: 9,
+    titleEn: '9. Declaration of Pure Devotion (Ibn az-Zubayr Tahlīl)',
+    titleAr: '⑨ تهليل الإخلاص والثناء الحسن (ابن الزبير)',
+    source: 'Sahih Muslim (594)',
+    arabic: 'لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ، لَا إِلَهَ إِلَّا اللَّهُ، وَلَا نَعْبُدُ إِلَّا إِيَّاهُ، لَهُ النِّعْمَةُ وَلَهُ الْفَضْلُ وَلَهُ الثَّنَاءُ الْحَسَنُ، لَا إِلَهَ إِلَّا اللَّهُ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ.',
+    transliteration: 'Lā ilāha illAllāhu waḥdahū lā sharīka lah, lahul-mulku wa lahul-ḥamdu wa Huwa ‘alā kulli shay’in Qadīr. Lā ḥawla wa lā quwwata illā billāh. Lā ilāha illAllāh, wa lā na‘budu illā iyyāh, lahun-ni‘matu wa lahul-faḍlu wa lahuth-thanā’ul-ḥasan. Lā ilāha illAllāhu mukhliṣīna lahud-dīna wa law karihal-kāfirūn.',
+    translation: 'None has the right to be worshipped except Allah alone, without partner. To Him belongs all sovereignty and praise, and He is over all things competent. There is no might nor power except with Allah. None has the right to be worshipped except Allah, and we worship none but Him. To Him belongs all grace, virtue, and beautiful praise. None has the right to be worshipped except Allah, keeping religion sincerely for Him alone, even if the disbelievers detest it.',
+    virtue: '‘Abdullah ibn az-Zubayr reported: "The Messenger of Allah ﷺ used to recite these words aloud following the Taslīm of each prayer." (Sahih Muslim 594)',
+    targetCount: 1
+  },
+  {
     id: 'post-muadh-dua',
     stepNumber: 10,
     titleEn: '10. Beloved Supplication of Mu‘ādh ibn Jabal',
-    titleAr: 'وَصِيَّةُ النَّبِيِّ ﷺ لِمُعَاذٍ عَقِبَ كُلِّ صَلَاةٍ',
+    titleAr: '⑩ وصية النبي ﷺ لمعاذ دبر كل صلاة',
     source: 'Sunan Abi Dawud (1522) & An-Nasa’i (1303)',
-    arabic: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ، وَشُكْرِكَ، وَحُسْنِ عِبَادَتِكَ.',
-    transliteration: 'Allāhumma a‘innī ‘alā ḏhikrika, wa shukrika, wa ḥusni ‘ibādatik.',
+    arabic: 'اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ، وَشُكْرِكَ، وَحُسْنِ عِبَادَتِكَ.',
+    transliteration: 'Allāhumma a‘innī ‘alā dhikrika, wa shukrika, wa ḥusni ‘ibādatik.',
     translation: 'O Allah, assist me in remembering You, expressing gratitude to You, and worshipping You with excellence (Iḥsān).',
     virtue: 'The Prophet ﷺ took Mu‘adh by the hand and said: "O Mu‘adh, by Allah I love you! I advise you never to omit this supplication after every prayer."',
     targetCount: 1
@@ -165,6 +182,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
 }) => {
   const { getSpiritualLog, updateDhikrLog } = usePOS();
   const [activePrayer, setActivePrayer] = useState<PrayerId>(initialPrayer);
+  const [showExpressOnly, setShowExpressOnly] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Interactive mini bead counters for the active session
@@ -398,6 +416,20 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
 
           {/* Current Prayer Status & 1-Click Seal Buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Express Minimum Mode Toggle */}
+            <button
+              onClick={() => setShowExpressOnly(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                showExpressOnly
+                  ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-950/50'
+                  : 'bg-amber-950/30 hover:bg-amber-900/40 border-amber-500/30 text-amber-300'
+              }`}
+              title="النظام المختصر للأيام الصعبة: الاستغفار (3×)، اللهم أنت السلام، التسبيح والتحميد والتكبير وختم المائة، آية الكرسي"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              <span>{showExpressOnly ? '⚡ Express Active ✓' : '⚡ Express Mode'}</span>
+            </button>
+
             {/* 3x Istighfar Button (Separate Sunnah) */}
             <button
               onClick={handleToggleIstighfar}
@@ -586,7 +618,26 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
 
           {/* ADHKAR CARDS LIST */}
           <div className="space-y-4">
+            {showExpressOnly && (
+              <div className="p-4 bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-amber-950/40 border border-amber-500/40 rounded-2xl space-y-1.5 shadow-lg">
+                <div className="flex items-center gap-2 text-amber-300 font-bold font-mono text-xs">
+                  <Zap className="h-4 w-4 text-amber-400" />
+                  <span>النظام العملي المختصر للأيام الصعبة (بعد كل صلاة مفروضة)</span>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  إن كنت مجهدًا أو مستعجلًا، لا تجعل طول القائمة سببًا لترك كل الذكر: 
+                  <strong> ① الاستغفار (3×) </strong> • 
+                  <strong> ② «اللهم أنت السلام...» </strong> • 
+                  <strong> ③ التسبيح والتحميد والتكبير وختم المائة </strong> • 
+                  <strong> ④ آية الكرسي</strong>.
+                </p>
+              </div>
+            )}
+
             {POST_SALAH_ADHKAR_ITEMS.map((item) => {
+              if (showExpressOnly && !item.isExpressMinimum) {
+                return null;
+              }
               if (item.fajrMaghribOnly && !isFajrOrMaghrib) {
                 return null;
               }
@@ -602,13 +653,18 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2.5">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-mono font-bold text-emerald-400">
                           {item.titleEn}
                         </span>
                         <span className="text-xs font-display text-zinc-400">
                           ({item.titleAr})
                         </span>
+                        {item.isExpressMinimum && (
+                          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1">
+                            <Zap className="h-2.5 w-2.5 text-amber-400" /> MINIMUM
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] font-mono text-zinc-400">
                         {item.source} • Target: {targetDisplay}

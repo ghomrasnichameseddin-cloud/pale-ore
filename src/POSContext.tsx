@@ -797,7 +797,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
             messages: parsed.messages || INITIAL_STATE.messages || [],
             visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex,
-            customAdhkar: parsed.customAdhkar ? parsed.customAdhkar.filter((a: any) => a.category !== 'sleep_dhohr' && a.category !== 'sleep_night') : undefined,
+            customAdhkar: (() => {
+              if (!parsed.customAdhkar || !Array.isArray(parsed.customAdhkar) || parsed.customAdhkar.length === 0) {
+                return DEFAULT_ADHKAR_LIST;
+              }
+              const validExisting = parsed.customAdhkar;
+              const customUserItems = validExisting.filter((a: any) => a.isCustom);
+              // Always ensure all default items from DEFAULT_ADHKAR_LIST exist with latest texts and properties
+              const mergedDefaults = DEFAULT_ADHKAR_LIST.map(defItem => {
+                const existing = validExisting.find((a: any) => a.id === defItem.id);
+                return existing ? { ...defItem, ...existing, arabic: defItem.arabic || existing.arabic, arabicText: defItem.arabicText || existing.arabicText || existing.arabic, titleAr: defItem.titleAr || existing.titleAr } : defItem;
+              });
+              return [...mergedDefaults, ...customUserItems];
+            })(),
             doctrines: parsed.doctrines && parsed.doctrines.length > 0 ? parsed.doctrines : (INITIAL_STATE.doctrines || []),
             strategicDecisions: parsed.strategicDecisions && parsed.strategicDecisions.length > 0 ? parsed.strategicDecisions : (INITIAL_STATE.strategicDecisions || []),
             strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
