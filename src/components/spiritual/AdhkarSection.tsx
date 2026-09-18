@@ -35,6 +35,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     toggleAdhkar, 
     setAdhkarSessionStatus,
     cycleAdhkarSessionStatus,
+    setPostSalahSessionStatus,
+    cyclePostSalahSessionStatus,
     getAdhkarFortressStats,
     incrementSalawat, 
     setSalawatCount, 
@@ -78,12 +80,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   const salawatTargetReached = salawatCount >= 70;
 
   const postMap = spiritualLog.dhikr?.postSalahAdhkar || {};
-  const completedPostPrayersCount = (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter(p => {
-    const mode = postMap[p];
-    return mode === 'standard33' || mode === 'mini10';
-  }).length;
-
   const fortressStats = getAdhkarFortressStats(systemDate);
+  const completedPostPrayersCount = fortressStats.postSalahCompletedCount;
 
   // Filtered Adhkar list
   const filteredAdhkar = useMemo(() => {
@@ -873,30 +871,65 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </div>
         </div>
 
-        {/* Post-Salah Quick Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/5 text-xs font-mono">
-          <div className="flex items-center gap-2">
-            <span className="text-zinc-400">Post-Salah Adhkār (5 Obligatory Farā&apos;iḍ):</span>
-            <span className="text-emerald-400 font-bold">{completedPostPrayersCount}/5 Prayers Sealed</span>
+        {/* Post-Salah Fortress Session Bar */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-3 border-t border-white/5 text-xs font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-zinc-400 font-bold">Post-Salah Fortress (5 Prayers):</span>
+            <span className="text-emerald-400 font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40">
+              {completedPostPrayersCount}/5 Prayers Sealed
+            </span>
+            <span className="text-[11px] text-zinc-500 hidden sm:inline">
+              • Tap prayer to view & check parts, or cycle status
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full md:w-auto">
             {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(p => {
-              const mode = postMap[p];
+              const status = fortressStats.postSalahStatuses?.[p] || 'not_started';
+              const pCompleted = spiritualLog.dhikr?.postSalahItemsCompleted?.[p] || {};
+              const completedCount = Object.values(pCompleted).filter(Boolean).length;
+              const prayerLabels: Record<string, string> = {
+                fajr: 'Fajr',
+                dhuhr: 'Dhuhr',
+                asr: '‘Asr',
+                maghrib: 'Maghrib',
+                isha: '‘Ishā’'
+              };
+
               return (
-                <button
-                  key={p}
-                  onClick={() => {
-                    setSelectedPostPrayer(p);
-                    setShowPostSalahModal(true);
-                  }}
-                  className={`px-2 py-1 rounded text-[10px] font-bold border uppercase transition cursor-pointer ${
-                    mode === 'standard33' ? 'bg-emerald-950 border-emerald-500 text-emerald-300' :
-                    mode === 'mini10' ? 'bg-teal-950 border-teal-500 text-teal-300' :
-                    'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  {p.slice(0, 3)}
-                </button>
+                <div key={p} className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setSelectedPostPrayer(p);
+                      setShowPostSalahModal(true);
+                    }}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition flex items-center gap-1.5 cursor-pointer ${
+                      status === 'complete'
+                        ? 'bg-emerald-950 border-emerald-500 text-emerald-300 shadow-sm'
+                        : status === 'in_progress'
+                        ? 'bg-amber-950/70 border-amber-500/60 text-amber-300'
+                        : 'bg-zinc-900/80 border-white/10 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+                    title={`Open ${prayerLabels[p]} Post-Salah Checklist (${completedCount} parts checked)`}
+                  >
+                    <span>{prayerLabels[p]}</span>
+                    {status === 'complete' ? (
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    ) : status === 'in_progress' ? (
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    ) : (
+                      <span className="text-[9px] opacity-60">({completedCount})</span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => cyclePostSalahSessionStatus(p, systemDate)}
+                    className="p-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition cursor-pointer"
+                    title={`Cycle status for ${prayerLabels[p]} (Not Started -> In Progress -> Complete)`}
+                  >
+                    <RotateCcw className="h-2.5 w-2.5" />
+                  </button>
+                </div>
               );
             })}
           </div>

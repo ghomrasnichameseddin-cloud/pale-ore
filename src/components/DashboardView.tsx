@@ -1781,6 +1781,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <MuhasabahModal
         isOpen={isMuhasabahModalOpen}
         onClose={() => setIsMuhasabahModalOpen(false)}
+        onNavigateToQuests={() => onNavigate?.('quests' as any)}
       />
     </div>
   );

@@ -9,7 +9,7 @@ import {
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
-  AdhkarSessionStatus, AdhkarFortressStats,
+  AdhkarSessionStatus, AdhkarFortressStats, PrayerId,
   QuranRevisionStatus, QuranPassage, QuranReflection, QuranTrackerState,
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
@@ -442,6 +442,11 @@ interface POSContextType {
   getAdhkarRecitationCount: (adhkarId: string, dateStr?: string) => number;
   setAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', status: AdhkarSessionStatus, dateStr?: string) => void;
   cycleAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
+  setPostSalahSessionStatus: (prayer: PrayerId, status: AdhkarSessionStatus, dateStr?: string) => void;
+  cyclePostSalahSessionStatus: (prayer: PrayerId, dateStr?: string) => void;
+  setPostSalahItemStatus: (prayer: PrayerId, itemId: string, completed: boolean, count?: number, dateStr?: string) => void;
+  incrementPostSalahItemCount: (prayer: PrayerId, itemId: string, delta: number, targetCount: number, dateStr?: string) => void;
+  resetPostSalahPrayerItems: (prayer: PrayerId, dateStr?: string) => void;
   getAdhkarFortressStats: (dateStr?: string) => AdhkarFortressStats;
 
   // Qur'an Sanctum & Revision Queue
@@ -6661,6 +6666,298 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return calculateAdhkarFortressStats(state.spiritualLogs, targetDate);
   };
 
+  const setPostSalahSessionStatus = (
+    prayer: PrayerId,
+    newStatus: AdhkarSessionStatus,
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const existingLog = getSpiritualLog(targetDate);
+    const existingMode = existingLog.dhikr?.postSalahAdhkar?.[prayer] || 'none';
+    const wasComplete = existingLog.adhkarSessions?.postSalah?.[prayer] === 'complete' || existingMode === 'standard33' || existingMode === 'mini10';
+    const isNowComplete = newStatus === 'complete';
+
+    const prayerLabels: Record<PrayerId, string> = {
+      fajr: 'Fajr (الفجر)',
+      dhuhr: 'Dhuhr (الظهر)',
+      asr: '‘Asr (العصر)',
+      maghrib: 'Maghrib (المغرب)',
+      isha: '‘Ishā’ (العشاء)'
+    };
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currentDhikr = log.dhikr || { tahlilCount: 0, tasbeehAfterSalah: false };
+      const currentPostSalahSessions = log.adhkarSessions?.postSalah || currentDhikr.postSalahSessions || {};
+      const currentPostSalahAdhkar = currentDhikr.postSalahAdhkar || {};
+
+      let nextMode = currentPostSalahAdhkar[prayer] || 'none';
+      if (isNowComplete && nextMode === 'none') {
+        nextMode = 'standard33';
+      } else if (newStatus === 'not_started') {
+        nextMode = 'none';
+      }
+
+      const updatedSessions = {
+        ...currentPostSalahSessions,
+        [prayer]: newStatus
+      };
+
+      const updatedDhikr: DhikrTasbeehLog = {
+        ...currentDhikr,
+        postSalahSessions: updatedSessions,
+        postSalahAdhkar: {
+          ...currentPostSalahAdhkar,
+          [prayer]: nextMode
+        }
+      };
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        adhkarSessions: {
+          ...(log.adhkarSessions || {
+            morning: log.adhkarSabah ? 'complete' : 'not_started',
+            evening: log.adhkarMasa ? 'complete' : 'not_started',
+            sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+          }),
+          postSalah: updatedSessions
+        },
+        dhikr: updatedDhikr
+      };
+
+      let updatedHistory = [...prev.xpHistory];
+      let coinsDelta = 0;
+      const questIdentifier = `spiritual-adhkar-postsalah-${targetDate}-${prayer}`;
+
+      if (isNowComplete && !wasComplete) {
+        const xpReward = 20;
+        const entry: XPHistoryEntry = {
+          id: `h-postsalah-${Date.now()}-${prayer}`,
+          questId: questIdentifier,
+          questName: `📿 POST-SALAH: ${prayerLabels[prayer]} Adhkār`,
+          xp: xpReward,
+          timestamp: getSystemTimestamp(targetDate),
+          date: targetDate,
+          type: 'adhkar',
+          source: 'quest',
+          sourceId: questIdentifier,
+          activityId: `adhkar-postsalah-${prayer}`,
+          skillIds: []
+        };
+        updatedHistory = [entry, ...updatedHistory];
+        coinsDelta = 3;
+
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `📿 POST-SALAH SEALED: ${prayerLabels[prayer]}`,
+          content: `Post-Salah Adhkār for ${prayerLabels[prayer]} sealed successfully (+20 XP, +3 Coins).`,
+          priority: 'low'
+        });
+      } else if (!isNowComplete && wasComplete) {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+        coinsDelta = -3;
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
+      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta)
+        }
+      };
+    });
+  };
+
+  const cyclePostSalahSessionStatus = (prayer: PrayerId, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const log = getSpiritualLog(targetDate);
+    const currentStatus: AdhkarSessionStatus = log.adhkarSessions?.postSalah?.[prayer] ||
+      log.dhikr?.postSalahSessions?.[prayer] ||
+      ((log.dhikr?.postSalahAdhkar?.[prayer] === 'standard33' || log.dhikr?.postSalahAdhkar?.[prayer] === 'mini10') ? 'complete' :
+       (log.dhikr?.postSalahIstighfar?.[prayer] || (log.dhikr?.postSalahItemsCompleted?.[prayer] && Object.values(log.dhikr.postSalahItemsCompleted[prayer] || {}).some(Boolean))) ? 'in_progress' : 'not_started');
+
+    let nextStatus: AdhkarSessionStatus = 'not_started';
+    if (currentStatus === 'not_started') nextStatus = 'in_progress';
+    else if (currentStatus === 'in_progress') nextStatus = 'complete';
+    else nextStatus = 'not_started';
+
+    setPostSalahSessionStatus(prayer, nextStatus, targetDate);
+  };
+
+  const setPostSalahItemStatus = (
+    prayer: PrayerId,
+    itemId: string,
+    completed: boolean,
+    count?: number,
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currentDhikr = log.dhikr || { tahlilCount: 0, tasbeehAfterSalah: false };
+      const prayerItems = currentDhikr.postSalahItemsCompleted?.[prayer] || {};
+      const prayerCounts = currentDhikr.postSalahItemCounts?.[prayer] || {};
+
+      const finalCount = count !== undefined ? Math.max(0, count) : (completed ? Math.max(1, prayerCounts[itemId] || 1) : 0);
+      const updatedItems = {
+        ...prayerItems,
+        [itemId]: completed
+      };
+      const updatedCounts = {
+        ...prayerCounts,
+        [itemId]: finalCount
+      };
+
+      const updatedItemsCompleted = {
+        ...(currentDhikr.postSalahItemsCompleted || {}),
+        [prayer]: updatedItems
+      };
+      const updatedItemCounts = {
+        ...(currentDhikr.postSalahItemCounts || {}),
+        [prayer]: updatedCounts
+      };
+
+      // Also sync specific items
+      const updatedIstighfar = { ...(currentDhikr.postSalahIstighfar || {}) };
+      if (itemId === 'post-istighfar') {
+        updatedIstighfar[prayer] = completed;
+      }
+
+      const updatedPostMap = { ...(currentDhikr.postSalahAdhkar || {}) };
+      if (itemId === 'post-tasbih-standard') {
+        updatedPostMap[prayer] = completed ? 'standard33' : 'none';
+      } else if (itemId === 'post-tasbih-mini') {
+        updatedPostMap[prayer] = completed ? 'mini10' : 'none';
+      }
+
+      // Check session status: if at least 1 item is completed and status is not_started, set to in_progress
+      const currentSessions = log.adhkarSessions?.postSalah || currentDhikr.postSalahSessions || {};
+      let prayerSession = currentSessions[prayer] || 'not_started';
+      if (completed && prayerSession === 'not_started') {
+        prayerSession = 'in_progress';
+      }
+
+      const updatedSessions = {
+        ...currentSessions,
+        [prayer]: prayerSession
+      };
+
+      const updatedDhikr: DhikrTasbeehLog = {
+        ...currentDhikr,
+        postSalahItemsCompleted: updatedItemsCompleted,
+        postSalahItemCounts: updatedItemCounts,
+        postSalahIstighfar: updatedIstighfar,
+        postSalahAdhkar: updatedPostMap,
+        postSalahSessions: updatedSessions
+      };
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        adhkarSessions: {
+          ...(log.adhkarSessions || {
+            morning: log.adhkarSabah ? 'complete' : 'not_started',
+            evening: log.adhkarMasa ? 'complete' : 'not_started',
+            sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+          }),
+          postSalah: updatedSessions
+        },
+        dhikr: updatedDhikr
+      };
+
+      return {
+        ...prev,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        }
+      };
+    });
+  };
+
+  const incrementPostSalahItemCount = (
+    prayer: PrayerId,
+    itemId: string,
+    delta: number,
+    targetCount: number,
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const log = getSpiritualLog(targetDate);
+    const prayerCounts = log.dhikr?.postSalahItemCounts?.[prayer] || {};
+    const current = prayerCounts[itemId] || 0;
+    const nextCount = Math.max(0, current + delta);
+    const isCompleted = nextCount >= targetCount;
+
+    setPostSalahItemStatus(prayer, itemId, isCompleted, nextCount, targetDate);
+  };
+
+  const resetPostSalahPrayerItems = (prayer: PrayerId, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currentDhikr = log.dhikr || { tahlilCount: 0, tasbeehAfterSalah: false };
+      
+      const updatedItemsCompleted = { ...(currentDhikr.postSalahItemsCompleted || {}) };
+      delete updatedItemsCompleted[prayer];
+
+      const updatedItemCounts = { ...(currentDhikr.postSalahItemCounts || {}) };
+      delete updatedItemCounts[prayer];
+
+      const updatedIstighfar = { ...(currentDhikr.postSalahIstighfar || {}) };
+      delete updatedIstighfar[prayer];
+
+      const updatedPostMap = { ...(currentDhikr.postSalahAdhkar || {}) };
+      delete updatedPostMap[prayer];
+
+      const currentSessions = { ...(log.adhkarSessions?.postSalah || currentDhikr.postSalahSessions || {}) };
+      currentSessions[prayer] = 'not_started';
+
+      const updatedDhikr: DhikrTasbeehLog = {
+        ...currentDhikr,
+        postSalahItemsCompleted: updatedItemsCompleted,
+        postSalahItemCounts: updatedItemCounts,
+        postSalahIstighfar: updatedIstighfar,
+        postSalahAdhkar: updatedPostMap,
+        postSalahSessions: currentSessions
+      };
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        adhkarSessions: {
+          ...(log.adhkarSessions || {
+            morning: log.adhkarSabah ? 'complete' : 'not_started',
+            evening: log.adhkarMasa ? 'complete' : 'not_started',
+            sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+          }),
+          postSalah: currentSessions
+        },
+        dhikr: updatedDhikr
+      };
+
+      return {
+        ...prev,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        }
+      };
+    });
+  };
+
   const quranTracker: QuranTrackerState = state.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER;
 
   const updateQuranTracker = (updates: Partial<QuranTrackerState>) => {
@@ -8235,6 +8532,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getAdhkarRecitationCount,
       setAdhkarSessionStatus,
       cycleAdhkarSessionStatus,
+      setPostSalahSessionStatus,
+      cyclePostSalahSessionStatus,
+      setPostSalahItemStatus,
+      incrementPostSalahItemCount,
+      resetPostSalahPrayerItems,
       getAdhkarFortressStats,
       quranTracker,
       updateQuranTracker,

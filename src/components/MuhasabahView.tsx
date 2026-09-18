@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePOS } from '../POSContext';
 import { MuhasabahCategory, MuhasabahSeverity, Weakness, MuhasabahEntry, WeeklyMuhasabahSummary } from '../types';
-import { MuhasabahModal } from './MuhasabahModal';
-import { WastedTimeRecoveryModal } from './WastedTimeRecoveryModal';
+import { MuhasabahModal, MuhasabahModalTab } from './MuhasabahModal';
 import { DailyBalanceScale } from './DailyBalanceScale';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { AncientCarvedRune } from './AncientCarvedRune';
@@ -54,7 +53,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
 
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isWastedTimeModalOpen, setIsWastedTimeModalOpen] = useState(false);
+  const [modalInitialTab, setModalInitialTab] = useState<MuhasabahModalTab>('slip');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -370,9 +369,14 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     });
   }, [entries, weaknesses]);
 
-  const handleOpenAuditModal = (weaknessId?: string, cat?: MuhasabahCategory) => {
+  const handleOpenAuditModal = (
+    weaknessId?: string, 
+    cat?: MuhasabahCategory, 
+    initialTab: MuhasabahModalTab = 'slip'
+  ) => {
     setPrefillWeaknessId(weaknessId);
     setPrefillCategory(cat);
+    setModalInitialTab(initialTab);
     setIsModalOpen(true);
   };
 
@@ -600,45 +604,13 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         todayLostHp={stats.todayLostHp}
         todayLostCoins={todayLostCoins}
         todayRecurringSlipsCount={stats.todayRecurringSlipsCount}
-        onOpenAuditModal={() => handleOpenAuditModal()}
-        onOpenWastedTimeModal={() => setIsWastedTimeModalOpen(true)}
+        onOpenAuditModal={(tab) => handleOpenAuditModal(undefined, undefined, tab || 'slip')}
         onViewRemedies={() => {
           const el = document.getElementById('active-kaffarah-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
         onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
-
-      {/* WASTED TIME & DISTRACTION RECOVERY BANNER */}
-      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#110e1c] via-[var(--bg-card)] to-[#090b12] border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-        <div className="flex items-start sm:items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 shrink-0">
-            <Clock className="h-5 w-5 text-indigo-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold text-indigo-300 uppercase tracking-wide">
-                Wasted Time &amp; Distraction Recovery Integrator
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-500/30">
-                محوّل هدر الوقت إلى كفّارة
-              </span>
-            </div>
-            <p className="text-[11.5px] text-zinc-300 font-sans mt-0.5">
-              Lost track of time on social feeds, gaming, or streaming? Input minutes wasted to immediately deduct fair penalties and auto-generate an active Kaffārah restitution quest.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setIsWastedTimeModalOpen(true)}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-mono font-bold transition flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-indigo-950/60 cursor-pointer active:scale-95"
-          id="muhasabah-convert-wasted-time-btn"
-        >
-          <Zap className="h-3.5 w-3.5 text-amber-300" />
-          <span>Convert Wasted Time</span>
-        </button>
-      </div>
 
       {/* 2. LIFE MUHASABAH WITH WEEKLY REVIEW CADENCE */}
       {(() => {
@@ -2039,18 +2011,13 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         )}
       </AnimatePresence>
 
-      {/* 3-TAP ZEN TRIAGE MODAL */}
+      {/* UNIFIED MUHASABAH AUDIT & RECOVERY COMMAND CENTER */}
       <MuhasabahModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        initialTab={modalInitialTab}
         prefillWeaknessId={prefillWeaknessId}
         prefillCategory={prefillCategory}
-      />
-
-      {/* WASTED TIME & DISTRACTION RECOVERY MODAL */}
-      <WastedTimeRecoveryModal
-        isOpen={isWastedTimeModalOpen}
-        onClose={() => setIsWastedTimeModalOpen(false)}
         onNavigateToQuests={() => onNavigate?.('quests')}
       />
 

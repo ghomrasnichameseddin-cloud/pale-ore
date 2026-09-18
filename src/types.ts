@@ -905,6 +905,8 @@ export interface AdhkarFortressStats {
   morningStatus: AdhkarSessionStatus;
   eveningStatus: AdhkarSessionStatus;
   sleepStatus: AdhkarSessionStatus;
+  postSalahStatuses?: PostSalahSessionsMap;
+  postSalahCompletedCount?: number;
   completedCount: number;
   currentStreak: number;
   sevenDayAverage: number;
@@ -998,6 +1000,8 @@ export interface AdhkarItem {
   expressOrder?: number;
 }
 
+export type PrayerId = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+
 export interface PostSalahAdhkarMap {
   fajr?: PostSalahDhikrMode;
   dhuhr?: PostSalahDhikrMode;
@@ -1014,10 +1018,37 @@ export interface PostSalahIstighfarMap {
   isha?: boolean;
 }
 
+export interface PostSalahSessionsMap {
+  fajr?: AdhkarSessionStatus;
+  dhuhr?: AdhkarSessionStatus;
+  asr?: AdhkarSessionStatus;
+  maghrib?: AdhkarSessionStatus;
+  isha?: AdhkarSessionStatus;
+}
+
+export interface PostSalahItemsCompletedMap {
+  fajr?: Record<string, boolean>;
+  dhuhr?: Record<string, boolean>;
+  asr?: Record<string, boolean>;
+  maghrib?: Record<string, boolean>;
+  isha?: Record<string, boolean>;
+}
+
+export interface PostSalahItemCountsMap {
+  fajr?: Record<string, number>;
+  dhuhr?: Record<string, number>;
+  asr?: Record<string, number>;
+  maghrib?: Record<string, number>;
+  isha?: Record<string, number>;
+}
+
 export interface DhikrTasbeehLog {
   tasbeehAfterSalah: boolean; // 33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar + 1 La ilaha illallah (+60 XP)
   postSalahAdhkar?: PostSalahAdhkarMap; // 5 prayers post-adhkar tracking (Standard 33x vs Mini 10x - Tasbih, Hamd, Takbir ONLY)
   postSalahIstighfar?: PostSalahIstighfarMap; // 3x Istighfār after each salah tracked separately in Post-Obligatory Prayer Remembrance
+  postSalahSessions?: PostSalahSessionsMap; // 5 prayers session status ('not_started' | 'in_progress' | 'complete')
+  postSalahItemsCompleted?: PostSalahItemsCompletedMap; // Per-prayer individual post-salah adhkar parts completed
+  postSalahItemCounts?: PostSalahItemCountsMap; // Per-prayer individual post-salah adhkar parts bead counts
   tasbeehCount?: number; // SubhanAllah count (سُبْحَانَ الله)
   hamdCount?: number; // Alhamdulillah count (الحَمْدُ لله)
   tahlilCount: number; // La ilaha illallah count (لَا إِلَهَ إِلَّا الله) (+75 XP when >= 100)
@@ -1100,11 +1131,12 @@ export interface SpiritualDailyLog {
   adhkarMasa: boolean; // Evening Adhkar (+75 XP)
   adhkarSleepDhohr?: boolean; // Midday Nap / Qaylulah Sleep Adhkar (+50 XP)
   adhkarSleepNight?: boolean; // Night Sleep Adhkar (+75 XP)
-  // 3 Core Daily Sessions (Morning, Evening, Sleep)
+  // Daily Adhkār Sessions (Morning, Evening, Sleep, and 5 Post-Salah)
   adhkarSessions?: {
     morning: AdhkarSessionStatus;
     evening: AdhkarSessionStatus;
     sleep: AdhkarSessionStatus;
+    postSalah?: PostSalahSessionsMap;
   };
   salawatCount: number; // Target 70+ Salawat upon the Prophet (ﷺ) (+100 XP when >= 70)
   salawatCompleted: boolean;

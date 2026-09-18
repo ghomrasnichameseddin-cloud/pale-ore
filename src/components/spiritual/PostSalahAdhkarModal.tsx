@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Check, CheckCircle2, X, Sparkles, Clock, BookOpen, 
-  RotateCcw, Shield, Heart, Copy, Plus, Zap
+  RotateCcw, Shield, Heart, Copy, Plus, Minus, Zap
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
-import { PostSalahDhikrMode } from '../../types';
+import { PostSalahDhikrMode, AdhkarSessionStatus } from '../../types';
 import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
 
 interface PostSalahAdhkarModalProps {
@@ -33,12 +33,12 @@ interface DhikrItem {
   isExpressMinimum?: boolean;
 }
 
-const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
+export const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
   {
     id: 'post-istighfar',
     stepNumber: 1,
     titleEn: '1. 3x Istighfār After Salah',
-    titleAr: '① الاستغفار — 3 مرات',
+    titleAr: '① الاستغفار — 3 مرات عقب التسليم',
     source: 'Sahih Muslim (591)',
     arabic: 'أَسْتَغْفِرُ اللَّهَ. أَسْتَغْفِرُ اللَّهَ. أَسْتَغْفِرُ اللَّهَ.',
     transliteration: 'Astaghfirullāh, Astaghfirullāh, Astaghfirullāh.',
@@ -126,7 +126,7 @@ const POST_SALAH_ADHKAR_ITEMS: DhikrItem[] = [
     id: 'post-muawwidhat',
     stepNumber: 7,
     titleEn: '7. Al-Mu‘awwidhat (Surahs Al-Ikhlāṣ, Al-Falaq, An-Nās)',
-    titleAr: '⑦ الإخلاص والفلق والناس (مرة بعد كل صلاة، وثلاثاً بعد الفجر والمغرب)',
+    titleAr: '⑦ الإخلاص والفلق والناس (مرة بعد الظهر والعصر والعشاء، وثلاثاً بعد الفجر والمغرب)',
     source: 'Sunan Abi Dawud (1523) & Jami‘ at-Tirmidhi (2903)',
     arabic: '﴿قُلْ هُوَ اللَّهُ أَحَدٌ﴾ • ﴿قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ﴾ • ﴿قُلْ أَعُوذُ بِرَبِّ النَّاسِ﴾\n\n(تقرأ مرة واحدة بعد الظهر والعصر والعشاء، و3 مرات بعد الفجر والمغرب).',
     transliteration: 'Recite Surah Al-Ikhlas, Surah Al-Falaq, and Surah An-Nas (1x after Dhuhr, Asr, Isha; 3x each after Fajr and Maghrib).',
@@ -180,7 +180,16 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
   initialPrayer = 'fajr',
   systemDate
 }) => {
-  const { getSpiritualLog, updateDhikrLog } = usePOS();
+  const { 
+    getSpiritualLog, 
+    updateDhikrLog, 
+    setPostSalahItemStatus,
+    incrementPostSalahItemCount,
+    setPostSalahSessionStatus,
+    cyclePostSalahSessionStatus,
+    resetPostSalahPrayerItems 
+  } = usePOS();
+
   const [activePrayer, setActivePrayer] = useState<PrayerId>(initialPrayer);
   const [showExpressOnly, setShowExpressOnly] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -200,16 +209,21 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
   const currentLog = getSpiritualLog(systemDate);
   const postMap = currentLog.dhikr?.postSalahAdhkar || {};
   const istighfarMap = currentLog.dhikr?.postSalahIstighfar || {};
+  const prayerCompletedMap = currentLog.dhikr?.postSalahItemsCompleted?.[activePrayer] || {};
+  const prayerCountsMap = currentLog.dhikr?.postSalahItemCounts?.[activePrayer] || {};
   const currentPrayerMode: PostSalahDhikrMode = postMap[activePrayer] || 'none';
   const isIstighfarDone = !!istighfarMap[activePrayer];
 
+  const currentSessionStatus: AdhkarSessionStatus = 
+    currentLog.adhkarSessions?.postSalah?.[activePrayer] || 
+    currentLog.dhikr?.postSalahSessions?.[activePrayer] || 
+    ((currentPrayerMode === 'standard33' || currentPrayerMode === 'mini10') ? 'complete' :
+     (isIstighfarDone || Object.values(prayerCompletedMap).some(Boolean)) ? 'in_progress' : 'not_started');
+
   // Sync beads when active prayer, prayer mode, or istighfar status changes
   useEffect(() => {
-    // 3 Istighfars tracked separately
-    setIstighfarCount(isIstighfarDone ? 3 : 0);
+    setIstighfarCount(isIstighfarDone ? 3 : (prayerCountsMap['post-istighfar'] || 0));
 
-    // Standard 33x: 33 tasbih, 33 hamd, 33 takbir ONLY
-    // Mini 10x: 10 tasbih, 10 hamd, 10 takbir ONLY
     if (currentPrayerMode === 'standard33') {
       setSubhanallahCount(33);
       setAlhamdulillahCount(33);
@@ -237,6 +251,183 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
     isha: { nameEn: '‘Ishā’', nameAr: 'العِشَاء', time: 'Night', accent: 'text-purple-300' }
   };
 
+  const getItemTarget = (item: DhikrItem): number => {
+    if (item.repeatForFajrMaghrib && isFajrOrMaghrib) {
+      return item.repeatForFajrMaghrib;
+    }
+    return item.targetCount;
+  };
+
+  const getItemCount = (item: DhikrItem): number => {
+    const target = getItemTarget(item);
+    if (item.id === 'post-istighfar') {
+      return (isIstighfarDone || prayerCompletedMap['post-istighfar']) ? 3 : (prayerCountsMap[item.id] ?? istighfarCount);
+    }
+    if (item.id === 'post-tasbih-standard') {
+      if (currentPrayerMode === 'standard33') return 99;
+      return prayerCountsMap[item.id] ?? (subhanallahCount + alhamdulillahCount + allahuakbarCount);
+    }
+    if (item.id === 'post-tasbih-mini') {
+      if (currentPrayerMode === 'mini10') return 30;
+      return prayerCountsMap[item.id] ?? (Math.min(10, subhanallahCount) + Math.min(10, alhamdulillahCount) + Math.min(10, allahuakbarCount));
+    }
+    if (prayerCompletedMap[item.id]) {
+      return Math.max(target, prayerCountsMap[item.id] ?? target);
+    }
+    return prayerCountsMap[item.id] || 0;
+  };
+
+  const isItemDone = (item: DhikrItem): boolean => {
+    if (item.id === 'post-istighfar') {
+      return Boolean(isIstighfarDone || prayerCompletedMap['post-istighfar'] || istighfarCount >= 3);
+    }
+    if (item.id === 'post-tasbih-standard') {
+      return Boolean(currentPrayerMode === 'standard33' || prayerCompletedMap['post-tasbih-standard']);
+    }
+    if (item.id === 'post-tasbih-mini') {
+      return Boolean(currentPrayerMode === 'mini10' || prayerCompletedMap['post-tasbih-mini']);
+    }
+    const target = getItemTarget(item);
+    return Boolean(prayerCompletedMap[item.id] || (prayerCountsMap[item.id] || 0) >= target);
+  };
+
+  const handleToggleItem = (item: DhikrItem) => {
+    if (isItemDone(item)) {
+      handleResetItem(item);
+    } else {
+      handleFulfillItem(item);
+    }
+  };
+
+  const handleItemCountIncrement = (item: DhikrItem, delta: number) => {
+    const target = getItemTarget(item);
+    const current = getItemCount(item);
+
+    if (item.id === 'post-istighfar') {
+      const nextCount = Math.max(0, Math.min(3, current + delta));
+      setIstighfarCount(nextCount);
+      const isDone = nextCount >= 3;
+      setPostSalahItemStatus(activePrayer, item.id, isDone, nextCount, systemDate);
+      updateDhikrLog({
+        postSalahIstighfar: {
+          ...istighfarMap,
+          [activePrayer]: isDone
+        }
+      }, systemDate);
+      return;
+    }
+
+    if (item.id === 'post-tasbih-standard') {
+      if (delta > 0) {
+        if (subhanallahCount < 33) {
+          incrementBead('subhanallah');
+        } else if (alhamdulillahCount < 33) {
+          incrementBead('alhamdulillah');
+        } else if (allahuakbarCount < 33) {
+          incrementBead('allahuakbar');
+        }
+      } else {
+        if (allahuakbarCount > 0) {
+          setAllahuakbarCount(Math.max(0, allahuakbarCount - 1));
+        } else if (alhamdulillahCount > 0) {
+          setAlhamdulillahCount(Math.max(0, alhamdulillahCount - 1));
+        } else if (subhanallahCount > 0) {
+          setSubhanallahCount(Math.max(0, subhanallahCount - 1));
+        }
+        if (currentPrayerMode === 'standard33') {
+          handleSetMode('none');
+        }
+      }
+      return;
+    }
+
+    if (item.id === 'post-tasbih-mini') {
+      if (delta > 0) {
+        if (subhanallahCount < 10) {
+          setSubhanallahCount(subhanallahCount + 1);
+        } else if (alhamdulillahCount < 10) {
+          setAlhamdulillahCount(alhamdulillahCount + 1);
+        } else if (allahuakbarCount < 10) {
+          const nextTakbir = allahuakbarCount + 1;
+          setAllahuakbarCount(nextTakbir);
+          if (subhanallahCount >= 10 && alhamdulillahCount >= 10 && nextTakbir >= 10) {
+            handleSetMode('mini10');
+          }
+        }
+      } else {
+        if (allahuakbarCount > 0) {
+          setAllahuakbarCount(Math.max(0, allahuakbarCount - 1));
+        } else if (alhamdulillahCount > 0) {
+          setAlhamdulillahCount(Math.max(0, alhamdulillahCount - 1));
+        } else if (subhanallahCount > 0) {
+          setSubhanallahCount(Math.max(0, subhanallahCount - 1));
+        }
+        if (currentPrayerMode === 'mini10') {
+          handleSetMode('none');
+        }
+      }
+      return;
+    }
+
+    const nextCount = Math.max(0, current + delta);
+    const isCompleted = nextCount >= target;
+    setPostSalahItemStatus(activePrayer, item.id, isCompleted, nextCount, systemDate);
+  };
+
+  const handleFulfillItem = (item: DhikrItem) => {
+    const target = getItemTarget(item);
+
+    if (item.id === 'post-istighfar') {
+      setIstighfarCount(3);
+      setPostSalahItemStatus(activePrayer, item.id, true, 3, systemDate);
+      updateDhikrLog({
+        postSalahIstighfar: {
+          ...istighfarMap,
+          [activePrayer]: true
+        }
+      }, systemDate);
+      return;
+    }
+
+    if (item.id === 'post-tasbih-standard') {
+      handleSetMode('standard33');
+      return;
+    }
+
+    if (item.id === 'post-tasbih-mini') {
+      handleSetMode('mini10');
+      return;
+    }
+
+    setPostSalahItemStatus(activePrayer, item.id, true, target, systemDate);
+  };
+
+  const handleResetItem = (item: DhikrItem) => {
+    if (item.id === 'post-istighfar') {
+      setIstighfarCount(0);
+      setPostSalahItemStatus(activePrayer, item.id, false, 0, systemDate);
+      updateDhikrLog({
+        postSalahIstighfar: {
+          ...istighfarMap,
+          [activePrayer]: false
+        }
+      }, systemDate);
+      return;
+    }
+
+    if (item.id === 'post-tasbih-standard' || item.id === 'post-tasbih-mini') {
+      setSubhanallahCount(0);
+      setAlhamdulillahCount(0);
+      setAllahuakbarCount(0);
+      handleSetMode('none');
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-standard', false, 0, systemDate);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-mini', false, 0, systemDate);
+      return;
+    }
+
+    setPostSalahItemStatus(activePrayer, item.id, false, 0, systemDate);
+  };
+
   const handleToggleIstighfar = () => {
     const nextDone = !isIstighfarDone;
     setIstighfarCount(nextDone ? 3 : 0);
@@ -246,22 +437,28 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
         [activePrayer]: nextDone
       }
     }, systemDate);
+    setPostSalahItemStatus(activePrayer, 'post-istighfar', nextDone, nextDone ? 3 : 0, systemDate);
   };
 
   const handleSetMode = (mode: PostSalahDhikrMode) => {
-    // 33x and 10x only set tasbih, hamd, takbir - istighfar is separate
     if (mode === 'standard33') {
       setSubhanallahCount(33);
       setAlhamdulillahCount(33);
       setAllahuakbarCount(33);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-standard', true, 99, systemDate);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-mini', false, 0, systemDate);
     } else if (mode === 'mini10') {
       setSubhanallahCount(10);
       setAlhamdulillahCount(10);
       setAllahuakbarCount(10);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-mini', true, 30, systemDate);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-standard', false, 0, systemDate);
     } else {
       setSubhanallahCount(0);
       setAlhamdulillahCount(0);
       setAllahuakbarCount(0);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-standard', false, 0, systemDate);
+      setPostSalahItemStatus(activePrayer, 'post-tasbih-mini', false, 0, systemDate);
     }
 
     updateDhikrLog({
@@ -280,7 +477,9 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
     if (type === 'istighfar') {
       const nextIstighfar = Math.min(3, istighfarCount + 1);
       setIstighfarCount(nextIstighfar);
-      if (nextIstighfar === 3 && !isIstighfarDone) {
+      const isDone = nextIstighfar === 3;
+      setPostSalahItemStatus(activePrayer, 'post-istighfar', isDone, nextIstighfar, systemDate);
+      if (isDone && !isIstighfarDone) {
         updateDhikrLog({
           postSalahIstighfar: {
             ...istighfarMap,
@@ -305,19 +504,9 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
 
     // Auto-advance mode to standard33 if completed 33x tasbih, 33x hamd, 33x takbir ONLY
     if (nextSub === 33 && nextHamd === 33 && nextTakbir === 33 && currentPrayerMode !== 'standard33') {
-      updateDhikrLog({
-        postSalahAdhkar: {
-          ...postMap,
-          [activePrayer]: 'standard33'
-        }
-      }, systemDate);
+      handleSetMode('standard33');
     } else if (nextSub === 10 && nextHamd === 10 && nextTakbir === 10 && currentPrayerMode === 'none') {
-      updateDhikrLog({
-        postSalahAdhkar: {
-          ...postMap,
-          [activePrayer]: 'mini10'
-        }
-      }, systemDate);
+      handleSetMode('mini10');
     }
   };
 
@@ -335,6 +524,86 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
     setAllahuakbarCount(0);
   };
 
+  const handleFulfillAllMinimum = () => {
+    POST_SALAH_ADHKAR_ITEMS.forEach(item => {
+      if (item.isExpressMinimum) {
+        const target = getItemTarget(item);
+        if (item.id === 'post-istighfar') {
+          updateDhikrLog({
+            postSalahIstighfar: {
+              ...istighfarMap,
+              [activePrayer]: true
+            }
+          }, systemDate);
+        } else if (item.id === 'post-tasbih-standard') {
+          updateDhikrLog({
+            postSalahAdhkar: {
+              ...postMap,
+              [activePrayer]: 'standard33'
+            }
+          }, systemDate);
+        }
+        setPostSalahItemStatus(activePrayer, item.id, true, target, systemDate);
+      }
+    });
+    setPostSalahSessionStatus(activePrayer, 'in_progress', systemDate);
+  };
+
+  const handleFulfillAllForPrayer = () => {
+    POST_SALAH_ADHKAR_ITEMS.forEach(item => {
+      if (item.fajrMaghribOnly && !isFajrOrMaghrib) return;
+      if (item.id === 'post-tasbih-mini') return; // Skip mini if fulfilling full
+
+      const target = getItemTarget(item);
+      if (item.id === 'post-istighfar') {
+        updateDhikrLog({
+          postSalahIstighfar: {
+            ...istighfarMap,
+            [activePrayer]: true
+          }
+        }, systemDate);
+      } else if (item.id === 'post-tasbih-standard') {
+        updateDhikrLog({
+          postSalahAdhkar: {
+            ...postMap,
+            [activePrayer]: 'standard33'
+          }
+        }, systemDate);
+      }
+      setPostSalahItemStatus(activePrayer, item.id, true, target, systemDate);
+    });
+    setPostSalahSessionStatus(activePrayer, 'complete', systemDate);
+  };
+
+  const handleResetActivePrayer = () => {
+    resetPostSalahPrayerItems(activePrayer, systemDate);
+    resetBeads();
+  };
+
+  // Filter items for current view
+  const activePrayerItems = POST_SALAH_ADHKAR_ITEMS.filter(item => {
+    if (showExpressOnly && !item.isExpressMinimum) return false;
+    if (item.fajrMaghribOnly && !isFajrOrMaghrib) return false;
+    if (item.id === 'post-tasbih-mini' && currentPrayerMode === 'standard33') return false;
+    return true;
+  });
+
+  const completedPartsCount = activePrayerItems.filter(item => isItemDone(item)).length;
+  const totalPartsCount = activePrayerItems.length;
+  const progressPercent = totalPartsCount > 0 ? Math.round((completedPartsCount / totalPartsCount) * 100) : 0;
+
+  const getPrayerDoneCount = (p: PrayerId) => {
+    const pCompleted = currentLog.dhikr?.postSalahItemsCompleted?.[p] || {};
+    const isP_FajrOrMaghrib = p === 'fajr' || p === 'maghrib';
+    const relevantItems = POST_SALAH_ADHKAR_ITEMS.filter(it => (!it.fajrMaghribOnly || isP_FajrOrMaghrib) && it.id !== 'post-tasbih-mini');
+    const count = relevantItems.filter(it => {
+      if (it.id === 'post-istighfar') return Boolean(currentLog.dhikr?.postSalahIstighfar?.[p] || pCompleted['post-istighfar']);
+      if (it.id === 'post-tasbih-standard') return currentLog.dhikr?.postSalahAdhkar?.[p] === 'standard33' || Boolean(pCompleted['post-tasbih-standard']);
+      return Boolean(pCompleted[it.id]);
+    }).length;
+    return `${count}/${relevantItems.length}`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto">
       <motion.div
@@ -349,13 +618,22 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
         {/* 1. MODAL HEADER */}
         <div className="p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-zinc-950 via-[#0e121b] to-zinc-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5">
                 <RubElHizbIcon className="h-3 w-3 text-emerald-400" />
                 <span>SACRED PROTOCOL • POST-SALAH FORTRESS</span>
               </span>
               <span className="text-[10px] font-mono text-zinc-400">
                 {systemDate}
+              </span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border flex items-center gap-1 ${
+                currentSessionStatus === 'complete'
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50'
+                  : currentSessionStatus === 'in_progress'
+                  ? 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                  : 'bg-zinc-900 text-zinc-400 border-white/10'
+              }`}>
+                {currentSessionStatus === 'complete' ? '✓ SEALED' : currentSessionStatus === 'in_progress' ? '⏳ IN PROGRESS' : 'NOT STARTED'}
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
@@ -365,14 +643,14 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
               </span>
             </h2>
             <p className="text-xs text-zinc-400 font-sans">
-              Authentic Sunnah litanies recited immediately following the Taslīm of the 5 Farā&apos;iḍ.
+              Check off completed parts of post-salah adhkār for each prayer — matching morning fortress tracking.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white transition"
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -380,13 +658,15 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
         </div>
 
         {/* 2. PRAYER SELECTOR TABS STRIP */}
-        <div className="px-4 py-3 bg-[#07080c] border-b border-white/5 flex items-center justify-between gap-2 overflow-x-auto shrink-0">
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="px-4 py-3 bg-[#07080c] border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-3 overflow-x-auto shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 md:pb-0">
             {(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map(p => {
               const meta = prayerMeta[p];
               const mode = postMap[p];
               const hasIstighfar = istighfarMap[p];
               const isSelected = activePrayer === p;
+              const pStatus = currentLog.adhkarSessions?.postSalah?.[p] || currentLog.dhikr?.postSalahSessions?.[p];
+              const isComplete = pStatus === 'complete' || mode === 'standard33' || mode === 'mini10';
 
               return (
                 <button
@@ -394,92 +674,82 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                   onClick={() => setActivePrayer(p)}
                   className={`px-3 py-1.5 rounded-xl border font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
                     isSelected
-                      ? 'bg-emerald-950 border-emerald-500 text-emerald-200 shadow-md'
+                      ? 'bg-emerald-950 border-emerald-500 text-emerald-200 shadow-md ring-1 ring-emerald-500/50'
                       : 'bg-zinc-900/60 border-white/5 text-zinc-400 hover:text-white hover:bg-zinc-800'
                   }`}
                 >
                   <span>{meta.nameEn}</span>
                   <span className="text-[10px] opacity-70">({meta.nameAr})</span>
-                  {hasIstighfar && (
-                    <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]" title="3x Istighfār Recited" />
-                  )}
-                  {mode === 'standard33' && (
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="Standard 33x Sealed (Tasbīḥ, Ḥamd, Takbīr Only)" />
-                  )}
-                  {mode === 'mini10' && (
-                    <span className="h-2 w-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]" title="Mini 10x Sealed (Tasbīḥ, Ḥamd, Takbīr Only)" />
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/40 text-emerald-300 font-mono">
+                    {getPrayerDoneCount(p)}
+                  </span>
+                  {isComplete && (
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="Prayer Adhkār Sealed" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* Current Prayer Status & 1-Click Seal Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* Current Prayer Session Status & Quick Mode Controls */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* 3-State Session Status Selector */}
+            <div className="flex items-center gap-1 bg-black/50 border border-white/10 p-1 rounded-xl">
+              <button
+                onClick={() => setPostSalahSessionStatus(activePrayer, 'not_started', systemDate)}
+                className={`px-2 py-1 text-[10px] font-mono font-bold rounded-lg transition cursor-pointer ${
+                  currentSessionStatus === 'not_started'
+                    ? 'bg-zinc-700 text-white shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Mark this prayer adhkar session Not Started"
+              >
+                Not Started
+              </button>
+              <button
+                onClick={() => setPostSalahSessionStatus(activePrayer, 'in_progress', systemDate)}
+                className={`px-2 py-1 text-[10px] font-mono font-bold rounded-lg transition cursor-pointer ${
+                  currentSessionStatus === 'in_progress'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Mark this prayer adhkar session In Progress"
+              >
+                In Progress
+              </button>
+              <button
+                onClick={() => setPostSalahSessionStatus(activePrayer, 'complete', systemDate)}
+                className={`px-2 py-1 text-[10px] font-mono font-bold rounded-lg transition cursor-pointer ${
+                  currentSessionStatus === 'complete'
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Mark this prayer adhkar session Complete (+20 XP)"
+              >
+                Complete ✓
+              </button>
+            </div>
+
             {/* Express Minimum Mode Toggle */}
             <button
               onClick={() => setShowExpressOnly(prev => !prev)}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
                 showExpressOnly
                   ? 'bg-amber-500 border-amber-400 text-black shadow-md shadow-amber-950/50'
                   : 'bg-amber-950/30 hover:bg-amber-900/40 border-amber-500/30 text-amber-300'
               }`}
-              title="النظام المختصر للأيام الصعبة: الاستغفار (3×)، اللهم أنت السلام، التسبيح والتحميد والتكبير وختم المائة، آية الكرسي"
+              title="Filter to Prophetic minimum essentials"
             >
               <Zap className="h-3.5 w-3.5" />
-              <span>{showExpressOnly ? '⚡ Express Active ✓' : '⚡ Express Mode'}</span>
+              <span>{showExpressOnly ? '⚡ Express Active' : '⚡ Express'}</span>
             </button>
 
-            {/* 3x Istighfar Button (Separate Sunnah) */}
-            <button
-              onClick={handleToggleIstighfar}
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                isIstighfarDone
-                  ? 'bg-amber-950 border-amber-500 text-amber-200 shadow-md'
-                  : 'bg-amber-950/20 hover:bg-amber-900/40 border-amber-500/30 text-amber-300'
-              }`}
-              title="3x Istighfar recited immediately after the Taslīm (separate from 33/10 tasbih formula)"
-            >
-              <Check className={`h-3.5 w-3.5 ${isIstighfarDone ? 'text-amber-400' : 'text-amber-400/50'}`} />
-              <span>3x Istighfār (+5)</span>
-            </button>
-
-            {/* Standard 33x (33 Tasbih, 33 Hamd, 33 Takbir ONLY) */}
-            <button
-              onClick={() => handleSetMode(currentPrayerMode === 'standard33' ? 'none' : 'standard33')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                currentPrayerMode === 'standard33'
-                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-md'
-                  : 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-500/30 text-emerald-300'
-              }`}
-              title="Standard 33x: 33 Tasbih, 33 Hamd, 33 Takbir ONLY"
-            >
-              <Check className="h-3.5 w-3.5" />
-              <span>Standard 33x (+20)</span>
-            </button>
-
-            {/* Mini 10x (10 Tasbih, 10 Hamd, 10 Takbir ONLY) */}
-            <button
-              onClick={() => handleSetMode(currentPrayerMode === 'mini10' ? 'none' : 'mini10')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                currentPrayerMode === 'mini10'
-                  ? 'bg-teal-600 border-teal-400 text-white shadow-md'
-                  : 'bg-teal-950/40 hover:bg-teal-900/50 border-teal-500/30 text-teal-300'
-              }`}
-              title="Mini 10x: 10 Tasbih, 10 Hamd, 10 Takbir ONLY"
-            >
-              <Check className="h-3.5 w-3.5" />
-              <span>Mini 10x (+12)</span>
-            </button>
-
-            {(currentPrayerMode !== 'none' || isIstighfarDone) && (
+            {/* Reset active prayer button */}
+            {(completedPartsCount > 0 || currentSessionStatus !== 'not_started') && (
               <button
-                onClick={() => {
-                  handleSetMode('none');
-                  if (isIstighfarDone) handleToggleIstighfar();
-                }}
+                onClick={handleResetActivePrayer}
                 className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-zinc-400 hover:text-rose-300 hover:bg-rose-950/40 transition cursor-pointer"
-                title="Reset this prayer post-adhkar"
+                title="Reset all parts for this prayer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
@@ -487,22 +757,58 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
           </div>
         </div>
 
-        {/* 3. SCROLLABLE AUTHENTIC ADHKAR BODY */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 font-sans">
-          
-          {/* POST-SALAH TO ADHKAR FORTRESS SYNC BADGE */}
-          <div className="p-2.5 bg-emerald-950/30 border border-emerald-500/30 rounded-xl flex items-center justify-between gap-3 text-xs font-mono text-emerald-300">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>
-                <strong>Connected to Sacred Protocol:</strong> Standard 33x logs 33 SubḥānAllāh, 33 Ḥamd, 33 Takbīr <strong>only</strong> (99 total). Mini 10x logs 10 SubḥānAllāh, 10 Ḥamd, 10 Takbīr <strong>only</strong> (30 total). 3x Istighfār is logged separately.
-              </span>
+        {/* 3. PRAYER PROGRESS OVERVIEW BAR */}
+        <div className="px-4 sm:px-6 py-3 bg-[#080c10] border-b border-white/5 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="w-full sm:w-auto flex-1 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white">
+                  {prayerMeta[activePrayer].nameEn} ({prayerMeta[activePrayer].nameAr}) Adhkār Progress:
+                </span>
+                <span className="text-emerald-400 font-bold">
+                  {completedPartsCount} / {totalPartsCount} parts ({progressPercent}%)
+                </span>
+              </div>
+              {progressPercent === 100 && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400" /> ALL PARTS COMPLETED
+                </span>
+              )}
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 shrink-0 font-bold">
-              LIVE SYNC
-            </span>
+            {/* Animated Progress Bar */}
+            <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.3 }}
+                className="h-full bg-gradient-to-r from-emerald-600 via-teal-500 to-[#c5a059]"
+              />
+            </div>
           </div>
 
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={handleFulfillAllMinimum}
+              className="px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="Fulfill all core minimum parts for this prayer"
+            >
+              <Zap className="h-3 w-3 text-amber-400" />
+              <span>Fulfill Minimum</span>
+            </button>
+            <button
+              onClick={handleFulfillAllForPrayer}
+              className="px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="Check and fulfill all parts for this prayer"
+            >
+              <Check className="h-3 w-3 text-emerald-400" />
+              <span>Fulfill All</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 4. SCROLLABLE AUTHENTIC ADHKAR BODY */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 font-sans">
+          
           {/* SPECIAL ADVICE BANNER FOR FAJR & MAGHRIB */}
           {isFajrOrMaghrib && (
             <div className="p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-xl flex items-start gap-3">
@@ -524,7 +830,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
               <div className="flex items-center gap-2">
                 <RubElHizbIcon className="h-4 w-4 text-emerald-400" />
                 <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  DIGITAL POST-SALAH TASBĪḤ COUNTER (المِسْبَحَةُ الإِلِكْتُرُونِيَّة)
+                  DIGITAL POST-SALAH TASBĪḤ BEAD COUNTER (المِسْبَحَةُ الإِلِكْتُرُونِيَّة)
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -536,7 +842,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                       : 'border-white/10 bg-white/5 text-zinc-400 hover:text-amber-300'
                   }`}
                 >
-                  {isIstighfarDone ? '3x Istighfār Sealed ✓' : 'Mark 3x Istighfār (+5 XP)'}
+                  {isIstighfarDone ? '3x Istighfār Done ✓' : 'Mark 3x Istighfār (+5 XP)'}
                 </button>
                 <button
                   onClick={resetBeads}
@@ -616,7 +922,7 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
             </div>
           </div>
 
-          {/* ADHKAR CARDS LIST */}
+          {/* ADHKAR CARDS LIST — ALL INDIVIDUALLY CHECKABLE */}
           <div className="space-y-4">
             {showExpressOnly && (
               <div className="p-4 bg-gradient-to-r from-amber-950/40 via-amber-900/20 to-amber-950/40 border border-amber-500/40 rounded-2xl space-y-1.5 shadow-lg">
@@ -634,27 +940,29 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
               </div>
             )}
 
-            {POST_SALAH_ADHKAR_ITEMS.map((item) => {
-              if (showExpressOnly && !item.isExpressMinimum) {
-                return null;
-              }
-              if (item.fajrMaghribOnly && !isFajrOrMaghrib) {
-                return null;
-              }
+            {activePrayerItems.map((item) => {
+              const completed = isItemDone(item);
+              const target = getItemTarget(item);
+              const currentCount = getItemCount(item);
+              const isMultiRecitation = target > 1;
 
               const targetDisplay = (item.repeatForFajrMaghrib && isFajrOrMaghrib)
-                ? `${item.repeatForFajrMaghrib}x times (Fajr & Maghrib)`
-                : `${item.targetCount}x recitation`;
+                ? `${item.repeatForFajrMaghrib}x recitations (Fajr & Maghrib)`
+                : `${target}x recitation${target > 1 ? 's' : ''}`;
 
               return (
                 <div
                   key={item.id}
-                  className="p-4 sm:p-5 rounded-2xl border border-white/10 bg-[#07090e] hover:border-white/20 transition space-y-3 shadow-md"
+                  className={`p-4 sm:p-5 rounded-2xl border transition space-y-3 shadow-md ${
+                    completed
+                      ? 'border-emerald-500/70 bg-gradient-to-r from-emerald-950/20 via-[#0a1510] to-[#07090e] shadow-[0_0_20px_rgba(16,185,129,0.08)]'
+                      : 'border-white/10 bg-[#07090e] hover:border-white/20'
+                  }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2.5">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-emerald-400">
+                        <span className={`text-xs font-mono font-bold ${completed ? 'text-emerald-300' : 'text-zinc-200'}`}>
                           {item.titleEn}
                         </span>
                         <span className="text-xs font-display text-zinc-400">
@@ -665,55 +973,23 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                             <Zap className="h-2.5 w-2.5 text-amber-400" /> MINIMUM
                           </span>
                         )}
+                        {completed ? (
+                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/90 border border-emerald-500/50 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
+                            <Check className="h-3 w-3 text-emerald-400" /> FULFILLED
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-white/5 px-2 py-0.5 rounded-full">
+                            Pending
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] font-mono text-zinc-400">
                         {item.source} • Target: {targetDisplay}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {item.id === 'post-istighfar' && (
-                        <button
-                          onClick={handleToggleIstighfar}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
-                            isIstighfarDone
-                              ? 'bg-amber-950 border-amber-500 text-amber-200 shadow-sm'
-                              : 'bg-amber-950/20 hover:bg-amber-900/40 border-amber-500/30 text-amber-300'
-                          }`}
-                        >
-                          <Check className={`h-3 w-3 ${isIstighfarDone ? 'text-amber-400' : 'text-amber-400/50'}`} />
-                          <span>{isIstighfarDone ? 'Recited (3x) ✓' : 'Complete 3x'}</span>
-                        </button>
-                      )}
-
-                      {item.id === 'post-tasbih-standard' && (
-                        <button
-                          onClick={() => handleSetMode(currentPrayerMode === 'standard33' ? 'none' : 'standard33')}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
-                            currentPrayerMode === 'standard33'
-                              ? 'bg-emerald-600 border-emerald-400 text-white shadow-sm'
-                              : 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-500/30 text-emerald-300'
-                          }`}
-                        >
-                          <Check className="h-3 w-3" />
-                          <span>{currentPrayerMode === 'standard33' ? 'Sealed (33x) ✓' : 'Seal Standard 33x'}</span>
-                        </button>
-                      )}
-
-                      {item.id === 'post-tasbih-mini' && (
-                        <button
-                          onClick={() => handleSetMode(currentPrayerMode === 'mini10' ? 'none' : 'mini10')}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
-                            currentPrayerMode === 'mini10'
-                              ? 'bg-teal-600 border-teal-400 text-white shadow-sm'
-                              : 'bg-teal-950/40 hover:bg-teal-900/50 border-teal-500/30 text-teal-300'
-                          }`}
-                        >
-                          <Check className="h-3 w-3" />
-                          <span>{currentPrayerMode === 'mini10' ? 'Sealed (10x) ✓' : 'Seal Mini 10x'}</span>
-                        </button>
-                      )}
-
+                    <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+                      {/* Copy Button */}
                       <button
                         onClick={() => handleCopy(item)}
                         className="p-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition text-xs flex items-center gap-1 cursor-pointer"
@@ -722,14 +998,36 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                         <Copy className="h-3 w-3" />
                         <span className="text-[10px] font-mono">{copiedId === item.id ? 'Copied!' : 'Copy'}</span>
                       </button>
+
+                      {/* 1-Click Complete / Fulfill Toggle Button */}
+                      <button
+                        onClick={() => handleToggleItem(item)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                          completed
+                            ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-sm hover:bg-rose-950/60 hover:border-rose-500/60 hover:text-rose-300'
+                            : 'bg-[var(--accent-surface,#c5a059)]/20 hover:bg-[var(--accent-surface,#c5a059)]/40 border-[var(--border-accent,#c5a059)]/40 text-[var(--accent-highlight,#fef08a)]'
+                        }`}
+                        title={completed ? 'Click to undo / mark pending' : `Mark ${item.titleEn} as done`}
+                      >
+                        <Check className={`h-3.5 w-3.5 ${completed ? 'text-emerald-400' : 'text-amber-400'}`} />
+                        <span>{completed ? 'Done ✓' : `Fulfill (${target}x)`}</span>
+                      </button>
                     </div>
                   </div>
 
-                  {/* ARABIC CALLIGRAPHY */}
-                  <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 text-right" dir="rtl">
-                    <p className="font-display font-bold text-lg sm:text-xl text-amber-200 leading-relaxed tracking-wide">
+                  {/* ARABIC CALLIGRAPHY — TAP TO COUNT */}
+                  <div 
+                    onClick={() => handleItemCountIncrement(item, 1)}
+                    className="p-3.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/5 hover:border-[var(--border-accent,#c5a059)]/40 text-right cursor-pointer transition select-none group"
+                    dir="rtl"
+                    title="Tap Arabic text to recite / count (+1)"
+                  >
+                    <p className="font-display font-bold text-lg sm:text-xl text-amber-200 group-hover:text-[var(--accent-bright,#fef08a)] leading-relaxed tracking-wide transition">
                       {item.arabic}
                     </p>
+                    <span className="text-[10px] font-mono text-zinc-500 group-hover:text-amber-300/70 block mt-1 text-left ltr">
+                      Tap text to count (+1)
+                    </span>
                   </div>
 
                   {/* TRANSLITERATION & TRANSLATION */}
@@ -747,6 +1045,190 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
                     <Sparkles className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
                     <span><strong>Prophetic Virtue:</strong> {item.virtue}</span>
                   </div>
+
+                  {/* DIGITAL RECITATION COUNTER WIDGET (عَدَّادُ الذِّكْرِ) */}
+                  <div className="bg-[var(--bg-void,#050608)] border border-[var(--border-accent,#c5a059)]/30 hover:border-[var(--border-accent,#c5a059)]/60 rounded-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 transition shadow-inner">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-wider">
+                        <RubElHizbIcon className="h-3.5 w-3.5 text-[var(--accent-bright,#fef08a)]" />
+                        <span>RECITATIONS COUNTER • عَدَّادُ التَّكْرَار</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {completed ? (
+                          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/90 border border-emerald-500/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Check className="h-3 w-3 text-emerald-400" /> FULFILLED ({currentCount}/{target})
+                          </span>
+                        ) : currentCount > 0 ? (
+                          <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
+                            In Progress ({currentCount}/{target})
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-white/5 px-2 py-0.5 rounded-full">
+                            Target: {target}x
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-0.5">
+                      {/* Stepper with Large Digit Readout */}
+                      <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                        <button
+                          onClick={() => handleItemCountIncrement(item, -1)}
+                          disabled={currentCount <= 0}
+                          className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none text-zinc-300 hover:text-white flex items-center justify-center font-bold text-sm transition cursor-pointer border border-white/10 active:scale-95"
+                          title="Decrease count (-1)"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleItemCountIncrement(item, 1)}
+                          className="text-center min-w-[100px] px-3.5 py-1.5 rounded-xl bg-black/50 border border-white/10 hover:border-[var(--border-accent,#c5a059)]/50 transition cursor-pointer select-none active:scale-95 group"
+                          title="Tap to recite / increment count (+1)"
+                        >
+                          <div className={`text-2xl sm:text-3xl font-mono font-black tracking-tight transition-all ${
+                            completed 
+                              ? 'text-[var(--accent-highlight,#fef08a)] drop-shadow-[0_0_8px_rgba(254,240,138,0.5)]' 
+                              : currentCount > 0
+                              ? 'text-amber-300'
+                              : 'text-white group-hover:text-amber-200'
+                          }`}>
+                            {currentCount}
+                          </div>
+                          <div className="text-[10px] font-mono text-zinc-400">
+                            / {target} Target
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => handleItemCountIncrement(item, 1)}
+                          className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center font-bold transition shadow-lg cursor-pointer active:scale-90 select-none ${
+                            completed
+                              ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white shadow-emerald-950/50'
+                              : 'bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] hover:brightness-110 text-[var(--bg-void,#050608)] shadow-amber-950/40'
+                          }`}
+                          title="Recite (+1 Bead)"
+                        >
+                          <Plus className="h-5 w-5 stroke-[3]" />
+                        </button>
+                      </div>
+
+                      {/* Dedicated Tasbih 3-sub-bead buttons inside standard & mini tasbih cards */}
+                      {item.id === 'post-tasbih-standard' && (
+                        <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-end text-[10px] font-mono">
+                          <button
+                            onClick={() => incrementBead('subhanallah')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              subhanallahCount >= 33 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="33x SubḥānAllāh"
+                          >
+                            سُبْحَانَ الله ({subhanallahCount}/33)
+                          </button>
+                          <button
+                            onClick={() => incrementBead('alhamdulillah')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              alhamdulillahCount >= 33 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="33x Alḥamdulillāh"
+                          >
+                            الحَمْدُ لله ({alhamdulillahCount}/33)
+                          </button>
+                          <button
+                            onClick={() => incrementBead('allahuakbar')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              allahuakbarCount >= 33 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="33x Allāhu Akbar"
+                          >
+                            اللهُ أَكْبَر ({allahuakbarCount}/33)
+                          </button>
+                        </div>
+                      )}
+
+                      {item.id === 'post-tasbih-mini' && (
+                        <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-end text-[10px] font-mono">
+                          <button
+                            onClick={() => incrementBead('subhanallah')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              subhanallahCount >= 10 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="10x SubḥānAllāh"
+                          >
+                            سُبْحَانَ الله ({Math.min(10, subhanallahCount)}/10)
+                          </button>
+                          <button
+                            onClick={() => incrementBead('alhamdulillah')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              alhamdulillahCount >= 10 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="10x Alḥamdulillāh"
+                          >
+                            الحَمْدُ لله ({Math.min(10, alhamdulillahCount)}/10)
+                          </button>
+                          <button
+                            onClick={() => incrementBead('allahuakbar')}
+                            className={`px-2 py-1 rounded-lg border transition cursor-pointer ${
+                              allahuakbarCount >= 10 
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300 font-bold' 
+                                : 'bg-black/40 border-white/10 text-zinc-300 hover:border-emerald-500/40'
+                            }`}
+                            title="10x Allāhu Akbar"
+                          >
+                            اللهُ أَكْبَر ({Math.min(10, allahuakbarCount)}/10)
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Quick Fulfill & Reset Controls */}
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+                        <button
+                          onClick={() => handleFulfillItem(item)}
+                          className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl border text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                            completed
+                              ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300 shadow-sm hover:bg-emerald-900'
+                              : 'bg-[var(--accent-surface,#c5a059)]/20 hover:bg-[var(--accent-surface,#c5a059)]/40 border-[var(--border-accent,#c5a059)]/40 text-[var(--accent-highlight,#fef08a)]'
+                          }`}
+                          title={`Complete full target (${target}x)`}
+                        >
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>{completed ? 'Fulfilled ✓' : `Fulfill (${target}x)`}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleResetItem(item)}
+                          className="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition cursor-pointer"
+                          title="Reset count for this item (0)"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden border border-white/5">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          completed
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                            : 'bg-gradient-to-r from-[var(--accent-primary,#c5a059)] to-[var(--accent-bright,#fef08a)]'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.round((currentCount / target) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -754,25 +1236,25 @@ export const PostSalahAdhkarModal: React.FC<PostSalahAdhkarModalProps> = ({
 
         </div>
 
-        {/* 4. MODAL FOOTER */}
+        {/* 5. MODAL FOOTER */}
         <div className="p-4 border-t border-white/10 bg-[#07080c] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
             <span>Current Status for {prayerMeta[activePrayer].nameEn}:</span>
             <span className={`px-2 py-0.5 rounded font-bold ${
-              currentPrayerMode === 'standard33' 
+              currentSessionStatus === 'complete' 
                 ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
-                : currentPrayerMode === 'mini10'
-                ? 'bg-teal-950 text-teal-300 border border-teal-500/40'
+                : currentSessionStatus === 'in_progress'
+                ? 'bg-amber-950 text-amber-300 border border-amber-500/40'
                 : 'bg-zinc-800 text-zinc-400'
             }`}>
-              {currentPrayerMode === 'standard33' ? 'Standard 33x Sealed ✓' : currentPrayerMode === 'mini10' ? 'Mini 10x Sealed ✓' : 'Pending / Not Logged'}
+              {currentSessionStatus === 'complete' ? `Sealed ✓ (${completedPartsCount}/${totalPartsCount} Parts)` : currentSessionStatus === 'in_progress' ? `In Progress (${completedPartsCount}/${totalPartsCount} Parts)` : 'Pending / Not Started'}
             </span>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition"
+              className="w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-mono font-bold text-xs rounded-xl shadow-lg transition cursor-pointer"
             >
               Done / Return to Hub
             </button>

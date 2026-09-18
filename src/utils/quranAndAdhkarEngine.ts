@@ -1,6 +1,7 @@
 import {
   AdhkarFortressStats,
   AdhkarSessionStatus,
+  PrayerId,
   QuranPassage,
   QuranRevisionStatus,
   SpiritualDailyLog
@@ -123,6 +124,37 @@ export function calculateAdhkarFortressStats(
     }
   }
 
+  const prayers: PrayerId[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  const postSalahStatuses: Record<PrayerId, AdhkarSessionStatus> = {
+    fajr: 'not_started',
+    dhuhr: 'not_started',
+    asr: 'not_started',
+    maghrib: 'not_started',
+    isha: 'not_started'
+  };
+
+  prayers.forEach(p => {
+    const explicitSession = todayLog?.adhkarSessions?.postSalah?.[p] || todayLog?.dhikr?.postSalahSessions?.[p];
+    if (explicitSession) {
+      postSalahStatuses[p] = explicitSession;
+    } else {
+      const mode = todayLog?.dhikr?.postSalahAdhkar?.[p];
+      const istighfar = todayLog?.dhikr?.postSalahIstighfar?.[p];
+      const itemsMap = todayLog?.dhikr?.postSalahItemsCompleted?.[p];
+      const hasAnyItemCompleted = itemsMap && Object.values(itemsMap).some(Boolean);
+
+      if (mode === 'standard33' || mode === 'mini10') {
+        postSalahStatuses[p] = 'complete';
+      } else if (istighfar || hasAnyItemCompleted) {
+        postSalahStatuses[p] = 'in_progress';
+      } else {
+        postSalahStatuses[p] = 'not_started';
+      }
+    }
+  });
+
+  const postSalahCompletedCount = prayers.filter(p => postSalahStatuses[p] === 'complete').length;
+
   return {
     integrityScore: rawDailyScore,
     statusLabel,
@@ -130,6 +162,8 @@ export function calculateAdhkarFortressStats(
     morningStatus,
     eveningStatus,
     sleepStatus,
+    postSalahStatuses,
+    postSalahCompletedCount,
     completedCount,
     currentStreak,
     sevenDayAverage
