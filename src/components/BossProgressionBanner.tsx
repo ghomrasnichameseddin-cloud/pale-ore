@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Crown, Swords, ShieldAlert } from 'lucide-react';
+import { Crown, Swords, ShieldAlert, Sparkles, PlusCircle } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { PlayerLevelInfo } from '../types';
 
@@ -13,28 +13,38 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
   onNavigateToQuests,
   onOpenGuide
 }) => {
-  const { state, getPlayerLevelInfo } = usePOS();
+  const { state, getPlayerLevelInfo, forgeLevelUpBossQuest } = usePOS();
   const levelInfo: PlayerLevelInfo = getPlayerLevelInfo();
 
-  // The bond only appears at intermediate gate levels (10, 20, 30, 40, ...)
-  // The player is AT the gate when their effective (visible) level equals the next gate level
-  const nextGate = levelInfo.nextGateLevel ?? 10;
-  const isAtGate = levelInfo.level === nextGate;
-  const isCapped = levelInfo.isLevelCappedByBoss;
-
-  // Show the bond only when the player is at an intermediate gate level
-  // (reached lvl 10, 20, 30... and needs boss quests to advance)
-  if (!isAtGate) {
+  // The gate requirement is strictly decoupled from the calendar and scheduled quests.
+  // It only manifests when the operator's XP has reached an intermediate gate (Level 10, 20, 30...)
+  // and advancement is capped until a dedicated Level-Up Boss Quest is slain.
+  const isCapped = Boolean(levelInfo.isLevelCappedByBoss);
+  const activeReq = levelInfo.activeRequirement;
+  const threshold = levelInfo.levelUpThreshold || activeReq?.thresholdLevel || levelInfo.level;
+  
+  // Show the banner if capped by boss, or if an active level-up gate requirement is unsealed
+  if (!isCapped && (!activeReq || !activeReq.active)) {
     return null;
   }
 
-  // Find active Boss Quests if any
-  const activeBossQuests = state.quests.filter(
-    q => (q.difficulty === 'Boss' || q.type === 'Boss') && q.status !== 'Completed' && !q.archived
+  const completedCount = activeReq ? activeReq.completedCount : (levelInfo.bossQuestsCompletedCount || 0);
+  const requiredCount = activeReq ? activeReq.requiredCount : (levelInfo.bossQuestsRequiredCount || 1);
+  const remainingCount = Math.max(0, requiredCount - completedCount);
+
+  // Filter specifically for dedicated Level-Up Boss Quests (distinct from weekly/scheduled bosses)
+  const activeLevelUpBosses = state.quests.filter(
+    q => q.isLevelUpBoss && q.status === 'Active' && !q.archived
   );
 
+  const handleForgeBoss = () => {
+    forgeLevelUpBossQuest(threshold);
+    if (onNavigateToQuests) {
+      onNavigateToQuests();
+    }
+  };
+
   const handleViewBossQuests = () => {
-    // 1. Persist view settings to week view & Boss category filter
     try {
       const raw = localStorage.getItem('pale_ore_quest_view_settings');
       const parsed = raw ? JSON.parse(raw) : {};
@@ -48,17 +58,14 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
       console.error('Error saving quest view settings:', e);
     }
 
-    // 2. Dispatch custom event so active instance updates immediately
     window.dispatchEvent(new CustomEvent('set-quest-view-settings', {
       detail: { terminalTab: 'week', categoryFilter: 'Boss' }
     }));
 
-    // 3. Call navigation callback to navigate to quests view / directives & rhythms
     if (onNavigateToQuests) {
       onNavigateToQuests();
     }
 
-    // 4. Smooth scroll to directives terminal
     setTimeout(() => {
       const el = document.getElementById('quests-list-container') || document.getElementById('directives-terminal') || document.getElementById('quests-view-root');
       if (el) {
@@ -81,7 +88,7 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
           : '0 4px 20px var(--glow-color, rgba(197,160,89,0.1))'
       }}
     >
-      {/* Background ambient lighting from active Visual Codex */}
+      {/* Background ambient lighting */}
       <div 
         className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-20"
         style={{ background: 'var(--accent-primary, #c5a059)' }}
@@ -116,36 +123,52 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
                   color: 'var(--accent-highlight, #fef08a)'
                 }}
               >
-                {isCapped ? '⚔️ INTERMEDIATE GATE: LEVEL ADVANCEMENT BOND' : '⚔️ INTERMEDIATE GATE UNSEALED'}
+                {isCapped ? `⚔️ LEVEL-UP GATE: LEVEL ${threshold} ASCENSION BOND` : `⚔️ LEVEL ${threshold} GATE UNSEALED`}
               </span>
 
               <span className="text-[10px] font-mono text-zinc-300">
-                              Boss Quests Slain: <strong className="text-[var(--accent-bright,#e5c875)]">{levelInfo.bossQuestsCompletedCount || 0}</strong> / {levelInfo.bossQuestsRequiredCount || 0}
-                            </span>
+                Gate Bosses Slain: <strong className="text-[var(--accent-bright,#e5c875)]">{completedCount}</strong> / {requiredCount}
+              </span>
             </div>
 
             <h4 className="text-sm sm:text-base font-display font-bold text-white flex items-center gap-2">
               {isCapped ? (
                 <span style={{ color: 'var(--accent-highlight, #fef08a)' }}>
-                  Level {levelInfo.level} → Level {levelInfo.level + 1} requires {(levelInfo.bossQuestsRequiredCount || 1)} Boss Quest{((levelInfo.bossQuestsRequiredCount || 1) > 1) ? 's' : ''} to be Slain
+                  Level {threshold} → Level {threshold + 1} requires {requiredCount} Gate Boss Quest{requiredCount > 1 ? 's' : ''} to ascend
                 </span>
               ) : (
                 <span className="text-zinc-100">
-                  Level {levelInfo.level} → Level {levelInfo.level + 1} unsealed! All {(levelInfo.bossQuestsRequiredCount || 1)} Boss Quest{((levelInfo.bossQuestsRequiredCount || 1) > 1) ? 's' : ''} conquered.
+                  Level {threshold} → Level {threshold + 1} unsealed! All {requiredCount} Gate Boss Quest{requiredCount > 1 ? 's' : ''} conquered.
                 </span>
               )}
             </h4>
 
             <p className="text-xs text-zinc-300 font-sans leading-relaxed max-w-3xl">
               {isCapped
-                ? `Intermediate gate at Level ${levelInfo.level} sealed. Slay ${(levelInfo.bossQuestsRequiredCount || 1) - (levelInfo.bossQuestsCompletedCount || 0)} more Boss Quest${((levelInfo.bossQuestsRequiredCount || 1) - (levelInfo.bossQuestsCompletedCount || 0) > 1) ? 's' : ''} to shatter the bond and advance to Level ${levelInfo.level + 1}.`
-                : `Gate at Level ${levelInfo.level} shattered! Level ${levelInfo.level + 1} unlocked. Continue ascending — the next gate awaits at Level ${(levelInfo.level + 10)}.`}
+                ? `System advancement is held at Level ${threshold}. Slay ${remainingCount} Level-Up Boss Quest${remainingCount > 1 ? 's' : ''} to shatter the gate and unleash earned XP.`
+                : `Gate at Level ${threshold} shattered! Continue ascending — the next gate awaits at Level ${threshold + 10}.`}
             </p>
           </div>
         </div>
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {isCapped && activeLevelUpBosses.length === 0 && (
+            <button
+              onClick={handleForgeBoss}
+              id="btn-forge-level-up-boss"
+              className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-2 shadow-lg hover:brightness-110 active:scale-95 cursor-pointer border"
+              style={{
+                backgroundColor: 'var(--accent-bright, #e5c875)',
+                borderColor: 'var(--border-strong, #e5c875)',
+                color: 'var(--bg-void, #050608)'
+              }}
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>MANIFEST GATE BOSS</span>
+            </button>
+          )}
+
           <button
             onClick={handleViewBossQuests}
             id="btn-view-boss-quests"
@@ -157,7 +180,11 @@ export const BossProgressionBanner: React.FC<BossProgressionBannerProps> = ({
             }}
           >
             <Swords className="h-4 w-4" />
-            <span>{activeBossQuests.length > 0 ? `VIEW BOSS QUESTS (${activeBossQuests.length})` : 'VIEW WEEK BOSS QUESTS'}</span>
+            <span>
+              {activeLevelUpBosses.length > 0 
+                ? `GATE BOSS DIRECTIVES (${activeLevelUpBosses.length})` 
+                : 'VIEW BOSS QUESTS'}
+            </span>
           </button>
 
           {onOpenGuide && (

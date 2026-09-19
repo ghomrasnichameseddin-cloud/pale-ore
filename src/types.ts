@@ -272,6 +272,16 @@ export interface Quest {
   postponedTo?: string | null;
   archived?: boolean;
   archivedAt?: string | null;
+  isLevelUpBoss?: boolean; // Specifically designated/forged for system level advancement requirement
+  levelUpThreshold?: number; // The target gate threshold (10, 20, 30...) this quest is linked to
+}
+
+export interface LevelUpBossRequirement {
+  thresholdLevel: number; // e.g. 10, 20, 30
+  requiredCount: number;  // e.g. 1, 2, 3 (threshold / 10)
+  completedCount: number; // number of required level-up boss quests slain
+  completedQuestIds: string[]; // IDs of boss quests that satisfied this gate
+  active: boolean; // True only when currently gating at this threshold
 }
 
 export type MasteryDimensionStage = 'Exposure' | 'Practice' | 'Application' | 'Demonstration';
@@ -362,6 +372,7 @@ export interface UserProfile {
   titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
   fatigueLevel?: number; // 0 to 100
   lastFatigueUpdateDate?: string;
+  levelUpBossRequirement?: LevelUpBossRequirement;
 }
 
 export type XPSourceCategory = 
@@ -1167,6 +1178,8 @@ export interface PlayerLevelInfo {
   effectiveLevel?: number;
   unlockedLevel?: number;
   nextGateLevel?: number | null;
+  levelUpThreshold?: number | null;
+  activeRequirement?: LevelUpBossRequirement | null;
 }
 
 export interface Masjid40DayCovenant {

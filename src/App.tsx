@@ -468,60 +468,6 @@ function AppContent() {
             </div>
           </div>
 
-          {/* SIMPLIFIED DESKTOP SYSTEM DATE CONTROLLER (SIDEBAR) */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-accent)] rounded-lg p-2.5 space-y-1.5 shadow-[0_0_15px_var(--glow-color)]" id="simulated-date-picker-widget">
-            <div className="flex items-center justify-between text-[10px] font-mono">
-              <span className="text-[var(--accent-bright)] font-bold uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
-                SYS DATE
-              </span>
-              <button
-                onClick={syncWithRealClock}
-                className={`text-[8px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold flex items-center gap-1 transition ${
-                  isRealTodaySynced 
-                    ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40' 
-                    : 'bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] hover:bg-[var(--accent-surface-hover)]'
-                }`}
-                title={isRealTodaySynced ? "Synchronized with system clock" : "Click to sync with real system clock"}
-                id="sys-date-sync-btn"
-              >
-                <RefreshCw className={`h-2.5 w-2.5 ${isRealTodaySynced ? '' : 'animate-spin'}`} />
-                {isRealTodaySynced ? 'TODAY' : 'SYNC TODAY'}
-              </button>
-            </div>
-
-            {/* DIRECT DATE INPUT AND NAVIGATION CONTROLS */}
-            <div className="flex items-center justify-between gap-1 bg-[var(--bg-void)] p-1 rounded border border-[var(--border-subtle)]">
-              <button 
-                onClick={() => shiftDate(-1)} 
-                className="p-1 hover:bg-[var(--bg-card-hover)] text-zinc-400 hover:text-[var(--accent-bright)] rounded transition shrink-0"
-                title="Previous Day"
-                id="sys-date-shift-prev"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </button>
-
-              <input
-                type="date"
-                value={systemDate || ''}
-                onChange={(e) => e.target.value && setSystemDate(e.target.value)}
-                style={{ colorScheme: 'dark' }}
-                className="bg-transparent text-[var(--accent-bright)] font-mono font-bold text-xs text-center focus:outline-none focus:ring-1 focus:ring-[var(--border-accent)] rounded px-1 py-0.5 cursor-pointer w-full"
-                id="sys-date-input"
-                title="Click or use arrow keys to change system date"
-              />
-
-              <button 
-                onClick={() => shiftDate(1)} 
-                className="p-1 hover:bg-[var(--bg-card-hover)] text-zinc-400 hover:text-[var(--accent-bright)] rounded transition shrink-0"
-                title="Next Day"
-                id="sys-date-shift-next"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
           {/* ACTIVE OPERATOR STATUS MINI-WIDGET */}
           <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg space-y-2 relative overflow-hidden">
             {/* Subtle corner flourish */}
@@ -620,7 +566,7 @@ function AppContent() {
             ))}
           </nav>
 
-          {/* QUICK TERMINAL ACTIONS (POMODORO, SYSTEM INBOX & MANUAL) */}
+          {/* QUICK TERMINAL ACTIONS (FOCUS TIMER) */}
           <div className="pt-2 space-y-1.5 border-t border-[var(--border-subtle)]">
             <button
               onClick={() => setIsFocusModalOpen(true)}
@@ -642,58 +588,18 @@ function AppContent() {
                 <span className="text-[9px] text-zinc-600">OFF</span>
               )}
             </button>
-
-            <button
-              onClick={() => setIsInboxModalOpen(true)}
-              className={`w-full flex items-center justify-between p-2 rounded text-xs font-mono transition-all border ${
-                unreadMessagesCount > 0
-                  ? 'bg-[var(--accent-surface)] border-[var(--border-accent)] text-[var(--accent-highlight)] font-bold'
-                  : 'bg-[var(--bg-surface)] hover:bg-[var(--bg-card-hover)] border-white/5 text-zinc-400 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Inbox className={`h-4 w-4 ${unreadMessagesCount > 0 ? 'text-[var(--accent-bright)]' : 'text-zinc-500'}`} />
-                <span>SYSTEM INBOX</span>
-              </div>
-              {unreadMessagesCount > 0 ? (
-                <span className="text-[9px] bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">
-                  {unreadMessagesCount} NEW
-                </span>
-              ) : (
-                <span className="text-[9px] text-zinc-500 font-mono font-bold">0 NEW</span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setIsGuideModalOpen(true)}
-              className="w-full flex items-center justify-between p-2 rounded text-xs font-mono transition-all border bg-[var(--bg-card)] border-[var(--border-accent)] text-[var(--accent-highlight)] hover:bg-[var(--bg-card-hover)] hover:border-[var(--border-strong)] font-bold"
-            >
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-[var(--accent-bright)]" />
-                <span>SYSTEM MANUAL</span>
-              </div>
-              <span className="text-[8px] bg-[var(--accent-surface)] text-[var(--accent-bright)] px-1.5 py-0.5 rounded border border-[var(--border-subtle)]">GUIDE</span>
-            </button>
           </div>
 
         </div>
 
-        {/* SIDEBAR FOOTER (CLOCK & RECOVERY BADGE) */}
-        <div className="border-t border-[var(--border-subtle)] pt-3 mt-3 space-y-1.5">
-          {state.profile.recoveryMode && (
+        {/* SIDEBAR FOOTER (RECOVERY PROTOCOL STATUS IF ACTIVE) */}
+        {state.profile.recoveryMode && (
+          <div className="border-t border-[var(--border-subtle)] pt-3 mt-3">
             <div className="bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-bright)] text-[10px] font-mono px-2 py-0.5 rounded text-center animate-pulse uppercase font-bold">
               RECOVERY_PROTOCOL_ON
             </div>
-          )}
-
-          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 px-1">
-            <span className="flex items-center gap-1 text-[var(--accent-bright)]">
-              <Clock className="h-3 w-3 text-[var(--accent-bright)]" />
-              SYS TIME
-            </span>
-            <span className="text-zinc-300 font-bold">{systemTime.toLocaleTimeString()}</span>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* MAIN VIEW CONTENT CONTAINER */}
@@ -707,8 +613,33 @@ function AppContent() {
             </span>
           </div>
 
-          {/* DESKTOP TOP-RIGHT PROMINENT SYSTEM DATE & TIME CONTROLLER */}
+          {/* DESKTOP TOP-RIGHT PROMINENT CONTROLLERS: INBOX, GUIDE, SHOP, DATE, TIME */}
           <div className="flex items-center gap-3">
+            {/* SYSTEM INBOX BUTTON */}
+            <button
+              onClick={() => setIsInboxModalOpen(true)}
+              className={`text-[10px] font-mono px-3 py-1 rounded-lg border font-bold flex items-center gap-1.5 transition cursor-pointer relative ${
+                totalOverdueCount > 0
+                  ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                  : unreadMessagesCount > 0
+                    ? 'bg-[var(--accent-surface)] border-[var(--border-accent)] text-[var(--accent-highlight)] shadow-[0_0_12px_var(--glow-color)]'
+                    : 'bg-[var(--bg-card)] border-[var(--border-accent)] text-zinc-300 hover:text-white hover:bg-[var(--bg-card-hover)]'
+              }`}
+              title="Open Sacred Communiqués & System Inbox"
+            >
+              <Inbox className={`h-3.5 w-3.5 ${unreadMessagesCount > 0 ? 'text-[var(--accent-bright)]' : 'text-zinc-400'}`} />
+              <span>SYSTEM INBOX</span>
+              {totalOverdueCount > 0 ? (
+                <span className="text-[8px] bg-amber-500 text-black px-1.5 py-0.2 rounded font-bold ml-0.5 animate-pulse">
+                  {totalOverdueCount} OVERDUE
+                </span>
+              ) : unreadMessagesCount > 0 ? (
+                <span className="text-[8px] bg-[var(--accent-primary)] text-black px-1.5 py-0.2 rounded font-bold ml-0.5 animate-pulse">
+                  {unreadMessagesCount} NEW
+                </span>
+              ) : null}
+            </button>
+
             {/* SYSTEM GUIDE / MANUAL BUTTON */}
             <button
               onClick={() => setIsGuideModalOpen(true)}

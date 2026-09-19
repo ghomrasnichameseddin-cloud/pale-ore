@@ -418,19 +418,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                 {/* Job & Title Badges */}
                 <div className="flex flex-wrap items-center gap-2 mt-3">
-                  {/* RECOVERY TITLE BADGE - GLOWS WHEN ACTIVE, DIMS WHEN INACTIVE */}
-                  {isRecoveryActive ? (
-                    <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_var(--glow-color)] animate-pulse">
-                      <Shield className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
-                      [RECOVERY] RECOVERING OPERATOR
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-mono font-bold bg-[var(--bg-void)]/60 border border-white/5 text-zinc-600 px-2.5 py-1 rounded-lg flex items-center gap-1.5 opacity-40">
-                      <Shield className="h-3.5 w-3.5 text-zinc-600" />
-                      [RECOVERY] RECOVERING OPERATOR (INACTIVE)
-                    </span>
-                  )}
-
                   <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
                     [{activeTitle.badge}] {activeTitle.name}
@@ -450,8 +437,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <div className="text-left sm:text-right">
-                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SANCTUM RANK</span>
+              <div className="w-full sm:w-auto text-center sm:text-center mx-auto sm:mx-auto flex flex-col items-center justify-center sm:self-center">
+                <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold tracking-wider">SANCTUM RANK</span>
                 <p className="text-lg sm:text-xl font-display font-bold text-[var(--accent-bright)] tracking-wide uppercase mt-0.5">
                   {levelInfo.rank}
                 </p>
@@ -1228,8 +1215,84 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
         </div>
 
-        {/* RIGHT COLUMN: CURRENT FOCUS, GOALS & PROJECTS PREVIEW, DAILY HABITS, WORKLOAD REPORT */}
+        {/* RIGHT COLUMN: CURRENT FOCUS, STRATEGIC CODEX, GOALS & PROJECTS PREVIEW, DAILY HABITS */}
         <div className="space-y-6">
+
+          {/* CURRENT FOCUS CARD (POSITIONED UPWARD) */}
+          <div className="glass-panel rounded-2xl p-5 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-xl" id="current-focus-card">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+
+            <div className="flex justify-between items-center mb-3 border-b border-[var(--border-subtle)] pb-2">
+              <span className="text-xs font-mono font-bold text-[var(--accent-bright)] tracking-wider uppercase flex items-center gap-1.5">
+                <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" /> CURRENT OPERATOR FOCUS
+              </span>
+              {!isEditingFocus && (
+                <button 
+                  onClick={() => setIsEditingFocus(true)}
+                  className="text-[10px] font-mono text-[var(--accent-highlight)] hover:text-white underline transition-colors cursor-pointer"
+                >
+                  MODIFY
+                </button>
+              )}
+            </div>
+
+            {isEditingFocus ? (
+              <form onSubmit={handleSaveFocus} className="space-y-3">
+                <input 
+                  type="text" 
+                  value={focusText}
+                  onChange={(e) => setFocusText(e.target.value)}
+                  className="w-full bg-[var(--bg-void)] border border-[var(--border-accent)] rounded-xl p-2 text-xs text-white focus:outline-none focus:border-[var(--accent-bright)] font-sans"
+                  required
+                />
+                
+                <select 
+                  value={focusGoal}
+                  onChange={(e) => setFocusGoal(e.target.value)}
+                  className="w-full bg-[var(--bg-void)] border border-[var(--border-accent)] rounded-xl p-2 text-xs text-zinc-200 focus:outline-none focus:border-[var(--accent-bright)] font-mono cursor-pointer"
+                >
+                  <option value="">No Associated Grand Destiny</option>
+                  {state.goals.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditingFocus(false)}
+                    className="text-[10px] font-mono text-zinc-400 px-2 py-1 cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] text-[10px] font-mono px-3 py-1 rounded-lg hover:bg-[var(--accent-surface-hover)] font-bold cursor-pointer"
+                  >
+                    SAVE FOCUS
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-sans font-medium text-white leading-relaxed">
+                  "{state.profile.currentFocus || 'Inscribe your primary focus core decree.'}"
+                </p>
+                {state.profile.focusGoalId && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">🎯 LINKED TO:</span>
+                    <button 
+                      type="button"
+                      onClick={() => onNavigate?.('goals')}
+                      className="text-[10px] font-mono text-[var(--accent-highlight)] truncate font-bold hover:underline cursor-pointer"
+                    >
+                      {state.goals.find(g => g.id === state.profile.focusGoalId)?.name}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* STRATEGIC COMMAND & CODEX PORTAL */}
           <div className="glass-panel rounded-2xl p-4 border border-[var(--border-accent)] bg-[var(--bg-card)]/90 relative overflow-hidden shadow-lg space-y-4" id="dashboard-strategic-codex-portal">
@@ -1252,82 +1315,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <button onClick={() => onNavigate('projects')} className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 text-[10px] font-mono text-zinc-200">CAMPAIGNS</button>
                 <button onClick={() => onNavigate('frameworks')} className="px-2.5 py-1.5 rounded-lg bg-[var(--bg-void)] hover:bg-[var(--bg-surface)] border border-white/10 text-[10px] font-mono text-zinc-200">ENGINES</button>
                 <button onClick={() => onNavigate('strategy_codex')} className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-[var(--border-strong)] via-[var(--accent-bright)] to-[var(--border-strong)] text-[var(--bg-void)] text-[10px] font-mono font-bold">MATRIX HUB <ArrowUpRight className="h-3 w-3 inline" /></button>
-              </div>
-            )}
-          </div>
-
-          {/* CURRENT FOCUS CARD */}
-          <div className="glass-panel rounded-2xl p-5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-xl" id="current-focus-card">
-            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-
-            <div className="flex justify-between items-center mb-3 border-b border-[#c5a059]/20 pb-2">
-              <span className="text-xs font-mono font-bold text-[#c5a059] tracking-wider uppercase flex items-center gap-1.5">
-                <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" /> CURRENT OPERATOR FOCUS
-              </span>
-              {!isEditingFocus && (
-                <button 
-                  onClick={() => setIsEditingFocus(true)}
-                  className="text-[10px] font-mono text-[#e5c875] hover:text-white underline transition-colors cursor-pointer"
-                >
-                  MODIFY
-                </button>
-              )}
-            </div>
-
-            {isEditingFocus ? (
-              <form onSubmit={handleSaveFocus} className="space-y-3">
-                <input 
-                  type="text" 
-                  value={focusText}
-                  onChange={(e) => setFocusText(e.target.value)}
-                  className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-[#c5a059] font-sans"
-                  required
-                />
-                
-                <select 
-                  value={focusGoal}
-                  onChange={(e) => setFocusGoal(e.target.value)}
-                  className="w-full bg-[#07080c] border border-[#c5a059]/30 rounded-xl p-2 text-xs text-zinc-200 focus:outline-none focus:border-[#c5a059] font-mono cursor-pointer"
-                >
-                  <option value="">No Associated Grand Destiny</option>
-                  {state.goals.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsEditingFocus(false)}
-                    className="text-[10px] font-mono text-zinc-400 px-2 py-1 cursor-pointer"
-                  >
-                    CANCEL
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 text-[10px] font-mono px-3 py-1 rounded-lg hover:bg-[#4d3d18] font-bold cursor-pointer"
-                  >
-                    SAVE FOCUS
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm font-sans font-medium text-white leading-relaxed">
-                  "{state.profile.currentFocus || 'Inscribe your primary focus core decree.'}"
-                </p>
-                {state.profile.focusGoalId && (
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <span className="text-[10px] font-mono text-[#c5a059]">🎯 LINKED TO:</span>
-                    <button 
-                      type="button"
-                      onClick={() => onNavigate?.('goals')}
-                      className="text-[10px] font-mono text-[#e5c875] truncate font-bold hover:underline cursor-pointer"
-                    >
-                      {state.goals.find(g => g.id === state.profile.focusGoalId)?.name}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>

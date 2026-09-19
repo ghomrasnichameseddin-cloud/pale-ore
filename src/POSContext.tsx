@@ -18,7 +18,8 @@ import {
   TemporalAccounting, TemporalStatus, RestCategory, TemporalFeasibilityResult,
   Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem,
   RequiredCapability, CapabilityReviewNote,
-  StandardXPEventType, XPAnalytics
+  StandardXPEventType, XPAnalytics,
+  LevelUpBossRequirement
 } from './types';
 import {
   dispatchXPEventPure,
@@ -285,6 +286,11 @@ interface POSContextType {
   getPlayerLevelInfo: () => PlayerLevelInfo;
   getAnalytics: () => any;
   
+  // Boss Progression & Level-Up Gate Actions
+  forgeLevelUpBossQuest: (threshold?: number) => string;
+  linkQuestToLevelUpGate: (questId: string, isLinked?: boolean) => void;
+  completeLevelUpBossGateRequirement: () => { success: boolean; message: string };
+  
   // Export/Import
   exportData: () => string;
   importData: (jsonData: string) => boolean;
@@ -548,6 +554,11 @@ export const getMaxHpForLevel = (level: number): number => 100 + Math.max(0, lev
 
 export const INTERMEDIATE_RANK_LEVEL_THRESHOLD = 10; // D-Rank and above
 
+export const getLevelUpBossRequirementForThreshold = (threshold: number): number => {
+  if (threshold < 10 || threshold % 10 !== 0) return 0;
+  return Math.floor(threshold / 10);
+};
+
 export const getCompletedBossQuestsCount = (quests: Quest[] = [], xpHistory: XPHistoryEntry[] = []): number => {
   const completedBossQuests = quests.filter(q => 
     (q.difficulty === 'Boss' || q.type === 'Boss') && 
@@ -565,7 +576,9 @@ export const getCompletedBossQuestsCount = (quests: Quest[] = [], xpHistory: XPH
 
 export const calculateGatedPlayerLevel = (
   totalXp: number,
-  completedBossCount: number
+  currentSavedLevelOrLegacyCount: number = 1,
+  requirement?: LevelUpBossRequirement | null,
+  quests: Quest[] = []
 ): {
   level: number;
   rawLevel: number;
@@ -573,54 +586,119 @@ export const calculateGatedPlayerLevel = (
   bossQuestsCompletedCount: number;
   bossQuestsRequiredCount: number;
   nextGateLevel: number | null;
+  levelUpThreshold: number | null;
+  activeRequirement: LevelUpBossRequirement | null;
 } => {
   const rawLevel = calculatePlayerLevel(totalXp);
+  const savedLevel = Math.max(1, currentSavedLevelOrLegacyCount || 1);
 
-  // Boss quest gates appear at intermediate rank milestones:
-  // Level 10 reached → 1 boss quest required to advance to Level 11
-  // Level 20 reached → 2 boss quests required to advance to Level 21
-  // Level 30 reached → 3 boss quests required to advance to Level 31
-  // ...
-  // Each gate unlocks every 10 levels. Once all boss quests for that gate are slain, you may advance.
+  // Invariant 1: Progression is strictly monotonic (newLevel >= savedLevel).
+  // Completing, scheduling, or viewing quests or changing dates must NEVER decrease the player's system level.
+  const candidateLevel = Math.max(savedLevel, rawLevel);
 
-  // Pre-Intermediate: no gate, no boss requirement
-  if (rawLevel < INTERMEDIATE_RANK_LEVEL_THRESHOLD) {
+  // Invariant 2: Pre-Level 10 has no gate and no level-up Boss Quest requirement.
+  if (candidateLevel < 10) {
     return {
-      level: rawLevel,
+      level: candidateLevel,
       rawLevel,
       isLevelCappedByBoss: false,
-      bossQuestsCompletedCount: completedBossCount,
+      bossQuestsCompletedCount: 0,
       bossQuestsRequiredCount: 0,
-      nextGateLevel: null
+      nextGateLevel: 10,
+      levelUpThreshold: null,
+      activeRequirement: null
     };
   }
 
-  // Determine the current gate level (the highest gate the player has reached)
-  // Gates are at 10, 20, 30, 40, ... 10n for n >= 1
-  const currentGateLevel = Math.floor(rawLevel / 10) * 10;
+  // Invariant 3: The Boss Quest requirement is determined strictly by the player's System Level threshold,
+  // NOT by calendar date, scheduled quests, or day of the week.
+  // Thresholds exist at Level 10, 20, 30, 40, ... (multiples of 10).
+  // A player who is already at Level 16 has passed Level 10; Level 10 must NEVER be re-activated or cause regression!
+  // The next gate for Level 16 is Level 20.
+  const isCurrentlyAtThreshold = savedLevel >= 10 && savedLevel % 10 === 0;
+  const nextThreshold = isCurrentlyAtThreshold ? savedLevel : Math.floor(savedLevel / 10 + 1) * 10;
 
-  // Required boss count is how many gate levels the player has REACHED (>=)
-  // Each gate level reached adds 1 required boss quest
-  let requiredBossCount = 0;
-  for (let gate = 10; gate <= rawLevel; gate += 10) {
-    requiredBossCount += 1;
+  // If the player is between thresholds (e.g. Level 11-19, 21-29) and candidateLevel has not reached nextThreshold:
+  // No level-up requirement is active! They continue ascending unhindered.
+  if (!isCurrentlyAtThreshold && candidateLevel < nextThreshold) {
+    return {
+      level: candidateLevel,
+      rawLevel,
+      isLevelCappedByBoss: false,
+      bossQuestsCompletedCount: 0,
+      bossQuestsRequiredCount: 0,
+      nextGateLevel: nextThreshold,
+      levelUpThreshold: null,
+      activeRequirement: null
+    };
   }
 
-  // Max allowed level: each completed boss quest shatters one gate (10 levels)
-  // 0 bosses done: max level = 10 (so 10 is the cap when no boss is slain)
-  // 1 boss done: max level = 20
-  // 2 bosses done: max level = 30
-  const maxAllowedLevel = INTERMEDIATE_RANK_LEVEL_THRESHOLD + completedBossCount * 10;
-  const isCapped = rawLevel > maxAllowedLevel;
-  const effectiveLevel = Math.min(rawLevel, maxAllowedLevel);
+  // The active gate threshold the player is currently confronting (e.g. 10, 20, 30...)
+  const targetThreshold = isCurrentlyAtThreshold ? savedLevel : nextThreshold;
+  const requiredCount = getLevelUpBossRequirementForThreshold(targetThreshold);
+
+  // Critical Separation of State:
+  // ONLY boss quests specifically designated for the level-up requirement (isLevelUpBoss)
+  // or registered in requirement.completedCount count towards the advancement gate.
+  // Scheduled Boss Quests (e.g. on Saturday/Sunday) remain separate quests and do NOT affect this requirement.
+  let completedCount = 0;
+  if (requirement && requirement.thresholdLevel === targetThreshold) {
+    completedCount = requirement.completedCount || 0;
+  } else if (Array.isArray(quests) && quests.length > 0) {
+    const matchingCompletedQuests = quests.filter(q => 
+      Boolean(q.isLevelUpBoss) && 
+      (q.levelUpThreshold === targetThreshold || !q.levelUpThreshold) && 
+      (q.status === 'Completed' || q.completedAt !== null)
+    );
+    completedCount = matchingCompletedQuests.length;
+  }
+
+  const isGateCleared = completedCount >= requiredCount;
+
+  if (isGateCleared) {
+    // Gate at targetThreshold is conquered!
+    // Player can advance past targetThreshold up to the next threshold (targetThreshold + 10).
+    const nextUpperGate = targetThreshold + 10;
+    const effectiveLevel = Math.min(candidateLevel, nextUpperGate);
+    const isCappedAtUpper = effectiveLevel === nextUpperGate && candidateLevel >= nextUpperGate;
+
+    return {
+      level: effectiveLevel,
+      rawLevel,
+      isLevelCappedByBoss: isCappedAtUpper,
+      bossQuestsCompletedCount: completedCount,
+      bossQuestsRequiredCount: isCappedAtUpper ? getLevelUpBossRequirementForThreshold(nextUpperGate) : requiredCount,
+      nextGateLevel: nextUpperGate,
+      levelUpThreshold: isCappedAtUpper ? nextUpperGate : null,
+      activeRequirement: isCappedAtUpper ? {
+        thresholdLevel: nextUpperGate,
+        requiredCount: getLevelUpBossRequirementForThreshold(nextUpperGate),
+        completedCount: 0,
+        completedQuestIds: [],
+        active: true
+      } : null
+    };
+  }
+
+  // Gate is NOT yet cleared: The player's effective level is held at targetThreshold.
+  const effectiveLevel = targetThreshold;
+  const activeRequirement: LevelUpBossRequirement = {
+    thresholdLevel: targetThreshold,
+    requiredCount,
+    completedCount,
+    completedQuestIds: requirement?.thresholdLevel === targetThreshold ? (requirement.completedQuestIds || []) : [],
+    active: true
+  };
 
   return {
     level: effectiveLevel,
     rawLevel,
-    isLevelCappedByBoss: isCapped,
-    bossQuestsCompletedCount: completedBossCount,
-    bossQuestsRequiredCount: requiredBossCount,
-    nextGateLevel: currentGateLevel
+    isLevelCappedByBoss: true,
+    bossQuestsCompletedCount: completedCount,
+    bossQuestsRequiredCount: requiredCount,
+    nextGateLevel: targetThreshold,
+    levelUpThreshold: targetThreshold,
+    activeRequirement
   };
 };
 
@@ -758,8 +836,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
 
           const totalXp = Math.max(0, reconciledXpHistory.reduce((sum, h) => sum + (h.xp || 0), 0));
-          const completedBossCount = getCompletedBossQuestsCount(reconciledQuests, reconciledXpHistory);
-          const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
+          const calculatedRaw = calculatePlayerLevel(totalXp);
+          // Restore monotonic level: Never regress below raw level supported by total XP or saved level
+          const savedLevel = Math.max(1, parsed.profile?.level || calculatedRaw, calculatedRaw);
+          const gatedLevel = calculateGatedPlayerLevel(
+            totalXp,
+            savedLevel,
+            parsed.profile?.levelUpBossRequirement,
+            reconciledQuests
+          );
 
           const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) 
             ? parsed.weaknesses.map((w: any) => ({
@@ -782,6 +867,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...(parsed.profile || {}),
               xp: totalXp,
               level: gatedLevel.level,
+              levelUpBossRequirement: gatedLevel.activeRequirement ?? parsed.profile?.levelUpBossRequirement,
               coins: parsed.profile?.coins ?? 150,
               focusShields: parsed.profile?.focusShields ?? 0
             },
@@ -1710,7 +1796,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests, prev.lists, prev.folders);
       const finalHistory = resolveRecoveredPenalties(updatedHistory);
       const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
-      const level = calculatePlayerLevel(totalXp);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        finalQuests
+      );
+      const level = gated.level;
       
       const updatedSkills = prev.skills.map(skill => {
         const skillXp = getSkillXpFromHistory(skill.id, finalHistory, prev.skills);
@@ -1769,7 +1861,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests, prev.lists, prev.folders);
         const finalHistory = resolveRecoveredPenalties(updatedHistory);
         const totalXp = Math.max(0, finalHistory.reduce((sum, h) => sum + h.xp, 0));
-        const level = calculatePlayerLevel(totalXp);
+        const gated = calculateGatedPlayerLevel(
+          totalXp,
+          prev.profile.level,
+          prev.profile.levelUpBossRequirement,
+          finalQuests
+        );
+        const level = gated.level;
         
         const updatedSkills = prev.skills.map(skill => {
           const skillXp = getSkillXpFromHistory(skill.id, finalHistory, prev.skills);
@@ -1864,8 +1962,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getPlayerLevelInfo = (): PlayerLevelInfo => {
     // Use historical completions to get total earned XP
     const totalXp = state.xpHistory.reduce((sum, h) => sum + h.xp, 0);
-    const completedBossCount = getCompletedBossQuestsCount(state.quests, state.xpHistory);
-    const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+    const gated = calculateGatedPlayerLevel(
+      totalXp,
+      state.profile.level,
+      state.profile.levelUpBossRequirement,
+      state.quests
+    );
     const level = gated.level;
     
     const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
@@ -1907,7 +2009,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       bossQuestsRequiredCount: gated.bossQuestsRequiredCount,
       effectiveLevel: level,
       unlockedLevel: gated.rawLevel,
-      nextGateLevel: gated.nextGateLevel
+      nextGateLevel: gated.nextGateLevel,
+      levelUpThreshold: gated.levelUpThreshold,
+      activeRequirement: gated.activeRequirement
     };
   };
 
@@ -2143,6 +2247,145 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAt: attr.resetAt
       };
     });
+  };
+
+  // BOSS PROGRESSION & LEVEL-UP GATE METHODS
+  const forgeLevelUpBossQuest = (threshold?: number): string => {
+    const levelInfo = getPlayerLevelInfo();
+    const targetThreshold = threshold || levelInfo.levelUpThreshold || state.profile.levelUpBossRequirement?.thresholdLevel || state.profile.level;
+    const questId = `boss-gate-${targetThreshold}-${Date.now()}`;
+    const reqCount = getLevelUpBossRequirementForThreshold(targetThreshold);
+
+    const newBossQuest: Quest = {
+      id: questId,
+      name: `👑 [GATE BOSS ${targetThreshold}] Dominance Trial: Level ${targetThreshold} Gatekeeper`,
+      description: `The Operator must conquer this monumental trial to unlock ascension beyond Level ${targetThreshold}. Defeat this boss to advance past the Level-Up Gate.`,
+      type: 'Boss',
+      difficulty: 'Boss',
+      xp: 1500,
+      estimatedTime: 90,
+      goalId: null,
+      projectId: null,
+      milestoneId: null,
+      listId: null,
+      relatedSkills: [],
+      isLevelUpBoss: true,
+      levelUpThreshold: targetThreshold,
+      recurrence: 'None',
+      status: 'Active',
+      deadline: null,
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+      rewardPerk: `Level-Up Gate ${targetThreshold} Shatter Signature`
+    };
+
+    setState(prev => {
+      const activeReq = prev.profile.levelUpBossRequirement;
+      const updatedRequirement: LevelUpBossRequirement = {
+        thresholdLevel: targetThreshold,
+        requiredCount: reqCount,
+        completedCount: (activeReq?.thresholdLevel === targetThreshold ? activeReq.completedCount : 0) || 0,
+        completedQuestIds: (activeReq?.thresholdLevel === targetThreshold ? activeReq.completedQuestIds : []) || [],
+        active: true
+      };
+
+      return {
+        ...prev,
+        quests: [newBossQuest, ...prev.quests],
+        profile: {
+          ...prev.profile,
+          levelUpBossRequirement: updatedRequirement
+        }
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'alert',
+      title: `⚔️ LEVEL-UP GATE BOSS MANIFESTED: LEVEL ${targetThreshold}`,
+      content: `A Level-Up Gate Boss Quest has been forged! Conquer this directive to unlock progression past Level ${targetThreshold}.`,
+      priority: 'high'
+    });
+
+    return questId;
+  };
+
+  const linkQuestToLevelUpGate = (questId: string, isLinked: boolean = true) => {
+    const levelInfo = getPlayerLevelInfo();
+    const targetThreshold = levelInfo.levelUpThreshold || state.profile.levelUpBossRequirement?.thresholdLevel || state.profile.level;
+
+    setState(prev => {
+      const updatedQuests = prev.quests.map(q => {
+        if (q.id === questId) {
+          return {
+            ...q,
+            isLevelUpBoss: isLinked,
+            levelUpThreshold: isLinked ? targetThreshold : undefined
+          };
+        }
+        return q;
+      });
+
+      return {
+        ...prev,
+        quests: updatedQuests
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'note',
+      title: isLinked ? '🔗 QUEST LINKED TO LEVEL-UP GATE' : '🔓 QUEST UNLINKED FROM GATE',
+      content: `Quest has been ${isLinked ? `bound to Level ${targetThreshold} Gate requirement` : 'unbound from Level-Up Gate requirement'}.`,
+      priority: 'medium'
+    });
+  };
+
+  const completeLevelUpBossGateRequirement = (): { success: boolean; message: string } => {
+    const levelInfo = getPlayerLevelInfo();
+    const targetThreshold = levelInfo.levelUpThreshold || state.profile.level;
+    const reqCount = getLevelUpBossRequirementForThreshold(targetThreshold);
+
+    if (!levelInfo.isLevelCappedByBoss) {
+      return {
+        success: false,
+        message: 'No active Level-Up Gate is currently capping operator progression.'
+      };
+    }
+
+    setState(prev => {
+      const updatedReq: LevelUpBossRequirement = {
+        thresholdLevel: targetThreshold,
+        requiredCount: reqCount,
+        completedCount: reqCount,
+        completedQuestIds: prev.profile.levelUpBossRequirement?.completedQuestIds || [],
+        active: false
+      };
+
+      const nextLevel = Math.max(targetThreshold + 1, levelInfo.unlockedLevel);
+
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          level: nextLevel,
+          levelUpBossRequirement: updatedReq
+        }
+      };
+    });
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: `👑 LEVEL-UP GATE ${targetThreshold} CLEARED!`,
+      content: `Level-Up Gate ${targetThreshold} has been verified and cleared! System Level ascended past threshold.`,
+      priority: 'high'
+    });
+
+    return {
+      success: true,
+      message: `Level-Up Gate ${targetThreshold} successfully cleared! Ascended past threshold.`
+    };
   };
 
   // CRUD FOR GOALS
@@ -2895,7 +3138,40 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Re-calculate user profile level and total XP dynamically based on completed quests history!
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const level = calculatePlayerLevel(totalXp);
+
+      // Boss Quest Level-Up Gate Handling
+      const isLevelUpBoss = Boolean(questToComplete.isLevelUpBoss);
+      let updatedRequirement = prev.profile.levelUpBossRequirement;
+      let gateJustCleared = false;
+      let gateTargetLevel = 10;
+      let reqCount = 1;
+
+      if (isLevelUpBoss) {
+        const activeReq = prev.profile.levelUpBossRequirement;
+        const gateLvl = questToComplete.levelUpThreshold || activeReq?.thresholdLevel || prev.profile.level;
+        gateTargetLevel = gateLvl;
+        reqCount = activeReq?.requiredCount || getLevelUpBossRequirementForThreshold(gateLvl);
+        const currentCount = (activeReq?.thresholdLevel === gateLvl ? activeReq.completedCount : 0) || 0;
+        const newCount = currentCount + 1;
+        gateJustCleared = newCount >= reqCount;
+
+        updatedRequirement = {
+          thresholdLevel: gateLvl,
+          requiredCount: reqCount,
+          completedCount: newCount,
+          completedQuestIds: [...(activeReq?.completedQuestIds || []), questToComplete.id],
+          active: !gateJustCleared
+        };
+      }
+
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        updatedRequirement,
+        updatedQuests
+      );
+
+      const level = gateJustCleared ? Math.max(gateTargetLevel + 1, gated.level) : gated.level;
 
       // Update skills internal xp cache based on entire XP History!
       const updatedSkills = prev.skills.map(skill => {
@@ -2960,6 +3236,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         priority: 'high'
       });
 
+      if (gateJustCleared) {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: `👑 LEVEL-UP GATE ${gateTargetLevel} SHATTERED!`,
+          content: `All ${reqCount} required Boss Quests conquered! System Level has ascended to Level ${level}!`,
+          priority: 'high'
+        });
+      }
+
       return {
         ...prev,
         quests: updatedQuests,
@@ -2971,6 +3257,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level,
+          levelUpBossRequirement: updatedRequirement,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           timeCredits: newLeisureBalance,
           totalTimeEarned: (!alreadyMinted && questTimeTx) ? (prev.profile.totalTimeEarned || 0) + earnedTimeCredits : (prev.profile.totalTimeEarned || 0),
@@ -3127,8 +3414,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const rawHistory = penaltyEntry ? [penaltyEntry, ...prev.xpHistory] : prev.xpHistory;
       const updatedHistory = resolveRecoveredPenalties(rawHistory);
       const totalXp = Math.max(0, updatedHistory.reduce((sum, h) => sum + h.xp, 0));
-      const completedBossCount = getCompletedBossQuestsCount(finalQuestsList, updatedHistory);
-      const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gatedLevel = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        finalQuestsList
+      );
 
       const updatedSkills = prev.skills.map(skill => {
         const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
@@ -4548,8 +4839,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const updatedHistory = resolveRecoveredPenalties(dispatchResult.updatedHistory);
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       const updatedSkills = prev.skills.map(skill => {
         const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
@@ -5343,8 +5638,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = Math.max(0, updatedXpHistory.reduce((sum, h) => sum + h.xp, 0));
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedXpHistory);
-      const gatedLevel = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gatedLevel = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       // 2. Deduct HP (Soul Vitality) & Coins (Treasury Fine) & Slash Momentum
       const currentHp = prev.profile.hp ?? 100;
@@ -6402,8 +6701,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
       const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
       const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + prayerHpGain);
 
@@ -6508,8 +6811,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
       const adhkarHpGain = (newValue && (type === 'sabah' || type === 'masa')) ? 5 : 0;
       const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
       const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + adhkarHpGain);
@@ -6624,8 +6931,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -6760,8 +7071,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -7157,8 +7472,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -7235,8 +7554,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
       const qiyamHpGain = (newRakats >= 2 && !log.qiyamCompleted) ? 15 : 0;
       const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
       const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + qiyamHpGain);
@@ -7369,8 +7692,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
       const fastingHpGain = (field === 'iftarCompleted' && updatedFasting.iftarCompleted) ? 20 : 0;
       const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
       const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + fastingHpGain);
@@ -7470,8 +7797,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -7552,8 +7883,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -7754,8 +8089,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       // Sync Adhkar Fortress catalog recitations for post-salah items
       const currentRecs = prev.adhkarRecitations?.[targetDate] || {};
@@ -8106,8 +8445,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -8264,8 +8607,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
-      const completedBossCount = getCompletedBossQuestsCount(prev.quests, updatedHistory);
-      const gated = calculateGatedPlayerLevel(totalXp, completedBossCount);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
 
       return {
         ...prev,
@@ -8446,6 +8793,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getAttributes,
       getPlayerLevelInfo,
       getAnalytics,
+      forgeLevelUpBossQuest,
+      linkQuestToLevelUpGate,
+      completeLevelUpBossGateRequirement,
       exportData,
       importData,
       isQuestFinishedForToday,
