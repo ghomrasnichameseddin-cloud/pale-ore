@@ -552,18 +552,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
                   </div>
 
-                  {/* MATHEMATICAL LEVEL XP FORMULA */}
-                  <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-lg space-y-1 text-xs">
-                    <div className="font-mono text-[11px] text-amber-300 font-bold flex items-center gap-1.5">
-                      <Cpu className="h-3.5 w-3.5" /> EXACT SYSTEM LEVEL FORMULA:
-                    </div>
-                    <div className="p-2 bg-black/50 border border-white/5 rounded text-cyan-300 font-mono text-center text-xs">
-                      XP Required to Advance from Level L to L+1 = <code>500 × L + 500</code> XP
-                    </div>
-                    <p className="text-[10px] text-zinc-400 font-sans">
-                      (Level 1 requires 1,000 XP; Level 2 requires 1,500 XP; Level 3 requires 2,000 XP, scaling linearly).
-                    </p>
-                  </div>
+
 
                   {/* MANDATORY BOSS QUEST PROGRESSION GATE (INTERMEDIATE RANKS LEVEL 10+) */}
                   <div className="p-4 bg-gradient-to-r from-amber-950/40 via-red-950/30 to-zinc-950 border-2 border-amber-500/50 rounded-xl space-y-3 shadow-[0_0_20px_rgba(245,158,11,0.12)]">
@@ -924,7 +913,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Shop Lock:</strong> Mandatory to complete before the Reward Shop vault unlocks.</div>
-                        <div>• <strong>View Isolation:</strong> Displayed alongside Penalty quests while standard quests are filtered out.</div>
+                        <div>• <strong>View Isolation:</strong> Displayed alongside Optional quests while standard quests are filtered out.</div>
                         <div>• <strong>Deactivation:</strong> Must be completed to restore momentum and deactivate Recovery Mode.</div>
                       </div>
                     </div>
@@ -939,7 +928,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         Secondary supportive tasks, quick errands, or sub-deliverables to boost discipline and minor attributes.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
-                        <div>• <strong>Penalty Exemption:</strong> Excluded from penalty XP deductions and penalty quest generation on lapse/failure.</div>
+                        <div>• <strong>Recovery Support:</strong> Recovery quests provide a structured path back to momentum after a lapse.</div>
                         <div>• <strong>Shop Lock:</strong> Excluded from mandatory shop lock requirements.</div>
                         <div>• <strong>Rollover:</strong> Safe to carry over without triggering Recovery Mode.</div>
                       </div>
@@ -1862,7 +1851,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <div className="p-4 bg-zinc-900/90 border border-[#c5a059]/30 rounded-xl space-y-3">
                       <div className="flex items-center justify-between border-b border-white/10 pb-2">
                         <span className="font-mono font-bold text-[#fef08a] uppercase text-xs flex items-center gap-1.5">
-                          ✨ 7. Prophetic Salawāt Engine (الصَّلَاةُ عَلَى النَّبِيِّ ﷺ)
+                          ✨ 7. Prophetic Salawāt Engine (ا��صَّلَاةُ عَلَى النَّبِيِّ ﷺ)
                         </span>
                         <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-1.5 py-0.5 rounded font-mono font-bold">
                           70_TARGET
@@ -2745,7 +2734,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <div className="p-3 bg-zinc-950/80 rounded border border-rose-500/30 space-y-1.5">
                         <span className="text-rose-400 font-bold text-[11px] block">2. WHAT HAPPENS WHEN THE METRIC IS FULL (5/5)?</span>
                         <p className="text-zinc-400 font-sans text-[10.5px] leading-relaxed">
-                          Reaching full capacity (5/5) triggers an <strong>Active Chronic Chain (سِلْسِلَةُ الإِصْرَارِ الـمُزْمِنَة)</strong>:
+                          Reaching full capacity (5/5) triggers an <strong>Active Chronic Chain (سِلْس��لَةُ الإِصْرَارِ الـمُزْمِنَة)</strong>:
                         </p>
                         <ul className="text-[10px] text-zinc-300 space-y-1 list-disc list-inside font-sans">
                           <li><strong>Compounding Severity Penalty:</strong> Future slips linked to this weakness suffer an automatic <strong>+25% XP deduction compounding penalty floor</strong>.</li>
@@ -2794,12 +2783,24 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       TIME_AS_CURRENCY_V2
                     </span>
                   </div>
-                  <p className="text-xs font-mono text-zinc-400 mt-1">
-                    <em>"Take advantage of five before five: your youth before your old age, your health before your sickness, your wealth before your poverty, your free time before you are preoccupied, and your life before your death."</em> — Al-Hakim. Converting deep work focus into guilt-free restorative passes, managing daily waking capital, and unlocking the dual-currency imperial treasury.
-                  </p>
-                </div>
+  <p className="text-xs font-mono text-zinc-400 mt-1">
+  <em>"Take advantage of five before five: your youth before your old age, your health before your sickness, your wealth before your poverty, your free time before you are preoccupied, and your life before your death."</em> — Al-Hakim. Converting deep work focus into guilt-free restorative passes, managing daily waking capital, and unlocking the dual-currency imperial treasury.
+  </p>
+  </div>
 
-                {/* THE CORE PHILOSOPHY OF TEMPORAL CAPITAL */}
+  <div className="p-3 bg-zinc-950/80 border border-emerald-500/20 rounded-lg space-y-1 text-xs">
+    <div className="font-mono text-[11px] text-amber-300 font-bold flex items-center gap-1.5">
+      <Cpu className="h-3.5 w-3.5" /> EXACT SYSTEM LEVEL FORMULA:
+    </div>
+    <div className="p-2 bg-black/50 border border-white/5 rounded text-cyan-300 font-mono text-center text-xs">
+      XP Required to Advance from Level L to L+1 = <code>500 × L + 500</code> XP
+    </div>
+    <p className="text-[10px] text-zinc-400 font-sans">
+      Level 1 requires 1,000 XP; Level 2 requires 1,500 XP; Level 3 requires 2,000 XP, scaling linearly.
+    </p>
+  </div>
+  
+  {/* THE CORE PHILOSOPHY OF TEMPORAL CAPITAL */}
                 <div className="p-4 sm:p-5 bg-gradient-to-br from-[#0c1a14] via-[#0d1017] to-[#0a140f] border border-emerald-500/40 rounded-xl space-y-3 relative overflow-hidden">
                   <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
                     <div className="font-mono font-bold text-emerald-300 uppercase flex items-center gap-2 text-xs">

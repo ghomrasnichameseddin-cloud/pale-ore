@@ -121,7 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const baseQuests = state.quests.filter(q => {
     if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (isRecoveryActive) {
-      if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+      if (q.type !== 'Recovery' && q.type !== 'Optional') return false;
     }
     return true;
   });
