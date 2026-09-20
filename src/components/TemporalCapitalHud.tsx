@@ -423,31 +423,6 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
             </button>
           </div>
 
-          {/* Mathematical Equation & Daily Cadence Banner */}
-          <div className="px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[10px] font-mono text-zinc-400">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-zinc-300 font-bold uppercase">Equation:</span>
-              <span className="text-zinc-200">{totalWaking}m Waking</span>
-              <span>=</span>
-              <span className="text-emerald-400 font-bold">{accounting.usedMinutes}m Done</span>
-              <span>+</span>
-              <span className="text-amber-400 font-bold">{accounting.committedMinutes}m Active</span>
-              <span>+</span>
-              <span className="text-cyan-400 font-bold">{accounting.requiredMinutes}m Salah</span>
-              <span>+</span>
-              <span className="text-zinc-300 font-bold">{accounting.protectedBufferMinutes}m Buffer ({currentBufferPercent}%)</span>
-              <span>+</span>
-              <span className={`font-bold ${accounting.safelyAllocatableMinutes > 0 ? 'text-emerald-300' : 'text-rose-400'}`}>
-                {accounting.safelyAllocatableMinutes}m Free
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1 text-zinc-500 shrink-0">
-              <RefreshCw className="h-3 w-3 text-emerald-400/80" />
-              <span>Resets at 00:00 midnight (perishable daily capital)</span>
-            </div>
-          </div>
-
           {/* INTERACTIVE BREAKDOWN ACCORDION / DRAWER */}
           <AnimatePresence>
             {activeDetailTab && (
