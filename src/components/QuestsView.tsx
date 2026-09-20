@@ -76,7 +76,7 @@ export const QuestsView: React.FC = () => {
       {/* BOSS PROGRESSION GATE BANNER */}
       <BossProgressionBanner />
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <button
           type="button"
           onClick={() => setIsQuestFormOpen(true)}
