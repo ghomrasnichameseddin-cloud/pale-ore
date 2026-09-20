@@ -11,7 +11,7 @@
     "test": "vitest run",
     "lint": "tsc --noEmit && npm run check:dates",
     "check:dates": "node scripts/checkDateUsage.js",
-    "predeploy": "npm run build",
+    "predeploy": "VITE_GITHUB_PAGES=true npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {

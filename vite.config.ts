@@ -4,8 +4,12 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const isGitHubPages = process.env.VITE_GITHUB_PAGES === 'true';
+const appBase = isGitHubPages ? '/pale-ore/' : '/';
+
 export default defineConfig({
-  base: '/pale-ore/',
+  // Use the root path in local/v0 previews; GitHub Pages supplies the repository path explicitly.
+  base: appBase,
 
   plugins: [
     react(),
@@ -22,8 +26,8 @@ export default defineConfig({
         background_color: '#09090b',
         display: 'standalone',
         orientation: 'any',
-        scope: '/pale-ore/',
-        start_url: '/pale-ore/',
+        scope: appBase,
+        start_url: appBase,
         icons: [],
       },
       workbox: {
