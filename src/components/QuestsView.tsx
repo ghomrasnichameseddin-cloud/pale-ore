@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { usePOS, isQuestArchived } from '../POSContext';
 import { Swords, Compass, ShieldAlert, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 import { ActiveDirectives } from './ActiveDirectives';
-import { ExecuteQuestForm } from './ExecuteQuestForm';
 import { QuestDirectory } from './QuestDirectory';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { BossProgressionBanner } from './BossProgressionBanner';
 
 export const QuestsView: React.FC = () => {
-  const [isQuestFormOpen, setIsQuestFormOpen] = useState(false);
   const { 
     state, 
     isQuestFinishedForToday, 
@@ -76,28 +74,6 @@ export const QuestsView: React.FC = () => {
       {/* BOSS PROGRESSION GATE BANNER */}
       <BossProgressionBanner />
 
-      <div className="flex justify-start">
-        <button
-          type="button"
-          onClick={() => setIsQuestFormOpen(true)}
-          className="rounded-lg border border-[#c5a059]/40 bg-[#3a2e12]/50 px-4 py-2 font-mono text-xs font-bold text-[#fef08a] transition hover:bg-[#3a2e12]"
-        >
-          EXECUTE NEW QUEST
-        </button>
-      </div>
-
-      {isQuestFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="execute-quest-title">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#c5a059]/30 bg-[#0b0d13] p-4 shadow-2xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 id="execute-quest-title" className="font-display text-lg font-bold text-white">EXECUTE NEW QUEST</h3>
-              <button type="button" onClick={() => setIsQuestFormOpen(false)} className="rounded-md px-2 py-1 text-zinc-400 hover:bg-white/10 hover:text-white" aria-label="Close quest form">×</button>
-            </div>
-            <ExecuteQuestForm />
-          </div>
-        </div>
-      )}
-      
       {/* ACTIVE DIRECTIVES */}
       <div id="quests-list-container" className="w-full">
         <ActiveDirectives />
