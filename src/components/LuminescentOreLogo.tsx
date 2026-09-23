@@ -2,11 +2,16 @@ import React from 'react';
 
 interface LuminescentOreLogoProps {
   className?: string;
+  onClick?: () => void;
 }
 
-export const LuminescentOreLogo: React.FC<LuminescentOreLogoProps> = ({ className = "h-8 w-8" }) => {
+export const LuminescentOreLogo: React.FC<LuminescentOreLogoProps> = ({ className = "h-8 w-8", onClick }) => {
   return (
-    <div className={`relative flex items-center justify-center shrink-0 select-none ${className}`} id="raw-luminescent-ore-logo">
+    <div 
+      onClick={onClick}
+      className={`relative flex items-center justify-center shrink-0 select-none ${onClick ? 'cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95' : ''} ${className}`} 
+      id="raw-luminescent-ore-logo"
+    >
       {/* Islamic Dark Fantasy RPG Luminescent Ore Icon: Geometric Octagram + Crystalline Ore Facets */}
       <svg
         viewBox="0 0 100 100"

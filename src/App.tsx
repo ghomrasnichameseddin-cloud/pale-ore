@@ -27,13 +27,12 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet,
-  Hourglass
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActiveRestOverlay } from './components/ActiveRestOverlay';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history' | 'time_ledger';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -149,11 +148,6 @@ function AppContent() {
         return `${count} logs`;
       }
 
-      case 'time_ledger': {
-        const restMins = getTemporalCapitalInfo ? getTemporalCapitalInfo().leisureMinutesBalance : (state.profile?.timeCredits ?? 60);
-        return `${restMins}m rest`;
-      }
-
       case 'spiderweb': {
         const totalNodes = (state.goals?.length || 0) + (state.projects?.length || 0) + (state.skills?.length || 0);
         return `${totalNodes} nodes`;
@@ -200,7 +194,6 @@ function AppContent() {
         { id: 'appearance', label: 'Visual Codex (Appearance)', icon: Palette, desc: 'Themes, ornamentation, glow & interface density' },
         { id: 'analytics', label: 'Resonance Analytics', icon: BarChart3, desc: 'Empirical analytics, XP trends & consistency' },
         { id: 'xp_history', label: 'XP Ledger & Audit', icon: FileSpreadsheet, desc: 'Complete historical ledger of all gains, losses & sources' },
-        { id: 'time_ledger', label: 'Temporal Ledger & Rest', icon: Hourglass, desc: 'Audit trail of temporal capital minted, invested & expended' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
         { id: 'system', label: 'Sanctum Engine & Backups', icon: Settings, desc: 'Data export, JSON restore & system maintenance' },
       ]
@@ -223,19 +216,27 @@ function AppContent() {
       {/* MOBILE TOP NAVIGATION BAR */}
       <div className="md:hidden glass-panel border-b border-[var(--border-subtle)] px-2.5 sm:px-4 py-2.5 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-void)]/95 backdrop-blur-md shadow-md" id="mobile-top-bar">
         {/* BRAND LOGO (IDENTICAL TO PC SIDEBAR LOGO) */}
-        <div 
-          onClick={() => setActiveTab('dashboard')}
-          className="flex items-center gap-2.5 min-w-0 cursor-pointer select-none shrink-0"
-          title="Return to Command Center"
+        <button 
+          type="button"
+          onClick={() => {
+            setActiveTab('dashboard');
+            setMobileMenuOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="flex items-center gap-2.5 min-w-0 cursor-pointer select-none shrink-0 text-left group focus:outline-none focus:ring-1 focus:ring-[var(--border-accent)] rounded-lg p-0.5 transition"
+          title="Return to Welcome / Command Center"
+          aria-label="Return to Pale Ore Welcome Page"
         >
-          <LuminescentOreLogo className="h-8 w-8 shrink-0" />
+          <div className="transition-transform duration-300 group-hover:scale-105 group-active:scale-95 shrink-0">
+            <LuminescentOreLogo className="h-8 w-8 shrink-0" />
+          </div>
           <div className="min-w-0">
-            <h1 className="font-display text-base font-black tracking-widest text-[var(--accent-highlight)] truncate leading-none">PALE ORE</h1>
+            <h1 className="font-display text-base font-black tracking-widest text-[var(--accent-highlight)] group-hover:text-white truncate leading-none transition-colors">PALE ORE</h1>
             <p className="text-[9px] font-mono text-[var(--accent-bright)] tracking-widest mt-1 flex items-center gap-1 leading-none">
               <RubElHizbIcon className="h-2 w-2 shrink-0" /> PROGRESS_OS v2.6
             </p>
           </div>
-        </div>
+        </button>
         
         <div className="flex items-center gap-1 shrink-0">
           {/* Vault Dinars counter */}
@@ -305,7 +306,15 @@ function AppContent() {
             id="mobile-navigation-drawer"
           >
             {/* Operator Signature Quick Banner */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-[var(--accent-surface)] to-[var(--bg-void)] border border-[var(--border-accent)] space-y-2">
+            <div 
+              onClick={() => {
+                setActiveTab('dashboard');
+                setMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="p-3.5 rounded-xl bg-gradient-to-r from-[var(--accent-surface)] to-[var(--bg-void)] border border-[var(--border-accent)] space-y-2 cursor-pointer hover:border-[var(--border-strong)] transition active:scale-98 select-none"
+              title="Return to Command Center"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-[var(--accent-surface)] border border-[var(--border-accent)]">
@@ -458,15 +467,26 @@ function AppContent() {
         <div className="space-y-4">
           
           {/* BRAND LOGO */}
-          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-            <LuminescentOreLogo className="h-8 w-8" />
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="w-full flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4 cursor-pointer select-none text-left group hover:opacity-95 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-[var(--border-accent)] rounded-lg p-1 -m-1"
+            title="Return to Welcome / Command Center"
+            aria-label="Return to Pale Ore Welcome Page"
+          >
+            <div className="transition-transform duration-300 group-hover:scale-105 group-active:scale-95 shrink-0">
+              <LuminescentOreLogo className="h-8 w-8" />
+            </div>
             <div>
-              <h1 className="font-display text-base font-black tracking-widest text-[var(--accent-highlight)]">PALE ORE</h1>
+              <h1 className="font-display text-base font-black tracking-widest text-[var(--accent-highlight)] group-hover:text-white transition-colors">PALE ORE</h1>
               <p className="text-[9px] font-mono text-[var(--accent-bright)] tracking-widest mt-0.5 flex items-center gap-1">
                 <RubElHizbIcon className="h-2 w-2" /> PROGRESS_OS v2.6
               </p>
             </div>
-          </div>
+          </button>
 
           {/* ACTIVE OPERATOR STATUS MINI-WIDGET */}
           <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg space-y-2 relative overflow-hidden">
@@ -734,9 +754,9 @@ function AppContent() {
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
               {activeTab === 'shop' && <RewardShopView />}
-              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history' || activeTab === 'time_ledger') && (
+              {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history') && (
                 <OracleSystemView 
-                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : activeTab === 'xp_history' ? 'xp_history' : activeTab === 'time_ledger' ? 'time_ledger' : 'analytics'}
+                  initialSubTab={activeTab === 'appearance' ? 'appearance' : activeTab === 'system' ? 'system' : activeTab === 'xp_history' ? 'xp_history' : 'analytics'}
                   onNavigate={(tab) => setActiveTab(tab as TabId)}
                 />
               )}
@@ -755,7 +775,17 @@ function AppContent() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[9px] text-[var(--accent-bright)] uppercase tracking-widest font-mono">PALE ORE PROGRESS_OS</span>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('dashboard');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-[9px] text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] uppercase tracking-widest font-mono cursor-pointer transition-colors"
+              title="Return to Welcome / Command Center"
+            >
+              PALE ORE PROGRESS_OS
+            </button>
           </div>
         </footer>
 

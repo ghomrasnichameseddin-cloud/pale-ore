@@ -5,7 +5,7 @@ import {
   Circle, CheckCircle2, Trash2, Edit3, Save, X, Skull, 
   Calendar, SkipForward, Play, Pause, Clock, Timer, 
   AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers,
-  Archive, ArchiveRestore, Zap
+  Archive, ArchiveRestore, Zap, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addDays } from '../utils/dateUtils';
@@ -111,12 +111,12 @@ export const getCategoryDetails = (type: string) => {
 const QUEST_VIEW_SETTINGS_KEY = 'pale_ore_quest_view_settings';
 
 export interface QuestViewSettings {
-  categoryFilter: 'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Penalty' | 'Optional' | 'Milestone';
+  categoryFilter: 'All' | 'Main' | 'Side' | 'Boss' | 'Habit' | 'Recovery' | 'Optional' | 'Milestone';
   difficultyFilter: 'All' | 'Easy' | 'Normal' | 'Hard' | 'Boss';
   groupBy: 'none' | 'list' | 'folder' | 'category' | 'difficulty';
   sortBy: 'default' | 'name' | 'difficulty' | 'xp' | 'deadline' | 'type' | 'streak';
   sortOrder: 'asc' | 'desc';
-  terminalTab: 'today' | 'tomorrow' | 'week' | 'deferred' | 'penalty';
+  terminalTab: 'today' | 'tomorrow' | 'week' | 'deferred' | 'recovery';
 }
 
 const loadSavedQuestViewSettings = (): QuestViewSettings => {
@@ -132,6 +132,12 @@ const loadSavedQuestViewSettings = (): QuestViewSettings => {
     const raw = localStorage.getItem(QUEST_VIEW_SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      if (parsed.terminalTab === 'penalty') {
+        parsed.terminalTab = 'recovery';
+      }
+      if (parsed.categoryFilter === 'Penalty') {
+        parsed.categoryFilter = 'Recovery';
+      }
       return { ...defaults, ...parsed };
     }
   } catch (e) {
@@ -868,7 +874,11 @@ export const ActiveDirectives: React.FC = () => {
 
   const matchesCategory = (q: Quest) => {
     if (categoryFilter === 'All') return true;
-    return (q.type || 'Main').toLowerCase() === categoryFilter.toLowerCase();
+    const qType = (q.type || 'Main').toLowerCase();
+    if (categoryFilter === 'Recovery') {
+      return qType === 'recovery' || qType === 'penalty';
+    }
+    return qType === categoryFilter.toLowerCase();
   };
 
   // Compute category counts for active tab
@@ -900,9 +910,9 @@ export const ActiveDirectives: React.FC = () => {
         const isRecurring = q.recurrence && q.recurrence !== 'None';
         if (isFinished) return isRecurring;
         return q.status === 'Active' && q.deadline && q.deadline > todayStr;
-      } else if (terminalTab === 'penalty') {
+      } else if (terminalTab === 'recovery') {
         if (q.status !== 'Active') return false;
-        return q.type === 'Penalty';
+        return q.type === 'Recovery' || q.type === 'Penalty';
       }
       return true;
     });
@@ -914,7 +924,6 @@ export const ActiveDirectives: React.FC = () => {
       Boss: 0,
       Habit: 0,
       Recovery: 0,
-      Penalty: 0,
       Optional: 0
     };
 
@@ -925,8 +934,7 @@ export const ActiveDirectives: React.FC = () => {
         typeKey.toLowerCase() === 'side' ? 'Side' :
         typeKey.toLowerCase() === 'boss' ? 'Boss' :
         typeKey.toLowerCase() === 'habit' ? 'Habit' :
-        typeKey.toLowerCase() === 'recovery' ? 'Recovery' :
-        typeKey.toLowerCase() === 'penalty' ? 'Penalty' :
+        (typeKey.toLowerCase() === 'recovery' || typeKey.toLowerCase() === 'penalty') ? 'Recovery' :
         typeKey.toLowerCase() === 'optional' ? 'Optional' : 'Main';
       counts[normalized] = (counts[normalized] || 0) + 1;
     });
@@ -1109,14 +1117,14 @@ export const ActiveDirectives: React.FC = () => {
     return q.status === 'Active' && q.deadline && q.deadline > todayStr;
   });
 
-  // 5. Penalty quests: Active and type === 'Penalty' (excluding archived)
-  const penaltyQuests = state.quests.filter(q => {
+  // 5. Recovery quests: Active and type === 'Recovery' (or legacy Penalty) (excluding archived)
+  const recoveryQuests = state.quests.filter(q => {
     if (isQuestArchived(q, state.lists, state.folders)) return false;
     if (q.status !== 'Active') return false;
     const matchesDifficulty = difficultyFilter === 'All' || q.difficulty === difficultyFilter;
     if (!matchesDifficulty) return false;
     if (!matchesCategory(q)) return false;
-    return q.type === 'Penalty';
+    return q.type === 'Recovery' || q.type === 'Penalty';
   });
 
   const handleMoveToTomorrow = (questId: string) => {
@@ -1141,7 +1149,7 @@ export const ActiveDirectives: React.FC = () => {
   const renderQuestCard = (quest: Quest, isDeferred: boolean, indexOverride?: number) => {
     const matchedGoal = state.goals.find(g => g.id === quest.goalId);
     const isEditing = editingQuestId === quest.id;
-    const activeList = terminalTab === 'today' ? todayQuests : terminalTab === 'tomorrow' ? tomorrowQuests : terminalTab === 'week' ? weekQuests : terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+    const activeList = terminalTab === 'today' ? todayQuests : terminalTab === 'tomorrow' ? tomorrowQuests : terminalTab === 'week' ? weekQuests : terminalTab === 'deferred' ? tomorrowPostponedQuests : recoveryQuests;
     const currentIndex = typeof indexOverride === 'number' ? indexOverride : activeList.findIndex(item => item.id === quest.id) + 1;
     
     if (isEditing) {
@@ -1806,133 +1814,6 @@ export const ActiveDirectives: React.FC = () => {
         </div>
       )}
 
-      {/* FAST_QUEST_INPUT_CONSOLE */}
-      <div className="glass-panel border-[#c5a059]/30 bg-[#0b0d13]/90 p-4 rounded-xl space-y-3 shadow-[0_0_20px_rgba(197,160,89,0.08)]" id="fast-quest-console">
-        <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-[#e5c875]" />
-            <span className="text-[10px] font-mono text-[#fef08a] font-bold tracking-wider">
-              PALE_ORE_DIRECTIVE_LOGGER_SYSTEM [v2.0]
-            </span>
-          </div>
-          <button 
-            type="button"
-            onClick={() => {
-              setIsBulkMode(!isBulkMode);
-              setTerminalLog(null);
-            }}
-            className="text-[9px] font-mono text-[#fef08a] bg-[#3a2e12]/80 hover:bg-[#524017] border border-[#c5a059]/40 px-2 py-0.5 rounded transition-all"
-          >
-            {isBulkMode ? "⚡ QUICK_MODE" : "🗃️ BULK_MODE"}
-          </button>
-        </div>
-
-        {terminalLog && (
-          <div className="p-2 bg-[#07080c]/90 border border-[#c5a059]/20 rounded font-mono text-[10px] text-[#e5c875] flex items-center gap-2 shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
-            <span className="animate-pulse text-[#fef08a]">❯</span>
-            <span>{terminalLog}</span>
-          </div>
-        )}
-
-        {!isBulkMode ? (
-          <div className="space-y-1 relative">
-            <form onSubmit={handleQuickAddSubmit} className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-2.5 font-mono text-xs text-[#e5c875] select-none">❯</span>
-                <input 
-                  type="text"
-                  placeholder="Type 'help' for commands, or write: Read books [easy] *habit @Discipline #Fitness /Health"
-                  value={quickInputText}
-                  onChange={(e) => {
-                    setQuickInputText(e.target.value);
-                    setFocusedSuggestionIndex(-1);
-                  }}
-                  onKeyDown={handleInputKeyDown}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setTimeout(() => setIsInputFocused(false), 200)}
-                  className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-lg pl-7 pr-3 py-2 text-xs font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-[#c5a059]/60 focus:ring-1 focus:ring-[#c5a059]/20 transition-all"
-                  autoComplete="off"
-                  spellCheck="false"
-                />
-              </div>
-              <button
-                type="submit"
-                className="px-4 bg-[#3a2e12] hover:bg-[#524017] border border-[#c5a059]/50 text-[#fef08a] rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all"
-              >
-                Execute
-              </button>
-            </form>
-
-            {/* Suggestions Intellisense Overlay */}
-            {isInputFocused && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#07080c] border border-[#c5a059]/30 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50 divide-y divide-[#c5a059]/10 font-mono text-[10px]">
-                {suggestions.map((s, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onMouseDown={() => handleSelectSuggestion(s)}
-                    onMouseEnter={() => setFocusedSuggestionIndex(index)}
-                    className={`w-full text-left px-3 py-1.5 flex items-center justify-between transition-colors ${
-                      index === focusedSuggestionIndex ? 'bg-[#3a2e12]/60 text-[#fef08a]' : 'text-zinc-400'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[#e5c875] font-bold select-none">❯</span>
-                      <span className="font-bold text-zinc-100">{s.display}</span>
-                      {s.desc && <span className="text-[9px] text-zinc-500">({s.desc})</span>}
-                    </div>
-                    <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded border leading-none ${
-                      s.type === 'command' ? 'bg-[#3a2e12]/60 border-[#c5a059]/30 text-[#fef08a]' :
-                      s.type === 'skill' ? 'bg-amber-950/40 border-amber-500/20 text-amber-400' :
-                      s.type === 'project' ? 'bg-blue-950/40 border-blue-500/20 text-blue-400' :
-                      s.type === 'goal' ? 'bg-purple-950/40 border-purple-500/20 text-purple-400' :
-                      s.type === 'difficulty' ? 'bg-rose-950/40 border-rose-500/20 text-rose-400' :
-                      s.type === 'type' ? 'bg-emerald-950/40 border-emerald-500/20 text-emerald-400' :
-                      'bg-zinc-900 border-white/5 text-zinc-400'
-                    }`}>
-                      {s.type}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <p className="text-[9px] font-mono text-zinc-500 pl-1 pt-1 flex items-center gap-1">
-              Supports <span className="text-[#e5c875]">@skill</span>, <span className="text-[#e5c875]">#project</span>, <span className="text-[#e5c875]">/goal</span>, <span className="text-[#e5c875]">[difficulty]</span>, <span className="text-[#e5c875]">*habit</span>, <span className="text-[#e5c875]">!</span> critical. Use <kbd className="bg-[#07080c] px-1 border border-[#c5a059]/20 rounded text-[8px]">↑/↓</kbd> for history, <kbd className="bg-[#07080c] px-1 border border-[#c5a059]/20 rounded text-[8px]">Tab</kbd> to autocomplete.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-[9px] font-mono text-zinc-500">
-              Paste or type multiple directives (one per line). Format supports difficulty tags <span className="text-zinc-400">[easy]</span>, type tags <span className="text-zinc-400">*habit</span>, <span className="text-zinc-400">*weekly</span>, or <span className="text-zinc-400">!</span> for critical importance.
-            </p>
-            <textarea
-              rows={4}
-              placeholder="Example list:&#10;Study algorithms [hard] !&#10;Read 10 pages *habit&#10;Weekly review *weekly&#10;Buy groceries [easy]"
-              value={bulkInputText}
-              onChange={(e) => setBulkInputText(e.target.value)}
-              className="w-full bg-zinc-950/80 border border-white/5 rounded-lg p-3 text-xs font-mono text-white placeholder-zinc-750 focus:outline-none focus:border-cyan-500/30 resize-none transition-all"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setBulkInputText('')}
-                className="px-3 py-1 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 rounded border border-white/5 text-[10px] font-mono transition-colors"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkAddSubmit}
-                className="px-4 py-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-400 rounded text-[10px] font-mono font-bold uppercase tracking-wider transition-all"
-              >
-                Deploy Directives
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Directives Filter Bar */}
       <div className="p-3 bg-[#0b0d13]/85 border border-[#c5a059]/20 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-[0_0_12px_rgba(197,160,89,0.04)]">
         <div className="flex items-center gap-2">
@@ -1953,7 +1834,6 @@ export const ActiveDirectives: React.FC = () => {
             <option value="Boss">🔥 Boss ({categoryCounts['Boss'] || 0})</option>
             <option value="Habit">⚡ Habit ({categoryCounts['Habit'] || 0})</option>
             <option value="Recovery">🛡️ Recovery ({categoryCounts['Recovery'] || 0})</option>
-            <option value="Penalty">💀 Penalty ({categoryCounts['Penalty'] || 0})</option>
             <option value="Optional">🌟 Optional ({categoryCounts['Optional'] || 0})</option>
             <option value="Milestone">🚩 Milestone ({categoryCounts['Milestone'] || 0})</option>
           </select>
@@ -2013,19 +1893,19 @@ export const ActiveDirectives: React.FC = () => {
 
       {/* Recovery Alert Banner */}
       {state.profile.recoveryMode && (
-        <div className="p-3 bg-rose-950/40 border border-rose-500/25 rounded-lg flex items-center justify-between text-xs font-mono text-rose-400 mb-4 animate-pulse">
+        <div className="p-3 bg-amber-950/40 border border-amber-500/25 rounded-lg flex items-center justify-between text-xs font-mono text-amber-300 mb-4 animate-pulse">
           <div className="flex items-center gap-2">
-            <Skull className="h-4.5 w-4.5 text-rose-500 shrink-0" />
+            <ShieldAlert className="h-4.5 w-4.5 text-amber-400 shrink-0" />
             <div>
-              <p className="font-bold uppercase tracking-wider text-rose-300">⚠️ SECURITY SYSTEM ALERT: RECOVERY MODE ENGAGED</p>
-              <p className="text-[10px] text-zinc-400">A directive has been failed or skipped. Normal operations are paused until all outstanding Penalty Quests are completed.</p>
+              <p className="font-bold uppercase tracking-wider text-amber-200">⚠️ SECURITY SYSTEM ALERT: RECOVERY MODE ENGAGED</p>
+              <p className="text-[10px] text-zinc-400">A directive has lapsed or skipped. Normal operations are paused until all outstanding Recovery Quests are completed.</p>
             </div>
           </div>
           <button 
-            onClick={() => setTerminalTab('penalty')}
-            className="px-3 py-1 bg-rose-900/60 hover:bg-rose-800 border border-rose-500/30 rounded font-bold uppercase tracking-wider text-[10px] transition-colors whitespace-nowrap"
+            onClick={() => setTerminalTab('recovery')}
+            className="px-3 py-1 bg-amber-900/60 hover:bg-amber-800 border border-amber-500/30 text-amber-200 rounded font-bold uppercase tracking-wider text-[10px] transition-colors whitespace-nowrap"
           >
-            RESOLVE PENALTY QUESTS ({penaltyQuests.length})
+            RESOLVE RECOVERY QUESTS ({recoveryQuests.length})
           </button>
         </div>
       )}
@@ -2041,7 +1921,7 @@ export const ActiveDirectives: React.FC = () => {
       terminalTab === 'today' ? todayQuests :
       terminalTab === 'tomorrow' ? tomorrowQuests :
       terminalTab === 'week' ? weekQuests :
-      terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+      terminalTab === 'deferred' ? tomorrowPostponedQuests : recoveryQuests;
 
     if (!quest && activeList.length > 0) {
       quest = activeList[0];
@@ -2615,15 +2495,15 @@ export const ActiveDirectives: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setTerminalTab('penalty')}
+                  onClick={() => setTerminalTab('recovery')}
                   className={`flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 ${
-                    terminalTab === 'penalty'
-                      ? 'bg-rose-950 text-rose-400 font-bold border border-rose-500/20 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
-                      : 'text-zinc-500 hover:text-rose-400'
+                    terminalTab === 'recovery'
+                      ? 'bg-amber-950 text-amber-300 font-bold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]'
+                      : 'text-zinc-500 hover:text-amber-400'
                   }`}
                 >
-                  <Skull className="h-3 w-3 text-rose-500" />
-                  PENALTY ({penaltyQuests.length})
+                  <ShieldAlert className="h-3 w-3 text-amber-400" />
+                  RECOVERY ({recoveryQuests.length})
                 </button>
               </div>
             </div>
@@ -2646,8 +2526,8 @@ export const ActiveDirectives: React.FC = () => {
                 DEFERRED: {tomorrowPostponedQuests.length}
               </div>
             ) : (
-              <div className="text-[10px] font-mono text-rose-400 bg-rose-950/30 border border-rose-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0 animate-pulse">
-                CONSTRAINTS: {penaltyQuests.length}
+              <div className="text-[10px] font-mono text-amber-300 bg-amber-950/30 border border-amber-500/15 px-2 py-0.5 rounded uppercase font-bold tracking-wide shrink-0 animate-pulse">
+                RECOVERY: {recoveryQuests.length}
               </div>
             )}
           </div>
@@ -2675,8 +2555,8 @@ export const ActiveDirectives: React.FC = () => {
             </div>
           ) : (
             <div className="bg-[#07080c]/90 border border-[#c5a059]/20 rounded px-3 py-1.5 text-[10px] font-mono text-zinc-400 mb-4 shrink-0 leading-relaxed shadow-[inset_0_0_0_1px_rgba(197,160,89,0.04)]">
-              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/penalty_recovery_log<br/>
-              ACTIVE SYSTEM PENALTIES DETECTED. Complete these directives immediately to disable Recovery Mode restriction lock.
+              <span className="text-[#e5c875]">root@pos-os:~#</span> cat /sys/recovery_log<br/>
+              ACTIVE SYSTEM RECOVERY DIRECTIVES. Complete these directives to restore standard operations.
             </div>
           )}
 
@@ -2687,7 +2567,7 @@ export const ActiveDirectives: React.FC = () => {
                 terminalTab === 'today' ? todayQuests :
                 terminalTab === 'tomorrow' ? tomorrowQuests :
                 terminalTab === 'week' ? weekQuests :
-                terminalTab === 'deferred' ? tomorrowPostponedQuests : penaltyQuests;
+                terminalTab === 'deferred' ? tomorrowPostponedQuests : recoveryQuests;
 
               const isDeferredTab = terminalTab === 'tomorrow' || terminalTab === 'week' || terminalTab === 'deferred';
 
@@ -2783,10 +2663,10 @@ export const ActiveDirectives: React.FC = () => {
                   );
                 }
                 return (
-                  <div className="text-center py-12 px-4 border border-dashed border-rose-500/20 bg-rose-950/5 rounded-lg">
-                    <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 animate-bounce" />
-                    <p className="text-xs text-rose-300 font-mono font-bold uppercase tracking-wider">ALL PENALTIES CLEANED & RECOVERED</p>
-                    <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active penalty directives found.</p>
+                  <div className="text-center py-12 px-4 border border-dashed border-amber-500/20 bg-amber-950/5 rounded-lg">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-2 animate-bounce" />
+                    <p className="text-xs text-amber-300 font-mono font-bold uppercase tracking-wider">ALL RECOVERY DIRECTIVES RESOLVED</p>
+                    <p className="text-[9px] text-zinc-500 font-mono mt-1">Operational protocol normal. No active recovery directives found.</p>
                   </div>
                 );
               }
@@ -2880,7 +2760,7 @@ export const ActiveDirectives: React.FC = () => {
                   });
                 }
               } else if (groupBy === 'category') {
-                const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Penalty', 'Optional', 'General'];
+                const categoryOrder = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Optional', 'General'];
                 const groups: Record<string, Quest[]> = {};
                 
                 activeQuests.forEach(q => {
@@ -2890,8 +2770,7 @@ export const ActiveDirectives: React.FC = () => {
                     catKey.toLowerCase() === 'side' ? 'Side' :
                     catKey.toLowerCase() === 'boss' ? 'Boss' :
                     catKey.toLowerCase() === 'habit' ? 'Habit' :
-                    catKey.toLowerCase() === 'recovery' ? 'Recovery' :
-                    catKey.toLowerCase() === 'penalty' ? 'Penalty' :
+                    (catKey.toLowerCase() === 'recovery' || catKey.toLowerCase() === 'penalty') ? 'Recovery' :
                     catKey.toLowerCase() === 'optional' ? 'Optional' : 'General';
                   if (!groups[norm]) groups[norm] = [];
                   groups[norm].push(q);

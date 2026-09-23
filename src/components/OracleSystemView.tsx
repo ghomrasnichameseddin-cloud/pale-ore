@@ -3,18 +3,17 @@ import { usePOS } from '../POSContext';
 import { SystemMessageBox } from './SystemMessageBox';
 import { VisualCodexSettingsView } from './VisualCodexSettingsView';
 import { XPHistoryLedger } from './XPHistoryLedger';
-import { TemporalLedgerView } from './TemporalLedgerView';
 import { 
   BarChart3, Settings, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, Clock, ShieldCheck, Zap, Network, Download, Upload, 
   RotateCcw, AlertTriangle, Check, ShieldAlert, Cpu, CheckCircle2,
   Inbox, Percent, Sparkles, RefreshCw, ChevronRight, Layers, Palette,
-  FileSpreadsheet, Hourglass
+  FileSpreadsheet
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDecorations';
 import { getLocalDateString } from '../utils/dateUtils';
 
-export type OracleSystemSubTab = 'appearance' | 'analytics' | 'xp_history' | 'time_ledger' | 'system' | 'messages';
+export type OracleSystemSubTab = 'appearance' | 'analytics' | 'xp_history' | 'system' | 'messages';
 
 interface OracleSystemViewProps {
   initialSubTab?: OracleSystemSubTab;
@@ -113,7 +112,6 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
                 {activeSubTab === 'appearance' && 'VISUAL CODEX (APPEARANCE)'}
                 {activeSubTab === 'analytics' && 'RESONANCE ANALYTICS'}
                 {activeSubTab === 'xp_history' && 'XP LEDGER & AUDIT'}
-                {activeSubTab === 'time_ledger' && 'TEMPORAL LEDGER & REST'}
                 {activeSubTab === 'system' && 'SANCTUM ENGINE & BACKUPS'}
                 {activeSubTab === 'messages' && 'SYSTEM DISPATCH LOGS'}
               </span>
@@ -122,7 +120,6 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
               SANCTUM OBSERVATORY • {activeSubTab === 'appearance' && 'Themes, ornamentation, glow & interface density'}
               {activeSubTab === 'analytics' && 'Empirical resonance logs, XP trends & consistency'}
               {activeSubTab === 'xp_history' && 'Complete historical ledger of all gains, losses & sources'}
-              {activeSubTab === 'time_ledger' && 'Audit trail of temporal capital minted, invested & expended'}
               {activeSubTab === 'system' && 'Data export, JSON restore & system maintenance'}
               {activeSubTab === 'messages' && 'System alerts, dispatches & achievement notifications'}
             </p>
@@ -374,11 +371,6 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
       {/* 2. SYSTEM XP HISTORY & LEDGER SUBTAB */}
       {activeSubTab === 'xp_history' && (
         <XPHistoryLedger onNavigate={onNavigate} />
-      )}
-
-      {/* 2.5 TEMPORAL LEDGER & REST AUDIT SUBTAB */}
-      {activeSubTab === 'time_ledger' && (
-        <TemporalLedgerView onNavigate={onNavigate} />
       )}
 
       {/* 3. SANCTUM CORE & SACRED OVERRIDES SUBTAB */}

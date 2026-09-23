@@ -357,17 +357,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             + QUICK TRIAL
           </button>
 
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('shop')}
-              className="px-3 py-2 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] text-[var(--accent-highlight)] border border-[var(--border-accent)] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
-              title="Open Imperial Vault"
-            >
-              <ShoppingBag className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
-              VAULT ({state.profile.coins ?? 150} 🪙)
-            </button>
-          )}
-
           <button
             disabled={true}
             onClick={(e) => e.preventDefault()}
@@ -418,22 +407,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                 {/* Job & Title Badges */}
                 <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
-                    [{activeTitle.badge}] {activeTitle.name}
-                  </span>
-
-                  <span className="text-[10px] font-mono font-bold bg-[var(--bg-card)] border border-[var(--border-accent)] text-zinc-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    {renderTopicIcon(activeJob.iconName || 'Shield', 'h-3.5 w-3.5')}
-                    DISCIPLINE: {activeJob.name}
-                  </span>
-
                   <button
                     onClick={() => setIsJobTitleModalOpen(true)}
                     className="text-[10px] font-mono font-bold bg-[var(--bg-void)] hover:bg-[var(--accent-surface)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] text-zinc-300 hover:text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
                   >
                     <Sliders className="h-3 w-3 text-[var(--accent-bright)]" /> CAREER & TITLES
                   </button>
+
+                  <span className="text-[10px] font-mono font-bold bg-[var(--bg-card)] border border-[var(--border-accent)] text-zinc-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                    {renderTopicIcon(activeJob.iconName || 'Shield', 'h-3.5 w-3.5')}
+                    DISCIPLINE: {activeJob.name}
+                  </span>
+
+                  <span className="text-[10px] font-mono font-bold bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                    {renderTopicIcon(activeTitle.iconName || 'Award', 'h-3.5 w-3.5')} 
+                    [{activeTitle.badge}] {activeTitle.name}
+                  </span>
                 </div>
               </div>
 
@@ -448,8 +437,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* LEVEL & XP PROGRESSION HUD: Ergonomic 2x2 on Mobile, 5-col on Desktop */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
+            {/* LEVEL & XP PROGRESSION HUD: Clean 2x2 on Mobile, 4-col on Desktop */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
               {/* Level indicator */}
               <div className="col-span-1 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
                 <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SYS_LEVEL</span>
@@ -501,24 +490,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <span>{levelInfo.xpIntoLevel} / {levelInfo.xpRequiredForNextLevel} XP</span>
                     <span className="text-[var(--accent-bright)]">{levelInfo.xpUntilNextLevel} XP TO NEXT LVL</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Coins & Reward Shop Card */}
-              <div 
-                onClick={() => onNavigate?.('shop')}
-                className="col-span-1 sm:col-span-1 bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] hover:border-[var(--border-strong)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-md"
-              >
-                <div className="flex justify-between items-center text-[10px] font-mono text-[var(--accent-highlight)] uppercase font-bold">
-                  <span>VAULT DINARS</span>
-                  <ShoppingBag className="h-3.5 w-3.5 text-[var(--accent-bright)] group-hover:scale-110 transition" />
-                </div>
-                <div className="text-xl sm:text-2xl font-mono font-extrabold text-[var(--accent-highlight)] mt-0.5">
-                  {state.profile.coins ?? 150} 🪙
-                </div>
-                <div className="text-[9px] font-mono text-[var(--accent-bright)] font-bold mt-1 flex items-center gap-1">
-                  <span>OPEN VAULT</span>
-                  <ArrowUpRight className="h-3 w-3" />
                 </div>
               </div>
 

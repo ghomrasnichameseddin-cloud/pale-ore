@@ -4064,7 +4064,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Reward Shop & Coins Operations
   const isShopLocked = React.useMemo(() => {
     const todayStr = state.systemDate || getLocalDateString();
-    const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'PENALTY', 'HABIT', 'RECOVERY'];
+    const REQUIRED_SHOP_LOCK_TYPES = ['MAIN', 'BOSS', 'HABIT', 'RECOVERY'];
 
     // Check if there are active unfulfilled Kaffārah / Spiritual Remedy quests from Muhasabah
     const hasPendingKaffarah = (state.quests || []).some(q => 
@@ -4075,7 +4075,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const baseQuests = (state.quests || []).filter(q => {
       if (state.profile.recoveryMode) {
-        if (q.type !== 'Recovery' && q.type !== 'Optional' && q.type !== 'Penalty') return false;
+        if (q.type !== 'Recovery' && q.type !== 'Optional') return false;
       }
       return true;
     });

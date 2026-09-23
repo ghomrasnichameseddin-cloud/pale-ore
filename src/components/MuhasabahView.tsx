@@ -38,6 +38,8 @@ type SortOrder = 'desc' | 'asc';
 type GroupMode = 'none' | 'horizon' | 'category' | 'severity' | 'date';
 type TimeScope = 'today' | 'week' | 'all';
 
+export type MuhasabahMainTab = 'DAILY' | 'LEDGER' | 'PATTERNS' | 'WEEKLY';
+
 interface MuhasabahViewProps {
   onNavigate?: (tab: any) => void;
   onOpenGuide?: (section?: string) => void;
@@ -51,6 +53,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     clearAllWeeklyArchives, deleteWeeklyArchive, getRecurringSins
   } = usePOS();
 
+  const [activeMainTab, setActiveMainTab] = useState<MuhasabahMainTab>('DAILY');
   const [timeScope, setTimeScope] = useState<TimeScope>('today');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialTab, setModalInitialTab] = useState<MuhasabahModalTab>('slip');
@@ -575,7 +578,112 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         )}
       </AnimatePresence>
 
-      {/* ISLAMIC GAMIFICATION SAFEGUARD DISCLAIMER */}
+      
+
+      {/* 1. TOP HEADER & SANCTUM ACCOUNTABILITY METRICS */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0b0d13] border border-[#c5a059]/25 rounded-2xl p-5 relative overflow-hidden shadow-lg">
+        <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider font-bold flex items-center gap-1">
+              <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
+              MUḤĀSABAH // SELF-ACCOUNTABILITY
+            </span>
+            <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
+              سِجِلُّ المِيزَان
+            </span>
+          </div>
+
+          <h1 className="text-2xl font-display font-bold text-white tracking-wide flex items-center gap-2">
+            Self-Accountability (Muḥāsabah)
+          </h1>
+
+          <p className="text-xs font-sans text-zinc-400 max-w-2xl leading-relaxed italic">
+            “حَاسِبُوا أَنْفُسَكُمْ قَبْلَ أَنْ تُحَاسَبُوا، وَزِنُوا أَنْفُسَكُمْ قَبْلَ أَنْ تُوزَنُوا” — “Take account of yourselves before you are taken to account, and weigh your deeds before you are weighed.” (Umar ibn al-Khattāb رضي الله عنه)
+          </p>
+        </div>
+
+        {/* SUMMARY METRICS & QUICK ACTION */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="bg-[#07080c] border border-white/10 px-3 py-2 rounded-xl text-center">
+            <span className={`text-sm font-mono font-bold block ${stats.todayNetXP >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {stats.todayNetXP >= 0 ? `+${stats.todayNetXP}` : stats.todayNetXP} XP
+            </span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Today's Net</span>
+          </div>
+
+          <div className="bg-[#07080c] border border-white/10 px-3 py-2 rounded-xl text-center">
+            <span className="text-sm font-mono font-bold text-[#fef08a] block">{todayEntries.length}</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Slips Today</span>
+          </div>
+
+          <div className="bg-[#07080c] border border-white/10 px-3 py-2 rounded-xl text-center">
+            <span className={`text-sm font-mono font-bold block ${activeKaffarahQuests.length > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {activeKaffarahQuests.length}
+            </span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Penance Debt</span>
+          </div>
+
+          <div className="bg-[#07080c] border border-white/10 px-3 py-2 rounded-xl text-center">
+            <span className="text-sm font-mono font-bold text-cyan-300 block">{liveWeeklySummary.scoreOutOf10?.toFixed(1) || '10.0'}/10</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Weekly Score</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAuditModal(undefined, undefined, 'slip')}
+            className="px-4 py-2.5 bg-gradient-to-r from-[#3a2e12] to-[#241c09] hover:from-[#4c3c18] hover:to-[#2e230c] border border-[#c5a059] text-[#fef08a] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer ml-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>+ RECORD SLIP</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. MAIN NAVIGATION TABS */}
+      <div className="flex border-b border-white/10 gap-2 overflow-x-auto pb-1" id="muhasabah-main-tab-nav">
+        {[
+          { id: 'DAILY', label: 'Daily Balance & Audit', icon: Scale, desc: 'Mizan scale & rapid triage' },
+          { id: 'LEDGER', label: 'Sacred Slip Ledger', icon: FileText, badge: `${entries.length}`, desc: 'Complete audit history' },
+          { id: 'PATTERNS', label: 'Habit Boundaries', icon: Shield, badge: `${weaknesses.length}`, desc: 'Triggers & preventive rules' },
+          { id: 'WEEKLY', label: 'Weekly Evaluation (10/10)', icon: Sparkles, badge: `${liveWeeklySummary.scoreOutOf10?.toFixed(1) || '10.0'}`, desc: "Friday Jumu'ah review" },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeMainTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveMainTab(tab.id as MuhasabahMainTab)}
+              className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
+                isActive
+                  ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_16px_rgba(197,160,89,0.2)]'
+                  : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/10'
+              }`}
+            >
+              <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                  isActive ? 'bg-[#c5a059]/30 text-[#fef08a]' : 'bg-white/5 text-zinc-400'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+
+      {/* 3. ACTIVE TAB WORKSPACES */}
+
+      {/* TAB 1: DAILY BALANCE & AUDIT */}
+      {activeMainTab === 'DAILY' && (
+        <div className="space-y-6">
+          {/* ISLAMIC GAMIFICATION SAFEGUARD DISCLAIMER */}
       <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-accent)] flex items-start gap-3 shadow-md">
         <Shield className="h-4 w-4 text-[var(--accent-bright)] shrink-0 mt-0.5" />
         <div className="space-y-0.5 text-xs text-zinc-300">
@@ -588,7 +696,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         </div>
       </div>
 
-      {/* 1. THE DAILY BALANCE SCALE HERO */}
+          {/* 1. THE DAILY BALANCE SCALE HERO */}
       <DailyBalanceScale
         todayEarnedXP={stats.todayEarnedXP}
         todayLostXP={stats.todayLostXP}
@@ -612,279 +720,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         onOpenGuide={() => onOpenGuide?.('muhasabah')}
       />
 
-      {/* 2. LIFE MUHASABAH WITH WEEKLY REVIEW CADENCE */}
-      {(() => {
-        const b = liveWeeklySummary.weeklyScoreBreakdown;
-        const currentScore = liveWeeklySummary.scoreOutOf10 ?? 10.0;
-        const isNearTen = currentScore >= 9.5;
-
-        return (
-          <div className="p-4 sm:p-5 rounded-2xl border border-[var(--border-accent)] bg-[var(--bg-card)] relative overflow-hidden shadow-2xl space-y-4">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,var(--glow-color),transparent_65%)] pointer-events-none" />
-
-            {/* TOP HEADER ROW */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10 pb-3 border-b border-white/10">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
-                    <Scale className="h-3 w-3 text-[var(--accent-bright)]" />
-                    <span>محاسبة الحياة • LIFE MUHASABAH / 10</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
-                    {liveWeeklySummary.startDate} → {liveWeeklySummary.endDate}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-baseline gap-3 pt-1">
-                  <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                    <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
-                    <span>Weekly Practice Snapshot:</span>
-                  </h3>
-                  <span className="text-sm font-bold text-[var(--accent-bright)] font-mono">
-                    {b?.gradeAr} — <span className="text-zinc-300">{b?.gradeEn}</span>
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-400">
-                  <span className="text-rose-300">LIFE LEDGER: {entries.length} audits</span>
-                  <span>•</span>
-                  <span className="text-amber-300">−{allLostXP} lifetime XP</span>
-                  <span>•</span>
-                  <span>Score = practice feedback, not divine judgment</span>
-                </div>
-              </div>
-
-              {/* 10/10 GAUGE BADGE & ACTIONS */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-                <div className="flex items-center justify-between sm:justify-end gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
-                  <div className="text-left sm:text-right">
-                    <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">PRACTICE SNAPSHOT</span>
-                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">Not a spiritual verdict</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 font-mono">
-                    <span className={`text-2xl sm:text-3xl font-black ${
-                      currentScore >= 9.5 ? 'text-emerald-300' :
-                      currentScore >= 8.5 ? 'text-[var(--accent-highlight)]' :
-                      currentScore >= 7.0 ? 'text-[var(--accent-bright)]' :
-                      'text-rose-400'
-                    }`}>
-                      {currentScore.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-zinc-500 font-bold">/10.0</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setShowRefineDrawer(!showRefineDrawer)}
-                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer"
-                    title="Toggle the 10/10 Refine action plan with one-tap quest injection"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
-                    <span>{showRefineDrawer ? 'HIDE' : '⚡ REFINE'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleOpenWeeklySummaryGenerator}
-                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                    id="full-friday-audit-modal-btn"
-                    title="Open the weekly summary modal to write a personal reflection and manually archive any time"
-                  >
-                    <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
-                    <span>FULL AUDIT</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowSavedArchivesModal(true)}
-                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-black/60 hover:bg-zinc-800 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 text-xs font-mono transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                    id="view-saved-archives-btn"
-                  >
-                    <History className="h-3.5 w-3.5 text-[#c5a059] shrink-0" />
-                    <span>ARCHIVES ({savedSummaries.length})</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 6 SUB-PILLARS PROGRESS METERS (TOTAL 10.0 PTS) */}
-            {b && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
-                {/* 1. Fardh Prayers (2.5 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Shield className="h-3.5 w-3.5 text-amber-400" />
-                      <span>1. Farā'iḍ Prayers (أركان الصلاة)</span>
-                    </span>
-                    <span className="font-bold text-amber-300">{b.fardhPrayersScore.toFixed(1)} / 2.5 pts</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-amber-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.fardhPrayersScore / 2.5) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.prayersOnTimeCount} on-time (+40 XP) • {liveWeeklySummary.prayersDelayedCount} delayed (−50 XP) out of 35
-                  </span>
-                </div>
-
-                {/* 2. Slips & Restraint (2.0 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Scale className="h-3.5 w-3.5 text-rose-400" />
-                      <span>2. Restraint & Slips (حفظ الجوارح)</span>
-                    </span>
-                    <span className="font-bold text-rose-300">{b.slipsRestraintScore.toFixed(1)} / 2.0 pts</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-rose-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.slipsRestraintScore / 2.0) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.totalSlipsCount} slip(s) recorded • −{liveWeeklySummary.totalLostXP} XP penalty
-                  </span>
-                </div>
-
-                {/* 3. Adhkar Fortress (1.5 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-                      <span>3. Adhkār Fortress (حصن الأذكار)</span>
-                    </span>
-                    <span className="font-bold text-cyan-300">{b.adhkarFortressScore.toFixed(1)} / 1.5 pts</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-cyan-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.adhkarFortressScore / 1.5) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.adhkarSabahCount}/7 Morning • {liveWeeklySummary.adhkarMasaCount}/7 Evening
-                    {((liveWeeklySummary.adhkarSleepNightCount || 0) > 0 || (liveWeeklySummary.adhkarSleepDhohrCount || 0) > 0) && (
-                      <span> • {liveWeeklySummary.adhkarSleepNightCount || 0}/7 Night • {liveWeeklySummary.adhkarSleepDhohrCount || 0}/7 Nap</span>
-                    )}
-                  </span>
-                </div>
-
-                {/* 4. Sunan & Qiyam (1.5 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Flame className="h-3.5 w-3.5 text-purple-400" />
-                      <span>4. Sunan & Qiyām (السنن والقيام)</span>
-                    </span>
-                    <span className="font-bold text-purple-300">{b.sunnahQiyamScore.toFixed(1)} / 1.5 pts</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-purple-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.sunnahQiyamScore / 1.5) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.sunnahRawatibCount} Sunan Rawātib • {liveWeeklySummary.qiyamTotalRakats} Qiyām Rak'ahs
-                  </span>
-                </div>
-
-                {/* 5. Salawat upon Prophet ﷺ (1.0 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <Heart className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>5. Salawāt upon ﷺ (الصلاة على النبي)</span>
-                    </span>
-                    <span className="font-bold text-emerald-300">{b.salawatScore.toFixed(1)} / 1.0 pt</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.salawatScore / 1.0) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.salawatTotal} / 490 weekly covenant target
-                  </span>
-                </div>
-
-                {/* 6. Tawbah & Kaffarah (1.5 Max) */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-mono">
-                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>6. Tawbah & Kaffārah (تصفية الكفارات)</span>
-                    </span>
-                    <span className="font-bold text-indigo-300">{b.kaffarahTawbahScore.toFixed(1)} / 1.5 pts</span>
-                  </div>
-                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="bg-indigo-400 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (b.kaffarahTawbahScore / 1.5) * 100)}%` }} 
-                    />
-                  </div>
-                  <span className="text-[10px] text-zinc-400 block font-mono">
-                    {liveWeeklySummary.kaffarahPendingCount} pending • {liveWeeklySummary.kaffarahSettledCount} settled remedies
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* EXPANDABLE "REFINE TO 10/10" ACTION ROADMAP */}
-            <AnimatePresence>
-              {showRefineDrawer && b && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="pt-3 border-t border-[var(--border-subtle)] space-y-3"
-                >
-                  <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-accent)] space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-[var(--accent-highlight)] flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
-                        <span>خطة الارتقاء للدرجة الكاملة 10/10 • ACTION PLAN TO REFINE TO 10/10</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-400">
-                        {isNearTen ? '10/10 Ihsanic Equilibrium Achieved' : `${(10.0 - currentScore).toFixed(1)} pts required for 10/10`}
-                      </span>
-                    </div>
-
-                    <ul className="space-y-1.5 text-xs text-zinc-200">
-                      {b.actionPlan10OutOf10.map((step, idx) => (
-                        <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-black/40 border border-white/5 font-sans leading-relaxed">
-                          <span className="text-[var(--accent-bright)] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
-                          <span className="text-zinc-200">{step}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={handleInject10OutOf10Directives}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--accent-dim)] via-[var(--accent-primary)] to-[var(--accent-bright)] hover:brightness-110 active:scale-95 text-black font-mono text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-[var(--glow-color)]"
-                        id="inject-10-out-of-10-directives-btn"
-                      >
-                        <Zap className="h-3.5 w-3.5" />
-                        <span>⚡ INJECT 10/10 ACTION DIRECTIVES INTO TERMINAL</span>
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        );
-      })()}
-
-      {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
+          {/* 2. 1-TAP ZEN TRIAGE STRIP (FAST SLIP RECORDING) */}
       <div className="p-4 rounded-xl bg-[#0c0e14] border border-[#c5a059]/20 shadow-md">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -926,11 +762,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         </div>
       </div>
 
-      {/* 3. MAIN DUAL-COLUMN WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: ACTIVE KAFFĀRAH RESTITUTIONS & CHAINS OF THE NAFS */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* ACTIVE KAFFĀRAH RESTITUTIONS CARD */}
+          {/* DUAL SECTION: ACTIVE KAFFARAH RESTITUTIONS + TODAY'S RECORDED SLIPS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-6">
+              {/* ACTIVE KAFFĀRAH RESTITUTIONS CARD */}
           <div 
             id="active-kaffarah-section"
             className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl"
@@ -1000,362 +835,91 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
               </div>
             )}
           </div>
-
-          {/* RECURRING PATTERNS: USED ONLY TO PREVENT REPETITION */}
-          <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+            </div>
+            <div className="lg:col-span-6">
+              
+          {/* RIGHT COLUMN: TODAY'S RECORDED SLIPS */}
+          <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300">
-                  <AlertTriangle className="h-4 w-4" />
+                  <Clock className="h-4 w-4" />
                 </div>
                 <div>
                   <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
-                    PATTERNS TO PREVENT RECURRENCE ({weaknesses.length})
+                    TODAY'S RECORDED SLIPS ({todayEntries.length})
                   </h3>
                   <span className="text-[10px] font-mono text-zinc-400">
-                    Define root triggers and enforce concrete preventive protocols.
+                    Sacred daily ledger • {todayLostXP} XP penalty audited
                   </span>
                 </div>
               </div>
               <button
-                onClick={handleOpenAddPatternModal}
-                className="px-2.5 py-1.5 rounded-lg bg-[#c5a059]/15 hover:bg-[#c5a059]/25 border border-[#c5a059]/40 text-[#c5a059] text-[10.5px] font-mono font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
-                title="Add a new pattern & preventive protocol"
+                type="button"
+                onClick={() => setActiveMainTab('LEDGER')}
+                className="text-[10px] font-mono text-[#c5a059] hover:underline flex items-center gap-1 cursor-pointer font-bold"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>+ NEW PROTOCOL</span>
+                <span>Full Ledger →</span>
               </button>
             </div>
 
-            {/* Filter Tabs: All, Active, Under Control, Overcome */}
-            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 text-[10px] font-mono">
-              <button
-                onClick={() => setPatternStatusFilter('ALL')}
-                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
-                  patternStatusFilter === 'ALL'
-                    ? 'bg-white/15 border-white/30 text-white font-bold'
-                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                ALL ({weaknesses.length})
-              </button>
-              <button
-                onClick={() => setPatternStatusFilter('Active')}
-                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
-                  patternStatusFilter === 'Active'
-                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300 font-bold'
-                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                ACTIVE ({activeWeaknesses.length})
-                {activeChainsCount > 0 && (
-                  <span className="px-1.5 py-0.2 bg-rose-600 text-white text-[9px] rounded-full font-bold animate-pulse">
-                    {activeChainsCount} CHAINS
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setPatternStatusFilter('Under Control')}
-                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
-                  patternStatusFilter === 'Under Control'
-                    ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 font-bold'
-                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                UNDER CONTROL ({underControlWeaknesses.length})
-              </button>
-              <button
-                onClick={() => setPatternStatusFilter('Overcome')}
-                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
-                  patternStatusFilter === 'Overcome'
-                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 font-bold'
-                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                OVERCOME ({overcomeWeaknesses.length})
-              </button>
-            </div>
-
-            {recurringSinsRegistry && recurringSinsRegistry.totalRecurringCount > 0 && (
-              <div className="mb-4 p-3 rounded-lg bg-amber-950/20 border border-amber-500/30">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <span className="text-[11px] font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-400" />
-                    RECURRENCE CADENCE REGISTRY ({recurringSinsRegistry.totalRecurringCount} DETECTED)
-                  </span>
-                  {recurringSinsRegistry.activeChainsCount > 0 && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950/60 border border-rose-500/40 text-rose-300">
-                      {recurringSinsRegistry.activeChainsCount} ACTIVE COMPOUNDING CHAINS
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
-                  <div className="bg-black/40 p-2 rounded border border-white/5">
-                    <div className="text-zinc-500">SAME-DAY RELAPSE</div>
-                    <div className="text-rose-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.intraDaySins.length} patterns</div>
-                  </div>
-                  <div className="bg-black/40 p-2 rounded border border-white/5">
-                    <div className="text-zinc-500">CONSECUTIVE DAILY</div>
-                    <div className="text-amber-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.dailySins.length} patterns</div>
-                  </div>
-                  <div className="bg-black/40 p-2 rounded border border-white/5">
-                    <div className="text-zinc-500">EVERY 2 DAYS</div>
-                    <div className="text-yellow-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.everyTwoDaysSins.length} patterns</div>
-                  </div>
-                  <div className="bg-black/40 p-2 rounded border border-white/5">
-                    <div className="text-zinc-500">PERIODIC (3-7 DAYS)</div>
-                    <div className="text-cyan-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.periodicSins.length} patterns</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-              {realmPatternSummary.map(realm => {
-                const catColor = CATEGORY_COLORS[realm.category] || CATEGORY_COLORS.Obligations;
-                const RealmIcon = catColor.icon;
-                return (
-                  <button
-                    key={realm.category}
-                    onClick={() => handleOpenAuditModal(realm.pattern?.id, realm.category)}
-                    className={`text-left p-2.5 rounded-lg border ${catColor.border} ${catColor.bg} hover:brightness-125 transition group`}
-                    title={`Audit ${realm.category} and address its latest trigger`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`text-[10px] font-mono font-bold uppercase flex items-center gap-1 ${catColor.text}`}>
-                        <RealmIcon className="h-3 w-3" /> {realm.category}
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-300">{realm.count}</span>
-                    </div>
-                    <p className="text-[9px] text-zinc-400 mt-1 truncate">{realm.pattern ? `Trigger: ${realm.pattern.triggerCause}` : realm.latestTitle}</p>
-                    <span className="text-[9px] font-mono text-zinc-300 group-hover:text-white mt-1 block">{realm.pattern ? 'REVIEW PATTERN →' : 'LOG AUDIT →'}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {displayedWeaknesses.length > 0 ? (
-              <div className="space-y-3">
-                {displayedWeaknesses.map(weakness => {
-                  const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
+            {todayEntries.length > 0 ? (
+              <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                {todayEntries.map(entry => {
+                  const catColor = CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.Obligations;
                   const CategoryIcon = catColor.icon;
-                  const isOvercome = weakness.status === 'Overcome';
-                  const isUnderControl = weakness.status === 'Under Control';
-                  const isActiveChain = (weakness.occurrenceCount || 0) >= 5;
-
-                  // Calculate restraint days
-                  const daysInRestraint = weakness.lastOccurrenceDate
-                    ? Math.max(0, getDaysDifference(weakness.lastOccurrenceDate, todayDateStr))
-                    : null;
-
-                  const currentProtocol = weakness.preventiveProtocol || weakness.correctiveStrategy;
-
                   return (
-                    <div 
-                      key={weakness.id}
-                      className={`p-3.5 sm:p-4 rounded-xl border transition ${
-                        isOvercome
-                          ? 'bg-emerald-950/20 border-emerald-500/40'
-                          : isUnderControl
-                            ? 'bg-[#0a1018] border-cyan-500/35'
-                            : isActiveChain
-                              ? 'bg-[#150a0e] border-rose-500/50 shadow-sm shadow-rose-950/50'
-                              : 'bg-[#090b10] border-white/10'
-                      }`}
+                    <div
+                      key={entry.id}
+                      className="p-3 rounded-xl bg-black/40 border border-white/10 flex items-start justify-between gap-3 text-xs font-mono"
                     >
-                      {/* Top Bar: Name, Realm Badge, Status Toggle & Actions */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className={`p-1.5 rounded-lg ${catColor.bg} ${catColor.border} border shrink-0 mt-0.5`}>
+                          <CategoryIcon className={`h-3.5 w-3.5 ${catColor.text}`} />
+                        </div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-xs text-zinc-100 font-mono truncate">
-                              {weakness.name}
-                            </span>
-                            <span className={`text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-1 ${catColor.border} ${catColor.bg} ${catColor.text}`}>
-                              <CategoryIcon className="h-2.5 w-2.5" />
-                              {weakness.category}
+                            <span className="font-bold text-zinc-200">{entry.title || entry.category}</span>
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                              entry.severity === 'Severe' || entry.severity === 'Critical' ? 'bg-rose-950/80 text-rose-300 border border-rose-500/30' :
+                              entry.severity === 'Major' ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30' :
+                              'bg-zinc-800 text-zinc-300 border border-zinc-700/30'
+                            }`}>
+                              {entry.severity}
                             </span>
                           </div>
-
-                          {/* Restraint streak / last occurrence */}
-                          <div className="text-[10px] font-mono mt-1.5 flex items-center gap-2 flex-wrap">
-                            {daysInRestraint === null ? (
-                              <span className="text-zinc-400">🌱 Proactive boundary (0 recorded slips)</span>
-                            ) : daysInRestraint === 0 ? (
-                              <span className="text-rose-400 font-semibold flex items-center gap-1">
-                                <Flame className="h-3 w-3 text-rose-500 shrink-0" /> Slipped today ({weakness.lastOccurrenceDate})
-                              </span>
-                            ) : (
-                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                                <Shield className="h-3 w-3 text-emerald-400 shrink-0" />
-                                {daysInRestraint} {daysInRestraint === 1 ? 'day' : 'days'} in restraint (Thabāt)
-                              </span>
-                            )}
-
-                            {/* Eligibility shortcuts */}
-                            {daysInRestraint !== null && daysInRestraint >= 7 && weakness.status === 'Active' && (
-                              <button
-                                onClick={() => updateWeakness(weakness.id, { status: 'Under Control' })}
-                                className="text-[9px] text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/40 hover:bg-cyan-900/60 transition cursor-pointer"
-                                title="7+ days clean without slip"
-                              >
-                                ⚡ Move to Under Control
-                              </button>
-                            )}
-                            {daysInRestraint !== null && daysInRestraint >= 21 && weakness.status === 'Under Control' && (
-                              <button
-                                onClick={() => updateWeakness(weakness.id, { status: 'Overcome' })}
-                                className="text-[9px] text-emerald-300 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-500/40 hover:bg-emerald-900/60 transition cursor-pointer"
-                                title="21+ days clean: Habit loop broken"
-                              >
-                                🌟 Mark Overcome
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Status Switcher & Buttons */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => {
-                              const nextStatus = weakness.status === 'Active' ? 'Under Control' : weakness.status === 'Under Control' ? 'Overcome' : 'Active';
-                              updateWeakness(weakness.id, { status: nextStatus });
-                            }}
-                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border cursor-pointer transition ${
-                              isOvercome
-                                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300' 
-                                : isUnderControl
-                                  ? 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300'
-                                  : 'bg-rose-950/70 border-rose-500/50 text-rose-300'
-                            }`}
-                            title="Click to toggle status: Active → Under Control → Overcome"
-                          >
-                            {weakness.status}
-                          </button>
-                          <button
-                            onClick={() => handleOpenEditPatternModal(weakness)}
-                            className="p-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
-                            title="Edit Trigger & Preventive Protocol"
-                          >
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => deleteWeakness(weakness.id)}
-                            className="p-1 rounded bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-300 transition cursor-pointer shrink-0"
-                            title="Delete pattern"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {entry.cause && (
+                            <p className="text-[10px] text-zinc-400 mt-0.5 truncate">
+                              Trigger: {entry.cause}
+                            </p>
+                          )}
+                          {entry.reflection && (
+                            <p className="text-[10px] text-zinc-400 italic mt-0.5 line-clamp-1">
+                              "{entry.reflection}"
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      {/* Slip Frequency Meter */}
-                      <div className="my-2.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                          <span className="flex items-center gap-1">
-                            <span>Recorded Frequency:</span>
-                            {weakness.occurrenceCount >= 5 && (
-                              <span className="text-rose-400 font-bold uppercase">(Active Chronic Chain)</span>
-                            )}
-                          </span>
-                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : isUnderControl ? 'text-cyan-300' : 'text-zinc-200'}`}>
-                            {weakness.occurrenceCount} Slips Logged
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          {[1, 2, 3, 4, 5].map(idx => (
-                            <div 
-                              key={idx}
-                              className={`h-1.5 rounded-full transition ${
-                                idx <= weakness.occurrenceCount
-                                  ? idx >= 5 ? 'bg-rose-500 shadow-sm shadow-rose-500' : 'bg-amber-400'
-                                  : 'bg-zinc-800'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Active Chronic Chain Warning Banner (Self-contained, non-power seal) */}
-                      {isActiveChain && !isOvercome && (
-                        <div className="my-2.5 p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/40 text-[10.5px] font-mono">
-                          <div className="flex items-center justify-between text-rose-300 font-bold mb-1">
-                            <span className="flex items-center gap-1.5">
-                              <AlertTriangle className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
-                              CHRONIC CHAIN ACTIVE (5+ SLIPS)
-                            </span>
-                            <span className="text-[9.5px] bg-rose-900/80 px-1.5 py-0.2 rounded border border-rose-500/40 text-rose-200">
-                              +25% Penalty Floor
-                            </span>
-                          </div>
-                          <p className="text-zinc-300 text-[10px] leading-relaxed">
-                            Repeated recurrence confirms an unchecked habit loop. The system enforces a +25% penalty floor. Enforce your concrete Preventive Protocol below to neutralize the trigger and rebuild steadfastness.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Recurrence Cadence & Escalation Status */}
-                      {weakness.recurrenceCadence && (
-                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/30 border border-rose-500/30 text-[10px] font-mono flex items-center justify-between">
-                          <span className="text-rose-300 font-bold flex items-center gap-1.5">
-                            <Repeat className="h-3 w-3 text-rose-400 animate-pulse" />
-                            {weakness.recurrenceCadence}
-                          </span>
-                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9px]">
-                            Tier {weakness.escalationTier || 1} • {((weakness.penaltyMultiplier || 1.0)).toFixed(2)}x Penalties
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Behavioral Boundary & Trigger Box */}
-                      <div className="my-2.5 p-2.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-mono space-y-2">
-                        {/* Trigger Cue */}
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] uppercase font-bold text-amber-400/90 shrink-0 mt-0.5">
-                            TRIGGER CUE:
-                          </span>
-                          <span className="text-zinc-300 text-[10.5px]">
-                            {weakness.triggerCause || 'No root cue specified'}
-                          </span>
-                        </div>
-
-                        {/* Preventive Protocol */}
-                        <div className="flex items-start gap-2 pt-1.5 border-t border-white/5">
-                          <span className="text-[10px] uppercase font-bold text-emerald-400/90 shrink-0 mt-0.5 flex items-center gap-1">
-                            <Shield className="h-2.5 w-2.5 text-emerald-400" />
-                            PREVENTIVE PROTOCOL:
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            {currentProtocol ? (
-                              <p className="text-zinc-200 text-[10.5px] leading-relaxed">
-                                {currentProtocol}
-                              </p>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenEditPatternModal(weakness)}
-                                className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono flex items-center gap-1 cursor-pointer"
-                              >
-                                + Define Preventive Protocol (Rule of Restraint)
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2 pt-1">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] font-bold text-rose-400">
+                          −{entry.xpDeducted || entry.rawPenalty || 0} XP
+                        </span>
                         <button
-                          onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
-                          className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 hover:text-white transition text-center cursor-pointer flex items-center justify-center gap-1"
+                          type="button"
+                          onClick={() => setSelectedEntryDetail(entry)}
+                          className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/5"
+                          title="View Details"
                         >
-                          <Plus className="h-3 w-3" />
-                          Record Slip
+                          <Eye className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => handleOpenEditPatternModal(weakness)}
-                          className="px-3 py-1.5 rounded-lg bg-[#c5a059]/10 hover:bg-[#c5a059]/20 border border-[#c5a059]/30 text-[#c5a059] text-[10.5px] font-mono transition cursor-pointer flex items-center gap-1"
+                          type="button"
+                          onClick={() => setEntryToDelete(entry)}
+                          className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-white/5"
+                          title="Delete Slip"
                         >
-                          <Edit3 className="h-3 w-3" />
-                          Edit Protocol
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -1363,27 +927,69 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 })}
               </div>
             ) : (
-              <div className="text-center py-6 px-4 rounded-xl bg-[#07090e] border border-white/5">
-                <p className="text-xs text-zinc-400 font-mono">
-                  {patternStatusFilter === 'ALL'
-                    ? 'No behavioral patterns recorded yet. Click "+ NEW PROTOCOL" to proactively establish boundary rules.'
-                    : `No patterns currently matching status "${patternStatusFilter}".`}
+              <div className="p-6 rounded-xl bg-black/30 border border-emerald-500/20 text-center space-y-2">
+                <ShieldCheck className="h-8 w-8 text-emerald-400 mx-auto opacity-80" />
+                <h4 className="text-xs font-bold text-emerald-300 font-mono">Spiritual Slate Guarded & Clean</h4>
+                <p className="text-[11px] text-zinc-400 font-mono max-w-xs mx-auto">
+                  Zero slips recorded today. Your boundaries remain steadfast. Continue with remembrance and mindfulness.
                 </p>
-                {patternStatusFilter !== 'ALL' && (
-                  <button
-                    onClick={() => setPatternStatusFilter('ALL')}
-                    className="mt-2 text-[10.5px] text-[#c5a059] hover:underline font-mono cursor-pointer"
-                  >
-                    View All Patterns →
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => handleOpenAuditModal(undefined, undefined, 'slip')}
+                  className="mt-2 text-[10.5px] font-mono text-[#c5a059] hover:underline cursor-pointer"
+                >
+                  + Record an Honest Slip if one occurred →
+                </button>
               </div>
             )}
           </div>
-        </div>
 
-        {/* RIGHT COLUMN: THE SACRED LEDGER OF SLIPS */}
-        <div className="lg:col-span-7 space-y-4">
+            </div>
+          </div>
+
+          
+          {/* COMPACT WEEKLY PRACTICE PREVIEW BANNER */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-[#1b1509] via-[#101520] to-[#07090e] border border-[#c5a059]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#c5a059] bg-[#3a2e12] px-2 py-0.5 rounded border border-[#c5a059]/40">
+                  WEEKLY PRACTICE EVALUATION
+                </span>
+                <span className="text-xs text-zinc-400 font-mono">
+                  {liveWeeklySummary.startDate} → {liveWeeklySummary.endDate}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2 pt-0.5">
+                <span className="text-lg font-bold text-white font-display">
+                  Live Score: <span className="text-[#fef08a]">{liveWeeklySummary.scoreOutOf10?.toFixed(1) || '10.0'} / 10.0</span>
+                </span>
+                <span className="text-xs text-zinc-300 font-mono">
+                  • {liveWeeklySummary.weeklyScoreBreakdown?.gradeAr || 'ممتاز'} ({liveWeeklySummary.weeklyScoreBreakdown?.gradeEn || 'Excellent'})
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 font-sans">
+                Evaluation across all 6 Sacred Pillars: Farā'iḍ prayers, Slip restraint, Adhkār fortress, Sunan/Qiyām, Salawāt ﷺ, and Tawbah.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('WEEKLY')}
+              className="px-4 py-2.5 rounded-xl bg-[#3a2e12] hover:bg-[#4c3c18] border border-[#c5a059] text-[#fef08a] text-xs font-mono font-bold transition flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-md"
+            >
+              <span>View Full 10.0 Evaluation & Pillars</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 2: SACRED SLIP LEDGER */}
+      {activeMainTab === 'LEDGER' && (
+        <div className="space-y-4">
+          {/* RIGHT COLUMN: THE SACRED LEDGER OF SLIPS */}
+        <div className="space-y-4">
           <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl space-y-4">
             {/* LEDGER HEADER & CONTROLS */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-white/10">
@@ -1931,9 +1537,672 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* DELETE AUDIT CONFIRMATION WARNING MODAL */}
+      {/* TAB 3: PATTERNS & BEHAVIORAL BOUNDARIES */}
+      {activeMainTab === 'PATTERNS' && (
+        <div className="space-y-4">
+          {/* RECURRING PATTERNS: USED ONLY TO PREVENT REPETITION */}
+          <div className="glass-panel border border-[#c5a059]/30 rounded-xl p-5 bg-[#0a0c12]/95 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-zinc-100 tracking-wider">
+                    PATTERNS TO PREVENT RECURRENCE ({weaknesses.length})
+                  </h3>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    Define root triggers and enforce concrete preventive protocols.
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleOpenAddPatternModal}
+                className="px-2.5 py-1.5 rounded-lg bg-[#c5a059]/15 hover:bg-[#c5a059]/25 border border-[#c5a059]/40 text-[#c5a059] text-[10.5px] font-mono font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+                title="Add a new pattern & preventive protocol"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>+ NEW PROTOCOL</span>
+              </button>
+            </div>
+
+            {/* Filter Tabs: All, Active, Under Control, Overcome */}
+            <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 text-[10px] font-mono">
+              <button
+                onClick={() => setPatternStatusFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'ALL'
+                    ? 'bg-white/15 border-white/30 text-white font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                ALL ({weaknesses.length})
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Active')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer flex items-center gap-1 ${
+                  patternStatusFilter === 'Active'
+                    ? 'bg-rose-950/60 border-rose-500/50 text-rose-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                ACTIVE ({activeWeaknesses.length})
+                {activeChainsCount > 0 && (
+                  <span className="px-1.5 py-0.2 bg-rose-600 text-white text-[9px] rounded-full font-bold animate-pulse">
+                    {activeChainsCount} CHAINS
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Under Control')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'Under Control'
+                    ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                UNDER CONTROL ({underControlWeaknesses.length})
+              </button>
+              <button
+                onClick={() => setPatternStatusFilter('Overcome')}
+                className={`px-2.5 py-1 rounded-lg border transition whitespace-nowrap cursor-pointer ${
+                  patternStatusFilter === 'Overcome'
+                    ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 font-bold'
+                    : 'bg-white/5 border-white/10 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                OVERCOME ({overcomeWeaknesses.length})
+              </button>
+            </div>
+
+            {recurringSinsRegistry && recurringSinsRegistry.totalRecurringCount > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-amber-950/20 border border-amber-500/30">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-amber-400" />
+                    RECURRENCE CADENCE REGISTRY ({recurringSinsRegistry.totalRecurringCount} DETECTED)
+                  </span>
+                  {recurringSinsRegistry.activeChainsCount > 0 && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950/60 border border-rose-500/40 text-rose-300">
+                      {recurringSinsRegistry.activeChainsCount} ACTIVE COMPOUNDING CHAINS
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">SAME-DAY RELAPSE</div>
+                    <div className="text-rose-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.intraDaySins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">CONSECUTIVE DAILY</div>
+                    <div className="text-amber-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.dailySins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">EVERY 2 DAYS</div>
+                    <div className="text-yellow-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.everyTwoDaysSins.length} patterns</div>
+                  </div>
+                  <div className="bg-black/40 p-2 rounded border border-white/5">
+                    <div className="text-zinc-500">PERIODIC (3-7 DAYS)</div>
+                    <div className="text-cyan-400 font-bold text-xs mt-0.5">{recurringSinsRegistry.periodicSins.length} patterns</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+              {realmPatternSummary.map(realm => {
+                const catColor = CATEGORY_COLORS[realm.category] || CATEGORY_COLORS.Obligations;
+                const RealmIcon = catColor.icon;
+                return (
+                  <button
+                    key={realm.category}
+                    onClick={() => handleOpenAuditModal(realm.pattern?.id, realm.category)}
+                    className={`text-left p-2.5 rounded-lg border ${catColor.border} ${catColor.bg} hover:brightness-125 transition group`}
+                    title={`Audit ${realm.category} and address its latest trigger`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[10px] font-mono font-bold uppercase flex items-center gap-1 ${catColor.text}`}>
+                        <RealmIcon className="h-3 w-3" /> {realm.category}
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-300">{realm.count}</span>
+                    </div>
+                    <p className="text-[9px] text-zinc-400 mt-1 truncate">{realm.pattern ? `Trigger: ${realm.pattern.triggerCause}` : realm.latestTitle}</p>
+                    <span className="text-[9px] font-mono text-zinc-300 group-hover:text-white mt-1 block">{realm.pattern ? 'REVIEW PATTERN →' : 'LOG AUDIT →'}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {displayedWeaknesses.length > 0 ? (
+              <div className="space-y-3">
+                {displayedWeaknesses.map(weakness => {
+                  const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
+                  const CategoryIcon = catColor.icon;
+                  const isOvercome = weakness.status === 'Overcome';
+                  const isUnderControl = weakness.status === 'Under Control';
+                  const isActiveChain = (weakness.occurrenceCount || 0) >= 5;
+
+                  // Calculate restraint days
+                  const daysInRestraint = weakness.lastOccurrenceDate
+                    ? Math.max(0, getDaysDifference(weakness.lastOccurrenceDate, todayDateStr))
+                    : null;
+
+                  const currentProtocol = weakness.preventiveProtocol || weakness.correctiveStrategy;
+
+                  return (
+                    <div 
+                      key={weakness.id}
+                      className={`p-3.5 sm:p-4 rounded-xl border transition ${
+                        isOvercome
+                          ? 'bg-emerald-950/20 border-emerald-500/40'
+                          : isUnderControl
+                            ? 'bg-[#0a1018] border-cyan-500/35'
+                            : isActiveChain
+                              ? 'bg-[#150a0e] border-rose-500/50 shadow-sm shadow-rose-950/50'
+                              : 'bg-[#090b10] border-white/10'
+                      }`}
+                    >
+                      {/* Top Bar: Name, Realm Badge, Status Toggle & Actions */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-xs text-zinc-100 font-mono truncate">
+                              {weakness.name}
+                            </span>
+                            <span className={`text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border flex items-center gap-1 ${catColor.border} ${catColor.bg} ${catColor.text}`}>
+                              <CategoryIcon className="h-2.5 w-2.5" />
+                              {weakness.category}
+                            </span>
+                          </div>
+
+                          {/* Restraint streak / last occurrence */}
+                          <div className="text-[10px] font-mono mt-1.5 flex items-center gap-2 flex-wrap">
+                            {daysInRestraint === null ? (
+                              <span className="text-zinc-400">🌱 Proactive boundary (0 recorded slips)</span>
+                            ) : daysInRestraint === 0 ? (
+                              <span className="text-rose-400 font-semibold flex items-center gap-1">
+                                <Flame className="h-3 w-3 text-rose-500 shrink-0" /> Slipped today ({weakness.lastOccurrenceDate})
+                              </span>
+                            ) : (
+                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                                <Shield className="h-3 w-3 text-emerald-400 shrink-0" />
+                                {daysInRestraint} {daysInRestraint === 1 ? 'day' : 'days'} in restraint (Thabāt)
+                              </span>
+                            )}
+
+                            {/* Eligibility shortcuts */}
+                            {daysInRestraint !== null && daysInRestraint >= 7 && weakness.status === 'Active' && (
+                              <button
+                                onClick={() => updateWeakness(weakness.id, { status: 'Under Control' })}
+                                className="text-[9px] text-cyan-300 bg-cyan-950/70 px-1.5 py-0.5 rounded border border-cyan-500/40 hover:bg-cyan-900/60 transition cursor-pointer"
+                                title="7+ days clean without slip"
+                              >
+                                ⚡ Move to Under Control
+                              </button>
+                            )}
+                            {daysInRestraint !== null && daysInRestraint >= 21 && weakness.status === 'Under Control' && (
+                              <button
+                                onClick={() => updateWeakness(weakness.id, { status: 'Overcome' })}
+                                className="text-[9px] text-emerald-300 bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-500/40 hover:bg-emerald-900/60 transition cursor-pointer"
+                                title="21+ days clean: Habit loop broken"
+                              >
+                                🌟 Mark Overcome
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status Switcher & Buttons */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              const nextStatus = weakness.status === 'Active' ? 'Under Control' : weakness.status === 'Under Control' ? 'Overcome' : 'Active';
+                              updateWeakness(weakness.id, { status: nextStatus });
+                            }}
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border cursor-pointer transition ${
+                              isOvercome
+                                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300' 
+                                : isUnderControl
+                                  ? 'bg-cyan-950/70 border-cyan-500/50 text-cyan-300'
+                                  : 'bg-rose-950/70 border-rose-500/50 text-rose-300'
+                            }`}
+                            title="Click to toggle status: Active → Under Control → Overcome"
+                          >
+                            {weakness.status}
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditPatternModal(weakness)}
+                            className="p-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
+                            title="Edit Trigger & Preventive Protocol"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => deleteWeakness(weakness.id)}
+                            className="p-1 rounded bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/30 text-zinc-400 hover:text-rose-300 transition cursor-pointer shrink-0"
+                            title="Delete pattern"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Slip Frequency Meter */}
+                      <div className="my-2.5">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
+                          <span className="flex items-center gap-1">
+                            <span>Recorded Frequency:</span>
+                            {weakness.occurrenceCount >= 5 && (
+                              <span className="text-rose-400 font-bold uppercase">(Active Chronic Chain)</span>
+                            )}
+                          </span>
+                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : isUnderControl ? 'text-cyan-300' : 'text-zinc-200'}`}>
+                            {weakness.occurrenceCount} Slips Logged
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {[1, 2, 3, 4, 5].map(idx => (
+                            <div 
+                              key={idx}
+                              className={`h-1.5 rounded-full transition ${
+                                idx <= weakness.occurrenceCount
+                                  ? idx >= 5 ? 'bg-rose-500 shadow-sm shadow-rose-500' : 'bg-amber-400'
+                                  : 'bg-zinc-800'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Active Chronic Chain Warning Banner (Self-contained, non-power seal) */}
+                      {isActiveChain && !isOvercome && (
+                        <div className="my-2.5 p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/40 text-[10.5px] font-mono">
+                          <div className="flex items-center justify-between text-rose-300 font-bold mb-1">
+                            <span className="flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
+                              CHRONIC CHAIN ACTIVE (5+ SLIPS)
+                            </span>
+                            <span className="text-[9.5px] bg-rose-900/80 px-1.5 py-0.2 rounded border border-rose-500/40 text-rose-200">
+                              +25% Penalty Floor
+                            </span>
+                          </div>
+                          <p className="text-zinc-300 text-[10px] leading-relaxed">
+                            Repeated recurrence confirms an unchecked habit loop. The system enforces a +25% penalty floor. Enforce your concrete Preventive Protocol below to neutralize the trigger and rebuild steadfastness.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Recurrence Cadence & Escalation Status */}
+                      {weakness.recurrenceCadence && (
+                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/30 border border-rose-500/30 text-[10px] font-mono flex items-center justify-between">
+                          <span className="text-rose-300 font-bold flex items-center gap-1.5">
+                            <Repeat className="h-3 w-3 text-rose-400 animate-pulse" />
+                            {weakness.recurrenceCadence}
+                          </span>
+                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9px]">
+                            Tier {weakness.escalationTier || 1} • {((weakness.penaltyMultiplier || 1.0)).toFixed(2)}x Penalties
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Behavioral Boundary & Trigger Box */}
+                      <div className="my-2.5 p-2.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-mono space-y-2">
+                        {/* Trigger Cue */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] uppercase font-bold text-amber-400/90 shrink-0 mt-0.5">
+                            TRIGGER CUE:
+                          </span>
+                          <span className="text-zinc-300 text-[10.5px]">
+                            {weakness.triggerCause || 'No root cue specified'}
+                          </span>
+                        </div>
+
+                        {/* Preventive Protocol */}
+                        <div className="flex items-start gap-2 pt-1.5 border-t border-white/5">
+                          <span className="text-[10px] uppercase font-bold text-emerald-400/90 shrink-0 mt-0.5 flex items-center gap-1">
+                            <Shield className="h-2.5 w-2.5 text-emerald-400" />
+                            PREVENTIVE PROTOCOL:
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            {currentProtocol ? (
+                              <p className="text-zinc-200 text-[10.5px] leading-relaxed">
+                                {currentProtocol}
+                              </p>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenEditPatternModal(weakness)}
+                                className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono flex items-center gap-1 cursor-pointer"
+                              >
+                                + Define Preventive Protocol (Rule of Restraint)
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => handleOpenAuditModal(weakness.id, weakness.category)}
+                          className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10.5px] font-mono text-zinc-300 hover:text-white transition text-center cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Record Slip
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditPatternModal(weakness)}
+                          className="px-3 py-1.5 rounded-lg bg-[#c5a059]/10 hover:bg-[#c5a059]/20 border border-[#c5a059]/30 text-[#c5a059] text-[10.5px] font-mono transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          Edit Protocol
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-6 px-4 rounded-xl bg-[#07090e] border border-white/5">
+                <p className="text-xs text-zinc-400 font-mono">
+                  {patternStatusFilter === 'ALL'
+                    ? 'No behavioral patterns recorded yet. Click "+ NEW PROTOCOL" to proactively establish boundary rules.'
+                    : `No patterns currently matching status "${patternStatusFilter}".`}
+                </p>
+                {patternStatusFilter !== 'ALL' && (
+                  <button
+                    onClick={() => setPatternStatusFilter('ALL')}
+                    className="mt-2 text-[10.5px] text-[#c5a059] hover:underline font-mono cursor-pointer"
+                  >
+                    View All Patterns →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: WEEKLY REVIEW & EVALUATION (10/10) */}
+      {activeMainTab === 'WEEKLY' && (
+        <div className="space-y-4">
+          {/* 2. LIFE MUHASABAH WITH WEEKLY REVIEW CADENCE */}
+      {(() => {
+        const b = liveWeeklySummary.weeklyScoreBreakdown;
+        const currentScore = liveWeeklySummary.scoreOutOf10 ?? 10.0;
+        const isNearTen = currentScore >= 9.5;
+
+        return (
+          <div className="p-4 sm:p-5 rounded-2xl border border-[var(--border-accent)] bg-[var(--bg-card)] relative overflow-hidden shadow-2xl space-y-4">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[radial-gradient(ellipse_at_top_right,var(--glow-color),transparent_65%)] pointer-events-none" />
+
+            {/* TOP HEADER ROW */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10 pb-3 border-b border-white/10">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] flex items-center gap-1.5 shadow-sm uppercase tracking-wider">
+                    <Scale className="h-3 w-3 text-[var(--accent-bright)]" />
+                    <span>محاسبة الحياة • LIFE MUHASABAH / 10</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400 bg-black/40 px-2 py-0.5 rounded border border-white/5">
+                    {liveWeeklySummary.startDate} → {liveWeeklySummary.endDate}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-baseline gap-3 pt-1">
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                    <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
+                    <span>Weekly Practice Snapshot:</span>
+                  </h3>
+                  <span className="text-sm font-bold text-[var(--accent-bright)] font-mono">
+                    {b?.gradeAr} — <span className="text-zinc-300">{b?.gradeEn}</span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-400">
+                  <span className="text-rose-300">LIFE LEDGER: {entries.length} audits</span>
+                  <span>•</span>
+                  <span className="text-amber-300">−{allLostXP} lifetime XP</span>
+                  <span>•</span>
+                  <span>Score = practice feedback, not divine judgment</span>
+                </div>
+              </div>
+
+              {/* 10/10 GAUGE BADGE & ACTIONS */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex items-center justify-between sm:justify-end gap-3 p-2.5 px-4 rounded-xl bg-gradient-to-br from-[var(--bg-card)] to-[var(--bg-surface)] border border-[var(--border-accent)] shadow-inner">
+                  <div className="text-left sm:text-right">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-400 block font-bold">PRACTICE SNAPSHOT</span>
+                    <span className="text-[10px] font-mono text-[var(--accent-bright)]">Not a spiritual verdict</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 font-mono">
+                    <span className={`text-2xl sm:text-3xl font-black ${
+                      currentScore >= 9.5 ? 'text-emerald-300' :
+                      currentScore >= 8.5 ? 'text-[var(--accent-highlight)]' :
+                      currentScore >= 7.0 ? 'text-[var(--accent-bright)]' :
+                      'text-rose-400'
+                    }`}>
+                      {currentScore.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-bold">/10.0</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowRefineDrawer(!showRefineDrawer)}
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-[var(--accent-surface)] hover:bg-[var(--accent-surface-hover)] border border-[var(--border-accent)] text-[var(--accent-highlight)] text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md cursor-pointer"
+                    title="Toggle the 10/10 Refine action plan with one-tap quest injection"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
+                    <span>{showRefineDrawer ? 'HIDE' : '⚡ REFINE'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenWeeklySummaryGenerator}
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 hover:border-[var(--border-accent)] text-zinc-200 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    id="full-friday-audit-modal-btn"
+                    title="Open the weekly summary modal to write a personal reflection and manually archive any time"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-[var(--accent-bright)] shrink-0" />
+                    <span>FULL AUDIT</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSavedArchivesModal(true)}
+                    className="px-2.5 py-2 sm:py-1.5 rounded-lg bg-black/60 hover:bg-zinc-800 border border-white/10 hover:border-[#c5a059]/40 text-zinc-300 text-xs font-mono transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    id="view-saved-archives-btn"
+                  >
+                    <History className="h-3.5 w-3.5 text-[#c5a059] shrink-0" />
+                    <span>ARCHIVES ({savedSummaries.length})</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 6 SUB-PILLARS PROGRESS METERS (TOTAL 10.0 PTS) */}
+            {b && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                {/* 1. Fardh Prayers (2.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-amber-400" />
+                      <span>1. Farā'iḍ Prayers (أركان الصلاة)</span>
+                    </span>
+                    <span className="font-bold text-amber-300">{b.fardhPrayersScore.toFixed(1)} / 2.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-amber-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.fardhPrayersScore / 2.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.prayersOnTimeCount} on-time (+40 XP) • {liveWeeklySummary.prayersDelayedCount} delayed (−50 XP) out of 35
+                  </span>
+                </div>
+
+                {/* 2. Slips & Restraint (2.0 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Scale className="h-3.5 w-3.5 text-rose-400" />
+                      <span>2. Restraint & Slips (حفظ الجوارح)</span>
+                    </span>
+                    <span className="font-bold text-rose-300">{b.slipsRestraintScore.toFixed(1)} / 2.0 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-rose-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.slipsRestraintScore / 2.0) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.totalSlipsCount} slip(s) recorded • −{liveWeeklySummary.totalLostXP} XP penalty
+                  </span>
+                </div>
+
+                {/* 3. Adhkar Fortress (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                      <span>3. Adhkār Fortress (حصن الأذكار)</span>
+                    </span>
+                    <span className="font-bold text-cyan-300">{b.adhkarFortressScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-cyan-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.adhkarFortressScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.adhkarSabahCount}/7 Morning • {liveWeeklySummary.adhkarMasaCount}/7 Evening
+                    {((liveWeeklySummary.adhkarSleepNightCount || 0) > 0 || (liveWeeklySummary.adhkarSleepDhohrCount || 0) > 0) && (
+                      <span> • {liveWeeklySummary.adhkarSleepNightCount || 0}/7 Night • {liveWeeklySummary.adhkarSleepDhohrCount || 0}/7 Nap</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* 4. Sunan & Qiyam (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-purple-400" />
+                      <span>4. Sunan & Qiyām (السنن والقيام)</span>
+                    </span>
+                    <span className="font-bold text-purple-300">{b.sunnahQiyamScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-purple-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.sunnahQiyamScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.sunnahRawatibCount} Sunan Rawātib • {liveWeeklySummary.qiyamTotalRakats} Qiyām Rak'ahs
+                  </span>
+                </div>
+
+                {/* 5. Salawat upon Prophet ﷺ (1.0 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>5. Salawāt upon ﷺ (الصلاة على النبي)</span>
+                    </span>
+                    <span className="font-bold text-emerald-300">{b.salawatScore.toFixed(1)} / 1.0 pt</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.salawatScore / 1.0) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.salawatTotal} / 490 weekly covenant target
+                  </span>
+                </div>
+
+                {/* 6. Tawbah & Kaffarah (1.5 Max) */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-zinc-300 font-semibold flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>6. Tawbah & Kaffārah (تصفية الكفارات)</span>
+                    </span>
+                    <span className="font-bold text-indigo-300">{b.kaffarahTawbahScore.toFixed(1)} / 1.5 pts</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="bg-indigo-400 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (b.kaffarahTawbahScore / 1.5) * 100)}%` }} 
+                    />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    {liveWeeklySummary.kaffarahPendingCount} pending • {liveWeeklySummary.kaffarahSettledCount} settled remedies
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* EXPANDABLE "REFINE TO 10/10" ACTION ROADMAP */}
+            <AnimatePresence>
+              {showRefineDrawer && b && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="pt-3 border-t border-[var(--border-subtle)] space-y-3"
+                >
+                  <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-accent)] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-[var(--accent-highlight)] flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright)]" />
+                        <span>خطة الارتقاء للدرجة الكاملة 10/10 • ACTION PLAN TO REFINE TO 10/10</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-zinc-400">
+                        {isNearTen ? '10/10 Ihsanic Equilibrium Achieved' : `${(10.0 - currentScore).toFixed(1)} pts required for 10/10`}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-1.5 text-xs text-zinc-200">
+                      {b.actionPlan10OutOf10.map((step, idx) => (
+                        <li key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-black/40 border border-white/5 font-sans leading-relaxed">
+                          <span className="text-[var(--accent-bright)] font-mono font-bold mt-0.5 shrink-0">[{idx + 1}]</span>
+                          <span className="text-zinc-200">{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleInject10OutOf10Directives}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--accent-dim)] via-[var(--accent-primary)] to-[var(--accent-bright)] hover:brightness-110 active:scale-95 text-black font-mono text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-[var(--glow-color)]"
+                        id="inject-10-out-of-10-directives-btn"
+                      >
+                        <Zap className="h-3.5 w-3.5" />
+                        <span>⚡ INJECT 10/10 ACTION DIRECTIVES INTO TERMINAL</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })()}
+        </div>
+      )}
+
+{/* DELETE AUDIT CONFIRMATION WARNING MODAL */}
       <AnimatePresence>
         {entryToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">

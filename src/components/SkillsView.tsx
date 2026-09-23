@@ -1,89 +1,111 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
-import { OverviewView } from './skills/OverviewView';
-import { AttributesView } from './skills/AttributesView';
 import { DisciplinesView } from './skills/DisciplinesView';
+import { AttributesView } from './skills/AttributesView';
 import { IntelligenceView } from './skills/IntelligenceView';
 import { StrategicCapabilityGap } from '../utils/capabilityIntelligence';
 import { 
-  Sparkles, Compass, Shield, Award, Target, 
-  GitMerge, BookOpen, Layers, BarChart2, Zap
+  Award, Shield, Target, Sparkles, BarChart2, Plus
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 
-export type SkillsTabType = 'OVERVIEW' | 'ATTRIBUTES' | 'DISCIPLINES' | 'INTELLIGENCE';
+export type SkillsTabType = 'DISCIPLINES' | 'ATTRIBUTES' | 'INTELLIGENCE';
 
 export const SkillsView: React.FC = () => {
   const { state, getAttributes, getSkillXpAndLevel } = usePOS();
 
-  const [activeTab, setActiveTab] = useState<SkillsTabType>('OVERVIEW');
+  // Default to DISCIPLINES so users land directly on their real skills
+  const [activeTab, setActiveTab] = useState<SkillsTabType>('DISCIPLINES');
   const [selectedAttributeName, setSelectedAttributeName] = useState<string>('Discipline');
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(state.skills[0]?.id || null);
   const [activeGapModal, setActiveGapModal] = useState<StrategicCapabilityGap | null>(null);
 
+  const handleNavigateTab = (tab: 'OVERVIEW' | 'ATTRIBUTES' | 'DISCIPLINES' | 'INTELLIGENCE') => {
+    if (tab === 'OVERVIEW') {
+      setActiveTab('INTELLIGENCE');
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   const attributes = getAttributes();
   const activeSkills = state.skills.filter(s => !s.archived);
-  const primarySkills = activeSkills.filter(s => (s.tier || 'Primary') === 'Primary');
-  const secondarySkills = activeSkills.filter(s => s.tier === 'Secondary');
 
   // Total XP across all skills
   const totalSkillXp = state.skills.reduce((acc, s) => acc + getSkillXpAndLevel(s.id).xp, 0);
 
+  // Average constitutional attribute level
+  const avgAttributeLevel = attributes.length > 0 
+    ? (attributes.reduce((sum, a) => sum + a.level, 0) / attributes.length).toFixed(1)
+    : '1.0';
+
   return (
-    <div className="space-y-6 pb-12" id="pale-ore-capability-intelligence-root">
+    <div className="space-y-6 pb-12" id="pale-ore-skills-root">
       
-      {/* 1. TOP STATS RIBBON & TITLE */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0b0d13] border border-[#c5a059]/25 rounded-2xl p-5 relative overflow-hidden">
+      {/* 1. TOP HEADER & METRICS SUMMARY */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0b0d13] border border-[#c5a059]/25 rounded-2xl p-5 relative overflow-hidden shadow-lg">
         <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
 
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider font-bold flex items-center gap-1">
               <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
-              PALE_ORE_OS // CAPABILITY_LAYER
+              SANCTUM MASTERY
             </span>
             <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
-              DUAL_ARCHITECTURE
+              PROGRESSION
             </span>
           </div>
 
           <h1 className="text-2xl font-display font-bold text-white tracking-wide flex items-center gap-2">
-            Capability Intelligence Engine
+            Skills & Competencies
           </h1>
 
           <p className="text-xs font-sans text-zinc-400 max-w-2xl leading-relaxed">
-            Connecting human constitutional attributes (internal character) with specialized domain disciplines (operational craft) and strategic campaign requirements.
+            Cultivate real-world craft mastery and strengthen the 9 constitutional character attributes that anchor your operational capability.
           </p>
         </div>
 
-        {/* SUMMARY METRICS PILLS */}
+        {/* SUMMARY METRICS BADGES */}
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="bg-[#07080c] border border-white/5 px-3 py-1.5 rounded-xl text-center">
-            <span className="text-xs font-mono font-bold text-white block">9</span>
-            <span className="text-[8px] font-mono text-zinc-500 uppercase">Sovereign Attrs</span>
+          <div className="bg-[#07080c] border border-white/10 px-3.5 py-2 rounded-xl text-center">
+            <span className="text-sm font-mono font-bold text-[#fef08a] block">{activeSkills.length}</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Active Skills</span>
           </div>
-          <div className="bg-[#07080c] border border-white/5 px-3 py-1.5 rounded-xl text-center">
-            <span className="text-xs font-mono font-bold text-[#fef08a] block">{primarySkills.length}</span>
-            <span className="text-[8px] font-mono text-zinc-500 uppercase">Primary Crafts</span>
+          <div className="bg-[#07080c] border border-white/10 px-3.5 py-2 rounded-xl text-center">
+            <span className="text-sm font-mono font-bold text-white block">Lv. {avgAttributeLevel}</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Avg Constitution</span>
           </div>
-          <div className="bg-[#07080c] border border-white/5 px-3 py-1.5 rounded-xl text-center">
-            <span className="text-xs font-mono font-bold text-purple-300 block">{secondarySkills.length}</span>
-            <span className="text-[8px] font-mono text-zinc-500 uppercase">Specializations</span>
-          </div>
-          <div className="bg-[#07080c] border border-white/5 px-3 py-1.5 rounded-xl text-center">
-            <span className="text-xs font-mono font-bold text-cyan-300 block">{totalSkillXp.toLocaleString()}</span>
-            <span className="text-[8px] font-mono text-zinc-500 uppercase">Craft XP</span>
+          <div className="bg-[#07080c] border border-white/10 px-3.5 py-2 rounded-xl text-center">
+            <span className="text-sm font-mono font-bold text-cyan-300 block">{totalSkillXp.toLocaleString()}</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Total Craft XP</span>
           </div>
         </div>
       </div>
 
-      {/* 2. TAB CONTROLS (4 CORE PILLARS) */}
-      <div className="flex border-b border-white/10 gap-2 overflow-x-auto pb-1" id="capability-tab-nav">
+      {/* 2. STREAMLINED TAB NAVIGATION */}
+      <div className="flex border-b border-white/10 gap-2 overflow-x-auto pb-1" id="skills-tab-nav">
         {[
-          { id: 'OVERVIEW', label: 'OVERVIEW', icon: Sparkles, desc: 'Constitution & Gaps' },
-          { id: 'ATTRIBUTES', label: 'ATTRIBUTES', icon: Shield, desc: 'Human Constitution (9)' },
-          { id: 'DISCIPLINES', label: 'DISCIPLINES', icon: Award, desc: 'Craft Tree & Specializations' },
-          { id: 'INTELLIGENCE', label: 'INTELLIGENCE', icon: Target, desc: 'Gap Engine & Hygiene' },
+          { 
+            id: 'DISCIPLINES', 
+            label: 'Skills & Crafts', 
+            icon: Award, 
+            badge: `${activeSkills.length}`,
+            desc: 'Tracks, levels & practice' 
+          },
+          { 
+            id: 'ATTRIBUTES', 
+            label: '9 Core Attributes', 
+            icon: Shield, 
+            badge: '9 Pillars',
+            desc: 'Constitutional character' 
+          },
+          { 
+            id: 'INTELLIGENCE', 
+            label: 'Mastery Radar & Insights', 
+            icon: BarChart2, 
+            desc: 'Radars, gaps & reviews' 
+          },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -101,31 +123,29 @@ export const SkillsView: React.FC = () => {
             >
               <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
               <span>{tab.label}</span>
-              <span className={`text-[9px] font-normal hidden sm:inline ${isActive ? 'text-[#e5c875]/80' : 'text-zinc-600'}`}>
-                ({tab.desc})
-              </span>
+              {tab.badge && (
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                  isActive ? 'bg-[#c5a059]/30 text-[#fef08a]' : 'bg-white/5 text-zinc-400'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* 3. ACTIVE TAB VIEW CONTAINER */}
+      {/* 3. ACTIVE TAB VIEW CONTENT */}
       <div>
-        {activeTab === 'OVERVIEW' && (
-          <OverviewView
-            onNavigateTab={setActiveTab}
+        {activeTab === 'DISCIPLINES' && (
+          <DisciplinesView
+            selectedSkillId={selectedSkillId}
+            onSelectSkill={setSelectedSkillId}
             onSelectAttribute={(name) => {
               setSelectedAttributeName(name);
               setActiveTab('ATTRIBUTES');
             }}
-            onSelectSkill={(id) => {
-              setSelectedSkillId(id);
-              setActiveTab('DISCIPLINES');
-            }}
-            onOpenGapModal={(gap) => {
-              setActiveGapModal(gap);
-              setActiveTab('INTELLIGENCE');
-            }}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -137,19 +157,7 @@ export const SkillsView: React.FC = () => {
               setSelectedSkillId(id);
               setActiveTab('DISCIPLINES');
             }}
-            onNavigateTab={setActiveTab}
-          />
-        )}
-
-        {activeTab === 'DISCIPLINES' && (
-          <DisciplinesView
-            selectedSkillId={selectedSkillId}
-            onSelectSkill={setSelectedSkillId}
-            onSelectAttribute={(name) => {
-              setSelectedAttributeName(name);
-              setActiveTab('ATTRIBUTES');
-            }}
-            onNavigateTab={setActiveTab}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -163,7 +171,7 @@ export const SkillsView: React.FC = () => {
               setSelectedAttributeName(name);
               setActiveTab('ATTRIBUTES');
             }}
-            onNavigateTab={setActiveTab}
+            onNavigateTab={handleNavigateTab}
             activeGapModal={activeGapModal}
             onCloseGapModal={() => setActiveGapModal(null)}
             onOpenGapModal={setActiveGapModal}
@@ -174,4 +182,5 @@ export const SkillsView: React.FC = () => {
     </div>
   );
 };
+
 export default SkillsView;

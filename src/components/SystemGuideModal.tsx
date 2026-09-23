@@ -359,14 +359,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </div>
                     </div>
 
-                    <div onClick={() => handleNavigate('time_ledger')} className="p-3 bg-[#0d1017]/80 hover:bg-emerald-950/40 border border-white/5 hover:border-emerald-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
-                      <Hourglass className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold text-emerald-300 block">Temporal Ledger & Rest</span>
-                        <span className="text-[11px] text-zinc-400">Audit trail of temporal capital minted, invested & expended with CSV export.</span>
-                      </div>
-                    </div>
-
                     <div onClick={() => handleNavigate('xp_history')} className="p-3 bg-[#0d1017]/80 hover:bg-indigo-950/40 border border-white/5 hover:border-indigo-500/40 rounded-xl cursor-pointer transition flex items-start gap-2.5">
                       <FileSpreadsheet className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
                       <div>
@@ -924,7 +916,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>Shop Lock:</strong> Mandatory to complete before the Reward Shop vault unlocks.</div>
-                        <div>• <strong>View Isolation:</strong> Displayed alongside Penalty quests while standard quests are filtered out.</div>
+                        <div>• <strong>View Isolation:</strong> Restorative directives prioritized while standard quests are paused.</div>
                         <div>• <strong>Deactivation:</strong> Must be completed to restore momentum and deactivate Recovery Mode.</div>
                       </div>
                     </div>
@@ -939,7 +931,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         Secondary supportive tasks, quick errands, or sub-deliverables to boost discipline and minor attributes.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
-                        <div>• <strong>Penalty Exemption:</strong> Excluded from penalty XP deductions and penalty quest generation on lapse/failure.</div>
+                        <div>• <strong>Penalty Exemption:</strong> Excluded from penalty XP deductions and recovery quest generation on lapse/failure.</div>
                         <div>• <strong>Shop Lock:</strong> Excluded from mandatory shop lock requirements.</div>
                         <div>• <strong>Rollover:</strong> Safe to carry over without triggering Recovery Mode.</div>
                       </div>
@@ -3066,13 +3058,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <span>OPEN VAULT SHOP</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleNavigate('time_ledger')}
-                      className="px-3.5 py-1.5 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5 shrink-0"
-                    >
-                      <span>TIME LEDGER</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </button>
                   </div>
                 </div>
               </div>
@@ -3224,13 +3209,6 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       className="px-3 py-1.5 bg-indigo-950/70 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
                     >
                       <span>XP LEDGER</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleNavigate('time_ledger')}
-                      className="px-3 py-1.5 bg-emerald-950/70 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/40 rounded-lg font-mono text-xs font-bold transition flex items-center gap-1.5"
-                    >
-                      <span>TIME LEDGER</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                     <button

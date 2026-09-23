@@ -169,16 +169,6 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
             <Settings className="h-3.5 w-3.5" />
             <span className="text-[11px] font-bold">{currentHours}h • {currentBufferPercent}% Buf</span>
           </button>
-
-          {/* Ledger link */}
-          <button
-            onClick={() => onNavigate?.('time_ledger')}
-            className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-emerald-500/15 text-zinc-400 hover:text-emerald-300 text-xs font-mono transition flex items-center gap-1.5 border border-white/5"
-            title="Open Temporal Ledger & Audit Trail"
-          >
-            <span className="text-[11px] font-bold">Ledger</span>
-            <ArrowUpRight className="h-3 w-3" />
-          </button>
         </div>
       </div>
 
@@ -683,14 +673,6 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                   <strong>Rest Blocked:</strong> Limit for &ldquo;{usageBlocker.appName}&rdquo; exceeded by +{usageBlocker.overdraftMinutes}m.
                 </span>
               </div>
-              {onNavigate && (
-                <button
-                  onClick={() => onNavigate('time_ledger')}
-                  className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/30 hover:bg-rose-500/50 text-rose-100 border border-rose-500/40 transition shrink-0 font-bold"
-                >
-                  View Ledger
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -750,15 +732,13 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
           <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2">
             <button
               onClick={() => {
-                if (usageBlocker.isBlocked) {
-                  onNavigate?.('time_ledger');
-                } else {
+                if (!usageBlocker.isBlocked) {
                   setIsQuickRedeemOpen(true);
                 }
               }}
               className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm ${
                 usageBlocker.isBlocked
-                  ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed'
                   : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
               }`}
               title={usageBlocker.isBlocked ? `Rest pass locked: ${usageBlocker.appName} exceeded limit` : "Start an intentional rest block"}
