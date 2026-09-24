@@ -180,7 +180,8 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
     const todayDateStr = (state.systemDate || new Date().toISOString()).split('T')[0];
 
     chronologicalHistory.forEach(entry => {
-      const isToday = entry.timestamp.startsWith(todayDateStr);
+      const entryDate = entry.date || (entry.timestamp ? entry.timestamp.split('T')[0] : '');
+      const isToday = entryDate === todayDateStr || (Boolean(entry.timestamp) && entry.timestamp.startsWith(todayDateStr));
 
       if (entry.xp >= 0) {
         totalGains += entry.xp;
@@ -236,7 +237,8 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
 
       // 3. Time Filter
       if (timeFilter === 'today') {
-        if (!entry.timestamp.startsWith(todayDateStr)) return false;
+        const entryDate = entry.date || (entry.timestamp ? entry.timestamp.split('T')[0] : '');
+        if (entryDate !== todayDateStr && !entry.timestamp.startsWith(todayDateStr)) return false;
       } else if (timeFilter === '7days') {
         const entryTime = new Date(entry.timestamp).getTime();
         if (now - entryTime > sevenDays) return false;

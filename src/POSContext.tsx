@@ -1366,7 +1366,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         questId: activeFocusSession.questId || null,
         sourceId: `h-focus-${Date.now()}`,
         activityId: 'focus-session',
-        timestamp: new Date().toISOString(),
+        timestamp: getSystemTimestamp(todayStr),
         date: todayStr,
         skillIds: [],
         quality: 1.15,
@@ -3517,6 +3517,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const toggleSubQuest = (questId: string, subquestId: string) => {
     setState(prev => {
+      const todayStr = prev.systemDate || getLocalDateString();
       let questCompletedNow = false;
       let questReopenedNow = false;
       let targetQuest: Quest | undefined = undefined;
@@ -3530,7 +3531,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           targetQuest = q;
 
           if (allDone && q.status === 'Active') {
-            const todayStr = prev.systemDate || getLocalDateString();
             const wasCompletedToday = q.completedAt && getLocalDateString(q.completedAt) === todayStr;
             if (!wasCompletedToday) {
               questCompletedNow = true;
@@ -3549,7 +3549,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (questCompletedNow && targetQuest) {
         const qToComplete = targetQuest as Quest;
-        const completedTimestamp = new Date().toISOString();
+        const completedTimestamp = getSystemTimestamp(todayStr);
         const xpHistoryId = `h-${Date.now()}`;
         const newHistoryEntry: XPHistoryEntry = {
           id: xpHistoryId,
@@ -3557,6 +3557,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           questName: qToComplete.name,
           xp: qToComplete.xp,
           timestamp: completedTimestamp,
+          date: todayStr,
           skillIds: qToComplete.relatedSkills
         };
 
@@ -4696,25 +4697,37 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Time calculations
     const today = state.systemDate || getLocalDateString();
     
-    // Today's XP
-    const todayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(today));
+    // Today's XP (Robust matching on explicit date or timestamp prefix)
+    const todayEvents = state.xpHistory.filter(h => {
+      const entryDate = h.date || (h.timestamp ? h.timestamp.split('T')[0] : '');
+      return entryDate === today || (Boolean(h.timestamp) && h.timestamp.startsWith(today));
+    });
     const todayXp = todayEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Weekly XP
     const oneWeekAgoStr = addDays(today, -7);
-    const weeklyEvents = state.xpHistory.filter(h => h.timestamp.split('T')[0] >= oneWeekAgoStr);
+    const weeklyEvents = state.xpHistory.filter(h => {
+      const entryDate = h.date || (h.timestamp ? h.timestamp.split('T')[0] : '');
+      return entryDate >= oneWeekAgoStr && entryDate <= today;
+    });
     const weeklyXp = weeklyEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Monthly XP
     const oneMonthAgoStr = addDays(today, -30);
-    const monthlyEvents = state.xpHistory.filter(h => h.timestamp.split('T')[0] >= oneMonthAgoStr);
+    const monthlyEvents = state.xpHistory.filter(h => {
+      const entryDate = h.date || (h.timestamp ? h.timestamp.split('T')[0] : '');
+      return entryDate >= oneMonthAgoStr && entryDate <= today;
+    });
     const monthlyXp = monthlyEvents.reduce((sum, h) => sum + h.xp, 0);
 
     // Calculate daily XP breakdown for charts (past 7 days)
     const dailyXpTrend: { date: string; xp: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const dateStr = addDays(today, -i);
-      const dayEvents = state.xpHistory.filter(h => h.timestamp.startsWith(dateStr));
+      const dayEvents = state.xpHistory.filter(h => {
+        const entryDate = h.date || (h.timestamp ? h.timestamp.split('T')[0] : '');
+        return entryDate === dateStr || (Boolean(h.timestamp) && h.timestamp.startsWith(dateStr));
+      });
       const dayXp = dayEvents.reduce((sum, h) => sum + h.xp, 0);
       
       const d = parseDateSafe(dateStr);

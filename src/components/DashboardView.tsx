@@ -482,7 +482,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <div className="mt-2 space-y-1">
                   <div className="w-full bg-[var(--bg-void)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
                     <div 
-                      className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all duration-500 shadow-[0_0_10px_var(--glow-color)]" 
+                      className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all duration-200 shadow-[0_0_10px_var(--glow-color)]" 
                       style={{ width: `${levelInfo.progress}%` }}
                     />
                   </div>
