@@ -35,6 +35,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     toggleAdhkar, 
     setAdhkarSessionStatus,
     cycleAdhkarSessionStatus,
+    fulfillAllAdhkarForSession,
+    resetAllAdhkarForSession,
     setPostSalahSessionStatus,
     cyclePostSalahSessionStatus,
     getAdhkarFortressStats,
@@ -82,6 +84,25 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   const postMap = spiritualLog.dhikr?.postSalahAdhkar || {};
   const fortressStats = getAdhkarFortressStats(systemDate);
   const completedPostPrayersCount = fortressStats.postSalahCompletedCount;
+
+  // Litanies list by Fortress Session
+  const morningLitanies = useMemo(() => adhkarList.filter(a => a.category === 'morning'), [adhkarList]);
+  const eveningLitanies = useMemo(() => adhkarList.filter(a => a.category === 'evening'), [adhkarList]);
+  const sleepLitanies = useMemo(() => {
+    const night = adhkarList.filter(a => a.category === 'sleep_night' || a.category === 'sleep');
+    return night.length > 0 ? night : adhkarList.filter(a => a.category === 'sleep_dhohr');
+  }, [adhkarList]);
+
+  const getLitaniesProgress = (items: AdhkarItem[]) => {
+    const completed = items.filter(item => getAdhkarRecitationCount(item.id, systemDate) >= item.targetCount).length;
+    const started = items.filter(item => getAdhkarRecitationCount(item.id, systemDate) > 0).length;
+    const percent = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+    return { completed, started, total: items.length, percent };
+  };
+
+  const morningProgress = getLitaniesProgress(morningLitanies);
+  const eveningProgress = getLitaniesProgress(eveningLitanies);
+  const sleepProgress = getLitaniesProgress(sleepLitanies);
 
   // Filtered Adhkar list
   const filteredAdhkar = useMemo(() => {
@@ -365,6 +386,32 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </span>
             </div>
 
+            {/* Litany Auto-Progress Tracking */}
+            <div className="space-y-1.5 bg-black/30 p-2 rounded-xl border border-white/5">
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className="text-zinc-400">Litanies Completed:</span>
+                <span className={`font-bold ${
+                  morningProgress.completed === morningProgress.total && morningProgress.total > 0
+                    ? 'text-emerald-300'
+                    : morningProgress.completed > 0
+                    ? 'text-amber-300'
+                    : 'text-zinc-500'
+                }`}>
+                  {morningProgress.completed}/{morningProgress.total} ({morningProgress.percent}%)
+                </span>
+              </div>
+              <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    morningProgress.completed === morningProgress.total && morningProgress.total > 0
+                      ? 'bg-emerald-400'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-300'
+                  }`}
+                  style={{ width: `${morningProgress.percent}%` }}
+                />
+              </div>
+            </div>
+
             {/* 3-State Segmented Selector */}
             <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
               <button
@@ -402,21 +449,45 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </button>
             </div>
 
+            {/* Quick Bulk Action & Navigation */}
             <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-              <button
-                type="button"
-                onClick={() => cycleAdhkarSessionStatus('morning', systemDate)}
-                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="h-3 w-3 text-amber-400" />
-                <span>Tap to Cycle</span>
-              </button>
-              <button
-                onClick={() => setActiveCategory('morning')}
-                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
-              >
-                <span>View Litanies</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fulfillAllAdhkarForSession('morning', systemDate)}
+                  className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer text-[10.5px] font-bold"
+                  title="Fulfill all morning litanies"
+                >
+                  <Check className="h-3 w-3" />
+                  <span>Check All</span>
+                </button>
+                <span className="text-zinc-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => resetAllAdhkarForSession('morning', systemDate)}
+                  className="text-zinc-500 hover:text-zinc-300 hover:underline cursor-pointer text-[10.5px]"
+                  title="Reset morning litanies"
+                >
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => cycleAdhkarSessionStatus('morning', systemDate)}
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  title="Cycle status: Not Started -> In Progress -> Complete"
+                >
+                  <RotateCcw className="h-3 w-3 text-amber-400" />
+                </button>
+                <button
+                  onClick={() => setActiveCategory('morning')}
+                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                >
+                  <span>View Litanies</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -456,6 +527,32 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </span>
             </div>
 
+            {/* Litany Auto-Progress Tracking */}
+            <div className="space-y-1.5 bg-black/30 p-2 rounded-xl border border-white/5">
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className="text-zinc-400">Litanies Completed:</span>
+                <span className={`font-bold ${
+                  eveningProgress.completed === eveningProgress.total && eveningProgress.total > 0
+                    ? 'text-emerald-300'
+                    : eveningProgress.completed > 0
+                    ? 'text-indigo-300'
+                    : 'text-zinc-500'
+                }`}>
+                  {eveningProgress.completed}/{eveningProgress.total} ({eveningProgress.percent}%)
+                </span>
+              </div>
+              <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    eveningProgress.completed === eveningProgress.total && eveningProgress.total > 0
+                      ? 'bg-emerald-400'
+                      : 'bg-gradient-to-r from-indigo-500 to-indigo-300'
+                  }`}
+                  style={{ width: `${eveningProgress.percent}%` }}
+                />
+              </div>
+            </div>
+
             {/* 3-State Segmented Selector */}
             <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
               <button
@@ -493,21 +590,45 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </button>
             </div>
 
+            {/* Quick Bulk Action & Navigation */}
             <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-              <button
-                type="button"
-                onClick={() => cycleAdhkarSessionStatus('evening', systemDate)}
-                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="h-3 w-3 text-indigo-400" />
-                <span>Tap to Cycle</span>
-              </button>
-              <button
-                onClick={() => setActiveCategory('evening')}
-                className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
-              >
-                <span>View Litanies</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fulfillAllAdhkarForSession('evening', systemDate)}
+                  className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer text-[10.5px] font-bold"
+                  title="Fulfill all evening litanies"
+                >
+                  <Check className="h-3 w-3" />
+                  <span>Check All</span>
+                </button>
+                <span className="text-zinc-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => resetAllAdhkarForSession('evening', systemDate)}
+                  className="text-zinc-500 hover:text-zinc-300 hover:underline cursor-pointer text-[10.5px]"
+                  title="Reset evening litanies"
+                >
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => cycleAdhkarSessionStatus('evening', systemDate)}
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  title="Cycle status: Not Started -> In Progress -> Complete"
+                >
+                  <RotateCcw className="h-3 w-3 text-indigo-400" />
+                </button>
+                <button
+                  onClick={() => setActiveCategory('evening')}
+                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                >
+                  <span>View Litanies</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -547,6 +668,32 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </span>
             </div>
 
+            {/* Litany Auto-Progress Tracking */}
+            <div className="space-y-1.5 bg-black/30 p-2 rounded-xl border border-white/5">
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className="text-zinc-400">Litanies Completed:</span>
+                <span className={`font-bold ${
+                  sleepProgress.completed === sleepProgress.total && sleepProgress.total > 0
+                    ? 'text-emerald-300'
+                    : sleepProgress.completed > 0
+                    ? 'text-purple-300'
+                    : 'text-zinc-500'
+                }`}>
+                  {sleepProgress.completed}/{sleepProgress.total} ({sleepProgress.percent}%)
+                </span>
+              </div>
+              <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    sleepProgress.completed === sleepProgress.total && sleepProgress.total > 0
+                      ? 'bg-emerald-400'
+                      : 'bg-gradient-to-r from-purple-500 to-purple-300'
+                  }`}
+                  style={{ width: `${sleepProgress.percent}%` }}
+                />
+              </div>
+            </div>
+
             {/* 3-State Segmented Selector */}
             <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
               <button
@@ -584,40 +731,43 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               </button>
             </div>
 
+            {/* Quick Bulk Action & Modals */}
             <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
-              <button
-                type="button"
-                onClick={() => cycleAdhkarSessionStatus('sleep', systemDate)}
-                className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="h-3 w-3 text-purple-400" />
-                <span>Tap to Cycle</span>
-              </button>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSleepModalTab('dhohr');
-                    setShowSleepModal(true);
-                  }}
-                  className="text-amber-300 hover:text-amber-200 hover:underline flex items-center gap-1 cursor-pointer text-[10.5px]"
-                  title="أذكار وإرشادات القيلولة"
+                  onClick={() => fulfillAllAdhkarForSession('sleep', systemDate)}
+                  className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer text-[10.5px] font-bold"
+                  title="Fulfill all night sleep litanies"
                 >
-                  <Sun className="h-3 w-3 text-amber-400" />
-                  <span>القيلولة</span>
+                  <Check className="h-3 w-3" />
+                  <span>Check All</span>
                 </button>
                 <span className="text-zinc-600">•</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSleepModalTab('night');
-                    setShowSleepModal(true);
-                  }}
-                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-1 cursor-pointer font-bold text-[10.5px]"
-                  title="أذكار النوم ليلًا وحصن الليل"
+                  onClick={() => resetAllAdhkarForSession('sleep', systemDate)}
+                  className="text-zinc-500 hover:text-zinc-300 hover:underline cursor-pointer text-[10.5px]"
+                  title="Reset sleep litanies"
                 >
-                  <Moon className="h-3 w-3 text-violet-400" />
-                  <span>ورد الليل</span>
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => cycleAdhkarSessionStatus('sleep', systemDate)}
+                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  title="Cycle status: Not Started -> In Progress -> Complete"
+                >
+                  <RotateCcw className="h-3 w-3 text-purple-400" />
+                </button>
+                <button
+                  onClick={() => setActiveCategory('sleep_night')}
+                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold text-[10.5px]"
+                >
+                  <span>View Litanies</span>
                 </button>
               </div>
             </div>
@@ -1164,6 +1314,81 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         )}
       </div>
 
+      {/* ACTIVE FORTRESS SESSION ACTION BANNER */}
+      {(activeCategory === 'morning' || activeCategory === 'evening' || activeCategory === 'sleep_night' || activeCategory === 'sleep') && (
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-black/80 via-[var(--bg-surface,#141824)] to-black/80 border border-[var(--border-subtle,rgba(197,160,89,0.25))] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl border ${
+              activeCategory === 'morning' ? 'bg-amber-500/20 border-amber-500 text-amber-300' :
+              activeCategory === 'evening' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' :
+              'bg-purple-500/20 border-purple-500 text-purple-300'
+            }`}>
+              {activeCategory === 'morning' ? <Sun className="h-4 w-4" /> :
+               activeCategory === 'evening' ? <Moon className="h-4 w-4" /> :
+               <Bed className="h-4 w-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-display font-bold text-white uppercase">
+                  {activeCategory === 'morning' ? 'Morning Fortress (أذكار الصباح)' :
+                   activeCategory === 'evening' ? 'Evening Fortress (أذكار المساء)' :
+                   'Sleep Fortress (أذكار النوم)'}
+                </span>
+                <span className={`text-[10px] font-mono px-2 py-0.2 rounded-full border font-bold capitalize ${
+                  (activeCategory === 'morning' ? fortressStats.morningStatus :
+                   activeCategory === 'evening' ? fortressStats.eveningStatus :
+                   fortressStats.sleepStatus) === 'complete'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : (activeCategory === 'morning' ? fortressStats.morningStatus :
+                       activeCategory === 'evening' ? fortressStats.eveningStatus :
+                       fortressStats.sleepStatus) === 'in_progress'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                }`}>
+                  {(activeCategory === 'morning' ? fortressStats.morningStatus :
+                    activeCategory === 'evening' ? fortressStats.eveningStatus :
+                    fortressStats.sleepStatus) === 'complete' ? '✓ Complete' :
+                   (activeCategory === 'morning' ? fortressStats.morningStatus :
+                    activeCategory === 'evening' ? fortressStats.eveningStatus :
+                    fortressStats.sleepStatus) === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+                </span>
+              </div>
+              <p className="text-[11px] font-mono text-zinc-400">
+                {activeCategory === 'morning' ? `${morningProgress.completed} of ${morningProgress.total} litanies completed (${morningProgress.percent}%)` :
+                 activeCategory === 'evening' ? `${eveningProgress.completed} of ${eveningProgress.total} litanies completed (${eveningProgress.percent}%)` :
+                 `${sleepProgress.completed} of ${sleepProgress.total} litanies completed (${sleepProgress.percent}%)`} • Automatically transitions to Complete
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const sess = activeCategory === 'morning' ? 'morning' : activeCategory === 'evening' ? 'evening' : 'sleep';
+                fulfillAllAdhkarForSession(sess, systemDate);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+              title="Fulfill all litanies in this Fortress session"
+            >
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Check All Litanies</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const sess = activeCategory === 'morning' ? 'morning' : activeCategory === 'evening' ? 'evening' : 'sleep';
+                resetAllAdhkarForSession(sess, systemDate);
+              }}
+              className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white text-xs font-mono transition cursor-pointer"
+              title="Reset all litanies in this session"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ADHKAR CARDS GRID */}
       <div className="grid grid-cols-1 gap-4">
         {filteredAdhkar.length === 0 ? (
@@ -1243,19 +1468,45 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                       )}
                     </div>
 
-                    <h4 className="text-base font-display font-extrabold text-white flex flex-wrap items-center gap-2">
-                      <span>{item.title}</span>
-                      {item.titleAr && (
-                        <span className="text-sm font-display text-amber-300/80 font-normal">
-                          ({item.titleAr})
-                        </span>
-                      )}
-                      {isCompleted && (
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-bold animate-pulse">
-                          <Check className="h-3 w-3" /> FULFILLED
-                        </span>
-                      )}
-                    </h4>
+                    <div className="flex items-start gap-3">
+                      {/* One-Tap Litany Toggle Checkbox */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isCompleted) {
+                            resetAdhkarRecitation(item.id, systemDate);
+                          } else {
+                            incrementAdhkarRecitation(item.id, item.targetCount - currentCount, systemDate);
+                          }
+                        }}
+                        className={`mt-0.5 h-6 w-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                          isCompleted
+                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.3)] hover:bg-rose-950/30 hover:border-rose-500/40 hover:text-rose-300'
+                            : currentCount > 0
+                            ? 'bg-amber-500/20 border-amber-400/80 text-amber-300 hover:bg-amber-500/30'
+                            : 'bg-white/5 border-white/20 hover:border-amber-400/60 text-transparent hover:text-amber-400/60'
+                        }`}
+                        title={isCompleted ? "Litany completed! Click to reset" : `Click to mark completed (${item.targetCount}x)`}
+                      >
+                        <Check className={`h-3.5 w-3.5 stroke-[3] ${!isCompleted && currentCount === 0 ? 'opacity-0 hover:opacity-100' : ''}`} />
+                      </button>
+
+                      <div className="space-y-1 flex-1">
+                        <h4 className="text-base font-display font-extrabold text-white flex flex-wrap items-center gap-2">
+                          <span>{item.title}</span>
+                          {item.titleAr && (
+                            <span className="text-sm font-display text-amber-300/80 font-normal">
+                              ({item.titleAr})
+                            </span>
+                          )}
+                          {isCompleted && (
+                            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-bold animate-pulse">
+                              <Check className="h-3 w-3" /> FULFILLED
+                            </span>
+                          )}
+                        </h4>
+                      </div>
+                    </div>
 
                     {/* Arabic Text Display */}
                     {(item.arabicText || item.arabic) && (

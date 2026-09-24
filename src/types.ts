@@ -846,11 +846,15 @@ export interface Weakness {
   category: MuhasabahCategory;
   description?: string;
   triggerCause: string; // Primary root cause
-  occurrenceCount: number;
+  occurrenceCount: number; // Active slots filled (0-5)
+  totalHistoricalSlips?: number; // Lifetime total slips for forensic history
   lastOccurrenceDate: string;
   status: WeaknessStatus;
   correctiveStrategy?: string; // What the operator will do when triggered
   preventiveProtocol?: string; // Concrete If-Then boundary rule or behavioral protocol
+  cueFriction?: string; // Inverted Law 1 & 3: Physical barrier / removal of cue
+  replacementHabit?: string; // Inverted Law 2 & 4: Alternative positive action replacing the slip
+  identityAnchor?: string; // Spiritual / identity affirmation anchor
   createdAt: string;
   recurrenceCadence?: RecurrenceCadence;
   recurrenceCadenceLabel?: string;
@@ -863,6 +867,24 @@ export interface Weakness {
   consecutiveDaysCount?: number;
   sameDayCount?: number;
   historyDates?: string[];
+  lastRecoveredSlotDate?: string;
+  decayIntervalDays?: number; // Clean days required to empty 1 slot (default 2 for daily)
+}
+
+export interface WeaknessDecayMetrics {
+  activeSlots: number; // 0 to 5 current filled slots
+  rawSlots: number;
+  slotsRecovered: number; // Number of slots emptied by clean days
+  decayIntervalDays: number; // E.g., 2 days for daily cadence
+  daysClean: number; // Days since last occurrence
+  cleanDaysProgress: number; // Days elapsed in current decay interval
+  daysUntilNextDecay: number; // Days remaining to empty next slot
+  isChainBroken: boolean; // True if was 5 but now < 5
+  effectiveCadence: RecurrenceCadence;
+  effectiveCadenceLabel: string;
+  effectiveStatus: WeaknessStatus;
+  effectiveMultiplier: number;
+  canAdvanceStatus: boolean;
 }
 
 export interface PrayerCheck {

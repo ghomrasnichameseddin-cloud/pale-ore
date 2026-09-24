@@ -1,7 +1,120 @@
-import { MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, Weakness, RecurrenceCadence, RecurrenceAnalysis } from '../types';
+import { MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, Weakness, RecurrenceCadence, RecurrenceAnalysis, WeaknessDecayMetrics, WeaknessStatus } from '../types';
 import { SEVERITY_BASE_CONSEQUENCES } from './muhasabahConsequences';
 import { parseDateSafe, addDays } from './dateUtils';
 export { SEVERITY_BASE_CONSEQUENCES };
+
+/**
+ * Calculates dynamic clean-day decay metrics for a Weakness/Pattern.
+ *
+ * Rules:
+ * - If recurrence is 'same_day' or 'daily' (or rawSlots >= 3): 2 clean days without a slip empties 1 slot.
+ * - If recurrence is 'every_2_days': 3 clean days empties 1 slot.
+ * - If recurrence is 'semi_weekly': 4 clean days empties 1 slot.
+ * - Otherwise: 7 clean days empties 1 slot.
+ *
+ * Example:
+ * Audit: obligations/delayed fajr prayer
+ * 5 full slots
+ * Recurrence: daily
+ * 2 clean days pass without logging that slip => 1 slot emptied (activeSlots = 4).
+ * As slots empty:
+ * - When activeSlots < 5, Chronic Chain (+25% penalty floor) is broken!
+ * - When activeSlots reaches 0, status qualifies for 'Under Control'.
+ * - 21 clean days without a slip qualifies for 'Overcome'.
+ */
+export function getWeaknessDecayMetrics(weakness: Weakness, targetDate: string): WeaknessDecayMetrics {
+  const rawSlots = Math.max(0, weakness.occurrenceCount ?? 0);
+  
+  // Calculate clean days
+  let daysClean = 0;
+  if (weakness.lastOccurrenceDate) {
+    daysClean = Math.max(0, getDaysDifference(targetDate, weakness.lastOccurrenceDate));
+  }
+
+  // Determine decay interval (clean days needed to empty 1 slot)
+  let decayIntervalDays = weakness.decayIntervalDays || 2;
+  if (!weakness.decayIntervalDays) {
+    const cadence = weakness.recurrenceCadence;
+    if (cadence === 'same_day' || cadence === 'daily' || rawSlots >= 3) {
+      decayIntervalDays = 2; // Exact specification: 2 days pass without logging => 1 slot emptied
+    } else if (cadence === 'every_2_days') {
+      decayIntervalDays = 3;
+    } else if (cadence === 'semi_weekly') {
+      decayIntervalDays = 4;
+    } else {
+      decayIntervalDays = 7;
+    }
+  }
+
+  // Calculate slots recovered / emptied
+  const slotsRecovered = daysClean > 0 ? Math.floor(daysClean / decayIntervalDays) : 0;
+  const activeSlots = Math.max(0, rawSlots - slotsRecovered);
+  const isChainBroken = rawSlots >= 5 && activeSlots < 5;
+
+  // Days progress in current slot recovery
+  const cleanDaysProgress = activeSlots > 0 ? (daysClean % decayIntervalDays) : decayIntervalDays;
+  const daysUntilNextDecay = activeSlots > 0 ? (decayIntervalDays - cleanDaysProgress) : 0;
+
+  // Recurrence cadence dynamically de-escalates as slots empty
+  let effectiveCadence: RecurrenceCadence = weakness.recurrenceCadence || 'isolated';
+  let effectiveCadenceLabel = weakness.recurrenceCadenceLabel || 'Isolated Slip';
+  let effectiveMultiplier = weakness.penaltyMultiplier || 1.0;
+
+  if (activeSlots === 0) {
+    effectiveCadence = 'isolated';
+    effectiveCadenceLabel = daysClean >= 21 ? 'Neutralized / Mastered (21+ Days Clean)' : 'Extinguished / Under Control (0 Active Slips)';
+    effectiveMultiplier = 1.0;
+  } else if (activeSlots === 1) {
+    effectiveCadence = 'isolated';
+    effectiveCadenceLabel = 'De-escalated: Isolated Slip (1/5 Active)';
+    effectiveMultiplier = 1.0;
+  } else if (activeSlots === 2) {
+    effectiveCadence = 'weekly';
+    effectiveCadenceLabel = 'De-escalated: Weekly / Sporadic (2/5 Active)';
+    effectiveMultiplier = 1.15;
+  } else if (activeSlots === 3) {
+    effectiveCadence = 'semi_weekly';
+    effectiveCadenceLabel = 'De-escalated: Semi-Weekly Cycle (3/5 Active)';
+    effectiveMultiplier = 1.20;
+  } else if (activeSlots === 4) {
+    effectiveCadence = 'every_2_days';
+    effectiveCadenceLabel = 'De-escalated: Every Two Days (4/5 Active - Chain Broken)';
+    effectiveMultiplier = 1.35;
+  } else {
+    // 5+ slots: full acute recurrence
+    effectiveCadence = weakness.recurrenceCadence || 'daily';
+    effectiveCadenceLabel = weakness.recurrenceCadenceLabel || 'Active Chronic Chain (5/5 Slots)';
+    effectiveMultiplier = Math.max(1.25, weakness.penaltyMultiplier || 1.50);
+  }
+
+  // Effective status
+  let effectiveStatus: WeaknessStatus = weakness.status;
+  if (daysClean >= 21) {
+    effectiveStatus = 'Overcome';
+  } else if (activeSlots === 0 || daysClean >= 7) {
+    if (weakness.status === 'Active') {
+      effectiveStatus = 'Under Control';
+    }
+  }
+
+  const canAdvanceStatus = (daysClean >= 7 && weakness.status === 'Active') || (daysClean >= 21 && weakness.status === 'Under Control');
+
+  return {
+    activeSlots,
+    rawSlots,
+    slotsRecovered,
+    decayIntervalDays,
+    daysClean,
+    cleanDaysProgress,
+    daysUntilNextDecay,
+    isChainBroken,
+    effectiveCadence,
+    effectiveCadenceLabel,
+    effectiveStatus,
+    effectiveMultiplier,
+    canAdvanceStatus
+  };
+}
 
 /**
  * Calculates calendar day differences between two YYYY-MM-DD strings.
@@ -237,12 +350,15 @@ export function analyzeSinRecurrence(params: {
     }
   }
 
-  // If the linked weakness is already flagged as an Active Chain (5+ historical slips), guarantee at least Tier 2
-  if (linkedWeakness && linkedWeakness.occurrenceCount >= 5 && multiplier <= 1.0) {
-    multiplier = 1.25;
-    escalationTier = Math.max(2, escalationTier);
-    cadenceLabel = `Active Behavioral Chain (5+ Slips Recorded)`;
-    cadenceDescription = `Chronic behavioral weakness active (${linkedWeakness.occurrenceCount} total records). +25% automatic penalty floor.`;
+  // Check if linked weakness has an active chain (taking clean-day decay into account)
+  if (linkedWeakness) {
+    const decay = getWeaknessDecayMetrics(linkedWeakness, targetDate);
+    if (decay.activeSlots >= 5 && multiplier <= 1.0) {
+      multiplier = 1.25;
+      escalationTier = Math.max(2, escalationTier);
+      cadenceLabel = `Active Behavioral Chain (5/5 Slots Full)`;
+      cadenceDescription = `Chronic behavioral weakness active (${decay.activeSlots} active slots). +25% automatic penalty floor.`;
+    }
   }
 
   const isRecurring = multiplier > 1.0;
@@ -390,14 +506,16 @@ export function getRecurringSinsRegistry(
     });
 
     const matchingWeakness = item.weaknessId ? weaknesses.find(w => w.id === item.weaknessId) : null;
-    const count = Math.max(item.entries.length, matchingWeakness?.occurrenceCount || 0);
+    const decay = matchingWeakness ? getWeaknessDecayMetrics(matchingWeakness, targetDate) : null;
+    const count = decay ? decay.activeSlots : (matchingWeakness?.occurrenceCount ?? item.entries.length);
 
-    // Filter to those that have recurred (count >= 2, or intra-day, or flagged as recurring)
+    // Filter to those that have recurred and are still active (not extinguished by clean days)
     const isActuallyRecurring = 
-      count >= 2 || 
+      (count >= 2 || 
       analysis.sameDayCount >= 1 || 
       analysis.consecutiveDailyStreak >= 1 || 
-      analysis.cadence !== 'isolated';
+      analysis.cadence !== 'isolated') &&
+      (!decay || decay.activeSlots > 0 || (decay.daysClean <= 0));
 
     if (isActuallyRecurring) {
       registry.push({

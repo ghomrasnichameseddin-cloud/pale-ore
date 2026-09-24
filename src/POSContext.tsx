@@ -68,7 +68,8 @@ import {
   analyzeSinRecurrence, 
   SEVERITY_BASE_CONSEQUENCES, 
   getRecurringSinsRegistry,
-  RecurringSinsRegistry
+  RecurringSinsRegistry,
+  getWeaknessDecayMetrics
 } from './utils/muhasabahRecurrence';
 import {
   getWeekBoundaries,
@@ -448,6 +449,8 @@ interface POSContextType {
   getAdhkarRecitationCount: (adhkarId: string, dateStr?: string) => number;
   setAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', status: AdhkarSessionStatus, dateStr?: string) => void;
   cycleAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
+  fulfillAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
+  resetAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
   setPostSalahSessionStatus: (prayer: PrayerId, status: AdhkarSessionStatus, dateStr?: string) => void;
   cyclePostSalahSessionStatus: (prayer: PrayerId, dateStr?: string) => void;
   setPostSalahItemStatus: (prayer: PrayerId, itemId: string, completed: boolean, count?: number, dateStr?: string) => void;
@@ -1816,12 +1819,25 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
 
+      const updatedWeaknesses = (prev.weaknesses || []).map(w => {
+        const decay = getWeaknessDecayMetrics(w, newDateStr);
+        return {
+          ...w,
+          occurrenceCount: decay.activeSlots,
+          status: decay.effectiveStatus,
+          recurrenceCadence: decay.effectiveCadence,
+          recurrenceCadenceLabel: decay.effectiveCadenceLabel,
+          penaltyMultiplier: decay.effectiveMultiplier
+        };
+      });
+
       return {
         ...prev,
         systemDate: newDateStr,
         quests: finalQuests,
         xpHistory: finalHistory,
         skills: updatedSkills,
+        weaknesses: updatedWeaknesses,
         profile: {
           ...prev.profile,
           momentum: updatedMomentum,
@@ -5716,14 +5732,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (matchedIndex >= 0) {
           const w = updatedWeaknesses[matchedIndex];
-          const nextCount = w.occurrenceCount + 1;
-          const isNowActive = nextCount >= 5 ? 'Active' : w.status;
+          // Account for clean-day slot decay before incrementing
+          const decayBefore = getWeaknessDecayMetrics(w, currentSysDate);
+          const nextCount = Math.min(5, decayBefore.activeSlots + 1);
+          const totalSlips = (w.totalHistoricalSlips || w.occurrenceCount || 0) + 1;
+          const isNowActive = nextCount >= 5 ? 'Active' : (nextCount > 0 ? 'Active' : w.status);
           targetWeaknessId = w.id;
           targetWeaknessName = w.name;
           const hist = Array.isArray(w.historyDates) ? [...w.historyDates, currentSysDate] : [currentSysDate];
           updatedWeaknesses[matchedIndex] = {
             ...w,
             occurrenceCount: nextCount,
+            totalHistoricalSlips: totalSlips,
             lastOccurrenceDate: currentSysDate,
             status: isNowActive,
             recurrenceCadence: recurrence?.cadence || w.recurrenceCadence,
@@ -5745,9 +5765,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             category: entry.category,
             triggerCause: entry.cause,
             occurrenceCount: 1,
+            totalHistoricalSlips: 1,
             lastOccurrenceDate: currentSysDate,
-            status: 'Under Control',
+            status: 'Active',
             correctiveStrategy: entry.reflection || 'Guard against triggers with vigilant awareness.',
+            preventiveProtocol: entry.reflection || 'If trigger appears, execute immediate physical displacement.',
             createdAt: getSystemTimestamp(currentSysDate),
             recurrenceCadence: recurrence?.cadence || 'isolated',
             recurrenceCadenceLabel: recurrence?.cadenceLabel,
@@ -5757,7 +5779,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             currentXpPenalty: actualDeducted,
             consecutiveDaysCount: 0,
             sameDayCount: 1,
-            historyDates: [currentSysDate]
+            historyDates: [currentSysDate],
+            decayIntervalDays: 2
           };
           updatedWeaknesses.push(newWeakness);
         }
@@ -6852,6 +6875,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const getFortressSessionForAdhkarCategory = (category: AdhkarCategory | string): 'morning' | 'evening' | 'sleep' | null => {
+    if (category === 'morning') return 'morning';
+    if (category === 'evening') return 'evening';
+    if (category === 'sleep' || category === 'sleep_night' || category === 'sleep_dhohr') return 'sleep';
+    return null;
+  };
+
+  const getFortressSessionItems = (session: 'morning' | 'evening' | 'sleep', list: AdhkarItem[]): AdhkarItem[] => {
+    if (session === 'morning') {
+      return list.filter(a => a.category === 'morning');
+    }
+    if (session === 'evening') {
+      return list.filter(a => a.category === 'evening');
+    }
+    if (session === 'sleep') {
+      const night = list.filter(a => a.category === 'sleep_night' || a.category === 'sleep');
+      return night.length > 0 ? night : list.filter(a => a.category === 'sleep_dhohr');
+    }
+    return [];
+  };
+
   const setAdhkarSessionStatus = (
     session: 'morning' | 'evening' | 'sleep',
     newStatus: AdhkarSessionStatus,
@@ -6901,6 +6945,47 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let updatedHistory = [...prev.xpHistory];
       let coinsDelta = 0;
 
+      // Synchronize litanies with manual session status change
+      const currentList = (prev.customAdhkar && prev.customAdhkar.length > 0) ? prev.customAdhkar : DEFAULT_ADHKAR_LIST;
+      const sessionItems = getFortressSessionItems(session, currentList);
+      const dateRecords = prev.adhkarRecitations?.[targetDate] || {};
+      const updatedDateRecords = { ...dateRecords };
+
+      if (isNowComplete) {
+        sessionItems.forEach(item => {
+          const currentCnt = updatedDateRecords[item.id] || 0;
+          if (currentCnt < item.targetCount) {
+            updatedDateRecords[item.id] = item.targetCount;
+            const litanyQuestId = `spiritual-adhkar-rec-${targetDate}-${item.id}`;
+            if (!updatedHistory.some(h => h.questId === litanyQuestId)) {
+              const litanyXp = Math.min(50, Math.max(10, Math.round(item.targetCount * 2)));
+              updatedHistory = [{
+                id: `h-adhkar-rec-${Date.now()}-${item.id}`,
+                questId: litanyQuestId,
+                questName: `📿 DHIKR: ${item.title} (${item.targetCount}x)`,
+                xp: litanyXp,
+                timestamp: completedTimestamp,
+                skillIds: []
+              }, ...updatedHistory];
+              coinsDelta += 2;
+            }
+          }
+        });
+      } else if (newStatus === 'not_started') {
+        sessionItems.forEach(item => {
+          const currentCnt = updatedDateRecords[item.id] || 0;
+          if (currentCnt > 0) {
+            updatedDateRecords[item.id] = 0;
+            const litanyQuestId = `spiritual-adhkar-rec-${targetDate}-${item.id}`;
+            const wasLitanyDone = currentCnt >= item.targetCount;
+            if (wasLitanyDone) {
+              updatedHistory = updatedHistory.filter(h => h.questId !== litanyQuestId);
+              coinsDelta -= 2;
+            }
+          }
+        });
+      }
+
       if (isNowComplete && !wasComplete) {
         const entry: XPHistoryEntry = {
           id: `h-adhkar-${Date.now()}-${session}`,
@@ -6916,7 +7001,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           skillIds: []
         };
         updatedHistory = [entry, ...updatedHistory];
-        coinsDelta = coinsReward;
+        coinsDelta += coinsReward;
 
         addSystemMessage({
           sender: 'SYSTEM',
@@ -6927,7 +7012,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       } else if (!isNowComplete && wasComplete) {
         updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
-        coinsDelta = -coinsReward;
+        coinsDelta -= coinsReward;
       }
 
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
@@ -6944,6 +7029,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         spiritualLogs: {
           ...(prev.spiritualLogs || {}),
           [targetDate]: updatedLog
+        },
+        adhkarRecitations: {
+          ...(prev.adhkarRecitations || {}),
+          [targetDate]: updatedDateRecords
         },
         profile: {
           ...prev.profile,
@@ -8606,6 +8695,110 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         coinsDelta = -2;
       }
 
+      // Automatically update Fortress Session status based on litanies progress
+      let updatedSpiritualLogs = prev.spiritualLogs;
+      const sessionType = getFortressSessionForAdhkarCategory(item.category);
+
+      if (sessionType) {
+        const sessionItems = getFortressSessionItems(sessionType, currentList);
+        if (sessionItems.length > 0) {
+          const totalItems = sessionItems.length;
+          const completedCount = sessionItems.filter(i => {
+            const count = i.id === adhkarId ? newCount : (updatedDateRecords[i.id] || 0);
+            return count >= i.targetCount;
+          }).length;
+          const startedCount = sessionItems.filter(i => {
+            const count = i.id === adhkarId ? newCount : (updatedDateRecords[i.id] || 0);
+            return count > 0;
+          }).length;
+          const napStarted = sessionType === 'sleep' && currentList.some(i => i.category === 'sleep_dhohr' && (i.id === adhkarId ? newCount : (updatedDateRecords[i.id] || 0)) > 0);
+
+          let newSessionStatus: AdhkarSessionStatus = 'not_started';
+          if (completedCount === totalItems) {
+            newSessionStatus = 'complete';
+          } else if (completedCount > 0 || startedCount > 0 || napStarted) {
+            newSessionStatus = 'in_progress';
+          } else {
+            newSessionStatus = 'not_started';
+          }
+
+          const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+          const currentSessions = log.adhkarSessions || {
+            morning: log.adhkarSabah ? 'complete' : 'not_started',
+            evening: log.adhkarMasa ? 'complete' : 'not_started',
+            sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+          };
+          const currentSessionStatus = currentSessions[sessionType] || 'not_started';
+
+          if (newSessionStatus !== currentSessionStatus) {
+            let legacyField: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepNight' = 'adhkarSabah';
+            let sessionXpReward = 75;
+            let sessionCoinsReward = 10;
+            let sessionLabel = 'Morning Adhkār (أذكار الصباح)';
+            let sessionMessage = 'Morning Fortress complete (+75 XP, +10 Coins). Sheltered in divine grace from dawn till dusk.';
+
+            if (sessionType === 'evening') {
+              legacyField = 'adhkarMasa';
+              sessionLabel = 'Evening Adhkār (أذكار المساء)';
+              sessionMessage = 'Evening Fortress complete (+75 XP, +10 Coins). Guarded under divine light through the night.';
+            } else if (sessionType === 'sleep') {
+              legacyField = 'adhkarSleepNight';
+              sessionLabel = 'Night Sleep Adhkār (أذكار النوم)';
+              sessionMessage = 'Night Sleep Adhkār complete (+75 XP, +10 Coins). Fortified with Ayat al-Kursi, Mu‘awwidhatayn & Tasbīḥ Fāṭimah.';
+            }
+
+            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : 'sleepNight'}`;
+            const isNowSessionComplete = newSessionStatus === 'complete';
+            const wasSessionComplete = currentSessionStatus === 'complete';
+
+            if (isNowSessionComplete && !wasSessionComplete) {
+              const sessionEntry: XPHistoryEntry = {
+                id: `h-adhkar-${Date.now()}-${sessionType}`,
+                questId: sessionQuestId,
+                questName: `📿 ADHKĀR: ${sessionLabel}`,
+                xp: sessionXpReward,
+                timestamp: targetTimestamp,
+                date: targetDate,
+                type: 'adhkar',
+                source: 'quest',
+                sourceId: sessionQuestId,
+                activityId: `adhkar-${sessionType}`,
+                skillIds: []
+              };
+              updatedHistory = [sessionEntry, ...updatedHistory];
+              xpDelta += sessionXpReward;
+              coinsDelta += sessionCoinsReward;
+
+              addSystemMessage({
+                sender: 'SYSTEM',
+                category: 'achievement',
+                title: `📿 ADHKĀR COMPLETED: ${sessionLabel}`,
+                content: sessionMessage,
+                priority: 'medium'
+              });
+            } else if (!isNowSessionComplete && wasSessionComplete) {
+              updatedHistory = updatedHistory.filter(h => h.questId !== sessionQuestId);
+              xpDelta -= sessionXpReward;
+              coinsDelta -= sessionCoinsReward;
+            }
+
+            const updatedLog: SpiritualDailyLog = {
+              ...log,
+              [legacyField]: isNowSessionComplete,
+              adhkarSessions: {
+                ...currentSessions,
+                [sessionType]: newSessionStatus
+              }
+            };
+
+            updatedSpiritualLogs = {
+              ...(prev.spiritualLogs || {}),
+              [targetDate]: updatedLog
+            };
+          }
+        }
+      }
+
       const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
       const gated = calculateGatedPlayerLevel(
         totalXp,
@@ -8617,6 +8810,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...prev,
         xpHistory: updatedHistory,
+        spiritualLogs: updatedSpiritualLogs,
         adhkarRecitations: {
           ...(prev.adhkarRecitations || {}),
           [targetDate]: updatedDateRecords
@@ -8634,17 +8828,134 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetAdhkarRecitation = (adhkarId: string, dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const currentList = (state.customAdhkar && state.customAdhkar.length > 0) ? state.customAdhkar : DEFAULT_ADHKAR_LIST;
+    const item = currentList.find(a => a.id === adhkarId);
+    if (!item) return;
+
+    const currentCount = (state.adhkarRecitations?.[targetDate]?.[adhkarId]) || 0;
+    if (currentCount <= 0) return;
+
+    const wasCompleted = currentCount >= item.targetCount;
+    const questIdentifier = `spiritual-adhkar-rec-${targetDate}-${adhkarId}`;
+
     setState(prev => {
       const dateRecords = prev.adhkarRecitations?.[targetDate] || {};
       const updatedDateRecords = { ...dateRecords, [adhkarId]: 0 };
+
+      let updatedHistory = [...prev.xpHistory];
+      let xpDelta = 0;
+      let coinsDelta = 0;
+
+      if (wasCompleted) {
+        updatedHistory = updatedHistory.filter(h => h.questId !== questIdentifier);
+        const xpReward = Math.min(50, Math.max(10, Math.round(item.targetCount * 2)));
+        xpDelta -= xpReward;
+        coinsDelta -= 2;
+      }
+
+      // Automatically update Fortress Session status
+      let updatedSpiritualLogs = prev.spiritualLogs;
+      const sessionType = getFortressSessionForAdhkarCategory(item.category);
+
+      if (sessionType) {
+        const sessionItems = getFortressSessionItems(sessionType, currentList);
+        if (sessionItems.length > 0) {
+          const totalItems = sessionItems.length;
+          const completedCount = sessionItems.filter(i => {
+            const count = i.id === adhkarId ? 0 : (updatedDateRecords[i.id] || 0);
+            return count >= i.targetCount;
+          }).length;
+          const startedCount = sessionItems.filter(i => {
+            const count = i.id === adhkarId ? 0 : (updatedDateRecords[i.id] || 0);
+            return count > 0;
+          }).length;
+          const napStarted = sessionType === 'sleep' && currentList.some(i => i.category === 'sleep_dhohr' && (i.id === adhkarId ? 0 : (updatedDateRecords[i.id] || 0)) > 0);
+
+          let newSessionStatus: AdhkarSessionStatus = 'not_started';
+          if (completedCount === totalItems) {
+            newSessionStatus = 'complete';
+          } else if (completedCount > 0 || startedCount > 0 || napStarted) {
+            newSessionStatus = 'in_progress';
+          } else {
+            newSessionStatus = 'not_started';
+          }
+
+          const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+          const currentSessions = log.adhkarSessions || {
+            morning: log.adhkarSabah ? 'complete' : 'not_started',
+            evening: log.adhkarMasa ? 'complete' : 'not_started',
+            sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
+          };
+          const currentSessionStatus = currentSessions[sessionType] || 'not_started';
+
+          if (newSessionStatus !== currentSessionStatus) {
+            let legacyField: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepNight' = 'adhkarSabah';
+            let sessionXpReward = 75;
+            let sessionCoinsReward = 10;
+            if (sessionType === 'evening') legacyField = 'adhkarMasa';
+            else if (sessionType === 'sleep') legacyField = 'adhkarSleepNight';
+
+            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : 'sleepNight'}`;
+            const wasSessionComplete = currentSessionStatus === 'complete';
+
+            if (wasSessionComplete && newSessionStatus !== 'complete') {
+              updatedHistory = updatedHistory.filter(h => h.questId !== sessionQuestId);
+              xpDelta -= sessionXpReward;
+              coinsDelta -= sessionCoinsReward;
+            }
+
+            const updatedLog: SpiritualDailyLog = {
+              ...log,
+              [legacyField]: newSessionStatus === 'complete',
+              adhkarSessions: {
+                ...currentSessions,
+                [sessionType]: newSessionStatus
+              }
+            };
+
+            updatedSpiritualLogs = {
+              ...(prev.spiritualLogs || {}),
+              [targetDate]: updatedLog
+            };
+          }
+        }
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
+
       return {
         ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: updatedSpiritualLogs,
         adhkarRecitations: {
           ...(prev.adhkarRecitations || {}),
           [targetDate]: updatedDateRecords
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta),
+          momentum: Math.max(0, prev.profile.momentum - (wasCompleted ? 2 : 0))
         }
       };
     });
+  };
+
+  const fulfillAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setAdhkarSessionStatus(session, 'complete', targetDate);
+  };
+
+  const resetAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setAdhkarSessionStatus(session, 'not_started', targetDate);
   };
 
   return (
@@ -8882,6 +9193,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getAdhkarRecitationCount,
       setAdhkarSessionStatus,
       cycleAdhkarSessionStatus,
+      fulfillAllAdhkarForSession,
+      resetAllAdhkarForSession,
       setPostSalahSessionStatus,
       cyclePostSalahSessionStatus,
       setPostSalahItemStatus,

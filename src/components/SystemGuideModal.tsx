@@ -101,9 +101,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'observatories',
-      title: '11. Observatories: XP & Temporal Audit Ledgers',
+      title: '11. Observatories: XP Ledger & Temporal Control',
       icon: FileSpreadsheet,
-      badge: 'AUDIT LEDGERS',
+      badge: 'FORENSIC AUDIT',
       color: 'text-indigo-400',
     },
     {
@@ -2844,27 +2844,31 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
                       <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
-                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Leisure Bank (Temporal Capital)
+                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Permanent Rest Bank & Daily Allowance
                       </span>
                       <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                        MINUTES_BANK
+                        REST_BANK_EQUITY
                       </span>
                     </div>
                     <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Restorative minutes minted exclusively through verified focus cycles and operational dividends.
+                      Restorative minutes minted exclusively through verified focus cycles and operational dividends. Unlike perishable daily waking hours, your <strong>Permanent Rest Bank never expires</strong> and acts as permanent equity for guilt-free recovery.
                     </p>
                     <div className="space-y-1.5 text-xs font-mono">
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
                         <span className="text-zinc-300">Pomodoro 25m Focus Sprint:</span>
-                        <span className="text-emerald-400 font-bold">+10m Leisure</span>
+                        <span className="text-emerald-400 font-bold">+10m Rest Equity</span>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
                         <span className="text-zinc-300">Hard Directive Completion:</span>
                         <span className="text-emerald-400 font-bold">+15m Rest Dividend</span>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
+                        <span className="text-zinc-300">Daily Rest Allowance:</span>
+                        <span className="text-teal-300 font-bold">120m Daily Pacing Ceiling</span>
+                      </div>
+                      <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
                         <span className="text-zinc-300">Used For:</span>
-                        <span className="text-emerald-300 font-bold">Active Rest Passes</span>
+                        <span className="text-emerald-300 font-bold">Active Rest Passes & Qaylūlah</span>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-rose-500/20 flex items-center justify-between">
                         <span className="text-rose-300">Distraction Overdraft:</span>
@@ -3034,7 +3038,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     <Lock className="h-4 w-4 text-amber-400" /> Reward Shop Unlock Policy & Daily Obligation Gating
                   </div>
                   <p className="text-zinc-300 font-sans leading-relaxed">
-                    To guarantee that recreation is always earned, the Reward Shop automatically restricts purchases until today's mandatory directives are completed. The gating lock is tied to quests classified as <strong className="text-amber-300">Main</strong>, <strong className="text-amber-300">Boss</strong>, <strong className="text-amber-300">Penalty</strong>, and <strong className="text-amber-300">Habit</strong>. Side and Optional tasks do not block access. In addition, an active <strong>Kaffārah penance quest</strong> will engage an absolute moral lockdown until fulfilled.
+                    To guarantee that recreation is always earned, the Reward Shop automatically restricts purchases until today's mandatory directives are completed. The gating lock is tied to quests classified as <strong className="text-amber-300">Main</strong>, <strong className="text-amber-300">Boss</strong>, <strong className="text-amber-300">Recovery</strong>, and <strong className="text-amber-300">Habit</strong>. Side and Optional tasks do not block access. In addition, an active <strong>Kaffārah penance quest</strong> will engage an absolute moral lockdown until fulfilled.
                   </p>
                 </div>
 
@@ -3070,14 +3074,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
                       <FileSpreadsheet className="h-5 w-5 text-indigo-400" />
-                      11. Observatories: XP & Temporal Audit Ledgers
+                      11. Observatories: XP Ledger & Temporal Control
                     </h3>
                     <span className="text-[9px] font-mono bg-indigo-950 text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded font-bold uppercase">
                       EMPIRICAL_AUDITABILITY
                     </span>
                   </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    <em>"Read your record. Sufficient is yourself against you this Day as accountant."</em> — Surah Al-Isra 17:14. Complete forensic transparency: chronological and auditable transaction logs for XP and Temporal Capital, multi-attribute radar analytics, and the interactive spiderweb constellation net.
+                    <em>"Read your record. Sufficient is yourself against you this Day as accountant."</em> — Surah Al-Isra 17:14. Complete forensic transparency: chronological XP audit ledger, live financial-grade Temporal Capital accounting, multi-attribute radar analytics, and the interactive spiderweb constellation net.
                   </p>
                 </div>
 
@@ -3128,31 +3132,31 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     </div>
                   </div>
 
-                  {/* TEMPORAL CAPITAL LEDGER */}
+                  {/* TEMPORAL CAPITAL CONTROL ENGINE */}
                   <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
                       <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
-                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Temporal Capital Ledger
+                        <Hourglass className="h-4 w-4 text-emerald-400" /> 2. Live Temporal Control Engine (HUD)
                       </span>
                       <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                        TIME_LEDGER
+                        TIME_HUD
                       </span>
                     </div>
                     <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                      Dedicated balance accounting tracking every minute minted, invested, or redeemed from your Leisure Bank, with daily net and seven-day recovery rhythm summaries.
+                      Real-time double-entry time balance accounting directly on the Command Center Dashboard, providing live solvency checks and instant rest redemption.
                     </p>
                     <div className="space-y-1.5 text-xs font-mono">
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
-                        <div className="text-emerald-300 font-bold">Tracked Transactions:</div>
-                        <div className="text-[11px] text-zinc-400 font-sans">Focus Harvests (+10m), Quest Dividends, Rest Vouchers (-25m to -90m), Active Rest sessions, Distraction Overdrafts (-minutes), and Debt Restructuring.</div>
+                        <div className="text-emerald-300 font-bold">Real-Time Allocations:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Waking Capital, Invested Focus, Committed Directive Durations, Protected Sleep/Prayer Baselines, and Safely Allocatable Free Time.</div>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 space-y-0.5">
-                        <div className="text-emerald-300 font-bold">Audit Controls:</div>
-                        <div className="text-[11px] text-zinc-400 font-sans">Filter by transaction category, search by event note, and synchronize with the Dashboard HUD.</div>
+                        <div className="text-emerald-300 font-bold">Rest Bank Management:</div>
+                        <div className="text-[11px] text-zinc-400 font-sans">Live Permanent Rest Bank tally, daily rest allowance consumption tracking, and 1-tap Active Rest Session execution.</div>
                       </div>
                       <div className="p-2 bg-zinc-950 rounded border border-white/5 flex items-center justify-between">
-                        <span className="text-zinc-300">Data Export:</span>
-                        <span className="text-emerald-400 font-bold">Instant CSV Download</span>
+                        <span className="text-zinc-300">Location:</span>
+                        <span className="text-emerald-400 font-bold">Command Center Dashboard</span>
                       </div>
                     </div>
                   </div>

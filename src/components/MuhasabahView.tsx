@@ -7,12 +7,14 @@ import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { AncientCarvedRune } from './AncientCarvedRune';
 import { getWeekBoundaries } from '../utils/weeklyCycle';
 import { getLocalDateString, parseDateSafe, getDaysDifference } from '../utils/dateUtils';
+import { getWeaknessDecayMetrics } from '../utils/muhasabahRecurrence';
 import { 
   Scale, Shield, Flame, Heart, MessageSquare, Clock, AlertTriangle, 
   Sparkles, Plus, Search, Filter, CheckCircle2, 
   ChevronRight, Lock, Trash2, Eye, EyeOff, HeartHandshake, Coins, Zap, ShieldAlert,
   ShieldCheck, ArrowUpDown, ArrowDown, ArrowUp, Calendar, Layers, X, Info,
-  FileText, BookOpen, CalendarDays, History, Check, ArrowRight, Repeat, Edit3, Target
+  FileText, BookOpen, CalendarDays, History, Check, ArrowRight, Repeat, Edit3, Target,
+  Award, TrendingDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -75,6 +77,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
   const [patternFormCategory, setPatternFormCategory] = useState<MuhasabahCategory>('Obligations');
   const [patternFormTrigger, setPatternFormTrigger] = useState('');
   const [patternFormProtocol, setPatternFormProtocol] = useState('');
+  const [patternFormCueFriction, setPatternFormCueFriction] = useState('');
+  const [patternFormReplacement, setPatternFormReplacement] = useState('');
+  const [patternFormIdentity, setPatternFormIdentity] = useState('');
+  const [patternFormDecayDays, setPatternFormDecayDays] = useState(2);
   const [patternFormStatus, setPatternFormStatus] = useState<'Active' | 'Under Control' | 'Overcome'>('Active');
   const [patternFormError, setPatternFormError] = useState<string | null>(null);
 
@@ -84,6 +90,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     setPatternFormCategory('Obligations');
     setPatternFormTrigger('');
     setPatternFormProtocol('');
+    setPatternFormCueFriction('');
+    setPatternFormReplacement('');
+    setPatternFormIdentity('');
+    setPatternFormDecayDays(2);
     setPatternFormStatus('Active');
     setPatternFormError(null);
     setIsAddPatternModalOpen(true);
@@ -95,6 +105,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
     setPatternFormCategory(w.category);
     setPatternFormTrigger(w.triggerCause || '');
     setPatternFormProtocol(w.preventiveProtocol || w.correctiveStrategy || '');
+    setPatternFormCueFriction(w.cueFriction || '');
+    setPatternFormReplacement(w.replacementHabit || '');
+    setPatternFormIdentity(w.identityAnchor || '');
+    setPatternFormDecayDays(w.decayIntervalDays || 2);
     setPatternFormStatus(w.status);
     setPatternFormError(null);
     setIsAddPatternModalOpen(true);
@@ -122,6 +136,10 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         triggerCause: patternFormTrigger.trim(),
         correctiveStrategy: patternFormProtocol.trim(),
         preventiveProtocol: patternFormProtocol.trim(),
+        cueFriction: patternFormCueFriction.trim() || undefined,
+        replacementHabit: patternFormReplacement.trim() || undefined,
+        identityAnchor: patternFormIdentity.trim() || undefined,
+        decayIntervalDays: Number(patternFormDecayDays) || 2,
         status: patternFormStatus
       });
     } else {
@@ -131,7 +149,12 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
         triggerCause: patternFormTrigger.trim(),
         correctiveStrategy: patternFormProtocol.trim(),
         preventiveProtocol: patternFormProtocol.trim(),
+        cueFriction: patternFormCueFriction.trim() || undefined,
+        replacementHabit: patternFormReplacement.trim() || undefined,
+        identityAnchor: patternFormIdentity.trim() || undefined,
+        decayIntervalDays: Number(patternFormDecayDays) || 2,
         occurrenceCount: 0,
+        totalHistoricalSlips: 0,
         lastOccurrenceDate: '',
         status: patternFormStatus,
         historyDates: []
@@ -1681,9 +1704,11 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                 {displayedWeaknesses.map(weakness => {
                   const catColor = CATEGORY_COLORS[weakness.category] || CATEGORY_COLORS.Obligations;
                   const CategoryIcon = catColor.icon;
-                  const isOvercome = weakness.status === 'Overcome';
-                  const isUnderControl = weakness.status === 'Under Control';
-                  const isActiveChain = (weakness.occurrenceCount || 0) >= 5;
+                  const decay = getWeaknessDecayMetrics(weakness, todayDateStr);
+                  const effectiveSlots = decay.activeSlots;
+                  const isOvercome = weakness.status === 'Overcome' || decay.effectiveStatus === 'Overcome';
+                  const isUnderControl = (weakness.status === 'Under Control' || decay.effectiveStatus === 'Under Control') && !isOvercome;
+                  const isActiveChain = effectiveSlots >= 5;
 
                   // Calculate restraint days
                   const daysInRestraint = weakness.lastOccurrenceDate
@@ -1716,6 +1741,12 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                               <CategoryIcon className="h-2.5 w-2.5" />
                               {weakness.category}
                             </span>
+                            {decay.slotsRecovered > 0 && (
+                              <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 flex items-center gap-1">
+                                <ShieldCheck className="h-2.5 w-2.5 text-emerald-400" />
+                                {decay.slotsRecovered} {decay.slotsRecovered === 1 ? 'Slot' : 'Slots'} Emptied
+                              </span>
+                            )}
                           </div>
 
                           {/* Restraint streak / last occurrence */}
@@ -1790,31 +1821,118 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                         </div>
                       </div>
 
-                      {/* Slip Frequency Meter */}
-                      <div className="my-2.5">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mb-1">
-                          <span className="flex items-center gap-1">
-                            <span>Recorded Frequency:</span>
-                            {weakness.occurrenceCount >= 5 && (
-                              <span className="text-rose-400 font-bold uppercase">(Active Chronic Chain)</span>
+                      {/* DYNAMIC REVERSIBLE 5-SLOT METER */}
+                      <div className="my-2.5 p-3 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                        <div className="flex items-center justify-between text-[10.5px] font-mono">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-zinc-400 font-semibold">Recurrence Slots:</span>
+                            {isActiveChain ? (
+                              <span className="text-rose-400 font-bold uppercase flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 text-rose-500 animate-pulse" />
+                                5/5 Slots Full (Chronic Chain)
+                              </span>
+                            ) : decay.isChainBroken ? (
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                                Chain Broken ({effectiveSlots}/5 Active)
+                              </span>
+                            ) : effectiveSlots === 0 ? (
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                                Boundary Fully Guarded (0/5 Active)
+                              </span>
+                            ) : (
+                              <span className="text-amber-300 font-semibold">
+                                {effectiveSlots} / 5 Active Slots
+                              </span>
                             )}
-                          </span>
-                          <span className={`font-bold ${isOvercome ? 'text-emerald-400' : isUnderControl ? 'text-cyan-300' : 'text-zinc-200'}`}>
-                            {weakness.occurrenceCount} Slips Logged
-                          </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
+                            <span>Lifetime Slips: <strong className="text-zinc-200">{weakness.totalHistoricalSlips || weakness.occurrenceCount || 0}</strong></span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          {[1, 2, 3, 4, 5].map(idx => (
-                            <div 
-                              key={idx}
-                              className={`h-1.5 rounded-full transition ${
-                                idx <= weakness.occurrenceCount
-                                  ? idx >= 5 ? 'bg-rose-500 shadow-sm shadow-rose-500' : 'bg-amber-400'
-                                  : 'bg-zinc-800'
-                              }`}
-                            />
-                          ))}
+
+                        {/* 5-Slot Visual Indicators */}
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {[1, 2, 3, 4, 5].map(idx => {
+                            const isFilled = idx <= effectiveSlots;
+                            const isEmptiedByCleanDays = !isFilled && idx <= (weakness.occurrenceCount || 0);
+
+                            return (
+                              <div
+                                key={idx}
+                                className={`h-5 rounded-md flex items-center justify-center text-[10px] font-bold font-mono transition-all duration-300 ${
+                                  isFilled
+                                    ? idx >= 5 
+                                      ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse'
+                                      : 'bg-amber-400 text-black shadow-sm'
+                                    : isEmptiedByCleanDays
+                                      ? 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-300 shadow-sm shadow-emerald-950/50'
+                                      : 'bg-zinc-800/60 border border-white/5 text-zinc-600'
+                                }`}
+                                title={
+                                  isFilled
+                                    ? `Slot ${idx}: Active Slip (${idx}/5)`
+                                    : isEmptiedByCleanDays
+                                      ? `Slot ${idx}: Emptied through clean days of restraint!`
+                                      : `Slot ${idx}: Clear`
+                                }
+                              >
+                                {isFilled ? (
+                                  idx === 5 ? <Flame className="h-3 w-3 text-white" /> : idx
+                                ) : isEmptiedByCleanDays ? (
+                                  <Shield className="h-3 w-3 text-emerald-400" />
+                                ) : (
+                                  <span className="text-[9px] text-zinc-600">○</span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
+
+                        {/* Dynamic Recovery Progress Bar / Countdown */}
+                        {effectiveSlots > 0 ? (
+                          <div className="pt-2 border-t border-white/5 space-y-1.5">
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                              <span className="flex items-center gap-1 text-emerald-300 font-medium">
+                                <Zap className="h-3 w-3 text-emerald-400" />
+                                Slot Recovery Rate: 1 slot emptied every {decay.decayIntervalDays} clean days
+                              </span>
+                              <span className="text-zinc-300">
+                                Cycle: <strong className="text-emerald-400">{decay.cleanDaysProgress}</strong> / {decay.decayIntervalDays} clean days
+                              </span>
+                            </div>
+                            <div className="w-full bg-zinc-800/80 rounded-full h-1.5 overflow-hidden">
+                              <div 
+                                className="bg-emerald-400 h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                                style={{ width: `${Math.min(100, (decay.cleanDaysProgress / decay.decayIntervalDays) * 100)}%` }}
+                              />
+                            </div>
+                            <p className="text-[9.5px] font-mono text-zinc-400 flex items-center justify-between">
+                              <span>
+                                {decay.daysUntilNextDecay === 0
+                                  ? '🌟 Milestone achieved! Keep this boundary unbroken.'
+                                  : `✨ Maintain restraint for ${decay.daysUntilNextDecay} more ${decay.daysUntilNextDecay === 1 ? 'clean day' : 'clean days'} without logging this slip to empty Slot #${effectiveSlots}.`}
+                              </span>
+                              {decay.isChainBroken && (
+                                <span className="text-emerald-400 font-bold ml-2 shrink-0">
+                                  +25% Penalty Floor Lifted
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-emerald-400">
+                            <span className="flex items-center gap-1 font-bold">
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                              All 5 slots cleared! Habit loop successfully interrupted.
+                            </span>
+                            <span className="text-[9.5px] text-zinc-400">
+                              {decay.daysClean >= 21 ? '🏆 21+ Days: Overcome Mastery' : `${21 - decay.daysClean} days to Overcome`}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Active Chronic Chain Warning Banner (Self-contained, non-power seal) */}
@@ -1823,64 +1941,102 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           <div className="flex items-center justify-between text-rose-300 font-bold mb-1">
                             <span className="flex items-center gap-1.5">
                               <AlertTriangle className="h-3.5 w-3.5 text-rose-400 animate-pulse" />
-                              CHRONIC CHAIN ACTIVE (5+ SLIPS)
+                              CHRONIC CHAIN ACTIVE (5/5 SLOTS FULL)
                             </span>
                             <span className="text-[9.5px] bg-rose-900/80 px-1.5 py-0.2 rounded border border-rose-500/40 text-rose-200">
                               +25% Penalty Floor
                             </span>
                           </div>
                           <p className="text-zinc-300 text-[10px] leading-relaxed">
-                            Repeated recurrence confirms an unchecked habit loop. The system enforces a +25% penalty floor. Enforce your concrete Preventive Protocol below to neutralize the trigger and rebuild steadfastness.
+                            Repeated recurrence confirms an unchecked habit loop. The system enforces a +25% penalty floor. Log 2 clean days without this audit to empty a slot and break the chain.
                           </p>
                         </div>
                       )}
 
                       {/* Recurrence Cadence & Escalation Status */}
-                      {weakness.recurrenceCadence && (
-                        <div className="my-2 px-2.5 py-1.5 rounded-lg bg-rose-950/30 border border-rose-500/30 text-[10px] font-mono flex items-center justify-between">
-                          <span className="text-rose-300 font-bold flex items-center gap-1.5">
-                            <Repeat className="h-3 w-3 text-rose-400 animate-pulse" />
-                            {weakness.recurrenceCadence}
-                          </span>
-                          <span className="text-rose-200 bg-rose-900/60 px-1.5 py-0.2 rounded border border-rose-500/30 text-[9px]">
-                            Tier {weakness.escalationTier || 1} • {((weakness.penaltyMultiplier || 1.0)).toFixed(2)}x Penalties
-                          </span>
-                        </div>
-                      )}
+                      <div className="my-2 px-2.5 py-1.5 rounded-lg bg-zinc-900/80 border border-white/10 text-[10px] font-mono flex items-center justify-between">
+                        <span className={`font-bold flex items-center gap-1.5 ${effectiveSlots >= 5 ? 'text-rose-400' : effectiveSlots >= 3 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          <Repeat className="h-3 w-3 shrink-0" />
+                          {decay.effectiveCadenceLabel}
+                        </span>
+                        <span className={`px-1.5 py-0.2 rounded border text-[9px] ${effectiveSlots >= 5 ? 'bg-rose-900/60 border-rose-500/30 text-rose-200' : 'bg-zinc-800 border-white/10 text-zinc-300'}`}>
+                          {decay.effectiveMultiplier > 1.0 ? `${((decay.effectiveMultiplier)).toFixed(2)}x Penalties` : '1.00x Baseline'}
+                        </span>
+                      </div>
 
-                      {/* Behavioral Boundary & Trigger Box */}
-                      <div className="my-2.5 p-2.5 rounded-lg bg-black/40 border border-white/10 text-[11px] font-mono space-y-2">
-                        {/* Trigger Cue */}
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] uppercase font-bold text-amber-400/90 shrink-0 mt-0.5">
-                            TRIGGER CUE:
+                      {/* 4-PILLAR BEHAVIORAL DISRUPTION BLUEPRINT */}
+                      <div className="my-2.5 p-3 rounded-xl bg-black/40 border border-white/10 text-[11px] font-mono space-y-2.5">
+                        <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                          <span className="text-[10px] uppercase font-bold text-amber-300/90 tracking-wider flex items-center gap-1.5">
+                            <Target className="h-3 w-3 text-amber-400" />
+                            Habit Disruption Blueprint (قَوَاعِدُ نَقْضِ العَادَة)
                           </span>
-                          <span className="text-zinc-300 text-[10.5px]">
-                            {weakness.triggerCause || 'No root cue specified'}
+                          <span className="text-[9px] text-zinc-400">
+                            Behavioral Strategy
                           </span>
                         </div>
 
-                        {/* Preventive Protocol */}
-                        <div className="flex items-start gap-2 pt-1.5 border-t border-white/5">
-                          <span className="text-[10px] uppercase font-bold text-emerald-400/90 shrink-0 mt-0.5 flex items-center gap-1">
-                            <Shield className="h-2.5 w-2.5 text-emerald-400" />
-                            PREVENTIVE PROTOCOL:
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            {currentProtocol ? (
-                              <p className="text-zinc-200 text-[10.5px] leading-relaxed">
-                                {currentProtocol}
-                              </p>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenEditPatternModal(weakness)}
-                                className="text-[10px] text-amber-400 hover:text-amber-300 underline font-mono flex items-center gap-1 cursor-pointer"
-                              >
-                                + Define Preventive Protocol (Rule of Restraint)
-                              </button>
-                            )}
+                        {/* Pillar 1: Cue & Physical Friction */}
+                        <div className="space-y-1">
+                          <div className="flex items-start gap-2">
+                            <span className="text-[9.5px] uppercase font-bold text-amber-400/90 shrink-0 w-24 flex items-center gap-1">
+                              <EyeOff className="h-2.5 w-2.5 text-amber-400" />
+                              1. Cue:
+                            </span>
+                            <div className="flex-1 text-[10.5px] text-zinc-300">
+                              <div><strong className="text-zinc-400 font-normal">Trigger:</strong> {weakness.triggerCause || 'No trigger specified'}</div>
+                              {weakness.cueFriction && (
+                                <div className="text-amber-300/90 mt-0.5"><strong className="text-zinc-400 font-normal">Friction Barrier:</strong> {weakness.cueFriction}</div>
+                              )}
+                            </div>
                           </div>
                         </div>
+
+                        {/* Pillar 2: Implementation Intention (If-Then) */}
+                        <div className="space-y-1 pt-1.5 border-t border-white/5">
+                          <div className="flex items-start gap-2">
+                            <span className="text-[9.5px] uppercase font-bold text-emerald-400/90 shrink-0 w-24 flex items-center gap-1">
+                              <Shield className="h-2.5 w-2.5 text-emerald-400" />
+                              2. Protocol:
+                            </span>
+                            <div className="flex-1 text-[10.5px] text-zinc-200">
+                              {currentProtocol ? (
+                                <p className="leading-relaxed">{currentProtocol}</p>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenEditPatternModal(weakness)}
+                                  className="text-[10px] text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                                >
+                                  + Set If-Then Rule (e.g. IF alarm sounds, THEN stand immediately)
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pillar 3 & 4: Replacement Habit & Identity Anchor */}
+                        {(weakness.replacementHabit || weakness.identityAnchor) && (
+                          <div className="pt-1.5 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            {weakness.replacementHabit && (
+                              <div className="p-2 rounded-lg bg-zinc-900/60 border border-white/5">
+                                <div className="text-[9px] uppercase font-bold text-cyan-300 flex items-center gap-1 mb-0.5">
+                                  <Zap className="h-2.5 w-2.5" />
+                                  3. Replacement Habit:
+                                </div>
+                                <div className="text-zinc-300">{weakness.replacementHabit}</div>
+                              </div>
+                            )}
+                            {weakness.identityAnchor && (
+                              <div className="p-2 rounded-lg bg-[#3a2e12]/20 border border-[#c5a059]/30">
+                                <div className="text-[9px] uppercase font-bold text-[#fef08a] flex items-center gap-1 mb-0.5">
+                                  <Heart className="h-2.5 w-2.5 text-[#c5a059]" />
+                                  4. Identity Anchor:
+                                </div>
+                                <div className="text-zinc-200 italic font-serif">"{weakness.identityAnchor}"</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Action buttons */}
@@ -1897,7 +2053,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                           className="px-3 py-1.5 rounded-lg bg-[#c5a059]/10 hover:bg-[#c5a059]/20 border border-[#c5a059]/30 text-[#c5a059] text-[10.5px] font-mono transition cursor-pointer flex items-center gap-1"
                         >
                           <Edit3 className="h-3 w-3" />
-                          Edit Protocol
+                          Edit Strategy
                         </button>
                       </div>
                     </div>
@@ -3018,7 +3174,7 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-zinc-300 mb-1">
                       REALM / CATEGORY
@@ -3048,38 +3204,109 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
                       <option value="Overcome">Overcome (Mastered)</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-400 mb-1" title="Number of consecutive clean days required to empty 1 slot">
+                      CLEAN DAYS / SLOT
+                    </label>
+                    <select
+                      value={patternFormDecayDays}
+                      onChange={e => setPatternFormDecayDays(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-emerald-500/40 focus:border-emerald-400 focus:outline-none text-xs text-emerald-300 font-mono"
+                    >
+                      <option value={1}>1 Clean Day (Fastest)</option>
+                      <option value={2}>2 Clean Days (Standard Daily)</option>
+                      <option value={3}>3 Clean Days (Every 2-3 Days)</option>
+                      <option value={4}>4 Clean Days (Semi-Weekly)</option>
+                      <option value={7}>7 Clean Days (Weekly / Isolated)</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-amber-300 mb-1">
-                    ROOT TRIGGER CUE (الـمُثِير) <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={patternFormTrigger}
-                    onChange={e => setPatternFormTrigger(e.target.value)}
-                    placeholder="What environmental cue, fatigue state, or timing sparks this?"
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-amber-400/60 focus:outline-none text-xs text-white placeholder-zinc-500"
-                  />
-                  <span className="text-[9.5px] text-zinc-500 mt-0.5 block">
-                    Example: "Alone with phone after 11 PM", "Fatigued before Asr", "Idle chat".
-                  </span>
-                </div>
+                {/* 4-Pillar Behavioral Change Framework */}
+                <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-3">
+                  <div className="text-[10px] uppercase font-bold text-amber-300/90 tracking-wider flex items-center gap-1.5 pb-1 border-b border-white/5">
+                    <Target className="h-3.5 w-3.5 text-amber-400" />
+                    Four Pillars of Habit Disruption (قَوَاعِدُ نَقْضِ العَادَة)
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-emerald-300 mb-1">
-                    PREVENTIVE PROTOCOL / BOUNDARY (إِجْرَاء الوِقَايَة) <span className="text-rose-400">*</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={patternFormProtocol}
-                    onChange={e => setPatternFormProtocol(e.target.value)}
-                    placeholder="If [Trigger Cue occurs], I will immediately [Concrete Alternative Action / Friction Barrier]..."
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-emerald-400/60 focus:outline-none text-xs text-white placeholder-zinc-500 resize-none leading-relaxed"
-                  />
-                  <span className="text-[9.5px] text-zinc-500 mt-0.5 block">
-                    Define an enforceable physical boundary or If-Then substitute rule to prevent recurrence.
-                  </span>
+                  {/* Pillar 1: Root Trigger Cue & Friction Barrier */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                        <EyeOff className="h-3 w-3 text-amber-400" />
+                        1A. ROOT TRIGGER CUE <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={patternFormTrigger}
+                        onChange={e => setPatternFormTrigger(e.target.value)}
+                        placeholder="e.g. Alarm goes off while in bed; idle late-night phone browsing"
+                        className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-amber-400 focus:outline-none text-xs text-white placeholder-zinc-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                        <Lock className="h-3 w-3 text-amber-400" />
+                        1B. PHYSICAL FRICTION BARRIER
+                      </label>
+                      <input
+                        type="text"
+                        value={patternFormCueFriction}
+                        onChange={e => setPatternFormCueFriction(e.target.value)}
+                        placeholder="e.g. Phone kept in hallway overnight; mechanical alarm across room"
+                        className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-amber-400 focus:outline-none text-xs text-white placeholder-zinc-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pillar 2: Implementation Intention (If-Then Protocol) */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-emerald-300 mb-1 flex items-center gap-1">
+                      <Shield className="h-3 w-3 text-emerald-400" />
+                      2. IF-THEN PROTOCOL (IMPLEMENTATION INTENTION) <span className="text-rose-400">*</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={patternFormProtocol}
+                      onChange={e => setPatternFormProtocol(e.target.value)}
+                      placeholder="WHEN [Cue happens], I WILL [immediate concrete counter-action], BEFORE [hesitating]..."
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-emerald-400 focus:outline-none text-xs text-white placeholder-zinc-500 resize-none leading-relaxed"
+                    />
+                    <span className="text-[9px] text-zinc-500 mt-0.5 block">
+                      Example: "WHEN the 05:00 Fajr alarm rings, I WILL immediately swing my feet to the floor and say dhikr before lying back down."
+                    </span>
+                  </div>
+
+                  {/* Pillar 3: Replacement Habit */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-cyan-300 mb-1 flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-cyan-400" />
+                      3. CONSTRUCTIVE REPLACEMENT HABIT (ALTERNATIVE REWARD)
+                    </label>
+                    <input
+                      type="text"
+                      value={patternFormReplacement}
+                      onChange={e => setPatternFormReplacement(e.target.value)}
+                      placeholder="e.g. Immediate cold splash of water on face + large glass of water + direct wudū'"
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-cyan-400 focus:outline-none text-xs text-white placeholder-zinc-500"
+                    />
+                  </div>
+
+                  {/* Pillar 4: Identity Anchor */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#fef08a] mb-1 flex items-center gap-1">
+                      <Heart className="h-3 w-3 text-[#c5a059]" />
+                      4. SACRED IDENTITY ANCHOR (TAZKIYAH IDENTITY)
+                    </label>
+                    <input
+                      type="text"
+                      value={patternFormIdentity}
+                      onChange={e => setPatternFormIdentity(e.target.value)}
+                      placeholder="e.g. I am an operator who guards the prayer at its earliest appointed time."
+                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-[#c5a059]/40 focus:border-[#c5a059] focus:outline-none text-xs text-white placeholder-zinc-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Footer Buttons */}
