@@ -7,7 +7,7 @@ import {
   RotateCcw, ChevronLeft, ChevronRight, CheckCircle2,
   AlertTriangle, HelpCircle, Layers, PlusCircle, MinusCircle,
   ExternalLink, FileSpreadsheet, Sparkles, Scale, Swords,
-  Activity, ShieldCheck
+  Activity, ShieldCheck, BookOpen, Moon
 } from 'lucide-react';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 import { getLocalDateString } from '../utils/dateUtils';
@@ -19,70 +19,75 @@ export const deriveXpSourceInfo = (entry: XPHistoryEntry, questMap: Map<string, 
   badgeClass: string;
   icon: any;
 } => {
-  if (entry.type) {
-    switch (entry.type) {
-      case 'salah':
-        return { category: 'quest', label: 'Ṣalāh Fulfilled', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RubElHizbIcon };
-      case 'adhkar':
-        return { category: 'quest', label: 'Adhkār Fortress', badgeClass: 'bg-teal-950/60 border-teal-500/30 text-teal-300', icon: Sparkles };
-      case 'boss':
-        return { category: 'boss', label: 'Boss Trial', badgeClass: 'bg-yellow-950/60 border-yellow-500/40 text-yellow-300', icon: Award };
-      case 'habit':
-        return { category: 'habit', label: 'Habit Rite', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RotateCcw };
-      case 'focus':
-        return { category: 'focus', label: 'Focus Session', badgeClass: 'bg-cyan-950/60 border-cyan-500/30 text-cyan-300', icon: Clock };
-      case 'penalty':
-        return { category: 'penalty_failed', label: 'Penalty Deduction', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: ShieldAlert };
-      case 'reversal':
-        return { category: 'quest', label: 'XP Reversal', badgeClass: 'bg-zinc-900 border-zinc-700 text-zinc-300', icon: RotateCcw };
-      default:
-        break;
-    }
-  }
-
-  if (entry.source) {
-    switch (entry.source) {
-      case 'focus':
-        return { category: 'focus', label: 'Focus Session', badgeClass: 'bg-cyan-950/60 border-cyan-500/30 text-cyan-300', icon: Clock };
-      case 'muhasabah':
-        return { category: 'muhasabah', label: 'Muhāsabah Audit', badgeClass: 'bg-purple-950/60 border-purple-500/30 text-purple-300', icon: Scale };
-      case 'penalty_midnight':
-        return { category: 'penalty_midnight', label: 'Midnight Lapsed', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: ShieldAlert };
-      case 'penalty_failed':
-        return { category: 'penalty_failed', label: 'Failed Decree', badgeClass: 'bg-amber-950/60 border-amber-500/40 text-amber-300', icon: AlertTriangle };
-      case 'boss':
-        return { category: 'boss', label: 'Boss Trial', badgeClass: 'bg-yellow-950/60 border-yellow-500/40 text-yellow-300', icon: Award };
-      case 'habit':
-        return { category: 'habit', label: 'Habit Rite', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RotateCcw };
-      case 'surge':
-        return { category: 'surge', label: 'Resonance Surge', badgeClass: 'bg-amber-950/60 border-amber-500/30 text-amber-300', icon: Zap };
-      default:
-        return { category: 'quest', label: 'Direct Quest', badgeClass: 'bg-blue-950/60 border-blue-500/30 text-blue-300', icon: Swords };
-    }
-  }
-
   const name = (entry.questName || '').toLowerCase();
-  
-  if (name.includes('midnight penalty') || name.includes('midnight') && entry.xp < 0) {
-    return { category: 'penalty_midnight', label: 'Midnight Lapsed', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: ShieldAlert };
+  const qId = (entry.questId || '').toLowerCase();
+
+  // 1. Explicit Ṣalāh and Mandatory Prayers
+  if (entry.type === 'salah' || qId.startsWith('spiritual-prayer-') || name.includes('fardh') || name.includes('salah') || name.includes('sunnah rawatib') || name.includes('on-time bonus') || name.includes('masjid / jamā')) {
+    return { category: 'salah', label: 'Ṣalāh Fulfilled', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RubElHizbIcon };
   }
-  if (name.includes('muhāsabah') || name.includes('muhasabah') || name.includes('mīzān') || name.includes('mizan')) {
+
+  // 2. Explicit Adhkār Fortress & Dhikr
+  if (entry.type === 'adhkar' || qId.startsWith('spiritual-adhkar-') || qId.startsWith('spiritual-dhikr-') || qId.startsWith('spiritual-salawat-') || name.includes('adhkār') || name.includes('tasbīḥ') || name.includes('dhikr') || name.includes('salawāt')) {
+    return { category: 'adhkar', label: 'Adhkār Fortress', badgeClass: 'bg-teal-950/60 border-teal-500/30 text-teal-300', icon: Sparkles };
+  }
+
+  // 3. Qur'an Tilāwah & Memorization Revision
+  if (qId.startsWith('spiritual-quran-') || name.includes('qur\'ān') || name.includes('quran') || name.includes('tilawah') || name.includes('tadabbur')) {
+    return { category: 'quran', label: 'Qur\'ān Tilāwah', badgeClass: 'bg-amber-950/60 border-amber-500/40 text-amber-300', icon: BookOpen };
+  }
+
+  // 4. Siam & Fasting
+  if (qId.startsWith('spiritual-fasting-') || name.includes('fasting') || name.includes('siam') || name.includes('suhur') || name.includes('iftar')) {
+    return { category: 'fasting', label: 'Siam & Fasting', badgeClass: 'bg-indigo-950/60 border-indigo-500/30 text-indigo-300', icon: Moon };
+  }
+
+  // 5. Kaffārah Restitution Penance
+  if (name.includes('[kaffārah]') || name.includes('[kaffarah]') || name.includes('[remedy]') || name.includes('kaffārah restitution')) {
+    return { category: 'kaffarah', label: 'Kaffārah Restitution', badgeClass: 'bg-violet-950/60 border-violet-500/30 text-violet-300', icon: Scale };
+  }
+
+  // 6. Manual Operator Calibration
+  if (name.includes('[operator]') || name.includes('manual operator') || entry.source === 'manual_adjustment') {
+    return { category: 'manual_adjustment', label: 'Operator Calibration', badgeClass: 'bg-slate-900 border-slate-700 text-slate-300', icon: PlusCircle };
+  }
+
+  // 7. Muhāsabah Audit Slip
+  if (entry.source === 'muhasabah' || name.includes('muhāsabah') || name.includes('muhasabah') || name.includes('mīzān') || name.includes('mizan')) {
     return { category: 'muhasabah', label: 'Muhāsabah Audit', badgeClass: 'bg-purple-950/60 border-purple-500/30 text-purple-300', icon: Scale };
   }
-  if (name.includes('focus session') || name.includes('🧘') || name.includes('work block')) {
+
+  // 8. Midnight Overdue Penalty
+  if (entry.source === 'penalty_midnight' || name.includes('midnight penalty') || (name.includes('midnight') && entry.xp < 0)) {
+    return { category: 'penalty_midnight', label: 'Midnight Lapsed', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: ShieldAlert };
+  }
+
+  // 9. Failed Directive / General Penalty
+  if (entry.type === 'penalty' || entry.source === 'penalty_failed' || name.includes('penalty') || entry.xp < 0) {
+    return { category: 'penalty_failed', label: 'Penalty Deduction', badgeClass: 'bg-rose-950/60 border-rose-500/40 text-rose-300', icon: AlertTriangle };
+  }
+
+  // 10. Focus Session
+  if (entry.type === 'focus' || entry.source === 'focus' || name.includes('focus session') || name.includes('🧘') || name.includes('work block')) {
     return { category: 'focus', label: 'Focus Session', badgeClass: 'bg-cyan-950/60 border-cyan-500/30 text-cyan-300', icon: Clock };
   }
-  if (name.includes('xp surge') || name.includes('streak surge')) {
+
+  // 11. Resonance Surge
+  if (entry.source === 'surge' || name.includes('xp surge') || name.includes('streak surge')) {
     return { category: 'surge', label: 'Resonance Surge', badgeClass: 'bg-amber-950/60 border-amber-500/30 text-amber-300', icon: Zap };
   }
-  if (name.includes('penalty') || entry.xp < 0) {
-    return { category: 'penalty_failed', label: 'Failed Decree', badgeClass: 'bg-amber-950/60 border-amber-500/40 text-amber-300', icon: AlertTriangle };
-  }
-  if (name.includes('boss')) {
+
+  // 12. Boss Trials & Gates
+  if (entry.type === 'boss' || entry.source === 'boss' || name.includes('boss')) {
     return { category: 'boss', label: 'Boss Trial', badgeClass: 'bg-yellow-950/60 border-yellow-500/40 text-yellow-300', icon: Award };
   }
 
-  // Check if associated quest is a Habit
+  // 13. Habits & Recurring Rites
+  if (entry.type === 'habit' || entry.source === 'habit') {
+    return { category: 'habit', label: 'Habit Rite', badgeClass: 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300', icon: RotateCcw };
+  }
+
+  // 14. Check if associated quest is a Habit or Boss
   if (entry.questId && questMap.has(entry.questId)) {
     const q = questMap.get(entry.questId);
     if (q.type === 'Habit' || q.cadence) {
@@ -381,10 +386,13 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
             <Sparkles className="h-4 w-4 text-[var(--accent-bright)]" />
           </div>
           <div className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
-            {metrics.netXp.toLocaleString()} <span className="text-xs font-mono text-zinc-400 font-normal">XP</span>
+            {playerLevelInfo.totalXp.toLocaleString()} <span className="text-xs font-mono text-zinc-400 font-normal">XP</span>
           </div>
-          <div className="text-[10px] font-mono text-zinc-400 pt-0.5">
-            Level <span className="text-[#fef08a] font-bold">{playerLevelInfo.level}</span> • Next: <span className="text-zinc-300">{playerLevelInfo.xpIntoLevel}/{playerLevelInfo.xpRequiredForNextLevel}</span>
+          <div className="text-[10px] font-mono text-zinc-400 pt-0.5 flex items-center justify-between">
+            <span>Level <strong className="text-[#fef08a]">{playerLevelInfo.level}</strong> • Next: <strong className="text-zinc-300">{playerLevelInfo.xpIntoLevel}/{playerLevelInfo.xpRequiredForNextLevel}</strong></span>
+            {metrics.netXp !== playerLevelInfo.totalXp && (
+              <span className="text-zinc-500 font-mono text-[9px]">(Ledger Net: {metrics.netXp >= 0 ? `+${metrics.netXp}` : metrics.netXp})</span>
+            )}
           </div>
         </div>
 
@@ -642,13 +650,19 @@ export const XPHistoryLedger: React.FC<XPHistoryLedgerProps> = ({ onNavigate }) 
                 className="bg-[#0b0d13] border border-white/10 rounded px-2 py-1 text-[10px] text-zinc-300 focus:outline-none focus:border-[#c5a059] cursor-pointer"
               >
                 <option value="all">All Sources</option>
-                <option value="quest">⚔️ Direct Quests</option>
-                <option value="habit">🔄 Habits & Daily Rites</option>
-                <option value="focus">🧘 Focus Sessions</option>
+                <option value="quest">⚔️ Directives & Quests</option>
+                <option value="habit">🔄 Habits & Sacred Rhythms</option>
+                <option value="focus">🧘 Deep Focus Blocks</option>
+                <option value="salah">🕌 Ṣalāh & Preserved Prayers</option>
+                <option value="adhkar">📿 Adhkār Fortress & Dhikr</option>
+                <option value="quran">📖 Qur'ān Tilāwah & Revision</option>
+                <option value="fasting">🌙 Siam & Fasting</option>
+                <option value="kaffarah">🌿 Kaffārah Restitution</option>
                 <option value="muhasabah">⚖️ Muhāsabah Audits</option>
                 <option value="penalty">💀 Penalties (Midnight & Failed)</option>
-                <option value="boss">👑 Boss Trials</option>
-                <option value="surge">⚡ Surges & Boosts</option>
+                <option value="boss">👑 Boss Trials & Gates</option>
+                <option value="surge">⚡ Surges & Perks</option>
+                <option value="manual_adjustment">🛠️ Operator Calibrations</option>
               </select>
             </div>
 

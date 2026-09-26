@@ -1,4 +1,4 @@
-import { POSState, ShopItem, SpiritualDailyLog, QuranTrackerState } from './types';
+import { POSState, ShopItem, SpiritualDailyLog, QuranTrackerState, CustomRadarConfig } from './types';
 import { DEFAULT_PLANNING_DOCS } from './defaultPlanningDocs';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getLocalDateString, addDays } from './utils/dateUtils';
@@ -328,6 +328,37 @@ export const DEFAULT_QURAN_TRACKER: QuranTrackerState = {
   ]
 };
 
+export const DEFAULT_CUSTOM_RADARS: CustomRadarConfig[] = [
+  {
+    id: 'radar-apex-operator',
+    name: 'Apex Operator Pentagon',
+    description: 'Balanced 5-axis synthesis of deep focus, iron discipline, core knowledge, physical vitality, and inner resolve.',
+    accentColor: '#c5a059',
+    axes: [
+      { id: 'ax-1', label: 'Deep Focus', sourceType: 'attribute', sourceId: 'Focus', targetValue: 80, color: '#c5a059' },
+      { id: 'ax-2', label: 'Discipline', sourceType: 'attribute', sourceId: 'Discipline', targetValue: 85, color: '#e5c875' },
+      { id: 'ax-3', label: 'Knowledge Base', sourceType: 'attribute', sourceId: 'Knowledge', targetValue: 80, color: '#38bdf8' },
+      { id: 'ax-4', label: 'Vitality', sourceType: 'attribute', sourceId: 'Vitality', targetValue: 75, color: '#34d399' },
+      { id: 'ax-5', label: 'Inner Resolve', sourceType: 'attribute', sourceId: 'Resolve', targetValue: 80, color: '#a855f7' }
+    ],
+    createdAt: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'radar-craft-mastery',
+    name: 'Craft & Strategic Matrix',
+    description: 'High-density operational radar tracking cognitive attributes, speed, and execution clarity.',
+    accentColor: '#38bdf8',
+    axes: [
+      { id: 'ax-c1', label: 'Discipline', sourceType: 'attribute', sourceId: 'Discipline', targetValue: 90, color: '#38bdf8' },
+      { id: 'ax-c2', label: 'Wisdom', sourceType: 'attribute', sourceId: 'Wisdom', targetValue: 85, color: '#818cf8' },
+      { id: 'ax-c3', label: 'Mental Clarity', sourceType: 'attribute', sourceId: 'Clarity', targetValue: 80, color: '#34d399' },
+      { id: 'ax-c4', label: 'Execution Speed', sourceType: 'custom', customValue: 75, targetValue: 90, color: '#f59e0b' },
+      { id: 'ax-c5', label: 'Strategic Alignment', sourceType: 'custom', customValue: 80, targetValue: 95, color: '#c5a059' }
+    ],
+    createdAt: '2026-09-01T00:00:00.000Z'
+  }
+];
+
 export const INITIAL_STATE: POSState = {
   goals: [],
   projects: [],
@@ -466,5 +497,6 @@ export const INITIAL_STATE: POSState = {
   strategicDecisions: DEFAULT_STRATEGIC_DECISIONS,
   strategicExperiments: DEFAULT_STRATEGIC_EXPERIMENTS,
   strategicPostmortems: DEFAULT_STRATEGIC_POSTMORTEMS,
-  strategicFreeze: false
+  strategicFreeze: false,
+  customRadars: DEFAULT_CUSTOM_RADARS
 };

@@ -19,7 +19,8 @@ import {
   Doctrine, StrategicDecision, StrategicExperiment, StrategicPostmortem,
   RequiredCapability, CapabilityReviewNote,
   StandardXPEventType, XPAnalytics,
-  LevelUpBossRequirement
+  LevelUpBossRequirement,
+  CustomRadarConfig, CustomRadarAxis
 } from './types';
 import {
   dispatchXPEventPure,
@@ -202,6 +203,12 @@ interface POSContextType {
   updateSkillDetails: (id: string, updates: Partial<Skill>) => void;
   setRequiredCapabilities: (entityType: 'goal' | 'project', entityId: string, capabilities: RequiredCapability[]) => void;
   saveCapabilityReview: (review: Omit<CapabilityReviewNote, 'id' | 'createdAt'>) => void;
+  
+  // Custom Capability Radars CRUD
+  customRadars: CustomRadarConfig[];
+  addCustomRadar: (radar: Omit<CustomRadarConfig, 'id' | 'createdAt'>) => string;
+  updateCustomRadar: (id: string, updates: Partial<CustomRadarConfig>) => void;
+  deleteCustomRadar: (id: string) => void;
   
   // Attributes CRUD (allows adjusting base levels if they wish to manual override, though defaults are dynamic)
   updateAttributeBase: (id: string, level: number) => void;
@@ -706,34 +713,9 @@ export const calculateGatedPlayerLevel = (
 };
 
 const resolveRecoveredPenalties = (history: XPHistoryEntry[]): XPHistoryEntry[] => {
-  const result: XPHistoryEntry[] = [];
-  let availablePositiveXp = 0;
-
-  // Process history from newest to oldest
-  for (let i = 0; i < history.length; i++) {
-    const entry = history[i];
-    if (entry.xp >= 0) {
-      availablePositiveXp += entry.xp;
-      result.push(entry);
-    } else {
-      const penaltyCost = Math.abs(entry.xp);
-      if (availablePositiveXp >= penaltyCost) {
-        availablePositiveXp -= penaltyCost;
-        // Fully recovered! The penalty vanishes from history.
-      } else if (availablePositiveXp > 0) {
-        // Partially recovered! Reduce the penalty.
-        const remainingPenalty = penaltyCost - availablePositiveXp;
-        availablePositiveXp = 0;
-        result.push({
-          ...entry,
-          xp: -remainingPenalty
-        });
-      } else {
-        result.push(entry);
-      }
-    }
-  }
-  return result;
+  // Invariant: The XP Ledger is an immutable audit trail.
+  // Every penalty, slip, and gain must be preserved permanently without silent deletion.
+  return history;
 };
 
 const resetRecurringQuestsForNewDate = (
@@ -909,7 +891,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
             strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
             strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false,
-            quranTracker: parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER
+            quranTracker: parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER,
+            customRadars: (parsed.customRadars && parsed.customRadars.length > 0) ? parsed.customRadars : (INITIAL_STATE.customRadars || [])
           };
         }
       }
@@ -3994,6 +3977,50 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       content: `Weekly capability review logged for ${review.date}. Training priorities calibrated.`,
       priority: 'medium'
     });
+  };
+
+  const addCustomRadar = (radarData: Omit<CustomRadarConfig, 'id' | 'createdAt'>): string => {
+    const newId = `radar-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const newRadar: CustomRadarConfig = {
+      ...radarData,
+      id: newId,
+      createdAt: new Date().toISOString()
+    };
+    setState(prev => ({
+      ...prev,
+      customRadars: [...(prev.customRadars || []), newRadar]
+    }));
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'achievement',
+      title: 'Custom Radar Forged',
+      content: `Synthesized custom radar "${radarData.name}" with ${radarData.axes.length} operational axes.`,
+      priority: 'medium'
+    });
+    return newId;
+  };
+
+  const updateCustomRadar = (id: string, updates: Partial<CustomRadarConfig>) => {
+    setState(prev => ({
+      ...prev,
+      customRadars: (prev.customRadars || []).map(r =>
+        r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r
+      )
+    }));
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'note',
+      title: 'Custom Radar Re-aligned',
+      content: `Custom capability radar configuration has been updated.`,
+      priority: 'low'
+    });
+  };
+
+  const deleteCustomRadar = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      customRadars: (prev.customRadars || []).filter(r => r.id !== id)
+    }));
   };
 
   const deleteSkill = (id: string) => {
@@ -9060,6 +9087,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateSkillDetails,
       setRequiredCapabilities,
       saveCapabilityReview,
+      customRadars: state.customRadars || [],
+      addCustomRadar,
+      updateCustomRadar,
+      deleteCustomRadar,
       updateAttributeBase,
       restartAttribute,
       addXp,

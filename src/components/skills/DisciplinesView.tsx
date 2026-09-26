@@ -1057,19 +1057,19 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                 ATTACH SECONDARY SPECIALIZATION
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 min-w-0">
                 {/* Option A: Create New */}
-                <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg space-y-2">
+                <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg space-y-2 min-w-0 overflow-hidden">
                   <span className="text-[9px] font-mono text-purple-300 uppercase block font-semibold">
                     ➕ Create New Sub-Track
                   </span>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2 min-w-0 items-center">
                     <input
                       type="text"
                       value={newSecSkillName}
                       onChange={(e) => setNewSecSkillName(e.target.value)}
                       placeholder="e.g. Async Programming"
-                      className="bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-purple-400 flex-1 font-sans"
+                      className="bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-purple-400 flex-1 min-w-0 font-sans"
                     />
                     <button
                       type="button"
@@ -1080,7 +1080,7 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                           setNewSecSkillName('');
                         }
                       }}
-                      className="px-3 py-1 bg-purple-950 border border-purple-500/40 text-purple-200 rounded text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
+                      className="px-3.5 py-1.5 bg-purple-950 hover:bg-purple-900 border border-purple-500/40 text-purple-200 rounded text-xs font-mono font-bold disabled:opacity-40 cursor-pointer shrink-0 transition-colors"
                     >
                       ADD
                     </button>
@@ -1088,15 +1088,15 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                 </div>
 
                 {/* Option B: Attach Existing Track */}
-                <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg space-y-2">
+                <div className="p-3 bg-[#07080c] border border-white/10 rounded-lg space-y-2 min-w-0 overflow-hidden">
                   <span className="text-[9px] font-mono text-[#e5c875] uppercase block font-semibold">
                     🔗 Attach Existing Track
                   </span>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2 min-w-0 items-center">
                     <select
                       value={attachSecSkillId}
                       onChange={(e) => setAttachSecSkillId(e.target.value)}
-                      className="bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1 text-xs text-white flex-1 focus:outline-none focus:border-[#c5a059] font-mono truncate"
+                      className="bg-[#0b0d13] border border-white/10 rounded px-2.5 py-1.5 text-xs text-white flex-1 min-w-0 focus:outline-none focus:border-[#c5a059] font-mono truncate"
                     >
                       <option value="">-- Choose Existing Track --</option>
                       {state.skills
@@ -1117,7 +1117,7 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                           setAttachSecSkillId('');
                         }
                       }}
-                      className="px-3 py-1 bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] rounded text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
+                      className="px-3.5 py-1.5 bg-[#3a2e12] hover:bg-[#524119] border border-[#c5a059]/40 text-[#fef08a] rounded text-xs font-mono font-bold disabled:opacity-40 cursor-pointer shrink-0 transition-colors"
                     >
                       ATTACH
                     </button>

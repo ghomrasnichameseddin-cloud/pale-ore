@@ -319,6 +319,26 @@ export interface Skill {
   tags?: string[];
 }
 
+export interface CustomRadarAxis {
+  id: string;
+  label: string;
+  sourceType: 'attribute' | 'skill' | 'custom';
+  sourceId?: string; // Attribute name or Skill ID
+  customValue?: number; // 0-100 (for 'custom' type)
+  targetValue?: number; // 0-100 (target level / score percentage)
+  color?: string; // Hex color code for vertex and label
+}
+
+export interface CustomRadarConfig {
+  id: string;
+  name: string;
+  description?: string;
+  accentColor?: string; // e.g. '#c5a059', '#38bdf8', '#10b981', '#a855f7', '#f59e0b', '#ef4444'
+  axes: CustomRadarAxis[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Attribute {
   id: string;
   name: string;
@@ -379,6 +399,11 @@ export type XPSourceCategory =
   | 'quest' 
   | 'habit' 
   | 'focus' 
+  | 'salah'
+  | 'adhkar'
+  | 'quran'
+  | 'fasting'
+  | 'kaffarah'
   | 'boss' 
   | 'muhasabah' 
   | 'penalty_midnight' 
@@ -1281,6 +1306,7 @@ export interface POSState {
   strategicPostmortems?: StrategicPostmortem[];
   strategicFreeze?: boolean;
   capabilityReviews?: CapabilityReviewNote[];
+  customRadars?: CustomRadarConfig[];
 }
 
 export interface CapabilityReviewNote {
