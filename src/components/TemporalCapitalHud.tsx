@@ -29,7 +29,8 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
     setProtectedBufferPercent,
     setDailyRestAllowance,
     setRequiredMinutesBaseline,
-    startActiveRestSession
+    startActiveRestSession,
+    addTimeCredits
   } = usePOS();
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -687,16 +688,35 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                 </span>
               </div>
 
-              <div className="pt-0.5 flex items-baseline gap-2">
-                <span className="text-2xl font-mono font-black text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
-                  {state.profile.timeCredits ?? 60}
-                </span>
-                <span className="text-xs font-mono font-bold text-emerald-400/80">
-                  MINUTES
-                </span>
+              <div className="pt-0.5 flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-mono font-black text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    {state.profile.timeCredits ?? 60}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-emerald-400/80">
+                    MINUTES
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => addTimeCredits(15, 'Manual Rest Bank addition')}
+                    className="text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded transition cursor-pointer font-bold"
+                    title="Add +15m to Rest Bank"
+                  >
+                    +15m
+                  </button>
+                  <button
+                    onClick={() => addTimeCredits(30, 'Manual Rest Bank addition')}
+                    className="text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded transition cursor-pointer font-bold"
+                    title="Add +30m to Rest Bank"
+                  >
+                    +30m
+                  </button>
+                </div>
               </div>
               <p className="text-[10px] text-zinc-400 leading-tight">
-                Earned via focused work & quest victories. Never expires.
+                Earned via focus timer sessions (+10m/25m sprint) & quest victories. Never expires.
               </p>
             </div>
 
