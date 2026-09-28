@@ -16,6 +16,14 @@ import { RubElHizbIcon, ArabesqueCorner, GeometricDivider } from './IslamicRpgDe
 import { MuhasabahModal } from './MuhasabahModal';
 import { BossProgressionBanner } from './BossProgressionBanner';
 import { TemporalCapitalHud } from './TemporalCapitalHud';
+import {
+  CORE_DOMAINS,
+  DOMAIN_ATTRIBUTES,
+  CORE_DOMAIN_METADATA,
+  canonicalizeAttributeName,
+  ATTRIBUTE_DOMAIN_MAP,
+  CoreDomain
+} from '../utils/progressionEngine';
 
 interface DashboardViewProps {
   onNavigate?: (tab: 'dashboard' | 'goals' | 'projects' | 'skills' | 'analytics' | 'system' | 'quests' | 'shop' | 'muhasabah' | any) => void;
@@ -25,7 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const { 
     state, updateProfileFocus, getPlayerLevelInfo, getAnalytics, completeQuest,
     isQuestFinishedForToday, processQuestReview, isQuestScheduledForDate, systemDate,
-    toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getGoalProgress,
+    toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getCoreDomains, getGoalProgress,
     getProjectProgress, addQuest, getSkillXpAndLevel, getTodayMuhasabahStats, restartAttribute
   } = usePOS();
 
@@ -74,6 +82,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [directiveSort, setDirectiveSortState] = useState<'XP' | 'TIME' | 'NAME' | 'DIFFICULTY'>(initialSettings.sort);
   const [directiveGroupBy, setDirectiveGroupByState] = useState<'none' | 'list' | 'folder' | 'category' | 'difficulty'>(initialSettings.groupBy);
   const [selectedAttributeName, setSelectedAttributeName] = useState<string | null>(null);
+  const [selectedDomainFilter, setSelectedDomainFilter] = useState<CoreDomain | 'ALL'>('ALL');
   const [confirmRestartAttr, setConfirmRestartAttr] = useState(false);
 
   const saveSettingsToStorage = (typeVal: string, sortVal: string, groupVal: string) => {
@@ -607,7 +616,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="flex items-center gap-2">
                 <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright)]" />
                 <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  CORE ATTRIBUTE CAPABILITIES MATRIX
+                  CORE DOMAINS &amp; CONSTITUTIONAL ATTRIBUTES
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -621,72 +630,163 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 )}
                 {onNavigate && (
                   <button 
-                    onClick={() => onNavigate('analytics')}
+                    onClick={() => onNavigate('skills')}
                     className="text-[10px] font-mono text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] flex items-center gap-1 transition cursor-pointer font-bold"
                   >
-                    FULL MATRIX <ChevronRight className="h-3 w-3" />
+                    SKILLS &amp; CRAFTS <ChevronRight className="h-3 w-3" />
                   </button>
                 )}
               </div>
             </div>
 
-            <p className="text-[10px] text-zinc-400 font-mono">
-              Click an attribute to inspect its divine mathematical formula, linked disciplines, and filter active decrees.
-            </p>
+            {/* 1. CORE DOMAINS (MIND, BODY, SOUL) DERIVED AGGREGATE CARDS */}
+            {(() => {
+              const coreDomains = getCoreDomains();
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {(['Mind', 'Body', 'Soul'] as const).map(domainName => {
+                    const domainInfo = coreDomains[domainName];
+                    const isSelected = selectedDomainFilter === domainName;
+                    const meta = CORE_DOMAIN_METADATA[domainName];
+                    const accentColor = domainName === 'Mind' ? '#38bdf8' : (domainName === 'Body' ? '#f87171' : '#e5c875');
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {attributes.slice(0, 6).map(attr => {
-                const totalVal = attr.total ?? attr.level;
-                const baseVal = attr.baseLevel ?? 10;
-                const bonusVal = attr.earnedBonus ?? (totalVal - baseVal);
-                const isSelected = selectedAttributeName === attr.name;
-                const ptsInto = attr.pointsIntoLevel ?? 0;
-                const ptsNeeded = attr.pointsRequiredForNextLevel ?? 14;
-                const pct = attr.progress ?? 0;
+                    return (
+                      <div
+                        key={domainName}
+                        onClick={() => setSelectedDomainFilter(isSelected ? 'ALL' : domainName)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer relative overflow-hidden ${
+                          isSelected
+                            ? 'bg-[#181c2b] border-[#c5a059] shadow-[0_0_12px_rgba(197,160,89,0.2)]'
+                            : 'bg-[#07080c]/80 border-white/5 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{meta.icon}</span>
+                            <div>
+                              <span className="text-xs font-mono font-bold text-white uppercase block leading-none">
+                                {domainName}
+                              </span>
+                              <span className="text-[9px] font-mono text-zinc-400">
+                                Domain Mean: <strong className="text-zinc-200">Lv.{domainInfo.level}</strong>
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold" style={{ color: accentColor }}>
+                            {domainInfo.progress}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#050608] h-1 rounded-full overflow-hidden mt-2 border border-white/5">
+                          <div 
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{ width: `${domainInfo.progress}%`, backgroundColor: accentColor }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
-                return (
-                  <div 
-                    key={attr.name} 
-                    onClick={() => {
-                      setSelectedAttributeName(isSelected ? null : attr.name);
-                      setConfirmRestartAttr(false);
-                    }}
-                    className={`p-3 rounded-xl border transition cursor-pointer space-y-1.5 ${
-                      isSelected
-                        ? 'bg-[var(--accent-surface)] border-[var(--accent-bright)] shadow-[0_0_15px_var(--glow-color)] ring-1 ring-[var(--border-accent)]'
-                        : 'bg-[var(--bg-void)]/80 border-[var(--border-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--bg-surface)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
-                        <span className="text-sm">{attr.icon}</span>
-                        {attr.name}
-                      </span>
-                      <span className="text-sm font-mono font-extrabold text-[var(--accent-highlight)]">
-                        LVL {totalVal}
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden border border-white/5">
-                      <div 
-                        className="bg-gradient-to-r from-[var(--border-strong)] to-[var(--accent-bright)] h-full rounded-full transition-all duration-300 shadow-[0_0_8px_var(--glow-color)]" 
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-
-                    <div className="flex justify-between text-[9px] font-mono text-zinc-400 pt-0.5">
-                      <span>BASE {baseVal}</span>
-                      <span className="text-zinc-300">{ptsInto}/{ptsNeeded} PTS</span>
-                      <span className="text-[var(--accent-highlight)] font-bold">+{bonusVal}</span>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* DOMAIN FILTER PILLS & CAPTION */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1 border-t border-white/5">
+              <p className="text-[10px] text-zinc-400 font-mono">
+                Derived from the 9 canonical attributes. Click an attribute to inspect formula &amp; linked skills:
+              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(['ALL', 'Mind', 'Body', 'Soul'] as const).map(d => {
+                  const isActive = selectedDomainFilter === d;
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setSelectedDomainFilter(d)}
+                      className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold transition cursor-pointer border ${
+                        isActive
+                          ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a]'
+                          : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {d === 'ALL' ? 'ALL 9 PILLARS' : d}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* 2. 9 CANONICAL ATTRIBUTES GRID */}
+            {(() => {
+              const displayedAttributes = attributes.filter(attr => {
+                if (selectedDomainFilter === 'ALL') return true;
+                const canonical = canonicalizeAttributeName(attr.name);
+                return DOMAIN_ATTRIBUTES[selectedDomainFilter].includes(canonical);
+              });
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {displayedAttributes.map(attr => {
+                    const totalVal = attr.total ?? attr.level;
+                    const baseVal = attr.baseLevel ?? 10;
+                    const bonusVal = attr.earnedBonus ?? (totalVal - baseVal);
+                    const isSelected = selectedAttributeName === attr.name;
+                    const ptsInto = attr.pointsIntoLevel ?? 0;
+                    const ptsNeeded = attr.pointsRequiredForNextLevel ?? 14;
+                    const pct = attr.progress ?? 0;
+                    const canonical = canonicalizeAttributeName(attr.name);
+                    const domain = ATTRIBUTE_DOMAIN_MAP[canonical] || 'Mind';
+                    const domainBadgeColor = domain === 'Mind' ? 'text-sky-400' : (domain === 'Body' ? 'text-rose-400' : 'text-amber-400');
+
+                    return (
+                      <div 
+                        key={attr.name} 
+                        onClick={() => {
+                          setSelectedAttributeName(isSelected ? null : attr.name);
+                          setConfirmRestartAttr(false);
+                        }}
+                        className={`p-3 rounded-xl border transition cursor-pointer space-y-1.5 ${
+                          isSelected
+                            ? 'bg-[var(--accent-surface)] border-[var(--accent-bright)] shadow-[0_0_15px_var(--glow-color)] ring-1 ring-[var(--border-accent)]'
+                            : 'bg-[var(--bg-void)]/80 border-[var(--border-subtle)] hover:border-[var(--border-accent)] hover:bg-[var(--bg-surface)]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
+                              <span className="text-sm">{attr.icon}</span>
+                              {attr.name}
+                            </span>
+                            <span className={`text-[8px] font-mono uppercase ${domainBadgeColor} block leading-none mt-0.5`}>
+                              {domain}
+                            </span>
+                          </div>
+                          <span className="text-sm font-mono font-extrabold text-[var(--accent-highlight)]">
+                            LVL {totalVal}
+                          </span>
+                        </div>
+
+                        <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden border border-white/5">
+                          <div 
+                            className="bg-gradient-to-r from-[var(--border-strong)] to-[var(--accent-bright)] h-full rounded-full transition-all duration-300 shadow-[0_0_8px_var(--glow-color)]" 
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+
+                        <div className="flex justify-between text-[9px] font-mono text-zinc-400 pt-0.5">
+                          <span>BASE {baseVal}</span>
+                          <span className="text-zinc-300">{ptsInto}/{ptsNeeded} PTS</span>
+                          <span className="text-[var(--accent-highlight)] font-bold">+{bonusVal}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* ATTRIBUTE INSPECTOR & LINKED DIRECTIVES PANEL */}
             {selectedAttributeName && (() => {
-              const selectedAttr = attributes.find(a => a.name === selectedAttributeName);
+              const selectedAttr = attributes.find(a => canonicalizeAttributeName(a.name) === canonicalizeAttributeName(selectedAttributeName));
               if (!selectedAttr) return null;
 
               const totalVal = selectedAttr.total ?? selectedAttr.level;
@@ -695,15 +795,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               const ptsInto = selectedAttr.pointsIntoLevel ?? 0;
               const ptsNeeded = selectedAttr.pointsRequiredForNextLevel ?? 14;
               const pct = selectedAttr.progress ?? 0;
+              const canonical = canonicalizeAttributeName(selectedAttr.name);
+              const domain = ATTRIBUTE_DOMAIN_MAP[canonical] || 'Mind';
 
-              // Find matching skills
+              // Find matching skills via authoritative primary and secondary attributes
               const relatedSkills = state.skills.filter(s => {
-                const nameL = selectedAttributeName.toLowerCase();
-                if (nameL === 'strength') return s.name.toLowerCase().includes('fitness');
-                if (nameL === 'knowledge') return ['programming', 'english', 'arabic', 'french', 'chess', 'coding'].some(k => s.name.toLowerCase().includes(k));
-                if (nameL === 'social') return ['writing', 'cooking', 'business'].some(k => s.name.toLowerCase().includes(k));
-                if (nameL === 'faith') return ['qur\'an', 'arabic', 'spirituality'].some(k => s.name.toLowerCase().includes(k));
-                return true;
+                const p = canonicalizeAttributeName(s.primaryAttribute);
+                const sec = s.secondaryAttribute ? canonicalizeAttributeName(s.secondaryAttribute) : null;
+                return p === canonical || sec === canonical;
               });
 
               return (
@@ -712,11 +811,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{selectedAttr.icon}</span>
                       <div>
-                        <h4 className="text-xs font-mono font-bold text-white uppercase flex items-center gap-1">
-                          <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
-                          {selectedAttr.name} Attribute Intelligence
-                        </h4>
-                        <p className="text-[10px] font-mono text-zinc-400">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-mono font-bold text-white uppercase flex items-center gap-1">
+                            <RubElHizbIcon className="h-3 w-3 text-[var(--accent-bright)]" />
+                            {selectedAttr.name} Attribute Intelligence
+                          </h4>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded uppercase font-bold bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
+                            {domain} Domain
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-zinc-400 mt-0.5">
                           {selectedAttr.description}
                         </p>
                       </div>
@@ -798,22 +902,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       <span className="text-[var(--accent-bright)] font-bold uppercase">LINKED SKILLS:</span>
                       {relatedSkills.length > 0 ? (
                         relatedSkills.map(sk => (
-                          <span key={sk.id} className="bg-[var(--accent-surface)] border border-[var(--border-accent)] text-[var(--accent-highlight)] px-2 py-0.5 rounded-md">
-                            {sk.name} (LVL {sk.level})
-                          </span>
+                          <button
+                            key={sk.id}
+                            type="button"
+                            onClick={() => onNavigate && onNavigate('skills')}
+                            className="bg-[var(--accent-surface)] hover:bg-[var(--accent-surface)]/80 border border-[var(--border-accent)] text-[var(--accent-highlight)] hover:text-white px-2 py-0.5 rounded-md transition cursor-pointer"
+                          >
+                            {sk.name} (Rank {sk.rank || 'F'} · Lv.{sk.level})
+                          </button>
                         ))
                       ) : (
-                        <span className="text-zinc-500 italic">Resonates across all operational decrees</span>
+                        <span className="text-zinc-500 italic">No specific skills assigned yet</span>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
                       {onNavigate && (
                         <button
-                          onClick={() => onNavigate('system')}
-                          className="text-[10px] font-mono text-zinc-400 hover:text-[var(--accent-highlight)] underline"
+                          onClick={() => onNavigate('skills')}
+                          className="text-[10px] font-mono text-zinc-400 hover:text-[var(--accent-highlight)] underline cursor-pointer"
                         >
-                          Calibrate Baseline in System →
+                          Manage Skills in Crafts View →
                         </button>
                       )}
                     </div>

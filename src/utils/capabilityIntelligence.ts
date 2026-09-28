@@ -273,11 +273,15 @@ export function getAttributeEvidence(attributeName: string, state: POSState): At
   const attrId = meta?.id || '';
 
   // Related skills bound to this attribute
-  const relatedSkills = (state.skills || []).filter(s => 
-    s.primaryAttributeId === attrId || 
-    (s.secondaryAttributeIds && s.secondaryAttributeIds.includes(attrId)) ||
-    (!s.primaryAttributeId && getDefaultAttributesForSkill(s.name).primaryId === attrId)
-  );
+  const normName = attributeName.toLowerCase();
+  const relatedSkills = (state.skills || []).filter(s => {
+    if (s.primaryAttribute && s.primaryAttribute.toLowerCase() === normName) return true;
+    if (s.secondaryAttribute && s.secondaryAttribute.toLowerCase() === normName) return true;
+    if (s.primaryAttributeId === attrId) return true;
+    if (s.secondaryAttributeIds && s.secondaryAttributeIds.includes(attrId)) return true;
+    if (!s.primaryAttribute && !s.primaryAttributeId && getDefaultAttributesForSkill(s.name).primaryId === attrId) return true;
+    return false;
+  });
 
   const relatedSkillIds = new Set(relatedSkills.map(s => s.id));
 

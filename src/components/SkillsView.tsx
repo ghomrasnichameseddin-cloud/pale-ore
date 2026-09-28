@@ -12,7 +12,7 @@ import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
 export type SkillsTabType = 'DISCIPLINES' | 'ATTRIBUTES' | 'INTELLIGENCE';
 
 export const SkillsView: React.FC = () => {
-  const { state, getAttributes, getSkillXpAndLevel } = usePOS();
+  const { state, getAttributes, getCoreDomains, getSkillXpAndLevel } = usePOS();
 
   // Default to DISCIPLINES so users land directly on their real skills
   const [activeTab, setActiveTab] = useState<SkillsTabType>('DISCIPLINES');
@@ -29,10 +29,11 @@ export const SkillsView: React.FC = () => {
   };
 
   const attributes = getAttributes();
+  const coreDomains = getCoreDomains();
   const activeSkills = state.skills.filter(s => !s.archived);
 
   // Total XP across all skills
-  const totalSkillXp = state.skills.reduce((acc, s) => acc + getSkillXpAndLevel(s.id).xp, 0);
+  const totalSkillXp = state.skills.reduce((acc, s) => acc + (s.xp || getSkillXpAndLevel(s.id).xp), 0);
 
   // Average constitutional attribute level
   const avgAttributeLevel = attributes.length > 0 
@@ -50,19 +51,19 @@ export const SkillsView: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider font-bold flex items-center gap-1">
               <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
-              SANCTUM MASTERY
+              UNIFIED PROGRESSION SYSTEM
             </span>
             <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
-              PROGRESSION
+              DOMAINS → ATTRIBUTES → SKILLS
             </span>
           </div>
 
           <h1 className="text-2xl font-display font-bold text-white tracking-wide flex items-center gap-2">
-            Skills & Competencies
+            Core Domains, Attributes & Skills
           </h1>
 
           <p className="text-xs font-sans text-zinc-400 max-w-2xl leading-relaxed">
-            Cultivate real-world craft mastery and strengthen the 9 constitutional character attributes that anchor your operational capability.
+            Cultivate real-world craft mastery across Primary &amp; Secondary skills that feed the 9 canonical attributes across your Mind, Body, and Soul.
           </p>
         </div>
 
@@ -74,13 +75,91 @@ export const SkillsView: React.FC = () => {
           </div>
           <div className="bg-[#07080c] border border-white/10 px-3.5 py-2 rounded-xl text-center">
             <span className="text-sm font-mono font-bold text-white block">Lv. {avgAttributeLevel}</span>
-            <span className="text-[9px] font-mono text-zinc-400 uppercase">Avg Constitution</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Avg Attribute</span>
           </div>
           <div className="bg-[#07080c] border border-white/10 px-3.5 py-2 rounded-xl text-center">
             <span className="text-sm font-mono font-bold text-cyan-300 block">{totalSkillXp.toLocaleString()}</span>
-            <span className="text-[9px] font-mono text-zinc-400 uppercase">Total Craft XP</span>
+            <span className="text-[9px] font-mono text-zinc-400 uppercase">Total Skill XP</span>
           </div>
         </div>
+      </div>
+
+      {/* 2. THE THREE CORE DOMAINS (MIND, BODY, SOUL) CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="core-domains-banner">
+        {(['Mind', 'Body', 'Soul'] as const).map(domainName => {
+          const domain = coreDomains[domainName];
+          const isMind = domainName === 'Mind';
+          const isBody = domainName === 'Body';
+          const isSoul = domainName === 'Soul';
+          const accentColor = isMind ? '#38bdf8' : (isBody ? '#f87171' : '#e5c875');
+          const borderClass = isMind ? 'border-sky-500/30' : (isBody ? 'border-rose-500/30' : 'border-amber-500/30');
+
+          return (
+            <div 
+              key={domainName}
+              onClick={() => {
+                const firstAttr = domain.attributes[0]?.name || (isMind ? 'Focus' : isBody ? 'Strength' : 'Faith');
+                setSelectedAttributeName(firstAttr);
+                setActiveTab('ATTRIBUTES');
+              }}
+              className={`bg-[#0b0d13] border ${borderClass} hover:border-[#c5a059] rounded-xl p-4 transition-all duration-200 cursor-pointer relative overflow-hidden group shadow-md hover:shadow-lg`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{domain.icon}</span>
+                  <div>
+                    <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                      <span>{domainName}</span>
+                      <span className="text-[9px] font-mono text-zinc-500 font-normal">DOMAIN</span>
+                    </h3>
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      Derived Mean: <strong className="text-white">Lv. {domain.level}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded border bg-black/40" style={{ color: accentColor, borderColor: `${accentColor}40` }}>
+                  {domain.progress}%
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-[#050608] h-1.5 rounded-full overflow-hidden border border-white/5 mb-3">
+                <div 
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${domain.progress}%`, backgroundColor: accentColor }}
+                />
+              </div>
+
+              {/* Underlying Attributes Pills */}
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider block">
+                  3 Canonical Attributes:
+                </span>
+                <div className="grid grid-cols-3 gap-1">
+                  {domain.attributes.map(attr => (
+                    <div 
+                      key={attr.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAttributeName(attr.name);
+                        setActiveTab('ATTRIBUTES');
+                      }}
+                      className="bg-black/40 border border-white/5 hover:border-white/20 px-1.5 py-1 rounded text-center transition"
+                    >
+                      <span className="text-[10px] font-mono font-bold text-zinc-200 block truncate">
+                        {attr.name}
+                      </span>
+                      <span className="text-[9px] font-mono font-bold text-zinc-400">
+                        Lv.{attr.level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 2. STREAMLINED TAB NAVIGATION */}

@@ -274,6 +274,8 @@ export interface Quest {
   archivedAt?: string | null;
   isLevelUpBoss?: boolean; // Specifically designated/forged for system level advancement requirement
   levelUpThreshold?: number; // The target gate threshold (10, 20, 30...) this quest is linked to
+  skillRewards?: SkillReward[];
+  attributeRewards?: AttributeReward[];
 }
 
 export interface LevelUpBossRequirement {
@@ -286,6 +288,40 @@ export interface LevelUpBossRequirement {
 
 export type MasteryDimensionStage = 'Exposure' | 'Practice' | 'Application' | 'Demonstration';
 
+export type CoreDomain = 'Mind' | 'Body' | 'Soul';
+export type SkillType = 'primary' | 'secondary';
+export type SkillRank = 'F' | 'E' | 'D' | 'C' | 'B' | 'A' | 'S' | 'SS' | 'SSS';
+
+export interface SkillReward {
+  skillId: string;
+  xp: number;
+}
+
+export interface AttributeReward {
+  attribute: string; // canonical attribute name (e.g. 'Knowledge', 'Focus') or id ('a-6')
+  points: number;
+}
+
+export interface RewardPayload {
+  xp?: number; // Global player progression XP
+  skillRewards?: SkillReward[];
+  attributeRewards?: AttributeReward[];
+  coins?: number;
+  timeCredits?: number;
+  momentum?: number;
+}
+
+export interface CoreDomainProgress {
+  domain: CoreDomain;
+  level: number; // Derived arithmetic mean of its 3 attributes' levels (rounded to 1 decimal)
+  rawScore: number; // Raw arithmetic mean
+  progress: number; // Arithmetic mean of attribute progresses (0 to 100)
+  attributes: Attribute[];
+  description: string;
+  icon: string;
+  color: string;
+}
+
 export interface RequiredCapability {
   skillId: string;
   targetLevel: number;
@@ -297,26 +333,32 @@ export interface Skill {
   id: string;
   name: string;
   description?: string;
-  level: number;
-  xp: number;
-  mastery: number; // calculated, e.g. 0-100 or independent
-  relatedGoals: string[]; // Goal IDs
-  relatedProjects: string[]; // Project IDs
+  type: SkillType; // 'primary' | 'secondary'
+  xp: number; // Authoritative progression value
+  rank: SkillRank; // Derived from XP: F -> E -> D -> C -> B -> A -> S -> SS -> SSS
+  primaryAttribute: string; // References one of the 9 canonical attributes (e.g. 'Knowledge')
+  secondaryAttribute?: string | null; // Optionally references another canonical attribute (e.g. 'Focus')
+  tags: string[]; // Dynamic classification / filtering tags
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+  
+  // Compatibility & extended fields
+  tier?: 'Primary' | 'Secondary'; // Legacy tier alias
+  level?: number; // Derived level for compatibility
+  mastery?: number; // Calculated 0-100%
+  relatedGoals?: string[]; // Goal IDs
+  relatedProjects?: string[]; // Project IDs
   equippedTitle?: string;
   iconName?: string;
-  tier?: 'Primary' | 'Secondary';
   parentId?: string | null;
-  createdAt?: string;
   archived?: boolean;
-  // Capability Intelligence Fields
   primaryAttributeId?: string; // e.g. 'a-6' (Knowledge)
   secondaryAttributeIds?: string[]; // e.g. ['a-4', 'a-5'] (Focus, Discipline)
   masteryStage?: MasteryDimensionStage;
   targetLevel?: number;
-  subSpecializations?: string[]; // Nested micro-specializations
+  subSpecializations?: string[];
   recommendedActions?: string[];
-  codexDocIds?: string[]; // Links to Codex planning documents
-  tags?: string[];
+  codexDocIds?: string[];
 }
 
 export interface CustomRadarAxis {
@@ -342,6 +384,7 @@ export interface CustomRadarConfig {
 export interface Attribute {
   id: string;
   name: string;
+  domain: CoreDomain; // Canonical Core Domain: 'Mind' | 'Body' | 'Soul'
   level: number;
   progress: number; // 0 to 100% to next level
   description: string;

@@ -5,6 +5,14 @@ import {
   getAttributeEvidence, 
   getAttributeTrend 
 } from '../../utils/capabilityIntelligence';
+import {
+  CORE_DOMAINS,
+  DOMAIN_ATTRIBUTES,
+  ATTRIBUTE_DOMAIN_MAP,
+  CORE_DOMAIN_METADATA,
+  canonicalizeAttributeName,
+  CoreDomain
+} from '../../utils/progressionEngine';
 import { 
   Shield, Zap, Award, Target, Plus, RefreshCw, 
   TrendingUp, AlertTriangle, CheckCircle2, ChevronRight,
@@ -29,16 +37,19 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
   const { 
     state, 
     getAttributes, 
+    getCoreDomains,
     restartAttribute, 
     addQuest,
     getSkillXpAndLevel 
   } = usePOS();
 
   const attributes = getAttributes();
-  const currentAttr = attributes.find(a => a.name === selectedAttributeName) || attributes[0];
+  const coreDomains = getCoreDomains();
+  const currentAttr = attributes.find(a => canonicalizeAttributeName(a.name) === canonicalizeAttributeName(selectedAttributeName)) || attributes[0];
   const meta = SOVEREIGN_ATTRIBUTES_METADATA[currentAttr?.name || 'Strength'];
   const evidence = currentAttr ? getAttributeEvidence(currentAttr.name, state) : null;
   const trend = currentAttr ? getAttributeTrend(currentAttr.name, state.xpHistory, state.systemDate) : null;
+  const currentDomain: CoreDomain = ATTRIBUTE_DOMAIN_MAP[canonicalizeAttributeName(currentAttr?.name)] || 'Mind';
 
   // New directive draft state for this attribute
   const [showDraftDirective, setShowDraftDirective] = useState(false);
@@ -98,45 +109,77 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
           </span>
         </div>
 
-        <div className="space-y-2">
-          {attributes.map(attr => {
-            const attrMeta = SOVEREIGN_ATTRIBUTES_METADATA[attr.name];
-            const isSelected = attr.name === currentAttr?.name;
-            const attrTrend = getAttributeTrend(attr.name, state.xpHistory, state.systemDate);
+        <div className="space-y-4">
+          {CORE_DOMAINS.map(domainName => {
+            const domainInfo = coreDomains[domainName];
+            const domainMeta = CORE_DOMAIN_METADATA[domainName];
+            const attrNames = DOMAIN_ATTRIBUTES[domainName];
+            const domainAttributes = attributes.filter(a => attrNames.includes(canonicalizeAttributeName(a.name)));
 
             return (
-              <div
-                key={attr.id}
-                onClick={() => onSelectAttribute(attr.name)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                  isSelected
-                    ? 'bg-[#141824] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40'
-                    : 'bg-[#0b0d13] border-white/5 hover:border-[#c5a059]/30 hover:bg-[#131722]/60'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">
-                    {attrMeta?.icon || '⚡'}
-                  </span>
-                  <div>
-                    <h4 className={`font-display font-bold text-sm leading-none ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
-                      {attr.name}
-                    </h4>
-                    <span className="text-[9px] font-mono text-zinc-500 block mt-1">
-                      {attrMeta?.focusArea}
+              <div key={domainName} className="space-y-1.5">
+                {/* Domain Header */}
+                <div className="flex items-center justify-between px-2 py-1 bg-black/40 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{domainMeta.icon}</span>
+                    <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                      {domainName} Domain
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-zinc-400">
+                      Mean Lv.{domainInfo?.level ?? 1}
+                    </span>
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-white/5 text-zinc-300">
+                      {domainInfo?.progress ?? 0}%
                     </span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs font-mono font-bold text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/40 px-1.5 py-0.5 rounded">
-                    LVL {attr.level}
-                  </span>
-                  <span className={`text-[8px] font-mono font-bold block mt-1 uppercase ${
-                    attrTrend.status === 'Improving' ? 'text-emerald-400' : attrTrend.status === 'Declining' ? 'text-amber-400' : 'text-zinc-500'
-                  }`}>
-                    {attrTrend.status}
-                  </span>
+                {/* Domain's Attributes */}
+                <div className="space-y-1.5 pl-1 border-l-2 border-white/5">
+                  {domainAttributes.map(attr => {
+                    const attrMeta = SOVEREIGN_ATTRIBUTES_METADATA[attr.name];
+                    const isSelected = canonicalizeAttributeName(attr.name) === canonicalizeAttributeName(currentAttr?.name);
+                    const attrTrend = getAttributeTrend(attr.name, state.xpHistory, state.systemDate);
+
+                    return (
+                      <div
+                        key={attr.id}
+                        onClick={() => onSelectAttribute(attr.name)}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-[#141824] border-[#c5a059] shadow-[0_0_15px_rgba(197,160,89,0.18)] ring-1 ring-[#c5a059]/40'
+                            : 'bg-[#0b0d13] border-white/5 hover:border-[#c5a059]/30 hover:bg-[#131722]/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">
+                            {attrMeta?.icon || '⚡'}
+                          </span>
+                          <div>
+                            <h4 className={`font-display font-bold text-xs leading-none ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                              {attr.name}
+                            </h4>
+                            <span className="text-[8px] font-mono text-zinc-500 block mt-1">
+                              {attrMeta?.focusArea}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[11px] font-mono font-bold text-[#fef08a] bg-[#3a2e12] border border-[#c5a059]/40 px-1.5 py-0.5 rounded">
+                            LVL {attr.level}
+                          </span>
+                          <span className={`text-[8px] font-mono font-bold block mt-0.5 uppercase ${
+                            attrTrend.status === 'Improving' ? 'text-emerald-400' : attrTrend.status === 'Declining' ? 'text-amber-400' : 'text-zinc-500'
+                          }`}>
+                            {attrTrend.status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -169,7 +212,7 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
                       {currentAttr.name}
                     </h2>
                     <span className="text-[9px] font-mono px-2 py-0.5 rounded uppercase font-bold bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
-                      {meta.category} CONSTITUTION
+                      {currentDomain} DOMAIN · {meta.category}
                     </span>
                   </div>
                   <p className="text-xs font-sans text-zinc-400 mt-1 max-w-xl">

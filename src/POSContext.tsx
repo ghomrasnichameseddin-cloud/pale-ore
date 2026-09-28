@@ -20,8 +20,31 @@ import {
   RequiredCapability, CapabilityReviewNote,
   StandardXPEventType, XPAnalytics,
   LevelUpBossRequirement,
-  CustomRadarConfig, CustomRadarAxis
+  CustomRadarConfig, CustomRadarAxis,
+  CoreDomain, SkillType, SkillRank, SkillReward, AttributeReward, RewardPayload, CoreDomainProgress
 } from './types';
+import {
+  CORE_DOMAINS,
+  DOMAIN_ATTRIBUTES,
+  ATTRIBUTE_DOMAIN_MAP,
+  CANONICAL_ATTRIBUTES,
+  CANONICAL_ATTRIBUTE_IDS,
+  CANONICAL_ID_TO_ATTRIBUTE,
+  CANONICAL_ATTRIBUTE_METADATA,
+  CORE_DOMAIN_METADATA,
+  calculateCoreDomainScores,
+  getSkillRank,
+  getSkillRankDetails,
+  calculateSkillLevel,
+  calculateSkillMastery,
+  normalizeSkill,
+  createCustomSkill,
+  DEFAULT_STARTER_SKILLS,
+  resolveQuestRewards,
+  ensureCanonicalAttributes,
+  canonicalizeAttributeName,
+  SkillRankDetails
+} from './utils/progressionEngine';
 import {
   dispatchXPEventPure,
   getXPAnalytics,
@@ -188,10 +211,17 @@ interface POSContextType {
   toggleSubQuest: (questId: string, subquestId: string) => void;
   deleteSubQuest: (questId: string, subquestId: string) => void;
   
-  // Skills CRUD
-  addSkill: (name: string, tier?: 'Primary' | 'Secondary', parentId?: string | null) => string;
+  // Skills CRUD & Unified Architecture
+  addSkill: (
+    nameOrParams: string | { name: string; type?: SkillType; description?: string; primaryAttribute?: string; secondaryAttribute?: string | null; tags?: string[]; initialXp?: number },
+    tier?: 'Primary' | 'Secondary',
+    parentId?: string | null
+  ) => string;
+  createSkill: (params: { name: string; type?: SkillType; description?: string; primaryAttribute: string; secondaryAttribute?: string | null; tags?: string[]; initialXp?: number }) => string;
+  updateSkill: (id: string, updates: Partial<Skill>) => void;
   updateSkillName: (id: string, name: string) => void;
   updateSkillTier: (id: string, tier: 'Primary' | 'Secondary') => void;
+  changeSkillType: (id: string, type: SkillType) => void;
   updateSkillParent: (id: string, parentId: string | null) => void;
   toggleArchiveSkill: (id: string) => void;
   mergeSkills: (sourceSkillId: string, targetSkillId: string) => void;
@@ -201,8 +231,15 @@ interface POSContextType {
   equipSkillTitle: (id: string, title: string) => void;
   updateSkillAttributes: (id: string, primaryAttributeId?: string, secondaryAttributeIds?: string[]) => void;
   updateSkillDetails: (id: string, updates: Partial<Skill>) => void;
+  addSkillXp: (skillId: string, amount: number) => void;
   setRequiredCapabilities: (entityType: 'goal' | 'project', entityId: string, capabilities: RequiredCapability[]) => void;
   saveCapabilityReview: (review: Omit<CapabilityReviewNote, 'id' | 'createdAt'>) => void;
+  
+  // Unified Progression Engine & Rewards
+  getCoreDomains: () => Record<CoreDomain, CoreDomainProgress>;
+  getSkillRank: (xp: number) => SkillRank;
+  getSkillRankDetails: (xp: number) => SkillRankDetails;
+  processReward: (reward: RewardPayload, reason?: string) => void;
   
   // Custom Capability Radars CRUD
   customRadars: CustomRadarConfig[];
@@ -289,7 +326,16 @@ interface POSContextType {
   getGoalProgress: (goalId: string) => number;
   getProjectProgress: (projectId: string) => number;
   getMilestoneProgress: (milestoneId: string) => number;
-  getSkillXpAndLevel: (skillId: string) => { xp: number; level: number; progress: number; mastery: number; xpIntoLevel: number; xpRequiredForNextLevel: number };
+  getSkillXpAndLevel: (skillId: string) => { 
+    xp: number; 
+    rank: SkillRank; 
+    level: number; 
+    progress: number; 
+    mastery: number; 
+    xpIntoLevel: number; 
+    xpRequiredForNextLevel: number;
+    rankDetails: SkillRankDetails;
+  };
   getAttributes: () => Attribute[];
   getPlayerLevelInfo: () => PlayerLevelInfo;
   getAnalytics: () => any;
@@ -865,8 +911,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             quests: reconciledQuests,
             folders: parsed.folders || [],
             lists: parsed.lists || [],
-            skills: parsed.skills || [],
-            attributes: (parsed.attributes && parsed.attributes.length > 0) ? parsed.attributes : INITIAL_STATE.attributes,
+            skills: (() => {
+              const rawSkills = (parsed.skills && parsed.skills.length > 0) ? parsed.skills : DEFAULT_STARTER_SKILLS;
+              return rawSkills.map((s: any) => {
+                const normalized = normalizeSkill(s);
+                if (normalized.xp === 0) {
+                  const histXp = getSkillXpFromHistory(normalized.id, reconciledXpHistory, rawSkills);
+                  if (histXp > 0) {
+                    normalized.xp = histXp;
+                    normalized.rank = getSkillRank(histXp);
+                    normalized.level = calculateSkillLevel(histXp);
+                    normalized.mastery = calculateSkillMastery(histXp);
+                  }
+                }
+                return normalized;
+              });
+            })(),
+            attributes: ensureCanonicalAttributes(parsed.attributes || INITIAL_STATE.attributes),
             xpHistory: reconciledXpHistory,
             muhasabahEntries: reconciledMuhasabahEntries,
             systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
@@ -1397,8 +1458,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
         const level = calculatePlayerLevel(totalXp);
 
-        // Mint Earned Leisure Credits (1m leisure per 4m focus, minimum 3m)
-        const earnedLeisure = Math.max(3, Math.round(cycleMinutes * 0.25));
+        // Mint Earned Leisure Credits for Rest Bank (Pomodoro 25m Focus Sprint: +10m Rest Equity per System Guide)
+        const earnedLeisure = Math.max(3, Math.round(cycleMinutes * 0.4));
         const currentCredits = prev.profile.timeCredits ?? 60;
         const newCredits = currentCredits + earnedLeisure;
         const timeTx: TimeTransaction = {
@@ -1407,7 +1468,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           minutesDelta: earnedLeisure,
           endingBalance: newCredits,
           minutes: earnedLeisure,
-          reason: `Focus Harvest: ${cycleMinutes}m Deep Work on "${activeFocusSession.questName}"`,
+          reason: `Focus Harvest: ${cycleMinutes}m Deep Work on "${activeFocusSession.questName}" (+${earnedLeisure}m Rest Bank)`,
           timestamp: getSystemTimestamp(todayStr),
           balanceAfter: newCredits,
           relatedId: activeFocusSession.questId || undefined
@@ -1553,13 +1614,99 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const stopFocusSession = () => {
     if (activeFocusSession) {
-      addSystemMessage({
-        sender: 'FOCUS_BOT',
-        category: 'note',
-        title: 'Focus Session Ended',
-        content: `Session for "${activeFocusSession.questName}" stopped. Completed ${activeFocusSession.completedCycles} cycles.`,
-        priority: 'low'
-      });
+      // Reconcile and bank any uncredited work time from the active work cycle
+      const elapsedWorkSeconds = activeFocusSession.mode === 'work'
+        ? Math.max(0, (activeFocusSession.totalWorkTime * 60) - activeFocusSession.timeLeft)
+        : 0;
+      const uncreditedMinutes = Math.floor(elapsedWorkSeconds / 60);
+      const todayStr = state.systemDate || getLocalDateString();
+
+      if (uncreditedMinutes >= 1) {
+        const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
+        const focusXpMult = getFocusXpMultiplier(activeJob);
+        const earnedXp = Math.max(5, Math.round((15 * (uncreditedMinutes / activeFocusSession.totalWorkTime)) * focusXpMult));
+
+        const focusDispatch = dispatchXPEventPure({
+          currentHistory: state.xpHistory,
+          type: 'focus',
+          questName: `🧘 Focus Session: Completed ${uncreditedMinutes} min work on "${activeFocusSession.questName}"`,
+          baseXp: earnedXp,
+          questId: activeFocusSession.questId || null,
+          sourceId: `h-focus-stop-${Date.now()}`,
+          activityId: 'focus-session',
+          timestamp: getSystemTimestamp(todayStr),
+          date: todayStr,
+          skillIds: [],
+          quality: 1.0,
+          isCampaignRelated: Boolean(activeFocusSession.questId)
+        });
+
+        const earnedRest = Math.max(1, Math.round(uncreditedMinutes * 0.4));
+        const currentCredits = state.profile.timeCredits ?? 60;
+        const newCredits = currentCredits + earnedRest;
+        const timeTx: TimeTransaction = {
+          id: `time-focus-stop-${Date.now()}`,
+          type: 'focus_mint',
+          minutesDelta: earnedRest,
+          endingBalance: newCredits,
+          minutes: earnedRest,
+          reason: `Focus Session: ${uncreditedMinutes}m Work on "${activeFocusSession.questName}" (+${earnedRest}m Rest Bank)`,
+          timestamp: getSystemTimestamp(todayStr),
+          balanceAfter: newCredits,
+          relatedId: activeFocusSession.questId || undefined
+        };
+
+        setState(prev => {
+          const lastDate = prev.profile.lastFocusDate || '';
+          const isSameDay = lastDate === todayStr;
+          const prevMinutes = isSameDay ? (prev.profile.focusMinutesToday || 0) : 0;
+          const rawHistory = focusDispatch.createdEntry ? [focusDispatch.createdEntry, ...prev.xpHistory] : prev.xpHistory;
+          const updatedHistory = resolveRecoveredPenalties(rawHistory);
+          const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+          const level = calculatePlayerLevel(totalXp);
+
+          return {
+            ...prev,
+            quests: prev.quests.map(q => {
+              if (activeFocusSession.questId && q.id === activeFocusSession.questId) {
+                return {
+                  ...q,
+                  actualMinutesWorked: (q.actualMinutesWorked || 0) + uncreditedMinutes
+                };
+              }
+              return q;
+            }),
+            xpHistory: updatedHistory,
+            timeHistory: [timeTx, ...(prev.timeHistory || [])],
+            profile: {
+              ...prev.profile,
+              focusMinutesToday: prevMinutes + uncreditedMinutes,
+              lastFocusDate: todayStr,
+              xp: totalXp,
+              level,
+              timeCredits: newCredits,
+              totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedRest,
+              totalTimeInvested: (prev.profile.totalTimeInvested || 0) + uncreditedMinutes
+            }
+          };
+        });
+
+        addSystemMessage({
+          sender: 'FOCUS_BOT',
+          category: 'achievement',
+          title: 'Focus Labor Banked',
+          content: `Session for "${activeFocusSession.questName}" stopped. Banked ${uncreditedMinutes}m focus work to Temporal HUD and +${earnedRest}m rest equity to Rest Bank.`,
+          priority: 'medium'
+        });
+      } else {
+        addSystemMessage({
+          sender: 'FOCUS_BOT',
+          category: 'note',
+          title: 'Focus Session Ended',
+          content: `Session for "${activeFocusSession.questName}" stopped. Completed ${activeFocusSession.completedCycles} cycles.`,
+          priority: 'low'
+        });
+      }
     }
     setActiveFocusSession(null);
   };
@@ -1693,18 +1840,104 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
     const stopAdhkarFocusSession = () => {
       if (activeAdhkarFocusSession) {
-        addSystemMessage({
-          sender: 'FOCUS_BOT',
-          category: 'note',
-          title: 'Adhkar Focus Session Ended',
-          content: `Session for "${activeAdhkarFocusSession.adhkarTitle}" stopped. Completed ${activeAdhkarFocusSession.completedCycles} cycles.`,
-          priority: 'low'
-        });
+        const elapsedWorkSeconds = activeAdhkarFocusSession.mode === 'work'
+          ? Math.max(0, (activeAdhkarFocusSession.totalWorkTime * 60) - activeAdhkarFocusSession.timeLeft)
+          : 0;
+        const uncreditedMinutes = Math.floor(elapsedWorkSeconds / 60);
+        const todayStr = state.systemDate || getLocalDateString();
+
+        if (uncreditedMinutes >= 1) {
+          const earnedRest = Math.max(1, Math.round(uncreditedMinutes * 0.4));
+          const currentCredits = state.profile.timeCredits ?? 60;
+          const newCredits = currentCredits + earnedRest;
+          const timeTx: TimeTransaction = {
+            id: `time-adhkar-stop-${Date.now()}`,
+            type: 'focus_mint',
+            minutesDelta: earnedRest,
+            endingBalance: newCredits,
+            minutes: earnedRest,
+            reason: `Adhkar Focus: ${uncreditedMinutes}m on "${activeAdhkarFocusSession.adhkarTitle}" (+${earnedRest}m Rest Bank)`,
+            timestamp: getSystemTimestamp(todayStr),
+            balanceAfter: newCredits,
+            relatedId: activeAdhkarFocusSession.adhkarId || undefined
+          };
+
+          setState(prev => {
+            const lastDate = prev.profile.lastFocusDate || '';
+            const isSameDay = lastDate === todayStr;
+            const prevMinutes = isSameDay ? (prev.profile.focusMinutesToday || 0) : 0;
+            return {
+              ...prev,
+              timeHistory: [timeTx, ...(prev.timeHistory || [])],
+              profile: {
+                ...prev.profile,
+                focusMinutesToday: prevMinutes + uncreditedMinutes,
+                lastFocusDate: todayStr,
+                timeCredits: newCredits,
+                totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedRest,
+                totalTimeInvested: (prev.profile.totalTimeInvested || 0) + uncreditedMinutes
+              }
+            };
+          });
+
+          addSystemMessage({
+            sender: 'FOCUS_BOT',
+            category: 'achievement',
+            title: 'Adhkar Focus Banked',
+            content: `Adhkar focus session for "${activeAdhkarFocusSession.adhkarTitle}" concluded. Banked ${uncreditedMinutes}m to Temporal HUD and +${earnedRest}m rest equity to Rest Bank.`,
+            priority: 'medium'
+          });
+        } else {
+          addSystemMessage({
+            sender: 'FOCUS_BOT',
+            category: 'note',
+            title: 'Adhkar Focus Session Ended',
+            content: `Session for "${activeAdhkarFocusSession.adhkarTitle}" stopped. Completed ${activeAdhkarFocusSession.completedCycles} cycles.`,
+            priority: 'low'
+          });
+        }
       }
       setActiveAdhkarFocusSession(null);
     };
   
     const completeAdhkarFocusCycle = () => {
+      if (activeAdhkarFocusSession) {
+        const cycleMinutes = activeAdhkarFocusSession.totalWorkTime;
+        const todayStr = state.systemDate || getLocalDateString();
+        const earnedRest = Math.max(1, Math.round(cycleMinutes * 0.4));
+        const currentCredits = state.profile.timeCredits ?? 60;
+        const newCredits = currentCredits + earnedRest;
+        const timeTx: TimeTransaction = {
+          id: `time-adhkar-${Date.now()}`,
+          type: 'focus_mint',
+          minutesDelta: earnedRest,
+          endingBalance: newCredits,
+          minutes: earnedRest,
+          reason: `Adhkar Focus Harvest: ${cycleMinutes}m "${activeAdhkarFocusSession.adhkarTitle}" (+${earnedRest}m Rest Bank)`,
+          timestamp: getSystemTimestamp(todayStr),
+          balanceAfter: newCredits,
+          relatedId: activeAdhkarFocusSession.adhkarId || undefined
+        };
+
+        setState(prev => {
+          const lastDate = prev.profile.lastFocusDate || '';
+          const isSameDay = lastDate === todayStr;
+          const prevMinutes = isSameDay ? (prev.profile.focusMinutesToday || 0) : 0;
+          return {
+            ...prev,
+            timeHistory: [timeTx, ...(prev.timeHistory || [])],
+            profile: {
+              ...prev.profile,
+              focusMinutesToday: prevMinutes + cycleMinutes,
+              lastFocusDate: todayStr,
+              timeCredits: newCredits,
+              totalTimeEarned: (prev.profile.totalTimeEarned || 0) + earnedRest,
+              totalTimeInvested: (prev.profile.totalTimeInvested || 0) + cycleMinutes
+            }
+          };
+        });
+      }
+
       setActiveAdhkarFocusSession(prev => {
         if (!prev) return null;
         const nextCycles = prev.completedCycles + 1;
@@ -1715,7 +1948,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           mode: 'rest',
           timeLeft: 0,
           completedCycles: nextCycles,
-          status: isComplete ? 'paused' : 'paused',
+          status: 'paused',
           lastUpdated: Date.now()
         };
       });
@@ -1939,22 +2172,27 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return Math.round((completed / milestoneQuests.length) * 100);
   };
 
-  // Skill progression calculation
+  // Unified Skill progression calculation: Skill XP is authoritative, Rank is derived from XP
   const getSkillXpAndLevel = (skillId: string) => {
-    // Accumulate XP from entire history of completions (important for repeating quests!)
-    const earnedXp = getSkillXpFromHistory(skillId, state.xpHistory, state.skills);
+    const targetSkill = state.skills.find(s => s.id === skillId);
+    const historyXp = getSkillXpFromHistory(skillId, state.xpHistory, state.skills);
+    const earnedXp = Math.max(targetSkill?.xp || 0, historyXp);
 
-    const level = calculatePlayerLevel(earnedXp);
-    const xpNeededForCurrentLevel = 250 * (level - 1) * (level + 2);
-    const xpRequiredForNextLevel = 500 * level + 500; // XP required to level up from current level to next level
-    
-    const xpIntoLevel = earnedXp - xpNeededForCurrentLevel;
-    const progress = Math.min(100, Math.max(0, Math.round((xpIntoLevel / xpRequiredForNextLevel) * 100)));
-    
-    // Mastery represents level competence relative to mastery (e.g. up to Level 50 is 100%)
-    const mastery = Math.min(100, Math.round((level / 50) * 100));
+    const rank = getSkillRank(earnedXp);
+    const rankDetails = getSkillRankDetails(earnedXp);
+    const level = calculateSkillLevel(earnedXp);
+    const mastery = calculateSkillMastery(earnedXp);
 
-    return { xp: earnedXp, level, progress, mastery, xpIntoLevel, xpRequiredForNextLevel };
+    return { 
+      xp: earnedXp, 
+      rank,
+      level, 
+      progress: rankDetails.progress, 
+      mastery, 
+      xpIntoLevel: rankDetails.xpIntoRank, 
+      xpRequiredForNextLevel: rankDetails.xpNeededForNextRank,
+      rankDetails
+    };
   };
 
   // Player Level Information
@@ -2231,10 +2469,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const calculated = calculateAttributeProgression(totalPoints, baseCost, growth);
       const baseLevel = attr.level || 1;
       const extraLevels = calculated.earnedBonus;
+      const canonicalName = canonicalizeAttributeName(attr.name);
+      const domain = ATTRIBUTE_DOMAIN_MAP[canonicalName] || 'Mind';
       const totalLevel = baseLevel + extraLevels;
 
       return {
         ...attr,
+        name: canonicalName,
+        domain,
+        category: domain,
         baseLevel,
         earnedBonus: extraLevels,
         total: totalLevel,
@@ -2246,6 +2489,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAt: attr.resetAt
       };
     });
+  };
+
+  // Derived representation of the three Core Domains (Mind, Body, Soul)
+  const getCoreDomains = (): Record<CoreDomain, CoreDomainProgress> => {
+    return calculateCoreDomainScores(getAttributes());
   };
 
   // BOSS PROGRESSION & LEVEL-UP GATE METHODS
@@ -3172,17 +3420,40 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const level = gateJustCleared ? Math.max(gateTargetLevel + 1, gated.level) : gated.level;
 
-      // Update skills internal xp cache based on entire XP History!
+      // Unified Rewards Engine: Resolve rewards for this quest
+      const unifiedRewards = resolveQuestRewards(questToComplete, prev.skills);
+      const skillRewardMap = new Map((unifiedRewards.skillRewards || []).map(r => [r.skillId, r.xp]));
+      const attrRewardMap = new Map((unifiedRewards.attributeRewards || []).map(r => [canonicalizeAttributeName(r.attribute), r.points]));
+
+      // Update skills authoritative XP & Rank:
       const updatedSkills = prev.skills.map(skill => {
-        const skillXp = getSkillXpFromHistory(skill.id, updatedHistory, prev.skills);
-        const skillLevel = calculatePlayerLevel(skillXp);
-        const mastery = Math.min(100, Math.round((skillLevel / 50) * 100));
+        const directEarned = skillRewardMap.get(skill.id) || 0;
+        const currentXp = Math.max(skill.xp || 0, getSkillXpFromHistory(skill.id, prev.xpHistory, prev.skills));
+        const newXp = currentXp + directEarned;
+        const rank = getSkillRank(newXp);
+        const skillLevel = calculateSkillLevel(newXp);
+        const mastery = calculateSkillMastery(newXp);
         return {
           ...skill,
+          xp: newXp,
+          rank,
           level: skillLevel,
-          xp: skillXp,
-          mastery
+          mastery,
+          updatedAt: directEarned > 0 ? new Date().toISOString() : (skill.updatedAt || new Date().toISOString())
         };
+      });
+
+      // Update attributes with awarded points:
+      const updatedAttributes = prev.attributes.map(attr => {
+        const canonical = canonicalizeAttributeName(attr.name);
+        const pts = attrRewardMap.get(canonical);
+        if (pts && pts > 0) {
+          return {
+            ...attr,
+            totalPoints: (attr.totalPoints || 0) + pts
+          };
+        }
+        return attr;
       });
 
       const isDeactivatingQuest = 
@@ -3249,6 +3520,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev,
         quests: updatedQuests,
         skills: updatedSkills,
+        attributes: updatedAttributes,
         xpHistory: updatedHistory,
         timeHistory: (!alreadyMinted && questTimeTx) ? [questTimeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
         muhasabahEntries: updatedMuhasabahEntries,
@@ -3782,40 +4054,194 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // CRUD FOR SKILLS
-  const addSkill = (name: string, tier?: 'Primary' | 'Secondary', parentId?: string | null): string => {
-    const id = `s-${Date.now()}`;
-    const newSkill: Skill = {
-      id,
-      name,
-      level: 1,
-      xp: 0,
-      mastery: 0,
-      relatedGoals: [],
-      relatedProjects: [],
-      tier: tier || 'Primary',
-      parentId: parentId || null,
-      createdAt: new Date().toISOString()
-    };
+  // CRUD & UNIFIED ARCHITECTURE FOR SKILLS
+  const addSkill = (
+    nameOrParams: string | { name: string; type?: SkillType; description?: string; primaryAttribute?: string; secondaryAttribute?: string | null; tags?: string[]; initialXp?: number },
+    tier?: 'Primary' | 'Secondary',
+    parentId?: string | null
+  ): string => {
+    let newSkill: Skill;
+    if (typeof nameOrParams === 'object') {
+      newSkill = createCustomSkill({
+        name: nameOrParams.name,
+        type: nameOrParams.type,
+        description: nameOrParams.description,
+        primaryAttribute: nameOrParams.primaryAttribute || 'Knowledge',
+        secondaryAttribute: nameOrParams.secondaryAttribute,
+        tags: nameOrParams.tags,
+        initialXp: nameOrParams.initialXp || 0
+      });
+    } else {
+      const type: SkillType = tier === 'Secondary' ? 'secondary' : 'primary';
+      newSkill = normalizeSkill({
+        name: nameOrParams,
+        type,
+        tier: tier || 'Primary',
+        parentId: parentId || null,
+        primaryAttribute: 'Knowledge',
+        tags: []
+      });
+    }
     setState(prev => ({
       ...prev,
       skills: [...prev.skills, newSkill]
     }));
-    return id;
+    return newSkill.id;
+  };
+
+  const createSkill = (params: { 
+    name: string; 
+    type?: SkillType; 
+    description?: string; 
+    primaryAttribute: string; 
+    secondaryAttribute?: string | null; 
+    tags?: string[]; 
+    initialXp?: number 
+  }): string => {
+    const newSkill = createCustomSkill(params);
+    setState(prev => ({
+      ...prev,
+      skills: [...prev.skills, newSkill]
+    }));
+    return newSkill.id;
+  };
+
+  const updateSkill = (id: string, updates: Partial<Skill>) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => {
+        if (s.id !== id) return s;
+        const nextXp = typeof updates.xp === 'number' ? updates.xp : s.xp;
+        const nextType = updates.type || (updates.tier ? (updates.tier === 'Secondary' ? 'secondary' : 'primary') : s.type);
+        const nextPrim = updates.primaryAttribute ? canonicalizeAttributeName(updates.primaryAttribute) : s.primaryAttribute;
+        const nextSec = updates.secondaryAttribute !== undefined ? (updates.secondaryAttribute ? canonicalizeAttributeName(updates.secondaryAttribute) : null) : s.secondaryAttribute;
+        return {
+          ...s,
+          ...updates,
+          type: nextType,
+          tier: nextType === 'secondary' ? 'Secondary' : 'Primary',
+          xp: nextXp,
+          rank: getSkillRank(nextXp),
+          level: calculateSkillLevel(nextXp),
+          mastery: calculateSkillMastery(nextXp),
+          primaryAttribute: nextPrim,
+          secondaryAttribute: nextSec,
+          primaryAttributeId: CANONICAL_ATTRIBUTE_IDS[nextPrim] || 'a-6',
+          secondaryAttributeIds: nextSec ? [CANONICAL_ATTRIBUTE_IDS[nextSec] || 'a-4'] : [],
+          updatedAt: new Date().toISOString()
+        };
+      })
+    }));
+  };
+
+  const changeSkillType = (id: string, type: SkillType) => {
+    updateSkill(id, { type, tier: type === 'secondary' ? 'Secondary' : 'Primary' });
+  };
+
+  const addSkillXp = (skillId: string, amount: number) => {
+    setState(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => {
+        if (s.id !== skillId) return s;
+        const nextXp = (s.xp || 0) + amount;
+        return {
+          ...s,
+          xp: nextXp,
+          rank: getSkillRank(nextXp),
+          level: calculateSkillLevel(nextXp),
+          mastery: calculateSkillMastery(nextXp),
+          updatedAt: new Date().toISOString()
+        };
+      })
+    }));
+  };
+
+  const processReward = (reward: RewardPayload, reason?: string) => {
+    const timestamp = getSystemTimestamp(state.systemDate);
+    const date = state.systemDate || getLocalDateString();
+    
+    let newHistoryEntry: XPHistoryEntry | null = null;
+    if (reward.xp && reward.xp > 0) {
+      const dispatchResult = dispatchXPEventPure({
+        currentHistory: state.xpHistory,
+        type: 'quest',
+        questName: reason || 'Progress Reward',
+        baseXp: reward.xp,
+        timestamp,
+        date,
+        skillIds: (reward.skillRewards || []).map(r => r.skillId)
+      });
+      newHistoryEntry = dispatchResult.createdEntry;
+    }
+
+    setState(prev => {
+      let updatedSkills = prev.skills;
+      if (reward.skillRewards && reward.skillRewards.length > 0) {
+        const rewardMap = new Map(reward.skillRewards.map(r => [r.skillId, r.xp]));
+        updatedSkills = prev.skills.map(sk => {
+          const addAmount = rewardMap.get(sk.id);
+          if (addAmount && addAmount > 0) {
+            const nextXp = (sk.xp || 0) + addAmount;
+            return {
+              ...sk,
+              xp: nextXp,
+              rank: getSkillRank(nextXp),
+              level: calculateSkillLevel(nextXp),
+              mastery: calculateSkillMastery(nextXp),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return sk;
+        });
+      }
+
+      let updatedAttributes = prev.attributes;
+      if (reward.attributeRewards && reward.attributeRewards.length > 0) {
+        const attrMap = new Map(
+          reward.attributeRewards.map(r => [canonicalizeAttributeName(r.attribute), r.points])
+        );
+        updatedAttributes = prev.attributes.map(attr => {
+          const canonical = canonicalizeAttributeName(attr.name);
+          const pts = attrMap.get(canonical);
+          if (pts && pts > 0) {
+            return {
+              ...attr,
+              totalPoints: (attr.totalPoints || 0) + pts
+            };
+          }
+          return attr;
+        });
+      }
+
+      const newCoins = (prev.profile.coins ?? 150) + (reward.coins || 0);
+      const newMomentum = Math.min(100, (prev.profile.momentum || 50) + (reward.momentum || 0));
+
+      const updatedHistory = newHistoryEntry ? [newHistoryEntry, ...prev.xpHistory] : prev.xpHistory;
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(totalXp, prev.profile.level, prev.profile.levelUpBossRequirement, prev.quests);
+
+      return {
+        ...prev,
+        skills: updatedSkills,
+        attributes: updatedAttributes,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: newCoins,
+          momentum: newMomentum
+        }
+      };
+    });
   };
 
   const updateSkillName = (id: string, name: string) => {
-    setState(prev => ({
-      ...prev,
-      skills: prev.skills.map(s => s.id === id ? { ...s, name } : s)
-    }));
+    updateSkill(id, { name });
   };
 
   const updateSkillTier = (id: string, tier: 'Primary' | 'Secondary') => {
-    setState(prev => ({
-      ...prev,
-      skills: prev.skills.map(s => s.id === id ? { ...s, tier, parentId: tier === 'Primary' ? null : s.parentId } : s)
-    }));
+    updateSkill(id, { tier, type: tier === 'Secondary' ? 'secondary' : 'primary' });
   };
 
   const updateSkillParent = (id: string, parentId: string | null) => {
@@ -5136,13 +5562,22 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const budgetMinutes = wakingHours * 60;
     const todayStr = state.systemDate;
 
-    // Invested minutes today: focus time (only if recorded today) + actual time on quests completed today
+    // Invested minutes today: banked focus minutes + live in-progress focus timer minutes + quests completed today
     const focusMinutesToday = (state.profile.lastFocusDate === todayStr) ? (state.profile.focusMinutesToday || 0) : 0;
+    const liveFocusTimerSeconds = (activeFocusSession && activeFocusSession.mode === 'work')
+      ? Math.max(0, (activeFocusSession.totalWorkTime * 60) - activeFocusSession.timeLeft)
+      : 0;
+    const liveAdhkarSeconds = (activeAdhkarFocusSession && activeAdhkarFocusSession.mode === 'work')
+      ? Math.max(0, (activeAdhkarFocusSession.totalWorkTime * 60) - activeAdhkarFocusSession.timeLeft)
+      : 0;
+    const liveFocusMinutes = Math.floor((liveFocusTimerSeconds + liveAdhkarSeconds) / 60);
+    const totalLiveFocusMinutes = focusMinutesToday + liveFocusMinutes;
+
     const completedQuestsToday = (state.quests || []).filter(
       q => q.lastCompletedDate === todayStr || (q.status === 'Completed' && q.completedAt?.startsWith(todayStr))
     );
     const questMinutesToday = completedQuestsToday.reduce((sum, q) => sum + (q.actualMinutesWorked || q.estimatedTime || 15), 0);
-    const investedMinutesToday = Math.max(focusMinutesToday, questMinutesToday);
+    const investedMinutesToday = Math.max(totalLiveFocusMinutes, questMinutesToday);
 
     // Committed minutes today: active quests scheduled for today
     const activeQuestsToday = (state.quests || []).filter(q => {
@@ -5169,7 +5604,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return {
       ...baseAccounting,
       breakdown: {
-        focusMinutes: focusMinutesToday,
+        focusMinutes: totalLiveFocusMinutes,
         completedQuestMinutes: questMinutesToday,
         completedQuestsList: completedQuestsToday.map(q => ({
           id: q.id,
@@ -9074,6 +9509,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleSubQuest,
       deleteSubQuest,
       addSkill,
+      createSkill,
+      updateSkill,
+      changeSkillType,
+      addSkillXp,
       updateSkillName,
       updateSkillTier,
       updateSkillParent,
@@ -9087,6 +9526,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateSkillDetails,
       setRequiredCapabilities,
       saveCapabilityReview,
+      getCoreDomains,
+      getSkillRank,
+      getSkillRankDetails,
+      processReward,
       customRadars: state.customRadars || [],
       addCustomRadar,
       updateCustomRadar,
