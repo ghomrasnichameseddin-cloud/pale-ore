@@ -652,15 +652,6 @@ export const MuhasabahView: React.FC<MuhasabahViewProps> = ({ onNavigate, onOpen
             <span className="text-sm font-mono font-bold text-cyan-300 block">{liveWeeklySummary.scoreOutOf10?.toFixed(1) || '10.0'}/10</span>
             <span className="text-[9px] font-mono text-zinc-400 uppercase">Weekly Score</span>
           </div>
-
-          <button
-            type="button"
-            onClick={() => handleOpenAuditModal(undefined, undefined, 'slip')}
-            className="px-4 py-2.5 bg-gradient-to-r from-[#3a2e12] to-[#241c09] hover:from-[#4c3c18] hover:to-[#2e230c] border border-[#c5a059] text-[#fef08a] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer ml-1"
-          >
-            <Plus className="h-4 w-4" />
-            <span>+ RECORD SLIP</span>
-          </button>
         </div>
       </div>
 

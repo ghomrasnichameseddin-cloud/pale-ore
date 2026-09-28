@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen, Heart, Coins, Repeat, Clock } from 'lucide-react';
+import { Scale, Sparkles, AlertTriangle, ShieldCheck, Flame, Lock, ArrowUpRight, ArrowDownRight, Compass, RefreshCw, CheckCircle2, BookOpen, Heart, Coins, Repeat, Clock, Plus } from 'lucide-react';
 import { RubElHizbIcon } from './IslamicRpgDecorations';
 
 interface DailyBalanceScaleProps {
@@ -163,27 +163,16 @@ export const DailyBalanceScale: React.FC<DailyBalanceScaleProps> = ({
             </button>
           )}
 
-          <div className="flex items-center rounded-xl bg-gradient-to-r from-amber-600 via-[#c5a059] to-amber-500 p-0.5 shadow-lg shadow-amber-950/50">
-            <button
-              onClick={() => onOpenAuditModal('slip')}
-              className="px-3.5 py-1.5 rounded-lg bg-[#0b0d13] hover:bg-[#131722] text-[#fef08a] hover:text-white font-display text-xs font-bold tracking-wider transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              id="daily-balance-triage-btn"
-              title="Audit Action Slip &amp; Behavioral Friction"
-            >
-              <Flame className="h-3.5 w-3.5 text-amber-400" />
-              <span>AUDIT SLIP</span>
-            </button>
-            <span className="text-amber-400/40 text-xs px-1 select-none">•</span>
-            <button
-              onClick={() => onOpenAuditModal('wasted_time')}
-              className="px-3.5 py-1.5 rounded-lg bg-[#0b0d13] hover:bg-[#151224] text-indigo-200 hover:text-white font-display text-xs font-bold tracking-wider transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              id="daily-balance-wasted-time-btn"
-              title="Log Wasted Time &amp; Mint Restitution Quest"
-            >
-              <Clock className="h-3.5 w-3.5 text-indigo-400" />
-              <span>RECOVER TIME</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => onOpenAuditModal('slip')}
+            className="px-4 py-2 bg-gradient-to-r from-[#3a2e12] to-[#241c09] hover:from-[#4c3c18] hover:to-[#2e230c] border border-[#c5a059] text-[#fef08a] rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer"
+            id="daily-balance-record-slip-btn"
+            title="Record Slip & Self-Accountability Audit"
+          >
+            <Plus className="h-4 w-4" />
+            <span>+ RECORD SLIP</span>
+          </button>
         </div>
       </div>
 

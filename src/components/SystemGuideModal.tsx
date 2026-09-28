@@ -2554,7 +2554,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <span>DIRECT UNIFIED ACCESS:</span>
                     </span>
                     <span className="text-zinc-300 text-[10.5px] font-sans">
-                      Accessible via the Daily Balance Scale header (AUDIT SLIP / RECOVER TIME capsule), the Audited Slips deficit tray, and the Temporal Ledger limits.
+                      Accessible via the Daily Balance Scale header (+ RECORD SLIP button), the Audited Slips deficit tray, and the Temporal Ledger limits.
                     </span>
                   </div>
                 </div>
