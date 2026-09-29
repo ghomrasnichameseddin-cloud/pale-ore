@@ -144,8 +144,11 @@ function AppContent() {
         return `🔥 ${Math.round(state.profile.momentum || 0)}%`;
 
       case 'xp_history': {
-        const count = (state.xpHistory || []).length;
-        return `${count} logs`;
+        const xpCount = (state.xpHistory || []).length;
+        const timeCount = (state.timeHistory || []).length;
+        const coinCount = (state.inventory || []).length;
+        const total = xpCount + timeCount + coinCount;
+        return `${total} records`;
       }
 
       case 'spiderweb': {
@@ -193,7 +196,7 @@ function AppContent() {
       items: [
         { id: 'appearance', label: 'Visual Codex (Appearance)', icon: Palette, desc: 'Themes, ornamentation, glow & interface density' },
         { id: 'analytics', label: 'Resonance Analytics', icon: BarChart3, desc: 'Empirical analytics, XP trends & consistency' },
-        { id: 'xp_history', label: 'XP Ledger & Audit', icon: FileSpreadsheet, desc: 'Complete historical ledger of all gains, losses & sources' },
+        { id: 'xp_history', label: 'Imperial Circulation Ledger', icon: FileSpreadsheet, desc: 'Forensic circulation audit of Sacred XP, rest time & gold dinars' },
         { id: 'spiderweb', label: 'Constellation Net', icon: Network, desc: 'Interactive neural relationship map' },
         { id: 'system', label: 'Sanctum Engine & Backups', icon: Settings, desc: 'Data export, JSON restore & system maintenance' },
       ]

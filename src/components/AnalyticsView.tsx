@@ -1,6 +1,6 @@
 import React from 'react';
 import { usePOS } from '../POSContext';
-import { XPHistoryLedger } from './XPHistoryLedger';
+import { ImperialCirculationLedger } from './ImperialCirculationLedger';
 import { 
   BarChart3, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, TrendingDown, Clock, ShieldCheck, Zap, Network
@@ -255,9 +255,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onNavigate }) => {
 
       </div>
 
-      {/* COMPREHENSIVE XP HISTORY LEDGER */}
+      {/* COMPREHENSIVE IMPERIAL CIRCULATION LEDGER */}
       <div className="pt-4 border-t border-[var(--border-subtle)]">
-        <XPHistoryLedger onNavigate={onNavigate} />
+        <ImperialCirculationLedger onNavigate={onNavigate} />
       </div>
 
     </div>

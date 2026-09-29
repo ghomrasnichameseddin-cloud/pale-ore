@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
 import { SystemMessageBox } from './SystemMessageBox';
 import { VisualCodexSettingsView } from './VisualCodexSettingsView';
-import { XPHistoryLedger } from './XPHistoryLedger';
+import { ImperialCirculationLedger } from './ImperialCirculationLedger';
 import { 
   BarChart3, Settings, Target, Award, Calendar, Flame, Activity, 
   TrendingUp, Clock, ShieldCheck, Zap, Network, Download, Upload, 
@@ -111,7 +111,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
               <span>
                 {activeSubTab === 'appearance' && 'VISUAL CODEX (APPEARANCE)'}
                 {activeSubTab === 'analytics' && 'RESONANCE ANALYTICS'}
-                {activeSubTab === 'xp_history' && 'XP LEDGER & AUDIT'}
+                {activeSubTab === 'xp_history' && 'IMPERIAL CIRCULATION LEDGER'}
                 {activeSubTab === 'system' && 'SANCTUM ENGINE & BACKUPS'}
                 {activeSubTab === 'messages' && 'SYSTEM DISPATCH LOGS'}
               </span>
@@ -119,7 +119,7 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
             <p className="text-xs text-zinc-300 font-mono mt-1">
               SANCTUM OBSERVATORY • {activeSubTab === 'appearance' && 'Themes, ornamentation, glow & interface density'}
               {activeSubTab === 'analytics' && 'Empirical resonance logs, XP trends & consistency'}
-              {activeSubTab === 'xp_history' && 'Complete historical ledger of all gains, losses & sources'}
+              {activeSubTab === 'xp_history' && 'Forensic circulation audit of Sacred XP, rest time & gold dinars'}
               {activeSubTab === 'system' && 'Data export, JSON restore & system maintenance'}
               {activeSubTab === 'messages' && 'System alerts, dispatches & achievement notifications'}
             </p>
@@ -368,9 +368,9 @@ export const OracleSystemView: React.FC<OracleSystemViewProps> = ({
         </div>
       )}
 
-      {/* 2. SYSTEM XP HISTORY & LEDGER SUBTAB */}
+      {/* 2. IMPERIAL CIRCULATION LEDGER SUBTAB */}
       {activeSubTab === 'xp_history' && (
-        <XPHistoryLedger onNavigate={onNavigate} />
+        <ImperialCirculationLedger onNavigate={onNavigate} />
       )}
 
       {/* 3. SANCTUM CORE & SACRED OVERRIDES SUBTAB */}
