@@ -190,15 +190,20 @@ export function calculateQuranFreshness(
   weakCount: number;
   dueCount: number;
   stableCount: number;
+  archivedCount: number;
 } {
-  if (!passages || passages.length === 0) {
+  const activePassages = (passages || []).filter(p => !p.isArchived);
+  const archivedCount = (passages || []).filter(p => Boolean(p.isArchived)).length;
+
+  if (activePassages.length === 0) {
     return {
       score: 100,
       label: 'Optimal Baseline',
       labelAr: 'جاهز للبدء والمواظبة',
       weakCount: 0,
       dueCount: 0,
-      stableCount: 0
+      stableCount: 0,
+      archivedCount
     };
   }
 
@@ -207,7 +212,7 @@ export function calculateQuranFreshness(
   let stableCount = 0;
   let totalPoints = 0;
 
-  for (const passage of passages) {
+  for (const passage of activePassages) {
     const daysSince = passage.lastRevisedDate
       ? getDaysDifference(passage.lastRevisedDate, referenceDateStr)
       : 99;
@@ -229,7 +234,7 @@ export function calculateQuranFreshness(
     }
   }
 
-  const score = Math.max(5, Math.min(100, Math.round(totalPoints / passages.length)));
+  const score = Math.max(5, Math.min(100, Math.round(totalPoints / activePassages.length)));
 
   let label = 'Fresh & Firmly Anchored';
   let labelAr = 'راسخ في الصدر';
@@ -254,7 +259,8 @@ export function calculateQuranFreshness(
     labelAr,
     weakCount,
     dueCount,
-    stableCount
+    stableCount,
+    archivedCount
   };
 }
 

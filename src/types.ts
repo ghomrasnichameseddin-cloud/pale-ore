@@ -1029,6 +1029,9 @@ export interface QuranPassage {
   mistakeNotes?: string;
   notes?: string;
   memorizedDate?: string;
+  isArchived?: boolean;
+  archivedAt?: string; // YYYY-MM-DD
+  archiveReason?: string; // e.g. "Firmly Mastered (رسوخ تام)", "Target Completed", "Paused"
 }
 
 export interface QuranReflection {
@@ -1043,6 +1046,19 @@ export interface QuranReflection {
   actionPoint?: string;
   practicalActionItem?: string;
   date: string; // YYYY-MM-DD
+  isArchived?: boolean;
+  archivedAt?: string; // YYYY-MM-DD
+  covenantFulfilled?: boolean;
+}
+
+export interface QuranKhatmahRecord {
+  id: string;
+  khatmahNumber: number;
+  completedDate: string; // YYYY-MM-DD
+  startDate?: string;
+  durationDays?: number;
+  notes?: string;
+  isArchived?: boolean;
 }
 
 export interface QuranTrackerState {
@@ -1058,6 +1074,8 @@ export interface QuranTrackerState {
   memorizationTargetAyahRange?: string;
   memorizedPagesCount?: number;
   lastKhatmahDate?: string;
+  khatmahStartDate?: string;
+  khatmahHistory?: QuranKhatmahRecord[];
   passages: QuranPassage[];
   reflections: QuranReflection[];
 }

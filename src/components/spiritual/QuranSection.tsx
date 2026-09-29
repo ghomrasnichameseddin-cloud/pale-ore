@@ -18,13 +18,24 @@ import {
   Heart,
   ChevronRight,
   HelpCircle,
-  Edit2
+  Edit2,
+  Archive,
+  ArchiveRestore,
+  Award,
+  History,
+  CheckCheck,
+  Bookmark,
+  FileText,
+  Calendar,
+  X,
+  Check
 } from 'lucide-react';
 import { usePOS } from '../../POSContext';
 import {
   QuranPassage,
   QuranRevisionStatus,
   QuranReflection,
+  QuranKhatmahRecord,
   SpiritualDailyLog
 } from '../../types';
 import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
@@ -46,22 +57,29 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
     addQuranPassage,
     updateQuranPassage,
     deleteQuranPassage,
+    archiveQuranPassage,
+    unarchiveQuranPassage,
     advancePassageRevisionStatus,
     markPassageRevised,
     addQuranReflection,
+    updateQuranReflection,
+    archiveQuranReflection,
+    unarchiveQuranReflection,
     deleteQuranReflection,
+    sealAndArchiveKhatmah,
+    deleteArchivedKhatmah,
     getQuranFreshnessScore,
     updateQuranLog
   } = usePOS();
 
   // Active Sub-Tab
-  const [activeSubTab, setActiveSubTab] = useState<'tilawah' | 'revision' | 'memorization' | 'reflection'>('revision');
+  const [activeSubTab, setActiveSubTab] = useState<'revision' | 'tilawah' | 'memorization' | 'reflection'>('revision');
 
-  // Filter for Revision Queue
-  const [revisionFilter, setRevisionFilter] = useState<'all' | 'weak' | 'due' | 'stable'>('all');
+  // Filter for Revision Queue: all | weak | due | stable | archived
+  const [revisionFilter, setRevisionFilter] = useState<'all' | 'weak' | 'due' | 'stable' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Add Passage Modal / Inline Form
+  // Add Passage Modal
   const [showAddPassageModal, setShowAddPassageModal] = useState(false);
   const [showPropheticSunnah, setShowPropheticSunnah] = useState(false);
   const [passageSurahName, setPassageSurahName] = useState('');
@@ -71,8 +89,18 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
   const [passageStatus, setPassageStatus] = useState<QuranRevisionStatus>('due');
   const [passageNotes, setPassageNotes] = useState('');
 
-  // Reflection Form State
+  // Archive Passage Modal
+  const [passageToArchive, setPassageToArchive] = useState<QuranPassage | null>(null);
+  const [archiveReasonPreset, setArchiveReasonPreset] = useState<string>('Firmly Mastered (رسوخ تام)');
+  const [customArchiveReason, setCustomArchiveReason] = useState<string>('');
+
+  // Restore Passage Modal
+  const [passageToRestore, setPassageToRestore] = useState<QuranPassage | null>(null);
+  const [restoreTierChoice, setRestoreTierChoice] = useState<QuranRevisionStatus>('due');
+
+  // Reflection Form & Filter State
   const [showAddReflModal, setShowAddReflModal] = useState(false);
+  const [reflectionFilter, setReflectionFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [reflSurahName, setReflSurahName] = useState('');
   const [reflSurahNumber, setReflSurahNumber] = useState<number | ''>('');
   const [reflAyahNumber, setReflAyahNumber] = useState<number | ''>('');
@@ -80,9 +108,18 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
   const [reflText, setReflText] = useState('');
   const [reflActionItem, setReflActionItem] = useState('');
 
+  // Khatmah Archive State
+  const [showSealKhatmahModal, setShowSealKhatmahModal] = useState(false);
+  const [khatmahNotesInput, setKhatmahNotesInput] = useState('');
+  const [showKhatmahHistoryModal, setShowKhatmahHistoryModal] = useState(false);
+  const [manualKhatmahNumber, setManualKhatmahNumber] = useState<number | ''>('');
+  const [manualKhatmahDate, setManualKhatmahDate] = useState<string>(systemDate);
+  const [manualKhatmahNotes, setManualKhatmahNotes] = useState<string>('');
+  const [showManualKhatmahForm, setShowManualKhatmahForm] = useState(false);
+
   // Tilawah quick state
   const quranLog = spiritualLog.quran || { pagesRead: 0, passagesRevisedToday: [] };
-  const freshness = getQuranFreshnessScore();
+  const freshness = getQuranFreshnessScore(systemDate);
 
   const handleAddPassageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +142,24 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
     setPassageStatus('due');
     setPassageNotes('');
     setShowAddPassageModal(false);
+  };
+
+  const handleConfirmArchivePassage = () => {
+    if (!passageToArchive) return;
+    const finalReason = archiveReasonPreset === 'Custom' 
+      ? (customArchiveReason.trim() || 'Archived to Sacred Vault')
+      : archiveReasonPreset;
+    archiveQuranPassage(passageToArchive.id, finalReason);
+    setPassageToArchive(null);
+    setArchiveReasonPreset('Firmly Mastered (رسوخ تام)');
+    setCustomArchiveReason('');
+  };
+
+  const handleConfirmRestorePassage = () => {
+    if (!passageToRestore) return;
+    unarchiveQuranPassage(passageToRestore.id, restoreTierChoice);
+    setPassageToRestore(null);
+    setRestoreTierChoice('due');
   };
 
   const handleAddReflectionSubmit = (e: React.FormEvent) => {
@@ -130,29 +185,81 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
     setShowAddReflModal(false);
   };
 
+  const handleConfirmSealKhatmah = (e: React.FormEvent) => {
+    e.preventDefault();
+    sealAndArchiveKhatmah(khatmahNotesInput.trim() || undefined, systemDate);
+    setKhatmahNotesInput('');
+    setShowSealKhatmahModal(false);
+  };
+
+  const handleAddManualHistoricalKhatmah = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nextNum = Number(manualKhatmahNumber) || ((quranTracker.khatmahHistory || []).length + 1);
+    const newRecord: QuranKhatmahRecord = {
+      id: `khatmah-manual-${Date.now()}`,
+      khatmahNumber: nextNum,
+      completedDate: manualKhatmahDate || systemDate,
+      notes: manualKhatmahNotes.trim() || undefined,
+      isArchived: true
+    };
+
+    updateQuranTracker({
+      khatmahHistory: [newRecord, ...(quranTracker.khatmahHistory || [])],
+      khatmahCount: Math.max(quranTracker.khatmahCount || 0, nextNum)
+    });
+
+    setManualKhatmahNumber('');
+    setManualKhatmahNotes('');
+    setShowManualKhatmahForm(false);
+  };
+
   const handleQuickPageChange = (delta: number) => {
     const currentPages = quranLog.pagesRead || 0;
     const newPages = Math.max(0, currentPages + delta);
     updateQuranLog({ pagesRead: newPages }, systemDate);
   };
 
-  // Filter passages
-  const passages = quranTracker.passages || [];
-  const filteredPassages = passages.filter(p => {
-    if (revisionFilter !== 'all' && p.status !== revisionFilter) return false;
+  // Raw passages
+  const allPassages = quranTracker.passages || [];
+  const activePassages = allPassages.filter(p => !p.isArchived);
+  const archivedPassages = allPassages.filter(p => Boolean(p.isArchived));
+
+  const weakList = activePassages.filter(p => p.status === 'weak');
+  const dueList = activePassages.filter(p => p.status === 'due');
+  const stableList = activePassages.filter(p => p.status === 'stable');
+
+  // Filtered passages according to tab
+  const filteredPassages = allPassages.filter(p => {
+    if (revisionFilter === 'archived') {
+      if (!p.isArchived) return false;
+    } else {
+      if (p.isArchived) return false;
+      if (revisionFilter !== 'all' && p.status !== revisionFilter) return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      return (
-        p.surahName.toLowerCase().includes(q) ||
-        (p.notes && p.notes.toLowerCase().includes(q))
-      );
+      const matchSurah = p.surahName.toLowerCase().includes(q);
+      const matchNotes = p.notes && p.notes.toLowerCase().includes(q);
+      const matchReason = p.archiveReason && p.archiveReason.toLowerCase().includes(q);
+      return matchSurah || matchNotes || matchReason;
     }
     return true;
   });
 
-  const weakList = passages.filter(p => p.status === 'weak');
-  const dueList = passages.filter(p => p.status === 'due');
-  const stableList = passages.filter(p => p.status === 'stable');
+  // Reflections filtering
+  const allReflections = quranTracker.reflections || [];
+  const activeReflections = allReflections.filter(r => !r.isArchived);
+  const archivedReflections = allReflections.filter(r => Boolean(r.isArchived));
+
+  const filteredReflections = allReflections.filter(r => {
+    if (reflectionFilter === 'active') return !r.isArchived;
+    if (reflectionFilter === 'archived') return Boolean(r.isArchived);
+    return true;
+  });
+
+  // Khatmahs
+  const khatmahRecords = quranTracker.khatmahHistory || [];
 
   return (
     <div className="space-y-6" id="quran-sanctum-root">
@@ -177,7 +284,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               </span>
             </h3>
             <p className="text-xs text-zinc-300 font-sans max-w-2xl">
-              Tilāwah to revive the soul, Ḥifẓ to anchor the divine words, systematic Revision to prevent slip, and Tadabbur to transform conduct.
+              Tilāwah to revive the soul, Ḥifẓ to anchor divine words, systematic Revision to prevent slip, and an Archiving Vault for mastered portions and sealed Khatmahs.
             </p>
           </div>
 
@@ -238,7 +345,6 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* 1. Constant Review */}
                 <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-amber-300">1. Systematic Review (تَعَاهُدُ القُرْآن)</span>
@@ -252,18 +358,16 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                   </p>
                 </div>
 
-                {/* 2. Prophetic Khatmah Bounds */}
                 <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-amber-300">2. Khatmah Boundaries (مُدَّةُ الخَتْم)</span>
                     <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 1390</span>
                   </div>
                   <p className="text-[11px] text-zinc-300 font-sans">
-                    «لَا يَفْقَهُ مَنْ قَرَأَهُ فِي أَقَلَّ مِنْ ثَلَاثٍ» — The Prophet ﷺ cautioned against completing in under 3 days (preventing lack of contemplation), and encouraged cycles of 7, 30, or 40 days.
+                    «لَا يَفْقَهُ مَنْ قَرَأَهُ فِي أَقَلَّ مِنْ ثَلَاثٍ» — Caution against completing in under 3 days without deep contemplation; cycles of 7, 30, or 40 days recommended.
                   </p>
                 </div>
 
-                {/* 3. Prophetic Division */}
                 <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-amber-300">3. The 7-Day Tahzīb (فَمِي بِشَوْق)</span>
@@ -274,10 +378,9 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                   </p>
                 </div>
 
-                {/* 4. Beautiful Recitation */}
                 <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-amber-300">4. Melodious Voice (تَزْيِينُ الصَّوْت)</span>
+                    <span className="text-xs font-mono font-bold text-amber-300">4. Beautiful Recitation (تَزْيِينُ الصَّوْت)</span>
                     <span className="text-[9px] font-mono text-zinc-500">Abu Dawud 1468</span>
                   </div>
                   <p className="text-[11px] text-zinc-300 font-sans">
@@ -285,14 +388,13 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                   </p>
                 </div>
 
-                {/* 5. Responsive Tadabbur */}
                 <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1 md:col-span-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-amber-300">5. Interactive Contemplation (التَّرْتِيلُ وَالتَّدَبُّر)</span>
                     <span className="text-[9px] font-mono text-zinc-500">Sahih Muslim 772</span>
                   </div>
                   <p className="text-[11px] text-zinc-300 font-sans">
-                    When the Prophet ﷺ recited at night, when he passed an ayah of Tasbīḥ, he glorified Allah; when he passed an ayah of petition/mercy, he asked; and when he passed an ayah of warning/punishment, he sought refuge with Allah.
+                    When reciting at night, pause at an ayah of Tasbīḥ to glorify Allah; pause at mercy to supplicate; pause at warning to seek refuge.
                   </p>
                 </div>
               </div>
@@ -305,7 +407,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
           {/* Qur'an Freshness */}
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-[9px] text-zinc-400 uppercase block font-bold">QUR’ĀN FRESHNESS</span>
+              <span className="text-[9px] text-zinc-400 uppercase block font-bold">ACTIVE FRESHNESS</span>
               <Shield className="h-3 w-3 text-amber-400" />
             </div>
             <div className="flex items-baseline justify-between mt-1">
@@ -344,46 +446,52 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
             </span>
           </div>
 
-          {/* Revision Queue Status */}
+          {/* Revision Queue Status & Vault */}
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">REVISION PIPELINE</span>
-            <div className="flex items-center gap-2 mt-1 text-[11px] font-bold">
-              <span className="text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-500/30">
-                {freshness.weakCount} Weak
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-zinc-400 uppercase block font-bold">PIPELINE &amp; VAULT</span>
+              <Archive className="h-3 w-3 text-amber-400" />
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] font-bold flex-wrap">
+              <span className="text-rose-400 bg-rose-950/40 px-1 py-0.5 rounded border border-rose-500/30 text-[10px]">
+                {weakList.length} Weak
               </span>
-              <span className="text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">
-                {freshness.dueCount} Due
+              <span className="text-amber-400 bg-amber-950/40 px-1 py-0.5 rounded border border-amber-500/30 text-[10px]">
+                {dueList.length} Due
               </span>
-              <span className="text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                {freshness.stableCount} Stable
+              <span className="text-emerald-400 bg-emerald-950/40 px-1 py-0.5 rounded border border-emerald-500/30 text-[10px]">
+                {stableList.length} Stable
+              </span>
+              <span className="text-amber-300 bg-amber-950/60 px-1 py-0.5 rounded border border-[#c5a059]/40 text-[10px]">
+                {archivedPassages.length} Vault
               </span>
             </div>
             <span className="text-[9px] text-zinc-500 mt-1 block">
-              Flow: Weak → Due → Stable
+              {activePassages.length} active • {archivedPassages.length} archived
             </span>
           </div>
 
-          {/* Reflections Logged */}
+          {/* Reflections & Khatmahs */}
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">TADABBUR COVENANTS</span>
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">TADABBUR &amp; KHATMAHS</span>
             <div className="flex items-baseline justify-between mt-1">
               <span className="text-base font-bold text-violet-300 flex items-center gap-1">
                 <Heart className="h-4 w-4 text-rose-400" />
-                {(quranTracker.reflections || []).length} Entries
+                {activeReflections.length} Active
               </span>
-              <span className="text-[10px] text-zinc-400">
-                {quranLog.tadabburNotes ? 'Logged Today ✓' : 'Pending'}
+              <span className="text-[10px] text-amber-300 font-bold">
+                {quranTracker.khatmahCount || 0} Khatmahs
               </span>
             </div>
             <span className="text-[9px] text-zinc-500 mt-1 block">
-              Continuous Contemplation
+              {archivedReflections.length} archived covenants • {khatmahRecords.length} sealed logs
             </span>
           </div>
         </div>
       </div>
 
       {/* 2. NAVIGATION SUB-TABS */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-subtle,rgba(197,160,89,0.2))] pb-3">
+      <div className="flex items-center gap-2 border-b border-[var(--border-subtle,rgba(197,160,89,0.2))] pb-3 flex-wrap">
         <button
           onClick={() => setActiveSubTab('revision')}
           className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 cursor-pointer ${
@@ -395,8 +503,14 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
           <RotateCcw className="h-3.5 w-3.5" />
           <span>REVISION QUEUE (مراجعة)</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-zinc-300">
-            {passages.length}
+            {activePassages.length}
           </span>
+          {archivedPassages.length > 0 && (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30 flex items-center gap-0.5" title={`${archivedPassages.length} archived in Sacred Vault`}>
+              <Archive className="h-2.5 w-2.5" />
+              {archivedPassages.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -408,7 +522,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
           }`}
         >
           <BookOpen className="h-3.5 w-3.5" />
-          <span>TILĀWAH (تلاوة)</span>
+          <span>TILĀWAH &amp; KHATMAH (تلاوة وختم)</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-emerald-300">
             {quranLog.pagesRead || 0}p
           </span>
@@ -437,13 +551,19 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
           <Heart className="h-3.5 w-3.5" />
           <span>REFLECTION (تدبر)</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-violet-300">
-            {(quranTracker.reflections || []).length}
+            {activeReflections.length}
           </span>
+          {archivedReflections.length > 0 && (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-950/80 text-rose-300 border border-rose-500/30 flex items-center gap-0.5">
+              <Archive className="h-2.5 w-2.5" />
+              {archivedReflections.length}
+            </span>
+          )}
         </button>
       </div>
 
       {/* 3. TAB CONTENT */}
-      {/* ── SUB-TAB A: REVISION QUEUE (Weak -> Due -> Stable) ── */}
+      {/* ── SUB-TAB A: REVISION QUEUE (Active & Sacred Archive) ── */}
       {activeSubTab === 'revision' && (
         <div className="space-y-4">
           {/* Filter Bar & Controls */}
@@ -463,12 +583,26 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                       : 'text-zinc-400 hover:text-white bg-zinc-800/60'
                   }`}
                 >
-                  {tab === 'all' ? `All (${passages.length})` :
+                  {tab === 'all' ? `Active (${activePassages.length})` :
                    tab === 'weak' ? `Weak (${weakList.length})` :
                    tab === 'due' ? `Due (${dueList.length})` :
                    `Stable (${stableList.length})`}
                 </button>
               ))}
+
+              {/* ARCHIVED PASSAGES FILTER BUTTON */}
+              <button
+                onClick={() => setRevisionFilter('archived')}
+                className={`px-2.5 py-1 text-xs font-mono rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                  revisionFilter === 'archived'
+                    ? 'bg-amber-500/20 text-[#fef08a] border border-[#c5a059] font-bold shadow-sm'
+                    : 'text-zinc-400 hover:text-amber-200 bg-zinc-800/60 border border-transparent'
+                }`}
+                title="Sacred Vault of archived and completed passages"
+              >
+                <Archive className="h-3 w-3 text-[#c5a059]" />
+                <span>Sacred Vault ({archivedPassages.length})</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -476,7 +610,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                 <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-zinc-500" />
                 <input
                   type="text"
-                  placeholder="Search surah..."
+                  placeholder="Search surah or notes..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full bg-[var(--bg-void,#050608)] text-xs text-white pl-8 pr-3 py-1.5 rounded-lg border border-zinc-700/60 focus:border-[var(--border-accent,#c5a059)] outline-none"
@@ -492,27 +626,59 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
             </div>
           </div>
 
-          {/* Queue Description Box */}
-          <div className="p-3 bg-[var(--bg-card,#0c0e14)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl text-xs font-mono text-zinc-400 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <RotateCcw className="h-4 w-4 text-amber-400" />
-              <span>REVISION SEQUENCE: <strong className="text-rose-400">Weak</strong> → <strong className="text-amber-400">Due</strong> → <strong className="text-emerald-400">Stable</strong>. Periodic revision prevents escape (التَّفَلُّت).</span>
+          {/* Description Box */}
+          {revisionFilter === 'archived' ? (
+            <div className="p-3 bg-gradient-to-r from-amber-950/30 via-[var(--bg-card,#0c0e14)] to-black/40 border border-[#c5a059]/40 rounded-xl text-xs font-mono text-zinc-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Archive className="h-4 w-4 text-[#c5a059] shrink-0" />
+                <span>
+                  <strong>SACRED ARCHIVE VAULT (خَزَانَةُ المَحْفُوظَاتِ المُؤَرْشَفَة):</strong> Preserved passages that have reached mastery, completed Surah goals, or paused without penalizing active freshness score.
+                </span>
+              </div>
+              <span className="text-[10px] text-amber-300/80 bg-black/40 px-2 py-0.5 rounded border border-[#c5a059]/30 shrink-0">
+                {archivedPassages.length} Verses Preserved
+              </span>
             </div>
-            <span className="text-[10px] text-zinc-500 hidden sm:inline">Clicking "Revise" advances status</span>
-          </div>
+          ) : (
+            <div className="p-3 bg-[var(--bg-card,#0c0e14)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl text-xs font-mono text-zinc-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>REVISION SEQUENCE: <strong className="text-rose-400">Weak</strong> → <strong className="text-amber-400">Due</strong> → <strong className="text-emerald-400">Stable</strong>. You can archive mastered verses to the Sacred Vault anytime.</span>
+              </div>
+              <span className="text-[10px] text-zinc-500 hidden sm:inline">Click "Archive" on card to vault</span>
+            </div>
+          )}
 
           {/* Passages List */}
           {filteredPassages.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl p-6 bg-[var(--bg-surface,#141824)]/50">
-              <BookOpen className="h-10 w-10 text-zinc-600 mx-auto mb-2" />
-              <p className="text-sm font-display text-zinc-300">No passages match this filter</p>
-              <p className="text-xs text-zinc-500 font-mono mt-1">Enroll your memorized chapters to maintain systematic revision.</p>
-              <button
-                onClick={() => setShowAddPassageModal(true)}
-                className="mt-3 px-4 py-2 bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-xl border border-[var(--border-accent,#c5a059)]"
-              >
-                Enroll New Passage
-              </button>
+              {revisionFilter === 'archived' ? (
+                <>
+                  <Archive className="h-10 w-10 text-amber-500/60 mx-auto mb-2" />
+                  <p className="text-sm font-display text-zinc-300">No passages in Sacred Vault yet</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-1">
+                    When you firmly anchor a passage or complete a chapter, click the archive button to preserve it here.
+                  </p>
+                  <button
+                    onClick={() => setRevisionFilter('all')}
+                    className="mt-3 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono font-bold rounded-xl border border-white/10"
+                  >
+                    View Active Queue
+                  </button>
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-10 w-10 text-zinc-600 mx-auto mb-2" />
+                  <p className="text-sm font-display text-zinc-300">No passages match this filter</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-1">Enroll your memorized chapters to maintain systematic revision.</p>
+                  <button
+                    onClick={() => setShowAddPassageModal(true)}
+                    className="mt-3 px-4 py-2 bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-xl border border-[var(--border-accent,#c5a059)]"
+                  >
+                    Enroll New Passage
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -520,7 +686,95 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                 const isWeak = passage.status === 'weak';
                 const isDue = passage.status === 'due';
                 const isStable = passage.status === 'stable';
+                const isArchived = Boolean(passage.isArchived);
 
+                // Archived card design
+                if (isArchived) {
+                  return (
+                    <div
+                      key={passage.id}
+                      className="p-4 rounded-xl border border-[#c5a059]/40 bg-gradient-to-br from-[#121008] via-[#0d0f15] to-[#08090d] transition-all relative overflow-hidden flex flex-col justify-between space-y-3 shadow-md"
+                    >
+                      <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5 opacity-60" />
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-bold bg-[#291f0c] text-amber-300 border border-[#c5a059]/50 flex items-center gap-1">
+                                <Archive className="h-2.5 w-2.5" />
+                                <span>Vault Preserved</span>
+                              </span>
+                              <span className="text-[10px] font-mono text-zinc-400">
+                                Surah #{passage.surahNumber}
+                              </span>
+                              {passage.archiveReason && (
+                                <span className="text-[10px] font-mono text-amber-200/90 bg-black/40 px-2 py-0.5 rounded border border-white/5 truncate max-w-[200px]" title={passage.archiveReason}>
+                                  {passage.archiveReason}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-base font-display font-bold text-white mt-1.5 flex items-center gap-1.5">
+                              <span>{passage.surahName}</span>
+                              <span className="text-xs text-amber-300/80 font-mono">
+                                (Ayah {passage.ayahStart} – {passage.ayahEnd})
+                              </span>
+                            </h4>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setPassageToRestore(passage);
+                                setRestoreTierChoice(passage.status || 'due');
+                              }}
+                              className="p-1.5 text-amber-300 hover:text-white rounded-lg hover:bg-amber-500/20 transition cursor-pointer"
+                              title="Restore to Active Revision Queue"
+                            >
+                              <ArchiveRestore className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => deleteQuranPassage(passage.id)}
+                              className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-white/5 transition cursor-pointer"
+                              title="Delete permanently"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {passage.notes && (
+                          <p className="text-xs text-zinc-400 font-sans italic mt-2 bg-black/30 p-2 rounded-lg border border-white/5">
+                            "{passage.notes}"
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs font-mono">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] text-zinc-400 block">
+                            Archived: {passage.archivedAt || 'Past Cycle'} • Cycles: {passage.revisionCount}
+                          </span>
+                          <span className="text-[10px] text-zinc-500 block">
+                            Last Revised: {passage.lastRevisedDate || 'Never'}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setPassageToRestore(passage);
+                            setRestoreTierChoice(passage.status || 'due');
+                          }}
+                          className="px-3 py-1 bg-amber-950/60 hover:bg-amber-900/80 border border-[#c5a059]/40 text-amber-200 rounded-lg text-[11px] font-mono font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <ArchiveRestore className="h-3 w-3" />
+                          <span>Restore</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Active Passage Card
                 return (
                   <div
                     key={passage.id}
@@ -557,8 +811,20 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
 
                         <div className="flex items-center gap-1">
                           <button
+                            onClick={() => {
+                              setPassageToArchive(passage);
+                              setArchiveReasonPreset(
+                                isStable ? 'Firmly Mastered (رسوخ تام)' : 'Target Completed (أُتم حفظ السورة)'
+                              );
+                            }}
+                            className="p-1.5 text-zinc-400 hover:text-amber-300 rounded-lg hover:bg-amber-500/10 transition cursor-pointer"
+                            title="Archive to Sacred Vault (إيداع في الخزانة)"
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                          </button>
+                          <button
                             onClick={() => deleteQuranPassage(passage.id)}
-                            className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-white/5 transition"
+                            className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg hover:bg-white/5 transition cursor-pointer"
                             title="Delete passage"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -620,7 +886,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
         </div>
       )}
 
-      {/* ── SUB-TAB B: TILĀWAH (Daily Reading & Khatmah) ── */}
+      {/* ── SUB-TAB B: TILĀWAH & KHATMAH ARCHIVE ── */}
       {activeSubTab === 'tilawah' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -644,25 +910,25 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               <div className="grid grid-cols-4 gap-2">
                 <button
                   onClick={() => handleQuickPageChange(-5)}
-                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs rounded-xl font-bold transition"
+                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs rounded-xl font-bold transition cursor-pointer"
                 >
                   -5
                 </button>
                 <button
                   onClick={() => handleQuickPageChange(-1)}
-                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs rounded-xl font-bold transition"
+                  className="p-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs rounded-xl font-bold transition cursor-pointer"
                 >
                   -1
                 </button>
                 <button
                   onClick={() => handleQuickPageChange(1)}
-                  className="p-2 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 font-mono text-xs rounded-xl font-bold transition"
+                  className="p-2 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 font-mono text-xs rounded-xl font-bold transition cursor-pointer"
                 >
                   +1
                 </button>
                 <button
                   onClick={() => handleQuickPageChange(5)}
-                  className="p-2 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 font-mono text-xs rounded-xl font-bold transition"
+                  className="p-2 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 font-mono text-xs rounded-xl font-bold transition cursor-pointer"
                 >
                   +5
                 </button>
@@ -730,37 +996,39 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               </div>
             </div>
 
-            {/* Khatmah Counter */}
+            {/* Khatmah Counter & Archiving Cockpit */}
             <div className="p-5 rounded-2xl bg-[var(--bg-surface,#141824)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] space-y-4 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase text-violet-300 font-bold">KHATMAH CYCLE</span>
+                  <span className="text-[10px] font-mono uppercase text-violet-300 font-bold">KHATMAH CYCLE &amp; ARCHIVE</span>
                   <Sparkles className="h-4 w-4 text-violet-400" />
                 </div>
                 <p className="text-xs text-zinc-300 font-sans mt-2 leading-relaxed">
-                  Completing the entire Qur'an in a regular cycle of 30 or 40 days seals divine light upon the believer's life.
+                  Completing the entire Qur'an seals divine light upon the believer's life. Each completed journey is archived permanently in your sacred ledger.
                 </p>
               </div>
 
-              <div className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-2">
+              <div className="p-3 bg-black/30 rounded-xl border border-white/5 space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-mono">
                   <span className="text-zinc-400">Total Completed:</span>
                   <span className="text-base font-bold text-amber-300">{quranTracker.khatmahCount || 0} Khatmahs</span>
                 </div>
-                <button
-                  onClick={() => {
-                    const next = (quranTracker.khatmahCount || 0) + 1;
-                    updateQuranTracker({
-                      khatmahCount: next,
-                      currentPage: 1,
-                      currentJuz: 1,
-                      lastKhatmahDate: systemDate
-                    });
-                  }}
-                  className="w-full py-2 bg-[var(--accent-surface,#c5a059)] hover:bg-[var(--accent-surface-hover,#d5b069)] text-[var(--accent-highlight,#fef08a)] font-mono text-xs font-bold rounded-lg border border-[var(--border-accent,#c5a059)] cursor-pointer"
-                >
-                  Seal &amp; Log Complete Khatmah
-                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setShowSealKhatmahModal(true)}
+                    className="w-full py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] hover:brightness-110 text-[var(--bg-void,#050608)] font-mono text-xs font-bold rounded-lg shadow cursor-pointer text-center"
+                  >
+                    Seal &amp; Archive
+                  </button>
+                  <button
+                    onClick={() => setShowKhatmahHistoryModal(true)}
+                    className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-white/10 font-mono text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <History className="h-3 w-3 text-amber-400" />
+                    <span>Archive ({khatmahRecords.length})</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -853,20 +1121,54 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
         </div>
       )}
 
-      {/* ── SUB-TAB D: REFLECTION (Tadabbur Journal) ── */}
+      {/* ── SUB-TAB D: REFLECTION (Tadabbur Journal & Archived Covenants) ── */}
       {activeSubTab === 'reflection' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-[var(--bg-surface,#141824)] p-3 rounded-xl border border-[var(--border-subtle,rgba(197,160,89,0.2))]">
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-rose-400" />
-              <span className="text-xs font-mono text-zinc-300">
-                <strong>TADABBUR REPOSITORY:</strong> Record profound insights, divine warnings, and covenants of action.
-              </span>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[var(--bg-surface,#141824)] p-3 rounded-xl border border-[var(--border-subtle,rgba(197,160,89,0.2))]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-zinc-300 mr-2">
+                <Heart className="h-4 w-4 text-rose-400" />
+                <span className="font-bold">TADABBUR REPOSITORY</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setReflectionFilter('active')}
+                  className={`px-2.5 py-1 text-xs font-mono rounded-lg transition cursor-pointer ${
+                    reflectionFilter === 'active'
+                      ? 'bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] font-bold border border-[var(--border-accent,#c5a059)]'
+                      : 'text-zinc-400 hover:text-white bg-zinc-800/60'
+                  }`}
+                >
+                  Active Insights ({activeReflections.length})
+                </button>
+                <button
+                  onClick={() => setReflectionFilter('archived')}
+                  className={`px-2.5 py-1 text-xs font-mono rounded-lg transition flex items-center gap-1 cursor-pointer ${
+                    reflectionFilter === 'archived'
+                      ? 'bg-rose-500/20 text-rose-200 font-bold border border-rose-500/50 shadow-sm'
+                      : 'text-zinc-400 hover:text-white bg-zinc-800/60'
+                  }`}
+                >
+                  <Archive className="h-3 w-3 text-rose-400" />
+                  <span>Archived Covenants ({archivedReflections.length})</span>
+                </button>
+                <button
+                  onClick={() => setReflectionFilter('all')}
+                  className={`px-2.5 py-1 text-xs font-mono rounded-lg transition cursor-pointer ${
+                    reflectionFilter === 'all'
+                      ? 'bg-zinc-700 text-white font-bold'
+                      : 'text-zinc-400 hover:text-white bg-zinc-800/60'
+                  }`}
+                >
+                  All ({allReflections.length})
+                </button>
+              </div>
             </div>
 
             <button
               onClick={() => setShowAddReflModal(true)}
-              className="px-3 py-1.5 bg-[var(--accent-surface,#c5a059)] hover:bg-[var(--accent-surface-hover,#d5b069)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-lg border border-[var(--border-accent,#c5a059)] flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 bg-[var(--accent-surface,#c5a059)] hover:bg-[var(--accent-surface-hover,#d5b069)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-lg border border-[var(--border-accent,#c5a059)] flex items-center gap-1 cursor-pointer shrink-0"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Add Reflection</span>
@@ -874,65 +1176,132 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
           </div>
 
           {/* Reflections List */}
-          {(!quranTracker.reflections || quranTracker.reflections.length === 0) ? (
+          {filteredReflections.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl p-6 bg-[var(--bg-surface,#141824)]/50">
-              <Heart className="h-10 w-10 text-zinc-600 mx-auto mb-2" />
-              <p className="text-sm font-display text-zinc-300">No reflections logged yet</p>
-              <p className="text-xs text-zinc-500 font-mono mt-1">
-                «أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ أَمْ عَلَىٰ قُلُوبٍ أَقْفَالُهَا»
-              </p>
-              <button
-                onClick={() => setShowAddReflModal(true)}
-                className="mt-3 px-4 py-2 bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-xl border border-[var(--border-accent,#c5a059)]"
-              >
-                Log First Ayah Tadabbur
-              </button>
+              {reflectionFilter === 'archived' ? (
+                <>
+                  <Archive className="h-10 w-10 text-rose-500/50 mx-auto mb-2" />
+                  <p className="text-sm font-display text-zinc-300">No archived covenants</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-1">
+                    When you fulfill an action covenant or want to archive a completed reflection, click the archive button.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Heart className="h-10 w-10 text-zinc-600 mx-auto mb-2" />
+                  <p className="text-sm font-display text-zinc-300">No reflections logged yet</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-1">
+                    «أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ أَمْ عَلَىٰ قُلُوبٍ أَقْفَالُهَا»
+                  </p>
+                  <button
+                    onClick={() => setShowAddReflModal(true)}
+                    className="mt-3 px-4 py-2 bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] text-xs font-mono font-bold rounded-xl border border-[var(--border-accent,#c5a059)]"
+                  >
+                    Log First Ayah Tadabbur
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
-              {quranTracker.reflections.map(refl => (
-                <div
-                  key={refl.id}
-                  className="p-4 rounded-xl bg-[var(--bg-card,#0c0e14)] border border-[var(--border-subtle,rgba(197,160,89,0.2))] space-y-2 relative"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
+              {filteredReflections.map(refl => {
+                const isArchived = Boolean(refl.isArchived);
+                return (
+                  <div
+                    key={refl.id}
+                    className={`p-4 rounded-xl border transition relative space-y-2.5 ${
+                      isArchived
+                        ? 'bg-gradient-to-br from-[#140f12] via-[#0c0d12] to-[#08080a] border-rose-500/30'
+                        : 'bg-[var(--bg-card,#0c0e14)] border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
                           {refl.surahName} : Ayah {refl.ayahNumber}
                         </span>
                         <span className="text-[10px] font-mono text-zinc-500">
                           {refl.date}
                         </span>
+                        {isArchived && (
+                          <span className="text-[9px] font-mono text-rose-300 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-500/40 flex items-center gap-1">
+                            <Archive className="h-2.5 w-2.5" />
+                            <span>Archived {refl.archivedAt || ''}</span>
+                          </span>
+                        )}
+                        {refl.covenantFulfilled && (
+                          <span className="text-[9px] font-mono text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1">
+                            <CheckCheck className="h-2.5 w-2.5" />
+                            <span>Covenant Fulfilled ✓</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {isArchived ? (
+                          <button
+                            onClick={() => unarchiveQuranReflection(refl.id)}
+                            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition cursor-pointer"
+                            title="Restore reflection to active list"
+                          >
+                            <ArchiveRestore className="h-3.5 w-3.5 text-rose-300" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => archiveQuranReflection(refl.id)}
+                            className="p-1.5 text-zinc-400 hover:text-rose-300 rounded-lg hover:bg-white/5 transition cursor-pointer"
+                            title="Archive reflection"
+                          >
+                            <Archive className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteQuranReflection(refl.id)}
+                          className="p-1.5 text-zinc-500 hover:text-rose-400 rounded-lg transition cursor-pointer"
+                          title="Delete reflection"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => deleteQuranReflection(refl.id)}
-                      className="p-1 text-zinc-500 hover:text-rose-400 rounded-lg transition"
-                      title="Delete reflection"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
 
-                  {refl.ayahText && (
-                    <p className="text-xs text-amber-200/90 font-serif leading-relaxed bg-black/30 p-2.5 rounded-lg border border-amber-500/20">
-                      «{refl.ayahText}»
+                    {refl.ayahText && (
+                      <p className="text-xs text-amber-200/90 font-serif leading-relaxed bg-black/30 p-2.5 rounded-lg border border-amber-500/20">
+                        «{refl.ayahText}»
+                      </p>
+                    )}
+
+                    <p className="text-xs text-zinc-200 font-sans leading-relaxed pt-1">
+                      {refl.reflectionText}
                     </p>
-                  )}
 
-                  <p className="text-xs text-zinc-200 font-sans leading-relaxed pt-1">
-                    {refl.reflectionText}
-                  </p>
-
-                  {refl.practicalActionItem && (
-                    <div className="pt-2 border-t border-white/5 flex items-center gap-2 text-xs font-mono text-emerald-300">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      <span>Action Covenant: {refl.practicalActionItem}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {refl.practicalActionItem && (
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2 text-xs font-mono">
+                        <div className="flex items-center gap-2 text-emerald-300">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>Action Covenant: {refl.practicalActionItem}</span>
+                        </div>
+                        {!isArchived && (
+                          <button
+                            onClick={() => {
+                              const nextFulfilled = !refl.covenantFulfilled;
+                              updateQuranReflection(refl.id, { covenantFulfilled: nextFulfilled });
+                            }}
+                            className={`px-2 py-0.5 text-[10px] font-mono rounded border transition cursor-pointer flex items-center gap-1 ${
+                              refl.covenantFulfilled
+                                ? 'bg-emerald-950 border-emerald-500 text-emerald-300'
+                                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            <Check className="h-2.5 w-2.5" />
+                            <span>{refl.covenantFulfilled ? 'Fulfilled ✓' : 'Mark Fulfilled'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -951,7 +1320,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               </div>
               <button
                 onClick={() => setShowAddPassageModal(false)}
-                className="text-zinc-400 hover:text-white font-mono text-sm"
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -1090,7 +1459,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               </div>
               <button
                 onClick={() => setShowAddReflModal(false)}
-                className="text-zinc-400 hover:text-white font-mono text-sm"
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -1172,6 +1541,408 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 3: ARCHIVE PASSAGE TO SACRED VAULT ── */}
+      {passageToArchive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--bg-surface,#141824)] border border-[#c5a059] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+            <div className="flex items-center justify-between pb-3 border-b border-[#c5a059]/30">
+              <div className="flex items-center gap-2">
+                <Archive className="h-4 w-4 text-[#fef08a]" />
+                <h3 className="text-sm font-display font-bold text-white uppercase">
+                  Archive Passage to Sacred Vault
+                </h3>
+              </div>
+              <button
+                onClick={() => setPassageToArchive(null)}
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-1">
+              <h4 className="font-display font-bold text-base text-amber-200">
+                {passageToArchive.surahName} (Ayah {passageToArchive.ayahStart} – {passageToArchive.ayahEnd})
+              </h4>
+              <p className="text-xs text-zinc-400 font-mono">
+                Current Status: <span className="uppercase text-amber-300 font-bold">{passageToArchive.status}</span> • Revision Cycles Completed: <span className="text-white font-bold">{passageToArchive.revisionCount}</span>
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs font-mono">
+              <label className="text-zinc-300 block">Select Archive Reason / Milestone:</label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  'Firmly Mastered (رسوخ تام)',
+                  'Target Completed (أُتم حفظ السورة)',
+                  'Seasonal Pause / Parked (توقف مؤقت)',
+                  'Custom'
+                ].map(preset => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setArchiveReasonPreset(preset)}
+                    className={`p-2.5 rounded-xl text-left border font-mono text-xs transition cursor-pointer flex items-center justify-between ${
+                      archiveReasonPreset === preset
+                        ? 'bg-amber-500/20 text-[#fef08a] border-[#c5a059] font-bold'
+                        : 'bg-zinc-800/80 text-zinc-400 border-zinc-700/80 hover:text-zinc-200'
+                    }`}
+                  >
+                    <span>{preset}</span>
+                    {archiveReasonPreset === preset && <Check className="h-3.5 w-3.5 text-amber-300" />}
+                  </button>
+                ))}
+              </div>
+
+              {archiveReasonPreset === 'Custom' && (
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    placeholder="Enter custom archive reason..."
+                    value={customArchiveReason}
+                    onChange={e => setCustomArchiveReason(e.target.value)}
+                    className="w-full bg-[var(--bg-void,#050608)] text-white px-3 py-2 rounded-xl border border-zinc-700 outline-none focus:border-[var(--border-accent,#c5a059)] text-xs font-mono"
+                  />
+                </div>
+              )}
+
+              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed pt-1">
+                Archived verses are securely preserved in your Sacred Vault. They no longer require daily review or drag down your active Freshness score, and can be restored back anytime.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setPassageToArchive(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmArchivePassage}
+                className="px-5 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] text-[var(--bg-void,#050608)] font-bold rounded-xl shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <Archive className="h-3.5 w-3.5" />
+                <span>Confirm Archive</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 4: RESTORE PASSAGE FROM SACRED VAULT ── */}
+      {passageToRestore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--bg-surface,#141824)] border border-[#c5a059] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 border-b border-[#c5a059]/30">
+              <div className="flex items-center gap-2">
+                <ArchiveRestore className="h-4 w-4 text-[#fef08a]" />
+                <h3 className="text-sm font-display font-bold text-white uppercase">
+                  Restore Passage to Active Queue
+                </h3>
+              </div>
+              <button
+                onClick={() => setPassageToRestore(null)}
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-1">
+              <h4 className="font-display font-bold text-base text-amber-200">
+                {passageToRestore.surahName} (Ayah {passageToRestore.ayahStart} – {passageToRestore.ayahEnd})
+              </h4>
+              <p className="text-xs text-zinc-400 font-mono">
+                Preserved Reason: {passageToRestore.archiveReason || 'Sacred Vault'}
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs font-mono">
+              <label className="text-zinc-300 block">Select destination revision tier:</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRestoreTierChoice('stable')}
+                  className={`p-2 rounded-xl text-center border font-mono text-xs font-bold cursor-pointer transition ${
+                    restoreTierChoice === 'stable'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  Stable (راسخ)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRestoreTierChoice('due')}
+                  className={`p-2 rounded-xl text-center border font-mono text-xs font-bold cursor-pointer transition ${
+                    restoreTierChoice === 'due'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  Due (مطلوب)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRestoreTierChoice('weak')}
+                  className={`p-2 rounded-xl text-center border font-mono text-xs font-bold cursor-pointer transition ${
+                    restoreTierChoice === 'weak'
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  Weak (تثبيت)
+                </button>
+              </div>
+              <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+                Restoring re-inserts this passage into your live revision rotation and includes it in your daily Freshness calculation.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setPassageToRestore(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRestorePassage}
+                className="px-5 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] text-[var(--bg-void,#050608)] font-bold rounded-xl shadow cursor-pointer flex items-center gap-1.5"
+              >
+                <ArchiveRestore className="h-3.5 w-3.5" />
+                <span>Restore to Queue</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 5: SEAL & ARCHIVE KHATMAH ── */}
+      {showSealKhatmahModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--bg-surface,#141824)] border border-[#c5a059] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+            <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-[#c5a059]/30">
+              <div className="flex items-center gap-2">
+                <RubElHizbIcon className="h-4 w-4 text-[var(--accent-bright,#fef08a)]" />
+                <h3 className="text-sm font-display font-bold text-white uppercase">
+                  Seal &amp; Archive Complete Khatmah
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSealKhatmahModal(false)}
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmSealKhatmah} className="space-y-3.5 text-xs font-mono">
+              <div className="p-3 bg-gradient-to-r from-amber-950/40 to-black/60 rounded-xl border border-[#c5a059]/40 text-center space-y-1">
+                <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">
+                  INSCRIBING SACRED MILESTONE
+                </span>
+                <h4 className="text-xl font-display font-extrabold text-[#fef08a]">
+                  Khatmah #{(quranTracker.khatmahCount || 0) + 1}
+                </h4>
+                <p className="text-[11px] text-zinc-300 font-sans italic">
+                  «اللَّهُمَّ ارْحَمْنِي بِالقُرْآنِ وَاجْعَلْهُ لِي إِمَامًا وَنُورًا وَهُدًى وَرَحْمَةً»
+                </p>
+              </div>
+
+              <div>
+                <label className="text-zinc-300 block mb-1">Completion Date:</label>
+                <div className="flex items-center gap-2 p-2 bg-black/40 rounded-xl border border-zinc-700 text-zinc-200">
+                  <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                  <span>{systemDate}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-zinc-300 block mb-1">Completion Reflection / Dedication / Du'a Notes (Optional):</label>
+                <textarea
+                  rows={3}
+                  value={khatmahNotesInput}
+                  onChange={e => setKhatmahNotesInput(e.target.value)}
+                  placeholder="Record your intentions for the next cycle, feelings, or dedication..."
+                  className="w-full bg-[var(--bg-void,#050608)] text-white p-2.5 rounded-xl border border-zinc-700 outline-none focus:border-[var(--border-accent,#c5a059)]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => setShowSealKhatmahModal(false)}
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-gradient-to-r from-[var(--border-strong,#c5a059)] to-[var(--accent-bright,#fef08a)] text-[var(--bg-void,#050608)] font-bold rounded-xl shadow cursor-pointer flex items-center gap-1.5"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>Seal into Sacred Archive</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 6: SEALED KHATMAHS ARCHIVE HISTORY ── */}
+      {showKhatmahHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--bg-surface,#141824)] border border-[#c5a059] rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-[#c5a059]/30 shrink-0">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-[#fef08a]" />
+                <h3 className="text-sm font-display font-bold text-white uppercase">
+                  Archived Khatmahs Registry (سِجِلُّ الخَتَمَاتِ المُؤَرْشَفَة)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowKhatmahHistoryModal(false)}
+                className="text-zinc-400 hover:text-white font-mono text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs font-mono text-zinc-400 bg-black/30 p-2.5 rounded-xl border border-white/5 shrink-0">
+              <span>Total Lifetime Khatmahs: <strong className="text-amber-300">{quranTracker.khatmahCount || 0}</strong></span>
+              <button
+                onClick={() => setShowManualKhatmahForm(!showManualKhatmahForm)}
+                className="text-[11px] text-amber-300 hover:underline flex items-center gap-1 cursor-pointer font-bold"
+              >
+                <Plus className="h-3 w-3" />
+                <span>{showManualKhatmahForm ? 'Hide Form' : 'Log Past Khatmah'}</span>
+              </button>
+            </div>
+
+            {/* Inline manual past khatmah logger */}
+            {showManualKhatmahForm && (
+              <form onSubmit={handleAddManualHistoricalKhatmah} className="p-3 bg-zinc-900/90 rounded-xl border border-amber-500/30 space-y-2 text-xs font-mono shrink-0">
+                <span className="text-[10px] text-amber-300 uppercase font-bold block">Log Historical Completion</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-zinc-400 block mb-0.5">Khatmah #:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={manualKhatmahNumber}
+                      onChange={e => setManualKhatmahNumber(Number(e.target.value) || '')}
+                      placeholder="e.g. 1"
+                      className="w-full bg-black text-white px-2.5 py-1.5 rounded-lg border border-zinc-700 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-zinc-400 block mb-0.5">Date Completed:</label>
+                    <input
+                      type="date"
+                      value={manualKhatmahDate}
+                      onChange={e => setManualKhatmahDate(e.target.value)}
+                      className="w-full bg-black text-white px-2.5 py-1.5 rounded-lg border border-zinc-700 outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-zinc-400 block mb-0.5">Notes (Optional):</label>
+                  <input
+                    type="text"
+                    value={manualKhatmahNotes}
+                    onChange={e => setManualKhatmahNotes(e.target.value)}
+                    placeholder="e.g. Ramadan Khatmah in youth"
+                    className="w-full bg-black text-white px-2.5 py-1.5 rounded-lg border border-zinc-700 outline-none"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualKhatmahForm(false)}
+                    className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-lg cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-1 bg-amber-500 text-black font-bold rounded-lg cursor-pointer"
+                  >
+                    Add Record
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* List of Khatmahs */}
+            <div className="space-y-2.5 overflow-y-auto pr-1 flex-1">
+              {khatmahRecords.length === 0 ? (
+                <div className="text-center py-8 border border-dashed border-zinc-800 rounded-xl p-4">
+                  <Award className="h-8 w-8 text-zinc-600 mx-auto mb-2" />
+                  <p className="text-xs text-zinc-300 font-display">No archived Khatmahs yet</p>
+                  <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                    Click "Seal &amp; Archive" whenever you complete the 604 pages of the Noble Qur’ān.
+                  </p>
+                </div>
+              ) : (
+                khatmahRecords.map((rec, idx) => (
+                  <div
+                    key={rec.id || idx}
+                    className="p-3.5 rounded-xl bg-gradient-to-r from-black/50 via-zinc-900/60 to-black/50 border border-white/10 flex items-start justify-between gap-3 text-xs font-mono"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[11px] flex items-center gap-1">
+                          <RubElHizbIcon className="h-3 w-3 text-amber-300" />
+                          <span>Khatmah #{rec.khatmahNumber}</span>
+                        </span>
+                        <span className="text-zinc-400 text-[11px]">
+                          Completed on {rec.completedDate}
+                        </span>
+                      </div>
+                      {rec.notes && (
+                        <p className="text-zinc-300 text-xs font-sans italic pt-1">
+                          "{rec.notes}"
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => deleteArchivedKhatmah(rec.id)}
+                      className="p-1 text-zinc-500 hover:text-rose-400 rounded transition cursor-pointer shrink-0"
+                      title="Delete record"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-white/10 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowKhatmahHistoryModal(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-mono cursor-pointer"
+              >
+                Close Registry
+              </button>
+            </div>
           </div>
         </div>
       )}

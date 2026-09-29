@@ -10,7 +10,7 @@ import {
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
   AdhkarSessionStatus, AdhkarFortressStats, PrayerId,
-  QuranRevisionStatus, QuranPassage, QuranReflection, QuranTrackerState,
+  QuranRevisionStatus, QuranPassage, QuranReflection, QuranTrackerState, QuranKhatmahRecord,
   NotificationSettings,
   TimeTransaction, TimeTransactionType, TemporalCapitalInfo, ActiveRestSession,
   RestPass, DailyWakingCapital, LeisureTransaction,
@@ -517,11 +517,18 @@ interface POSContextType {
   addQuranPassage: (passage: Omit<QuranPassage, 'id' | 'revisionCount'>) => QuranPassage;
   updateQuranPassage: (id: string, updates: Partial<QuranPassage>) => void;
   deleteQuranPassage: (id: string) => void;
+  archiveQuranPassage: (id: string, reason?: string) => void;
+  unarchiveQuranPassage: (id: string, restoreStatus?: QuranRevisionStatus) => void;
   advancePassageRevisionStatus: (id: string, newStatus?: QuranRevisionStatus, dateStr?: string) => void;
   markPassageRevised: (id: string, dateStr?: string) => void;
   addQuranReflection: (reflection: Omit<QuranReflection, 'id' | 'date'>, dateStr?: string) => void;
+  updateQuranReflection: (id: string, updates: Partial<QuranReflection>) => void;
+  archiveQuranReflection: (id: string) => void;
+  unarchiveQuranReflection: (id: string) => void;
   deleteQuranReflection: (id: string) => void;
-  getQuranFreshnessScore: (targetDate?: string) => { score: number; label: string; labelAr: string; weakCount: number; dueCount: number; stableCount: number };
+  sealAndArchiveKhatmah: (notes?: string, dateStr?: string) => void;
+  deleteArchivedKhatmah: (id: string) => void;
+  getQuranFreshnessScore: (targetDate?: string) => { score: number; label: string; labelAr: string; weakCount: number; dueCount: number; stableCount: number; archivedCount: number };
 
   // Visual Codex (Appearance System)
   visualCodex: VisualCodexSettings;
@@ -7979,6 +7986,114 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const updateQuranReflection = (id: string, updates: Partial<QuranReflection>) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          reflections: currentTracker.reflections.map(r => r.id === id ? { ...r, ...updates } : r)
+        }
+      };
+    });
+  };
+
+  const archiveQuranPassage = (id: string, reason?: string) => {
+    const targetDate = state.systemDate || getLocalDateString();
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: currentTracker.passages.map(p => {
+            if (p.id !== id) return p;
+            return {
+              ...p,
+              isArchived: true,
+              archivedAt: targetDate,
+              archiveReason: reason || 'Archived to Sacred Vault'
+            };
+          })
+        }
+      };
+    });
+  };
+
+  const unarchiveQuranPassage = (id: string, restoreStatus?: QuranRevisionStatus) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          passages: currentTracker.passages.map(p => {
+            if (p.id !== id) return p;
+            return {
+              ...p,
+              isArchived: false,
+              archivedAt: undefined,
+              status: restoreStatus || p.status || 'due'
+            };
+          })
+        }
+      };
+    });
+  };
+
+  const archiveQuranReflection = (id: string) => {
+    const targetDate = state.systemDate || getLocalDateString();
+    updateQuranReflection(id, { isArchived: true, archivedAt: targetDate });
+  };
+
+  const unarchiveQuranReflection = (id: string) => {
+    updateQuranReflection(id, { isArchived: false, archivedAt: undefined });
+  };
+
+  const sealAndArchiveKhatmah = (notes?: string, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      const nextKhatmahNumber = (currentTracker.khatmahCount || 0) + 1;
+      const newRecord: QuranKhatmahRecord = {
+        id: `khatmah-${Date.now()}`,
+        khatmahNumber: nextKhatmahNumber,
+        completedDate: targetDate,
+        startDate: currentTracker.khatmahStartDate || currentTracker.lastKhatmahDate,
+        notes: notes || undefined,
+        isArchived: true
+      };
+      const updatedHistory = [newRecord, ...(currentTracker.khatmahHistory || [])];
+
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          khatmahCount: nextKhatmahNumber,
+          currentPage: 1,
+          currentJuz: 1,
+          lastKhatmahDate: targetDate,
+          khatmahStartDate: targetDate,
+          khatmahHistory: updatedHistory
+        }
+      };
+    });
+  };
+
+  const deleteArchivedKhatmah = (id: string) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          khatmahHistory: (currentTracker.khatmahHistory || []).filter(k => k.id !== id)
+        }
+      };
+    });
+  };
+
   const getQuranFreshnessScore = (targetDate?: string) => {
     const currentTracker = state.quranTracker || DEFAULT_QURAN_TRACKER;
     return calculateQuranFreshness(currentTracker.passages, targetDate || state.systemDate || getLocalDateString());
@@ -9693,10 +9808,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addQuranPassage,
       updateQuranPassage,
       deleteQuranPassage,
+      archiveQuranPassage,
+      unarchiveQuranPassage,
       advancePassageRevisionStatus,
       markPassageRevised,
       addQuranReflection,
+      updateQuranReflection,
+      archiveQuranReflection,
+      unarchiveQuranReflection,
       deleteQuranReflection,
+      sealAndArchiveKhatmah,
+      deleteArchivedKhatmah,
       getQuranFreshnessScore,
       visualCodex: state.visualCodex || getStoredVisualCodexSettings(),
       updateVisualCodexSettings,

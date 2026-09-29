@@ -129,5 +129,59 @@ describe('Qur\'an and Adhkār Sacred Protocol Engine', () => {
       expect(freshness.label).toBe('Needs Urgent Restoration');
       expect(freshness.weakCount).toBe(2);
     });
+
+    it('ignores archived passages in active freshness calculation and counts them', () => {
+      const passages: QuranPassage[] = [
+        {
+          id: 'p1',
+          surahName: 'Al-Mulk',
+          surahNumber: 67,
+          ayahStart: 1,
+          ayahEnd: 30,
+          status: 'stable',
+          lastRevisedDate: '2026-09-12',
+          revisionCount: 15,
+          isArchived: false
+        },
+        {
+          id: 'p2',
+          surahName: 'Al-Baqarah',
+          surahNumber: 2,
+          ayahStart: 1,
+          ayahEnd: 10,
+          status: 'weak',
+          lastRevisedDate: '2026-08-01',
+          revisionCount: 1,
+          isArchived: true, // Archived to Sacred Vault! Should NOT drag down freshness
+          archivedAt: '2026-09-10',
+          archiveReason: 'Completed Goal'
+        }
+      ];
+      const freshness = calculateQuranFreshness(passages, '2026-09-12');
+      expect(freshness.score).toBe(100);
+      expect(freshness.weakCount).toBe(0);
+      expect(freshness.stableCount).toBe(1);
+      expect(freshness.archivedCount).toBe(1);
+    });
+
+    it('returns optimal baseline when all passages are archived in Sacred Vault', () => {
+      const passages: QuranPassage[] = [
+        {
+          id: 'p1',
+          surahName: 'Al-Mulk',
+          surahNumber: 67,
+          ayahStart: 1,
+          ayahEnd: 30,
+          status: 'weak',
+          revisionCount: 1,
+          isArchived: true
+        }
+      ];
+      const freshness = calculateQuranFreshness(passages, '2026-09-12');
+      expect(freshness.score).toBe(100);
+      expect(freshness.weakCount).toBe(0);
+      expect(freshness.archivedCount).toBe(1);
+    });
   });
 });
+
