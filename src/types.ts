@@ -241,6 +241,23 @@ export type QuestDifficulty = 'Easy' | 'Normal' | 'Hard' | 'Boss' | 'Custom';
 export type QuestType = 'Main' | 'Side' | 'Boss' | 'Optional' | 'Habit' | 'Recovery' | 'Milestone' | string;
 export type QuestRecurrence = 'None' | 'Daily' | 'Every 2 Days' | 'Weekly' | 'Monthly' | string;
 
+export type HabitStabilityStage =
+  | 'initiated'
+  | 'established'
+  | 'conditioned'
+  | 'integrated'
+  | 'stable';
+
+export interface HabitFormation {
+  successfulRepetitions: number;
+  stabilityScore: number;
+  stabilityStage: HabitStabilityStage;
+  currentStreak: number;
+  lastCompletedAt: string | null;
+  completionsInLast30Days?: number;
+  targetDaysInLast30Days?: number;
+}
+
 export interface Quest {
   id: string;
   name: string;
@@ -259,6 +276,8 @@ export interface Quest {
   bestStreak?: number;
   lastCompletedDate?: string | null;
   cueTrigger?: string;
+  cue?: string; // Informational contextual trigger (e.g. "After Fajr", "After opening VS Code")
+  formation?: HabitFormation; // Lightweight habit formation & stability metadata
   rewardPerk?: string;
   status: 'Active' | 'Completed' | 'Failed';
   deadline: string | null; // YYYY-MM-DD
@@ -276,6 +295,10 @@ export interface Quest {
   levelUpThreshold?: number; // The target gate threshold (10, 20, 30...) this quest is linked to
   skillRewards?: SkillReward[];
   attributeRewards?: AttributeReward[];
+  recoveryArchivedReason?: 'completed' | 'deleted' | 'abandoned';
+  recoveryCleared?: boolean; // True when cleared/expiated by a clearing recovery quest
+  recoveryClearedAt?: string | null; // ISO timestamp when cleared
+  clearsRecoveryQuestIds?: string[]; // Target archived recovery quests cleared by this quest
 }
 
 export interface LevelUpBossRequirement {

@@ -22,6 +22,7 @@ export const ExecuteQuestForm: React.FC = () => {
   const [newQuestRecurrence, setNewQuestRecurrence] = useState<QuestRecurrence | 'Custom'>('None');
   const [newQuestDescription, setNewQuestDescription] = useState('');
   const [newQuestDeadline, setNewQuestDeadline] = useState('');
+  const [newQuestCue, setNewQuestCue] = useState('');
 
   // UI State: Advanced Parameters Collapsible Drawer
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -85,12 +86,14 @@ export const ExecuteQuestForm: React.FC = () => {
       relatedSkills: newQuestSkills,
       type: newQuestType,
       recurrence: finalRecurrence,
+      cue: newQuestCue.trim() ? newQuestCue.trim() : undefined,
       deadline: newQuestDeadline ? newQuestDeadline : null,
       energyLevel: 'Medium'
     });
 
     setNewQuestName('');
     setNewQuestDescription('');
+    setNewQuestCue('');
     setNewQuestSkills([]);
     setNewQuestRecurrence('None');
     setNewQuestDeadline('');
@@ -102,7 +105,8 @@ export const ExecuteQuestForm: React.FC = () => {
     newQuestGoal !== '' || 
     newQuestListId !== '' || 
     newQuestSkills.length > 0 || 
-    newQuestDeadline !== '';
+    newQuestDeadline !== '' ||
+    newQuestCue !== '';
 
   return (
     <div className="glass-panel rounded-xl p-5 border border-[#c5a059]/25 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg shadow-black/60" id="quick-add-panel">
@@ -218,6 +222,29 @@ export const ExecuteQuestForm: React.FC = () => {
           </div>
         </div>
 
+        {/* Behavioral Habit Anchor / Cue Input (Highlighted when Habit or recurring) */}
+        {(newQuestType === 'Habit' || newQuestRecurrence !== 'None' || newQuestCue !== '') && (
+          <div className="bg-[#0b141a]/90 p-3 rounded-lg border border-emerald-500/30 space-y-1.5 shadow-sm">
+            <div className="flex justify-between items-center">
+              <label className="text-[9.5px] font-mono text-emerald-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Habit Behavioral Cue / Context Anchor</span>
+              </label>
+              <span className="text-[9px] font-mono text-zinc-400">Cue → Action → Completion</span>
+            </div>
+            <input 
+              type="text" 
+              placeholder="e.g. After Fajr, After opening VS Code, After Maghrib, Before sleeping"
+              value={newQuestCue}
+              onChange={(e) => setNewQuestCue(e.target.value)}
+              className="w-full bg-[#07080c] border border-emerald-500/30 rounded-lg px-3 py-1.5 text-xs text-emerald-200 placeholder-zinc-600 focus:outline-none focus:border-emerald-400 font-sans"
+            />
+            <p className="text-[9px] font-mono text-zinc-400">
+              Optional situational trigger. Habits measure behavioral consistency & stability over time without altering the authoritative XP progression.
+            </p>
+          </div>
+        )}
+
         {/* Collapsible Advanced Parameters Panel */}
         <div className="pt-2 border-t border-[#c5a059]/15">
           <button
@@ -244,6 +271,7 @@ export const ExecuteQuestForm: React.FC = () => {
               {!isAdvancedOpen && (
                 <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-zinc-400">
                   {newQuestRecurrence !== 'None' && <span className="text-[#e5c875]">🔁 {newQuestRecurrence}</span>}
+                  {newQuestCue && <span className="text-emerald-400">⚡ Cue</span>}
                   {newQuestGoal && <span className="text-purple-400">🎯 Goal</span>}
                   {newQuestListId && <span className="text-cyan-400">📋 List</span>}
                   {newQuestSkills.length > 0 && <span className="text-emerald-400">⚡ {newQuestSkills.length} Skills</span>}
