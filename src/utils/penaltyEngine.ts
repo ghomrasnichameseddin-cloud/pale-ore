@@ -1,7 +1,13 @@
-import { Quest, XPHistoryEntry, POSState, QuestList, QuestFolder } from '../types';
+import { Quest, XPHistoryEntry, POSState, QuestList, QuestFolder, SpiritualDailyLog } from '../types';
 import { getDaysDifference, addDays, getWeekdayStr, getDaysInMonth } from './dateUtils';
 import { getActiveJob } from '../jobsAndTitles';
 import { getFailPenaltyMultiplier } from './perkEvaluator';
+import { 
+  PRAYER_ORDER, 
+  PRAYER_NAMES, 
+  MIDNIGHT_MISSED_PRAYER_PENALTY_XP, 
+  MIDNIGHT_MISSED_PRAYER_PENALTY_HP 
+} from './prayerRules';
 
 export const MAX_PENALTY_DAYS_LOOKBACK = 30;
 
@@ -11,6 +17,8 @@ export interface MidnightPenaltiesResult {
   updatedMomentum: number;
   recoveryModeActivated: boolean;
   daysProcessed: number;
+  updatedSpiritualLogs?: Record<string, SpiritualDailyLog>;
+  healthDelta?: number;
 }
 
 /**
@@ -145,6 +153,8 @@ export function processMultiDayPenalties(
   let updatedHistory = [...prev.xpHistory];
   let updatedMomentum = prev.profile.momentum;
   let recoveryModeActivated = false;
+  let updatedSpiritualLogs: Record<string, SpiritualDailyLog> = prev.spiritualLogs ? { ...prev.spiritualLogs } : {};
+  let totalHealthLost = 0;
 
   const activeJobForMidnight = getActiveJob(
     prev.profile.jobId,
@@ -312,6 +322,81 @@ export function processMultiDayPenalties(
         recoveryModeActivated = true;
       }
     });
+
+    // 4. Process unexecuted prayers before midnight on dayStr -> Severe Penalty
+    if (updatedSpiritualLogs[dayStr]) {
+      const dayLog = { ...updatedSpiritualLogs[dayStr] };
+      let dayModified = false;
+
+      for (const prayer of PRAYER_ORDER) {
+        const pState = dayLog[prayer];
+        if (pState && !pState.fardh && !pState.missedPastMidnight) {
+          dayModified = true;
+          dayLog[prayer] = {
+            ...pState,
+            fardh: false,
+            onTime: false,
+            delayed: false,
+            missedPastMidnight: true,
+            executionState: 'missed_midnight'
+          };
+
+          const pInfo = PRAYER_NAMES[prayer];
+          const prayXpId = `h-fail-midnight-prayer-${prayer}-${dayStr}`;
+          if (!updatedHistory.some(h => h.id === prayXpId)) {
+            updatedHistory.unshift({
+              id: prayXpId,
+              questId: `spiritual-prayer-${dayStr}-${prayer}-missedMidnight`,
+              questName: `🚨 SEVERE PRAYER PENALTY: ${pInfo.en} (${pInfo.ar}) not executed before midnight`,
+              xp: -MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+              timestamp: `${dayStr}T23:59:59.000Z`,
+              date: dayStr,
+              type: 'penalty',
+              source: 'penalty_midnight',
+              sourceId: `spiritual-prayer-${dayStr}-${prayer}`,
+              activityId: `prayer-${prayer}-missed-midnight`,
+              skillIds: []
+            });
+            totalHealthLost += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+          }
+
+          const qadaQuestId = `q-qada-${prayer}-${dayStr}`;
+          if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
+            updatedQuests.push({
+              id: qadaQuestId,
+              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${dayStr})`,
+              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${dayStr}. Mandatory in Islamic jurisprudence to clear lapse.`,
+              status: 'Active',
+              difficulty: 'Hard',
+              type: 'Recovery',
+              estimatedTime: 15,
+              recurrence: 'None',
+              energyLevel: 'High',
+              deadline: newDateStr,
+              createdAt: `${dayStr}T23:59:59.000Z`,
+              completedAt: null,
+              xp: 50,
+              goalId: null,
+              projectId: null,
+              milestoneId: null,
+              subquests: [
+                {
+                  id: `sq-qada-${prayer}-${dayStr}-1`,
+                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+                  completed: false
+                }
+              ],
+              relatedSkills: []
+            });
+            recoveryModeActivated = true;
+          }
+        }
+      }
+
+      if (dayModified) {
+        updatedSpiritualLogs[dayStr] = dayLog;
+      }
+    }
   }
 
   // Final normalization for target date
@@ -331,6 +416,8 @@ export function processMultiDayPenalties(
     updatedHistory,
     updatedMomentum,
     recoveryModeActivated,
-    daysProcessed: effectiveDays
+    daysProcessed: effectiveDays,
+    updatedSpiritualLogs,
+    healthDelta: totalHealthLost > 0 ? -totalHealthLost : 0
   };
 }

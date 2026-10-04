@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePOS } from '../POSContext';
 import { SystemMessageBox } from './SystemMessageBox';
+import { SanctumBackupManager } from './SanctumBackupManager';
 import { 
   Settings, Download, Upload, RotateCcw, AlertTriangle, 
   Check, ShieldAlert, Award, BatteryCharging, Battery, Zap,
@@ -65,39 +66,10 @@ export const SystemView: React.FC = () => {
     }
   }, []);
 
-  const [importJson, setImportJson] = useState('');
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLevelResetConfirm, setShowLevelResetConfirm] = useState(false);
   const [showQuestsResetConfirm, setShowQuestsResetConfirm] = useState(false);
   const [showAttrResetConfirm, setShowAttrResetConfirm] = useState(false);
-
-  // Handle export click
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportData());
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `pale_ore_pos_backup_${getLocalDateString()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  // Handle JSON Import
-  const handleImport = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!importJson.trim()) return;
-
-    const success = importData(importJson);
-    if (success) {
-      setImportStatus('success');
-      setImportJson('');
-      setTimeout(() => setImportStatus('idle'), 3000);
-    } else {
-      setImportStatus('error');
-      setTimeout(() => setImportStatus('idle'), 4000);
-    }
-  };
 
   // Factory reset
   const handleReset = () => {
@@ -496,69 +468,7 @@ export const SystemView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* LEFT PANEL: EXPORT & IMPORT BACKUPS */}
-        <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">
-          <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
-          
-          <div>
-            <h3 className="text-sm font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <RubElHizbIcon className="h-4 w-4 text-[#c5a059]" />
-              SANCTUM ARCHIVE & EXPORT
-            </h3>
-            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Your progression logs are preserved locally in your browser storage.</p>
-          </div>
-
-          <div className="space-y-4">
-            {/* Export block */}
-            <div className="p-4 bg-[#07080c] border border-[#c5a059]/20 rounded-xl flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <span className="text-xs font-sans font-bold text-white block">Download Raw Sacred Scroll (JSON)</span>
-                <span className="text-[10px] font-mono text-zinc-400 block">Preserves a complete archive of your destinies, quests, and levels.</span>
-              </div>
-              <button 
-                onClick={handleExport}
-                className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/40 text-[#fef08a] text-xs font-mono px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer font-bold"
-              >
-                <Download className="h-3.5 w-3.5" />
-                EXPORT
-              </button>
-            </div>
-
-            {/* Import block */}
-            <form onSubmit={handleImport} className="space-y-3">
-              <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-wider block font-bold">IMPORT_SANCTUM_STATE_DUMP</span>
-              <textarea 
-                rows={4}
-                value={importJson}
-                onChange={(e) => setImportJson(e.target.value)}
-                placeholder="Paste backup JSON archive dump here..."
-                className="w-full bg-[#07080c] border border-[#c5a059]/25 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-[#c5a059]"
-                required
-              />
-
-              <div className="flex justify-between items-center">
-                {importStatus === 'success' && (
-                  <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-                    <Check className="h-4 w-4 animate-bounce" /> ARCHIVE RESTORED SUCCESSFULLY
-                  </span>
-                )}
-                {importStatus === 'error' && (
-                  <span className="text-xs font-mono text-rose-400 flex items-center gap-1">
-                    <ShieldAlert className="h-4 w-4" /> PARSING ERROR: INVALID SCHEMA
-                  </span>
-                )}
-                {importStatus === 'idle' && <span />}
-
-                <button 
-                  type="submit"
-                  className="bg-[#3a2e12] hover:bg-[#4a3b18] border border-[#c5a059]/40 text-[#fef08a] text-xs font-mono px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer font-bold"
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  IMPORT
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <SanctumBackupManager />
 
         {/* RIGHT PANEL: OVERRIDE BASELINE ATTRIBUTES & RESET */}
         <div className="glass-panel rounded-xl p-6 space-y-6 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative shadow-xl">

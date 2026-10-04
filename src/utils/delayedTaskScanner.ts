@@ -161,7 +161,7 @@ export const generateDelayedNotifications = async (
     const alreadyNotifiedToday = existingMessages.some(m => 
       m.category === 'delayed' && 
       m.entityId === item.id && 
-      m.timestamp.startsWith(currentSysDate)
+      Boolean(m.timestamp && m.timestamp.startsWith(currentSysDate))
     );
 
     if (options.forceNotify || !alreadyNotifiedToday) {

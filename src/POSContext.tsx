@@ -4,7 +4,7 @@ import {
   GoalStatus, GoalPriority, QuestDifficulty, QuestType, ActiveFocusSession, PlanningDocument, SystemMessage,
   ShopItem, RedeemedReward, ShopItemCategory, BatterySettings, SubGoal, SubProject,
   MuhasabahCategory, MuhasabahSeverity, MuhasabahEntry, WeaknessStatus, Weakness,
-  SpiritualDailyLog, PrayerCheck, PlayerLevelInfo, WeeklyMuhasabahSummary,
+  SpiritualDailyLog, PrayerCheck, PrayerExecutionState, DelayedToPrayerOption, PlayerLevelInfo, WeeklyMuhasabahSummary,
   FastingType, FastingLog, SunnahPrayersLog, QuranLog, DhikrTasbeehLog, PostSalahAdhkarMap, PostSalahIstighfarMap, PostSalahDhikrMode,
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
@@ -24,6 +24,18 @@ import {
   CoreDomain, SkillType, SkillRank, SkillReward, AttributeReward, RewardPayload, CoreDomainProgress,
   HabitFormation, HabitStabilityStage
 } from './types';
+import {
+  PRAYER_ORDER,
+  PRAYER_NAMES,
+  NEXT_PRAYER_DEFAULT_TARGETS,
+  MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+  MIDNIGHT_MISSED_PRAYER_PENALTY_HP,
+  MISSED_JUMUAH_PENALTY_XP,
+  MISSED_JUMUAH_PENALTY_HP,
+  getCompoundDelayPenalty,
+  calculateCompoundDelayTiers,
+  getPropheticJumuahWarning
+} from './utils/prayerRules';
 import {
   CORE_DOMAINS,
   DOMAIN_ATTRIBUTES,
@@ -365,6 +377,12 @@ interface POSContextType {
   // Export/Import
   exportData: () => string;
   importData: (jsonData: string) => boolean;
+  importDataDetailed: (jsonData: string) => {
+    success: boolean;
+    error?: string;
+    summary?: string;
+    counts?: { quests: number; skills: number; level: number; xp: number };
+  };
   isQuestFinishedForToday: (q: Quest) => boolean;
   isQuestScheduledForDate: (q: Quest, dateStr: string) => boolean;
   getWeekdayStr: (dateStr: string) => string;
@@ -486,9 +504,26 @@ interface POSContextType {
   updateSpiritualLog: (dateStr: string, updates: Partial<SpiritualDailyLog>) => void;
   togglePrayer: (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed',
+    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
     dateStr?: string
   ) => void;
+  setPrayerExecutionState: (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    status: 'on_time' | 'delayed' | 'missed_midnight' | 'unperformed',
+    options?: { delayedToPrayer?: DelayedToPrayerOption | null },
+    dateStr?: string
+  ) => void;
+  handleMissedJumuah: (dateStr?: string, reason?: string) => void;
+  revertMissedJumuah: (dateStr?: string) => void;
+  toggleJumuahSunnah: (
+    field: 'badiyahMasjid' | 'badiyahHome' | 'tahiyyah' | 'ghusl' | 'kahf',
+    dateStr?: string
+  ) => void;
+  completePrayerQada: (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    dateStr?: string
+  ) => void;
+  checkAndApplyMidnightPrayerPenalties: (dateStr?: string) => { missedCount: number; penalizedPrayers: string[] };
   toggleAdhkar: (type: 'sabah' | 'masa' | 'sleepDhohr' | 'sleepNight', dateStr?: string) => void;
   incrementSalawat: (amount: number, dateStr?: string) => void;
   setSalawatCount: (count: number, dateStr?: string) => void;
@@ -833,6 +868,157 @@ export {
   SEVERITY_MOMENTUM_PENALTIES
 };
 
+export function reconcilePOSState(rawInput: any): POSState {
+  if (!rawInput || typeof rawInput !== 'object') {
+    return INITIAL_STATE;
+  }
+  const parsed = rawInput.state || rawInput.data || rawInput.backup || rawInput;
+
+  // Reconcile and fix any missing Muhasabah deductions in xpHistory
+  let reconciledXpHistory: XPHistoryEntry[] = [...(parsed.xpHistory || [])];
+  const savedMuhasabahEntries = (parsed.muhasabahEntries || []) as MuhasabahEntry[];
+  
+  const reconciledMuhasabahEntries = savedMuhasabahEntries.map((entry: any) => {
+    const isExempt = Boolean(entry.isExempt);
+    if (isExempt) return entry;
+
+    const expectedPenalty = entry.rawPenalty || (
+      entry.severity === 'Critical' ? 500 :
+      entry.severity === 'Severe' ? 400 :
+      entry.severity === 'Major' ? 300 :
+      entry.severity === 'Moderate' ? 200 : 100
+    );
+
+    // Check if this specific entry is already logged in xpHistory
+    const hasHistoryEntry = reconciledXpHistory.some(h => 
+      (Boolean(h.id && entry.id) && (h.id.includes(entry.id) || h.id.endsWith(entry.id))) ||
+      (h.xp === -expectedPenalty && Boolean(h.questName && entry.title) && h.questName.includes(entry.title))
+    );
+
+    if (!hasHistoryEntry) {
+      const historyEntry: XPHistoryEntry = {
+        id: `xph-muhasabah-${entry.id || Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        questId: null,
+        questName: `[MUHĀSABAH AUDIT] ${entry.category || 'Slip'}: ${entry.title}`,
+        xp: -expectedPenalty,
+        timestamp: entry.timestamp || entry.date || new Date().toISOString(),
+        skillIds: []
+      };
+      reconciledXpHistory = [historyEntry, ...reconciledXpHistory];
+    }
+
+    return {
+      ...entry,
+      rawPenalty: expectedPenalty,
+      xpDeducted: expectedPenalty
+    };
+  });
+
+  // Reconcile penalty quests and derive habit formation for existing habits if missing
+  const reconciledQuests = (parsed.quests || []).map((q: any) => {
+    let questObj = q;
+    if (q.type === 'Penalty' && (q.xp === 0 || !q.xp || q.xp > 0)) {
+      const pVal = q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50;
+      questObj = { ...questObj, xp: -pVal };
+    }
+    if (isHabitQuest(questObj) && !questObj.formation) {
+      questObj = {
+        ...questObj,
+        formation: calculateHabitFormation(questObj, reconciledXpHistory, parsed.systemDate || getLocalDateString())
+      };
+    }
+    return questObj;
+  });
+
+  const totalXp = Math.max(0, reconciledXpHistory.reduce((sum, h) => sum + (h.xp || 0), 0));
+  const calculatedRaw = calculatePlayerLevel(totalXp);
+  const savedLevel = Math.max(1, parsed.profile?.level || calculatedRaw, calculatedRaw);
+  const gatedLevel = calculateGatedPlayerLevel(
+    totalXp,
+    savedLevel,
+    parsed.profile?.levelUpBossRequirement,
+    reconciledQuests
+  );
+
+  const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) 
+    ? parsed.weaknesses.map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        category: w.category || 'Obligations',
+        occurrenceCount: w.occurrenceCount || 0,
+        status: w.status === 'Sealed' ? 'Active' : (w.status || 'Active'),
+        triggerCause: w.triggerCause || '',
+        createdAt: w.createdAt || new Date().toISOString()
+      }))
+    : (INITIAL_STATE.weaknesses || []);
+
+  return {
+    ...INITIAL_STATE,
+    ...parsed,
+    profile: {
+      ...INITIAL_STATE.profile,
+      ...(parsed.profile || {}),
+      xp: totalXp,
+      level: gatedLevel.level,
+      levelUpBossRequirement: gatedLevel.activeRequirement ?? parsed.profile?.levelUpBossRequirement,
+      coins: parsed.profile?.coins ?? 150,
+      focusShields: parsed.profile?.focusShields ?? 0
+    },
+    weaknesses: rawWeaknesses,
+    shopItems: (parsed.shopItems && parsed.shopItems.length > 0) ? parsed.shopItems : DEFAULT_SHOP_ITEMS,
+    inventory: parsed.inventory || [],
+    goals: parsed.goals || [],
+    projects: parsed.projects || [],
+    milestones: parsed.milestones || [],
+    quests: reconciledQuests,
+    folders: parsed.folders || [],
+    lists: parsed.lists || [],
+    skills: (() => {
+      const rawSkills = (parsed.skills && parsed.skills.length > 0) ? parsed.skills : DEFAULT_STARTER_SKILLS;
+      return rawSkills.map((s: any) => {
+        const normalized = normalizeSkill(s);
+        if (normalized.xp === 0) {
+          const histXp = getSkillXpFromHistory(normalized.id, reconciledXpHistory, rawSkills);
+          if (histXp > 0) {
+            normalized.xp = histXp;
+            normalized.rank = getSkillRank(histXp);
+            normalized.level = calculateSkillLevel(histXp);
+            normalized.mastery = calculateSkillMastery(histXp);
+          }
+        }
+        return normalized;
+      });
+    })(),
+    attributes: ensureCanonicalAttributes(parsed.attributes || INITIAL_STATE.attributes),
+    spiritualLogs: parsed.spiritualLogs || INITIAL_STATE.spiritualLogs || {},
+    xpHistory: reconciledXpHistory,
+    muhasabahEntries: reconciledMuhasabahEntries,
+    systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
+    planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
+    messages: parsed.messages || INITIAL_STATE.messages || [],
+    visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex,
+    customAdhkar: (() => {
+      if (!parsed.customAdhkar || !Array.isArray(parsed.customAdhkar) || parsed.customAdhkar.length === 0) {
+        return DEFAULT_ADHKAR_LIST;
+      }
+      const validExisting = parsed.customAdhkar;
+      const customUserItems = validExisting.filter((a: any) => a.isCustom);
+      const mergedDefaults = DEFAULT_ADHKAR_LIST.map(defItem => {
+        const existing = validExisting.find((a: any) => a.id === defItem.id);
+        return existing ? { ...defItem, ...existing, arabic: defItem.arabic || existing.arabic, arabicText: defItem.arabicText || existing.arabicText || existing.arabic, titleAr: defItem.titleAr || existing.titleAr } : defItem;
+      });
+      return [...mergedDefaults, ...customUserItems];
+    })(),
+    doctrines: parsed.doctrines && parsed.doctrines.length > 0 ? parsed.doctrines : (INITIAL_STATE.doctrines || []),
+    strategicDecisions: parsed.strategicDecisions && parsed.strategicDecisions.length > 0 ? parsed.strategicDecisions : (INITIAL_STATE.strategicDecisions || []),
+    strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
+    strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
+    strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false,
+    quranTracker: parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER,
+    customRadars: (parsed.customRadars && parsed.customRadars.length > 0) ? parsed.customRadars : (INITIAL_STATE.customRadars || [])
+  };
+}
+
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isGeneratingWeeklySummaryRef = useRef(false);
   const [state, setState] = useState<POSState>(() => {
@@ -841,151 +1027,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
-          // Reconcile and fix any missing Muhasabah deductions in xpHistory
-          let reconciledXpHistory: XPHistoryEntry[] = [...(parsed.xpHistory || [])];
-          const savedMuhasabahEntries = (parsed.muhasabahEntries || []) as MuhasabahEntry[];
-          
-          const reconciledMuhasabahEntries = savedMuhasabahEntries.map(entry => {
-            const isExempt = Boolean(entry.isExempt);
-            if (isExempt) return entry;
-
-            const expectedPenalty = entry.rawPenalty || (
-              entry.severity === 'Critical' ? 500 :
-              entry.severity === 'Severe' ? 400 :
-              entry.severity === 'Major' ? 300 :
-              entry.severity === 'Moderate' ? 200 : 100
-            );
-
-            // Check if this specific entry is already logged in xpHistory
-            const hasHistoryEntry = reconciledXpHistory.some(h => 
-              (h.id && (h.id.includes(entry.id) || (entry.id && h.id.endsWith(entry.id)))) ||
-              (h.xp === -expectedPenalty && h.questName && h.questName.includes(entry.title))
-            );
-
-            if (!hasHistoryEntry) {
-              const historyEntry: XPHistoryEntry = {
-                id: `xph-muhasabah-${entry.id || Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-                questId: null,
-                questName: `[MUHĀSABAH AUDIT] ${entry.category || 'Slip'}: ${entry.title}`,
-                xp: -expectedPenalty,
-                timestamp: entry.timestamp || entry.date || new Date().toISOString(),
-                skillIds: []
-              };
-              reconciledXpHistory = [historyEntry, ...reconciledXpHistory];
-            }
-
-            return {
-              ...entry,
-              rawPenalty: expectedPenalty,
-              xpDeducted: expectedPenalty
-            };
-          });
-
-          // Reconcile penalty quests and derive habit formation for existing habits if missing
-          const reconciledQuests = (parsed.quests || []).map((q: any) => {
-            let questObj = q;
-            if (q.type === 'Penalty' && (q.xp === 0 || !q.xp || q.xp > 0)) {
-              const pVal = q.difficulty === 'Boss' ? 250 : q.difficulty === 'Hard' ? 100 : q.difficulty === 'Easy' ? 25 : 50;
-              questObj = { ...questObj, xp: -pVal };
-            }
-            if (isHabitQuest(questObj) && !questObj.formation) {
-              questObj = {
-                ...questObj,
-                formation: calculateHabitFormation(questObj, reconciledXpHistory, parsed.systemDate || getLocalDateString())
-              };
-            }
-            return questObj;
-          });
-
-          const totalXp = Math.max(0, reconciledXpHistory.reduce((sum, h) => sum + (h.xp || 0), 0));
-          const calculatedRaw = calculatePlayerLevel(totalXp);
-          // Restore monotonic level: Never regress below raw level supported by total XP or saved level
-          const savedLevel = Math.max(1, parsed.profile?.level || calculatedRaw, calculatedRaw);
-          const gatedLevel = calculateGatedPlayerLevel(
-            totalXp,
-            savedLevel,
-            parsed.profile?.levelUpBossRequirement,
-            reconciledQuests
-          );
-
-          const rawWeaknesses: Weakness[] = (parsed.weaknesses && parsed.weaknesses.length > 0) 
-            ? parsed.weaknesses.map((w: any) => ({
-                id: w.id,
-                name: w.name,
-                category: w.category || 'Obligations',
-                occurrenceCount: w.occurrenceCount || 0,
-                status: w.status === 'Sealed' ? 'Active' : (w.status || 'Active'),
-                triggerCause: w.triggerCause || '',
-                createdAt: w.createdAt || new Date().toISOString()
-              }))
-            : (INITIAL_STATE.weaknesses || []);
-
-          // Robustly merge to guarantee all schema properties are defined
-          return {
-            ...INITIAL_STATE,
-            ...parsed,
-            profile: {
-              ...INITIAL_STATE.profile,
-              ...(parsed.profile || {}),
-              xp: totalXp,
-              level: gatedLevel.level,
-              levelUpBossRequirement: gatedLevel.activeRequirement ?? parsed.profile?.levelUpBossRequirement,
-              coins: parsed.profile?.coins ?? 150,
-              focusShields: parsed.profile?.focusShields ?? 0
-            },
-            weaknesses: rawWeaknesses,
-            shopItems: (parsed.shopItems && parsed.shopItems.length > 0) ? parsed.shopItems : DEFAULT_SHOP_ITEMS,
-            inventory: parsed.inventory || [],
-            goals: parsed.goals || [],
-            projects: parsed.projects || [],
-            milestones: parsed.milestones || [],
-            quests: reconciledQuests,
-            folders: parsed.folders || [],
-            lists: parsed.lists || [],
-            skills: (() => {
-              const rawSkills = (parsed.skills && parsed.skills.length > 0) ? parsed.skills : DEFAULT_STARTER_SKILLS;
-              return rawSkills.map((s: any) => {
-                const normalized = normalizeSkill(s);
-                if (normalized.xp === 0) {
-                  const histXp = getSkillXpFromHistory(normalized.id, reconciledXpHistory, rawSkills);
-                  if (histXp > 0) {
-                    normalized.xp = histXp;
-                    normalized.rank = getSkillRank(histXp);
-                    normalized.level = calculateSkillLevel(histXp);
-                    normalized.mastery = calculateSkillMastery(histXp);
-                  }
-                }
-                return normalized;
-              });
-            })(),
-            attributes: ensureCanonicalAttributes(parsed.attributes || INITIAL_STATE.attributes),
-            xpHistory: reconciledXpHistory,
-            muhasabahEntries: reconciledMuhasabahEntries,
-            systemDate: parsed.systemDate || INITIAL_STATE.systemDate,
-            planningDocuments: parsed.planningDocuments || INITIAL_STATE.planningDocuments,
-            messages: parsed.messages || INITIAL_STATE.messages || [],
-            visualCodex: parsed.visualCodex || getStoredVisualCodexSettings() || INITIAL_STATE.visualCodex,
-            customAdhkar: (() => {
-              if (!parsed.customAdhkar || !Array.isArray(parsed.customAdhkar) || parsed.customAdhkar.length === 0) {
-                return DEFAULT_ADHKAR_LIST;
-              }
-              const validExisting = parsed.customAdhkar;
-              const customUserItems = validExisting.filter((a: any) => a.isCustom);
-              // Always ensure all default items from DEFAULT_ADHKAR_LIST exist with latest texts and properties
-              const mergedDefaults = DEFAULT_ADHKAR_LIST.map(defItem => {
-                const existing = validExisting.find((a: any) => a.id === defItem.id);
-                return existing ? { ...defItem, ...existing, arabic: defItem.arabic || existing.arabic, arabicText: defItem.arabicText || existing.arabicText || existing.arabic, titleAr: defItem.titleAr || existing.titleAr } : defItem;
-              });
-              return [...mergedDefaults, ...customUserItems];
-            })(),
-            doctrines: parsed.doctrines && parsed.doctrines.length > 0 ? parsed.doctrines : (INITIAL_STATE.doctrines || []),
-            strategicDecisions: parsed.strategicDecisions && parsed.strategicDecisions.length > 0 ? parsed.strategicDecisions : (INITIAL_STATE.strategicDecisions || []),
-            strategicExperiments: parsed.strategicExperiments && parsed.strategicExperiments.length > 0 ? parsed.strategicExperiments : (INITIAL_STATE.strategicExperiments || []),
-            strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
-            strategicFreeze: typeof parsed.strategicFreeze === 'boolean' ? parsed.strategicFreeze : false,
-            quranTracker: parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER,
-            customRadars: (parsed.customRadars && parsed.customRadars.length > 0) ? parsed.customRadars : (INITIAL_STATE.customRadars || [])
-          };
+          return reconcilePOSState(parsed);
         }
       }
     } catch (e) {
@@ -1000,7 +1042,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [state]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save POS state to localStorage:', e);
+    }
   }, [state]);
 
   const addPlanningDocument = (path: string, name: string, content: string): string => {
@@ -1315,10 +1361,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: new Date().toISOString(),
       read: false
     };
-    setState(prev => ({
-      ...prev,
-      messages: [newMsg, ...(prev.messages || [])]
-    }));
+    setTimeout(() => {
+      try {
+        setState(prev => ({
+          ...prev,
+          messages: [newMsg, ...(prev.messages || [])]
+        }));
+      } catch (err) {
+        console.error('Failed to add system message:', err);
+      }
+    }, 0);
 
     // Trigger Native OS (PC Action Center / macOS / Android Tray) Notification
     if (state.notificationSettings?.enableDesktopNotifications !== false) {
@@ -2041,7 +2093,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setSystemDate = (newDateStr: string) => {
     setState(prev => {
       const oldDate = prev.systemDate;
-      const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, newDateStr);
+      const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated, updatedSpiritualLogs, healthDelta } = applyMidnightPenalties(prev, oldDate, newDateStr);
       
       const finalQuests = resetRecurringQuestsForNewDate(newDateStr, updatedQuests, prev.lists, prev.folders);
       const finalHistory = resolveRecoveredPenalties(updatedHistory);
@@ -2085,8 +2137,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         xpHistory: finalHistory,
         skills: updatedSkills,
         weaknesses: updatedWeaknesses,
+        spiritualLogs: updatedSpiritualLogs || prev.spiritualLogs,
         profile: {
           ...prev.profile,
+          hp: Math.max(0, Math.min(prev.profile.maxHp ?? 100, (prev.profile.hp ?? 100) + (healthDelta || 0))),
           momentum: updatedMomentum,
           xp: totalXp,
           level,
@@ -2119,7 +2173,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         const oldDate = currentSimulated;
-        const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated } = applyMidnightPenalties(prev, oldDate, nextSimulated);
+        const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated, updatedSpiritualLogs, healthDelta } = applyMidnightPenalties(prev, oldDate, nextSimulated);
 
         const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests, prev.lists, prev.folders);
         const finalHistory = resolveRecoveredPenalties(updatedHistory);
@@ -2150,8 +2204,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quests: finalQuests,
           xpHistory: finalHistory,
           skills: updatedSkills,
+          spiritualLogs: updatedSpiritualLogs || prev.spiritualLogs,
           profile: {
             ...prev.profile,
+            hp: Math.max(0, Math.min(prev.profile.maxHp ?? 100, (prev.profile.hp ?? 100) + (healthDelta || 0))),
             momentum: updatedMomentum,
             xp: totalXp,
             level,
@@ -2347,8 +2403,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         streak: q?.streakCount || 0
       };
     });
-    
-    return state.attributes.map(attr => {
+    const canonicalAttrs = ensureCanonicalAttributes(state.attributes || []);
+    return canonicalAttrs.map(attr => {
       // Check if this attribute or all attributes have been restarted/reset
       const resetCutoff = attr.resetAt || state.attributesResetAt;
       const eligibleEvents = resetCutoff
@@ -2492,6 +2548,125 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const link = isLinkedToAttr(e, 'a-9');
           if (isFaith || link > 0) {
             const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Clarity') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isClarity = ['debug', 'refactor', 'architect', 'analyze', 'logic', 'solve', 'bug'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-10');
+          if (isClarity || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Creativity') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isCreativity = ['design', 'ui', 'ux', 'creative', 'invent', 'art', 'compose', 'write'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-11');
+          if (isCreativity || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Memory') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isMemory = ['memoriz', 'hifz', 'flashcard', 'recall', 'review', 'retention'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-12');
+          if (isMemory || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Vitality') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isVitality = ['sleep', 'rest', 'hydrat', 'nutrition', 'meal', 'recover'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-13');
+          if (isVitality || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Fortitude') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isFortitude = ['cold', 'fasting', 'sawm', 'grit', 'tough', 'resilien'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-14');
+          if (isFortitude || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Mobility') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isMobility = ['stretch', 'mobility', 'posture', 'walk', 'flexib'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-15');
+          if (isMobility || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Ihsan') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isIhsan = ['sadaqah', 'charity', 'khushu', 'ihsan', 'contemplat'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-16');
+          if (isIhsan || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Sabr') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isSabr = ['patien', 'sabr', 'calm', 'forgiv', 'restraint', 'kaffarah'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-17');
+          if (isSabr || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else if (attr.name === 'Shukr') {
+        baseCost = 14;
+        growth = 4;
+        eligibleEvents.forEach(e => {
+          const qName = (e.questName || '').toLowerCase();
+          const isShukr = ['gratitud', 'thank', 'shukr', 'praise', 'alhamdulillah'].some(k => qName.includes(k));
+          const link = isLinkedToAttr(e, 'a-18');
+          if (isShukr || link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2.5);
+            totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
+          }
+        });
+      } else {
+        baseCost = 14;
+        growth = 4;
+        const attrId = (attr as any).id;
+        eligibleEvents.forEach(e => {
+          const link = attrId ? isLinkedToAttr(e, attrId) : 0;
+          if (link > 0) {
+            const pts = e.difficulty === 'Hard' ? 4 : (e.difficulty === 'Easy' ? 1.5 : 2);
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
@@ -5378,21 +5553,140 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Export / Import JSON representation
   const exportData = (): string => {
-    return JSON.stringify(state, null, 2);
+    try {
+      const exportEnvelope = {
+        _meta: {
+          app: 'pale_ore_pos',
+          version: '2.5.0',
+          exportedAt: new Date().toISOString(),
+          systemDate: state.systemDate || getLocalDateString(),
+          disciple: (state.profile as any)?.name || 'Disciple',
+          level: state.profile?.level || 1,
+          totalXp: state.profile?.xp || 0,
+          questsCount: state.quests?.length || 0,
+          skillsCount: state.skills?.length || 0,
+          attributesCount: state.attributes?.length || 0
+        },
+        ...state
+      };
+      return JSON.stringify(exportEnvelope, null, 2);
+    } catch (e) {
+      console.error('Error generating export payload:', e);
+      return JSON.stringify(state, null, 2);
+    }
+  };
+
+  const importDataDetailed = (jsonData: string): {
+    success: boolean;
+    error?: string;
+    summary?: string;
+    counts?: { quests: number; skills: number; level: number; xp: number };
+  } => {
+    if (!jsonData || typeof jsonData !== 'string' || !jsonData.trim()) {
+      return { success: false, error: 'Empty import data provided. Please paste or upload a JSON backup.' };
+    }
+
+    try {
+      let cleanStr = jsonData.trim();
+      
+      // Strip markdown code block fences if present (e.g. ```json ... ```)
+      if (cleanStr.startsWith('```')) {
+        cleanStr = cleanStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      }
+
+      // If there are stray characters before the first { or after the last }
+      const firstBrace = cleanStr.indexOf('{');
+      const lastBrace = cleanStr.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleanStr = cleanStr.slice(firstBrace, lastBrace + 1);
+      }
+
+      const parsed = JSON.parse(cleanStr);
+      if (!parsed || typeof parsed !== 'object') {
+        return { success: false, error: 'Parsed JSON root is not a valid object.' };
+      }
+
+      // Unwrap potential wrappers: .state, .data, .backup, .sanctum, .posState
+      let candidate = parsed;
+      if (candidate.state && typeof candidate.state === 'object') {
+        candidate = candidate.state;
+      } else if (candidate.backup && typeof candidate.backup === 'object') {
+        candidate = candidate.backup;
+      } else if (candidate.data && typeof candidate.data === 'object' && (candidate.data.quests || candidate.data.profile || candidate.data.skills)) {
+        candidate = candidate.data;
+      } else if (candidate.sanctum && typeof candidate.sanctum === 'object') {
+        candidate = candidate.sanctum;
+      } else if (candidate.posState && typeof candidate.posState === 'object') {
+        candidate = candidate.posState;
+      }
+
+      // Validation: verify that this looks like POS state
+      const hasRecognizedData = Boolean(
+        Array.isArray(candidate.quests) ||
+        Array.isArray(candidate.skills) ||
+        Array.isArray(candidate.goals) ||
+        (candidate.profile && (candidate.profile.name !== undefined || candidate.profile.xp !== undefined || candidate.profile.level !== undefined)) ||
+        Array.isArray(candidate.attributes) ||
+        Array.isArray(candidate.muhasabahEntries) ||
+        Array.isArray(candidate.xpHistory)
+      );
+
+      if (!hasRecognizedData) {
+        return {
+          success: false,
+          error: 'Unrecognized schema: Missing core Sanctum data (quests, skills, profile, or attributes).'
+        };
+      }
+
+      // Reconcile state using reconcilePOSState to guarantee backward compatibility,
+      // canonical 18 attributes, habit formations, normalized skills, and full state hydration!
+      const reconciled = reconcilePOSState(candidate);
+
+      // Add a system notification confirming the restoration
+      const restoreNotice: SystemMessage = {
+        id: `msg-restore-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        sender: 'SYSTEM',
+        category: 'alert',
+        title: 'Sacred Archive Restored',
+        content: `Sanctum progression state restored successfully. Loaded Level ${reconciled.profile.level} (${reconciled.profile.xp} XP), ${reconciled.quests.length} quests, ${reconciled.skills.length} skills, and ${reconciled.attributes.length} sovereign attributes.`,
+        priority: 'high',
+        read: false
+      };
+      reconciled.messages = [restoreNotice, ...(reconciled.messages || [])];
+
+      // Update state
+      setState(reconciled);
+
+      // Immediately persist to localStorage
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reconciled));
+      } catch (err) {
+        console.warn('Could not immediately save to localStorage:', err);
+      }
+
+      return {
+        success: true,
+        summary: `Level ${reconciled.profile.level} • ${reconciled.quests.length} Quests • ${reconciled.skills.length} Skills • ${reconciled.attributes.length} Attributes`,
+        counts: {
+          quests: reconciled.quests.length,
+          skills: reconciled.skills.length,
+          level: reconciled.profile.level,
+          xp: reconciled.profile.xp
+        }
+      };
+    } catch (e: any) {
+      console.error('Failed to import JSON data:', e);
+      return {
+        success: false,
+        error: `JSON Syntax / Parse Error: ${e?.message || 'Invalid JSON format'}`
+      };
+    }
   };
 
   const importData = (jsonData: string): boolean => {
-    try {
-      const parsed = JSON.parse(jsonData);
-      // Validate schema
-      if (Array.isArray(parsed.goals) && Array.isArray(parsed.quests) && Array.isArray(parsed.skills)) {
-        setState(parsed);
-        return true;
-      }
-    } catch (e) {
-      console.error('Failed to import JSON data:', e);
-    }
-    return false;
+    const res = importDataDetailed(jsonData);
+    return res.success;
   };
 
   // Deep Analytics calculation
@@ -6978,7 +7272,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentHp = state.profile.hp ?? 100;
     const maxHp = Math.max(state.profile.maxHp ?? 100, getMaxHpForLevel(state.profile.level || 1));
     
-    const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
+    const todayHistory = (state.xpHistory || []).filter(h => (Boolean(h.timestamp) && h.timestamp.startsWith(currentSysDate)) || h.date === currentSysDate);
     const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
     const todayNetXP = todayEarnedXP - todayLostXP;
     const dailyCapRemaining = Math.max(0, 500 - todayLostXP);
@@ -7055,7 +7349,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const todayLostXP = todayEntries.reduce((sum, e) => sum + (e.xpDeducted || 0), 0);
     
     // 2. Audit positive XP events from history
-    const todayHistory = (state.xpHistory || []).filter(h => h.timestamp.startsWith(currentSysDate));
+    const todayHistory = (state.xpHistory || []).filter(h => (Boolean(h.timestamp) && h.timestamp.startsWith(currentSysDate)) || h.date === currentSysDate);
     const todayEarnedXP = todayHistory.filter(h => h.xp > 0).reduce((sum, h) => sum + h.xp, 0);
     const todayNetXP = todayEarnedXP - todayLostXP;
 
@@ -7112,7 +7406,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const togglePrayer = (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed',
+    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
     dateStr?: string
   ) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
@@ -7128,13 +7422,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 }
     };
     const reward = prayerRewards[prayer];
+    const pInfo = PRAYER_NAMES[prayer];
 
     setState(prev => {
       const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
       const curr = log[prayer] || { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null };
       
       let updatedHistory = [...prev.xpHistory];
+      let updatedQuests = [...prev.quests];
+      let updatedMuhasabahEntries = [...(prev.muhasabahEntries || [])];
       let deltaCoins = 0;
+      let hpDelta = 0;
       let updatedPrayerState: PrayerCheck = { ...curr };
 
       const prayerPrefix = `spiritual-prayer-${targetDate}-${prayer}`;
@@ -7142,16 +7440,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (field === 'fardh') {
         const newFardh = !curr.fardh;
         if (newFardh) {
-          // Turning Fardh ON
           const autoOnTime = !curr.delayed;
           updatedPrayerState = {
             ...curr,
             fardh: true,
             onTime: autoOnTime,
+            missedPastMidnight: false,
+            executionState: autoOnTime ? 'on_time' : 'delayed',
             completedAt: completedTimestamp
           };
 
-          // Add Fardh XP
+          if (curr.missedPastMidnight) {
+            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-missedMidnight`);
+            hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+          }
+
           const fardhEntry: XPHistoryEntry = {
             id: `h-pray-${Date.now()}-fardh`,
             questId: `${prayerPrefix}-fardh`,
@@ -7194,42 +7497,56 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             priority: 'medium'
           });
         } else {
-          // Turning Fardh OFF -> Reset the entire prayer for this date
           updatedPrayerState = {
             fardh: false,
             onTime: false,
             delayed: false,
+            missedPastMidnight: false,
+            executionState: 'unperformed',
+            delayedToPrayer: null,
+            compoundDelayTier: undefined,
+            compoundPenaltyXp: undefined,
             inMasjid: false,
             sunnahRawatib: false,
             sunnahBefore: false,
             sunnahAfter: false,
             completedAt: null
           };
-          // Remove all history entries for this prayer today
-          updatedHistory = updatedHistory.filter(h => !h.questId.startsWith(prayerPrefix));
+          updatedHistory = updatedHistory.filter(h => !h.questId || !h.questId.startsWith(prayerPrefix));
           deltaCoins -= (curr.fardh ? reward.fardhCoins : 0) + (curr.onTime ? reward.onTimeCoins : 0) + (curr.inMasjid ? reward.masjidCoins : 0);
         }
       } else if (field === 'onTime') {
         const newOnTime = !curr.onTime;
         updatedPrayerState.onTime = newOnTime;
         if (newOnTime) {
-          // On-Time turned ON: add on-time bonus
+          updatedPrayerState.fardh = true;
+          updatedPrayerState.delayed = false;
+          updatedPrayerState.missedPastMidnight = false;
+          updatedPrayerState.executionState = 'on_time';
+          updatedPrayerState.delayedToPrayer = null;
+          updatedPrayerState.compoundDelayTier = undefined;
+          updatedPrayerState.compoundPenaltyXp = undefined;
+
+          if (curr.missedPastMidnight) {
+            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-missedMidnight`);
+            hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+          }
+
           const onTimeEntry: XPHistoryEntry = {
             id: `h-pray-${Date.now()}-ontime`,
             questId: `${prayerPrefix}-onTime`,
             questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
             xp: reward.onTimeXp,
             timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: `${prayerPrefix}-onTime`,
+            activityId: `prayer-${prayer}-ontime`,
             skillIds: []
           };
-          updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`)];
+          updatedHistory = [onTimeEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime` && h.questId !== `${prayerPrefix}-delayed`)];
           deltaCoins += reward.onTimeCoins;
-
-          // If it was marked delayed, remove delayed penalty
-          if (curr.delayed) {
-            updatedPrayerState.delayed = false;
-            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`);
-          }
 
           addSystemMessage({
             sender: 'SYSTEM',
@@ -7239,7 +7556,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             priority: 'low'
           });
         } else {
-          // On-Time turned OFF
+          updatedPrayerState.executionState = updatedPrayerState.fardh ? 'unperformed' : 'unperformed';
           updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`);
           deltaCoins -= reward.onTimeCoins;
         }
@@ -7247,50 +7564,143 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newDelayed = !curr.delayed;
         updatedPrayerState.delayed = newDelayed;
         if (newDelayed) {
-          // Delayed turned ON: apply -50 XP penalty deduction
-          const delayedEntry: XPHistoryEntry = {
-            id: `h-pray-${Date.now()}-delayed`,
-            questId: `${prayerPrefix}-delayed`,
-            questName: `⚠️ LATE / DELAYED PRAYER PENALTY: ${reward.name} (تأخير الصلاة)`,
-            xp: -reward.delayedPenaltyXp,
-            timestamp: completedTimestamp,
-            date: targetDate,
-            type: 'penalty',
-            source: 'penalty_failed',
-            sourceId: `${prayerPrefix}-delayed`,
-            activityId: `prayer-${prayer}-delayed`,
-            skillIds: []
-          };
-          updatedHistory = [delayedEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`)];
+          updatedPrayerState.fardh = true;
+          updatedPrayerState.onTime = false;
+          updatedPrayerState.missedPastMidnight = false;
+          updatedPrayerState.executionState = 'delayed';
+          if (!updatedPrayerState.delayedToPrayer) {
+            updatedPrayerState.delayedToPrayer = NEXT_PRAYER_DEFAULT_TARGETS[prayer];
+          }
 
-          // If it was marked on-time, remove on-time bonus
+          if (curr.missedPastMidnight) {
+            updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-missedMidnight`);
+            hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+          }
+
           if (curr.onTime) {
-            updatedPrayerState.onTime = false;
             updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-onTime`);
             deltaCoins -= reward.onTimeCoins;
+          }
+
+          if (!curr.fardh) {
+            const fardhEntry: XPHistoryEntry = {
+              id: `h-pray-${Date.now()}-fardh`,
+              questId: `${prayerPrefix}-fardh`,
+              questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+              xp: reward.fardhXp,
+              timestamp: completedTimestamp,
+              date: targetDate,
+              type: 'salah',
+              source: 'quest',
+              sourceId: `${prayerPrefix}-fardh`,
+              activityId: `prayer-${prayer}-fardh`,
+              skillIds: []
+            };
+            updatedHistory = [fardhEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-fardh`)];
+            deltaCoins += reward.fardhCoins;
           }
 
           addSystemMessage({
             sender: 'SYSTEM',
             category: 'warning',
             title: `⚠️ DELAYED PRAYER DEDUCTION: ${reward.name}`,
-            content: `Prayer performed after its prescribed window (−${reward.delayedPenaltyXp} XP deducted). Accountability recorded on the Daily Balance Scale.`,
+            content: `Prayer performed after its prescribed window (delayed to another prayer). Compound penalty applied.`,
             priority: 'high'
           });
         } else {
-          // Delayed turned OFF: reverse penalty
-          updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-delayed`);
+          updatedPrayerState.executionState = updatedPrayerState.fardh ? 'on_time' : 'unperformed';
+          updatedPrayerState.delayedToPrayer = null;
+          updatedPrayerState.compoundDelayTier = undefined;
+          updatedPrayerState.compoundPenaltyXp = undefined;
+        }
+      } else if (field === 'missedPastMidnight') {
+        const newMissed = !curr.missedPastMidnight;
+        updatedPrayerState.missedPastMidnight = newMissed;
+        if (newMissed) {
+          updatedPrayerState.fardh = false;
+          updatedPrayerState.onTime = false;
+          updatedPrayerState.delayed = false;
+          updatedPrayerState.executionState = 'missed_midnight';
+          updatedPrayerState.delayedToPrayer = null;
+          updatedPrayerState.compoundDelayTier = undefined;
+          updatedPrayerState.compoundPenaltyXp = undefined;
+
+          updatedHistory = updatedHistory.filter(
+            h => h.questId !== `${prayerPrefix}-fardh` &&
+                 h.questId !== `${prayerPrefix}-onTime` &&
+                 h.questId !== `${prayerPrefix}-delayed`
+          );
+          if (curr.fardh) deltaCoins -= reward.fardhCoins;
+          if (curr.onTime) deltaCoins -= reward.onTimeCoins;
+
+          const midnightEntry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-missedMidnight`,
+            questId: `${prayerPrefix}-missedMidnight`,
+            questName: `🚨 SEVERE PRAYER PENALTY: ${reward.name} not executed before midnight`,
+            xp: -MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+            timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'penalty',
+            source: 'penalty_midnight',
+            sourceId: `${prayerPrefix}-missedMidnight`,
+            activityId: `prayer-${prayer}-missed-midnight`,
+            skillIds: []
+          };
+          updatedHistory = [midnightEntry, ...updatedHistory.filter(h => h.questId !== `${prayerPrefix}-missedMidnight`)];
+          hpDelta -= MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+
+          const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
+          if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
+            updatedQuests.push({
+              id: qadaQuestId,
+              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
+              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse.`,
+              status: 'Active',
+              difficulty: 'Hard',
+              type: 'Recovery',
+              estimatedTime: 15,
+              recurrence: 'None',
+              energyLevel: 'High',
+              deadline: targetDate,
+              createdAt: completedTimestamp,
+              completedAt: null,
+              xp: 50,
+              goalId: null,
+              projectId: null,
+              milestoneId: null,
+              subquests: [
+                {
+                  id: `sq-qada-${prayer}-${targetDate}-1`,
+                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+                  completed: false
+                }
+              ],
+              relatedSkills: []
+            });
+          }
+
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'warning',
+            title: `🚨 SEVERE PRAYER PENALTY: ${reward.name}`,
+            content: `${reward.name} was not executed before midnight. Severe penalty (−${MIDNIGHT_MISSED_PRAYER_PENALTY_XP} XP, −${MIDNIGHT_MISSED_PRAYER_PENALTY_HP} HP) applied. Perform Qada' (قضاء ما فات) immediately!`,
+            priority: 'high'
+          });
+        } else {
+          updatedPrayerState.executionState = 'unperformed';
+          updatedHistory = updatedHistory.filter(h => h.questId !== `${prayerPrefix}-missedMidnight`);
+          hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
         }
       } else if (field === 'inMasjid') {
         const newMasjid = !curr.inMasjid;
         updatedPrayerState.inMasjid = newMasjid;
         const qId = `${prayerPrefix}-inMasjid`;
         if (newMasjid) {
-          // If Fardh was not yet completed, praying in congregation implies Fardh is completed!
           if (!curr.fardh) {
             const autoOnTime = !curr.delayed;
             updatedPrayerState.fardh = true;
             updatedPrayerState.onTime = autoOnTime;
+            updatedPrayerState.executionState = autoOnTime ? 'on_time' : 'delayed';
             updatedPrayerState.completedAt = curr.completedAt || completedTimestamp;
 
             const fardhEntry: XPHistoryEntry = {
@@ -7432,8 +7842,134 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // Compound Delay Recalibration for all delayed prayers today
+      const hypotheticalLog = { ...log, [prayer]: updatedPrayerState };
+      const delayedPenalties = calculateCompoundDelayTiers(hypotheticalLog);
+
+      // Filter out old delay entries for this date
+      updatedHistory = updatedHistory.filter(
+        h => !(Boolean(h.questId) && h.questId!.startsWith(`spiritual-prayer-${targetDate}-`) && h.questId!.endsWith('-delayed'))
+      );
+
+      const allUpdatedPrayers: Partial<Record<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', PrayerCheck>> = {};
+
+      for (const p of PRAYER_ORDER) {
+        const pCurrentState = p === prayer ? updatedPrayerState : { ...((hypotheticalLog[p] || {}) as PrayerCheck) };
+        if (pCurrentState?.delayed) {
+          const tierInfo = delayedPenalties[p] || { tier: 1, penaltyXp: 50 };
+          pCurrentState.compoundDelayTier = tierInfo.tier;
+          pCurrentState.compoundPenaltyXp = tierInfo.penaltyXp;
+          const pName = PRAYER_NAMES[p]?.en || p;
+          const targetP = String(pCurrentState.delayedToPrayer || NEXT_PRAYER_DEFAULT_TARGETS[p] || 'next prayer');
+
+          const delayedEntry: XPHistoryEntry = {
+            id: `h-pray-${targetDate}-${p}-delayed`,
+            questId: `spiritual-prayer-${targetDate}-${p}-delayed`,
+            questName: `⚠️ COMPOUND DELAYED PRAYER PENALTY (Level ${tierInfo.tier}): ${pName} delayed to ${targetP.toUpperCase()}`,
+            xp: -tierInfo.penaltyXp,
+            timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'penalty',
+            source: 'penalty_failed',
+            sourceId: `spiritual-prayer-${targetDate}-${p}-delayed`,
+            activityId: `prayer-${p}-delayed`,
+            skillIds: []
+          };
+          updatedHistory.unshift(delayedEntry);
+          allUpdatedPrayers[p] = pCurrentState;
+
+          // Auto-generate / update Muhāsabah audit slip for delayed prayer
+          const auditId = `muhasabah-delay-${p}-${targetDate}`;
+          const kaffarahQuestId = `quest-kaffarah-delay-${p}-${targetDate}`;
+          const targetFormatted = targetP.charAt(0).toUpperCase() + targetP.slice(1);
+          const auditTitle = `Delayed Prayer: ${pName} (Delayed to ${targetFormatted})`;
+          const kaffarahTitle = `2 Rak'ahs of Tawbah & Surah Al-Mulk Recitation (${pName} Delay)`;
+          const kaffarahQuestName = `[KAFFĀRAH] 2 Rak'ahs of Tawbah & Surah Al-Mulk Recitation (${pName} Delay)`;
+
+          const severity: MuhasabahSeverity = 
+            tierInfo.tier >= 4 ? 'Critical' :
+            tierInfo.tier === 3 ? 'Severe' :
+            tierInfo.tier === 2 ? 'Major' : 'Moderate';
+
+          const existingAuditIndex = updatedMuhasabahEntries.findIndex(e => e.id === auditId);
+          const recoveredXP = Math.max(25, Math.round(tierInfo.penaltyXp * 0.2));
+
+          const delayAuditEntry: MuhasabahEntry = {
+            id: auditId,
+            date: targetDate,
+            timestamp: getSystemTimestamp(targetDate),
+            title: auditTitle,
+            description: `Obligatory ${pName} (${PRAYER_NAMES[p]?.ar || ''}) prayer was not executed within its prescribed window and was delayed to ${targetFormatted}. Automatic Muhāsabah audit logged under Obligations (Tier ${tierInfo.tier} delay).`,
+            category: 'Obligations',
+            severity,
+            isExempt: false,
+            rawPenalty: tierInfo.penaltyXp,
+            xpDeducted: tierInfo.penaltyXp,
+            hpDeducted: tierInfo.tier >= 2 ? 15 : 10,
+            baseHpLoss: 10,
+            coinsDeducted: 0,
+            baseCoinsDeducted: 0,
+            momentumLost: 25,
+            cause: `Postponed past prescribed window into ${targetFormatted} slot (Delay Tier ${tierInfo.tier}).`,
+            reflection: 'Obligatory prayers must be safeguarded at their appointed times. Postponing leads to spiritual friction, compounding delay penalties, and erosion of barakah.',
+            correctiveQuestId: kaffarahQuestId,
+            correctiveQuestName: kaffarahQuestName,
+            kaffarahTitle,
+            kaffarahType: 'Prayer',
+            kaffarahCompleted: existingAuditIndex >= 0 ? Boolean(updatedMuhasabahEntries[existingAuditIndex].kaffarahCompleted) : false,
+            recoveryPercentage: 20,
+            recoveredXP,
+            recurrenceCadence: 'isolated',
+            recurrenceCadenceLabel: `Delay Tier ${tierInfo.tier}`,
+            recurrenceTier: tierInfo.tier
+          };
+
+          if (existingAuditIndex >= 0) {
+            updatedMuhasabahEntries[existingAuditIndex] = {
+              ...updatedMuhasabahEntries[existingAuditIndex],
+              ...delayAuditEntry,
+              kaffarahCompleted: updatedMuhasabahEntries[existingAuditIndex].kaffarahCompleted ?? false
+            };
+          } else {
+            updatedMuhasabahEntries = [delayAuditEntry, ...updatedMuhasabahEntries];
+          }
+
+          if (!updatedQuests.some(q => q.id === kaffarahQuestId)) {
+            updatedQuests.unshift({
+              id: kaffarahQuestId,
+              name: kaffarahQuestName,
+              description: `Solemn Kaffārah Restitution for delayed ${pName} prayer (${targetDate}).\n• Root Cause: Postponed past prescribed window to ${targetFormatted} (Tier ${tierInfo.tier} compound delay).\n• Restitution Action: Perform Wudu with heightened presence, pray 2 heartfelt Rak'ahs of Tawbah in solitude, and recite Surah Al-Mulk with contemplative presence.\n• Note: Conquering this quest fulfills your penance, heals Soul Vitality (+35 HP), and restores spiritual equilibrium.`,
+              type: 'Recovery',
+              difficulty: tierInfo.tier >= 3 ? 'Hard' : tierInfo.tier === 2 ? 'Normal' : 'Easy',
+              xp: recoveredXP,
+              estimatedTime: 20,
+              deadline: targetDate,
+              status: 'Active',
+              recurrence: 'None',
+              streakCount: 0,
+              completedAt: null,
+              lastCompletedDate: null,
+              postponedFrom: null,
+              postponedTo: null,
+              goalId: null,
+              projectId: null,
+              milestoneId: null,
+              listId: null,
+              relatedSkills: [],
+              createdAt: completedTimestamp
+            });
+          }
+        } else {
+          const auditId = `muhasabah-delay-${p}-${targetDate}`;
+          const kaffarahQuestId = `quest-kaffarah-delay-${p}-${targetDate}`;
+          updatedMuhasabahEntries = updatedMuhasabahEntries.filter(e => e.id !== auditId);
+          updatedQuests = updatedQuests.filter(q => q.id !== kaffarahQuestId || q.completedAt !== null);
+        }
+      }
+
       const updatedLog: SpiritualDailyLog = {
         ...log,
+        ...allUpdatedPrayers,
         [prayer]: updatedPrayerState
       };
 
@@ -7461,14 +7997,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalXp,
         prev.profile.level,
         prev.profile.levelUpBossRequirement,
-        prev.quests
+        updatedQuests
       );
       const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
-      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + prayerHpGain);
+      const nextHp = Math.max(1, Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + prayerHpGain + hpDelta));
 
       return {
         ...prev,
+        quests: updatedQuests,
         xpHistory: updatedHistory,
+        muhasabahEntries: updatedMuhasabahEntries,
         spiritualLogs: {
           ...(prev.spiritualLogs || {}),
           [targetDate]: updatedLog
@@ -7485,6 +8023,846 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+  };
+
+  const setPrayerExecutionState = (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    status: 'on_time' | 'delayed' | 'missed_midnight' | 'unperformed',
+    options?: { delayedToPrayer?: DelayedToPrayerOption | null },
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const prayerPrefix = `spiritual-prayer-${targetDate}-${prayer}`;
+    const pInfo = PRAYER_NAMES[prayer];
+
+    const prayerRewards = {
+      fajr: { name: 'Fajr (الفجر)', fardhXp: 150, fardhCoins: 15, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5 },
+      dhuhr: { name: 'Dhuhr (الظهر)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 40, sunnahCoins: 5, sunnahBeforeXp: 25, sunnahBeforeCoins: 3, sunnahAfterXp: 20, sunnahAfterCoins: 2 },
+      asr: { name: 'Asr (العصر)', fardhXp: 120, fardhCoins: 12, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      maghrib: { name: 'Maghrib (المغرب)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 },
+      isha: { name: 'Isha (العشاء)', fardhXp: 100, fardhCoins: 10, onTimeXp: 40, onTimeCoins: 5, delayedPenaltyXp: 50, masjidXp: 50, masjidCoins: 5, sunnahXp: 30, sunnahCoins: 5 }
+    };
+    const reward = prayerRewards[prayer];
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const curr = log[prayer] || { fardh: false, onTime: false, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: null };
+
+      let updatedHistory = [...prev.xpHistory];
+      let updatedQuests = [...prev.quests];
+      let updatedMuhasabahEntries = [...(prev.muhasabahEntries || [])];
+      let deltaCoins = 0;
+      let hpDelta = 0;
+      let updatedPrayerState: PrayerCheck = { ...curr };
+
+      const prevHadOnTime = curr.onTime;
+      const prevHadFardh = curr.fardh;
+      const prevHadMidnightPenalty = curr.missedPastMidnight;
+
+      if (status === 'on_time') {
+        updatedPrayerState = {
+          ...curr,
+          fardh: true,
+          onTime: true,
+          delayed: false,
+          missedPastMidnight: false,
+          executionState: 'on_time',
+          delayedToPrayer: null,
+          compoundDelayTier: undefined,
+          compoundPenaltyXp: undefined,
+          completedAt: curr.completedAt || completedTimestamp
+        };
+
+        const fardhEntry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}-fardh`,
+          questId: `${prayerPrefix}-fardh`,
+          questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+          xp: reward.fardhXp,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'salah',
+          source: 'quest',
+          sourceId: `${prayerPrefix}-fardh`,
+          activityId: `prayer-${prayer}-fardh`,
+          skillIds: []
+        };
+        const onTimeEntry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}-ontime`,
+          questId: `${prayerPrefix}-onTime`,
+          questName: `⏱️ ON-TIME BONUS: ${reward.name} (في وقتها)`,
+          xp: reward.onTimeXp,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'salah',
+          source: 'quest',
+          sourceId: `${prayerPrefix}-onTime`,
+          activityId: `prayer-${prayer}-ontime`,
+          skillIds: []
+        };
+
+        updatedHistory = [
+          fardhEntry,
+          onTimeEntry,
+          ...updatedHistory.filter(
+            h => h.questId !== `${prayerPrefix}-fardh` &&
+                 h.questId !== `${prayerPrefix}-onTime` &&
+                 h.questId !== `${prayerPrefix}-delayed` &&
+                 h.questId !== `${prayerPrefix}-missedMidnight`
+          )
+        ];
+
+        if (!prevHadFardh) deltaCoins += reward.fardhCoins;
+        if (!prevHadOnTime) deltaCoins += reward.onTimeCoins;
+        if (prevHadMidnightPenalty) hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+
+        setTimeout(() => {
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'achievement',
+            title: `⏱️ PRAYER ON-TIME: ${reward.name}`,
+            content: `Obligatory ${reward.name} fulfilled in its prescribed window (+${reward.fardhXp + reward.onTimeXp} XP). Recorded on the Sacred Scale.`,
+            priority: 'low'
+          });
+        }, 0);
+
+      } else if (status === 'delayed') {
+        const requestedTarget = options?.delayedToPrayer !== undefined ? options.delayedToPrayer : curr.delayedToPrayer;
+        const delayedTo = requestedTarget || NEXT_PRAYER_DEFAULT_TARGETS[prayer] || 'dhuhr';
+        updatedPrayerState = {
+          ...curr,
+          fardh: true,
+          onTime: false,
+          delayed: true,
+          missedPastMidnight: false,
+          executionState: 'delayed',
+          delayedToPrayer: delayedTo,
+          completedAt: curr.completedAt || completedTimestamp
+        };
+
+        const fardhEntry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}-fardh`,
+          questId: `${prayerPrefix}-fardh`,
+          questName: `🕌 PRAYER: Obligatory Fardh ${reward.name}`,
+          xp: reward.fardhXp,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'salah',
+          source: 'quest',
+          sourceId: `${prayerPrefix}-fardh`,
+          activityId: `prayer-${prayer}-fardh`,
+          skillIds: []
+        };
+
+        updatedHistory = [
+          fardhEntry,
+          ...updatedHistory.filter(
+            h => h.questId !== `${prayerPrefix}-fardh` &&
+                 h.questId !== `${prayerPrefix}-onTime` &&
+                 h.questId !== `${prayerPrefix}-missedMidnight`
+          )
+        ];
+
+        if (!prevHadFardh) deltaCoins += reward.fardhCoins;
+        if (prevHadOnTime) deltaCoins -= reward.onTimeCoins;
+        if (prevHadMidnightPenalty) hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+
+        setTimeout(() => {
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'warning',
+            title: `⚖️ MUHĀSABAH AUDIT RECORDED: ${reward.name} DELAYED`,
+            content: `Obligatory ${reward.name} was marked as delayed to ${delayedTo.toUpperCase()} (−${reward.delayedPenaltyXp} XP). Automatic Muhāsabah audit logged under Obligations with Kaffārah restitution directive.`,
+            priority: 'high'
+          });
+        }, 0);
+
+      } else if (status === 'missed_midnight') {
+        updatedPrayerState = {
+          ...curr,
+          fardh: false,
+          onTime: false,
+          delayed: false,
+          missedPastMidnight: true,
+          executionState: 'missed_midnight',
+          completedAt: null
+        };
+
+        const midnightEntry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}-missedMidnight`,
+          questId: `${prayerPrefix}-missedMidnight`,
+          questName: `🚨 SEVERE PRAYER PENALTY: ${reward.name} not executed before midnight`,
+          xp: -MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'penalty',
+          source: 'penalty_midnight',
+          sourceId: `${prayerPrefix}-missedMidnight`,
+          activityId: `prayer-${prayer}-missed-midnight`,
+          skillIds: []
+        };
+
+        updatedHistory = [
+          midnightEntry,
+          ...updatedHistory.filter(
+            h => h.questId !== `${prayerPrefix}-fardh` &&
+                 h.questId !== `${prayerPrefix}-onTime` &&
+                 h.questId !== `${prayerPrefix}-delayed` &&
+                 h.questId !== `${prayerPrefix}-missedMidnight`
+          )
+        ];
+
+        if (prevHadFardh) deltaCoins -= reward.fardhCoins;
+        if (prevHadOnTime) deltaCoins -= reward.onTimeCoins;
+        if (!prevHadMidnightPenalty) hpDelta -= MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+
+        const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
+        if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
+          updatedQuests.push({
+            id: qadaQuestId,
+            name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
+            description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse.`,
+            status: 'Active',
+            difficulty: 'Hard',
+            type: 'Recovery',
+            estimatedTime: 15,
+            recurrence: 'None',
+            energyLevel: 'High',
+            deadline: targetDate,
+            createdAt: completedTimestamp,
+            completedAt: null,
+            xp: 50,
+            goalId: null,
+            projectId: null,
+            milestoneId: null,
+            subquests: [
+              {
+                id: `sq-qada-${prayer}-${targetDate}-1`,
+                name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+                completed: false
+              }
+            ],
+            relatedSkills: []
+          });
+        }
+
+        setTimeout(() => {
+          addSystemMessage({
+            sender: 'SYSTEM',
+            category: 'warning',
+            title: `🚨 SEVERE PRAYER PENALTY: ${reward.name}`,
+            content: `${reward.name} was not executed before midnight. Severe penalty (−${MIDNIGHT_MISSED_PRAYER_PENALTY_XP} XP, −${MIDNIGHT_MISSED_PRAYER_PENALTY_HP} HP) applied. Perform Qada' (قضاء ما فات) immediately!`,
+            priority: 'high'
+          });
+        }, 0);
+
+      } else {
+        updatedPrayerState = {
+          ...curr,
+          fardh: false,
+          onTime: false,
+          delayed: false,
+          missedPastMidnight: false,
+          executionState: 'unperformed',
+          delayedToPrayer: null,
+          compoundDelayTier: undefined,
+          compoundPenaltyXp: undefined,
+          completedAt: null
+        };
+
+        updatedHistory = updatedHistory.filter(h => !h.questId || !h.questId.startsWith(prayerPrefix));
+        if (prevHadFardh) deltaCoins -= reward.fardhCoins;
+        if (prevHadOnTime) deltaCoins -= reward.onTimeCoins;
+        if (prevHadMidnightPenalty) hpDelta += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+      }
+
+      // Compound Delay Recalibration for all delayed prayers today
+      const hypotheticalLog = { ...log, [prayer]: updatedPrayerState };
+      const delayedPenalties = calculateCompoundDelayTiers(hypotheticalLog);
+
+      updatedHistory = updatedHistory.filter(
+        h => !(Boolean(h.questId) && h.questId!.startsWith(`spiritual-prayer-${targetDate}-`) && h.questId!.endsWith('-delayed'))
+      );
+
+      const allUpdatedPrayers: Partial<Record<'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', PrayerCheck>> = {};
+
+      for (const p of PRAYER_ORDER) {
+        const pCurrentState = p === prayer ? updatedPrayerState : { ...((hypotheticalLog[p] || {}) as PrayerCheck) };
+        if (pCurrentState?.delayed) {
+          const tierInfo = delayedPenalties[p] || { tier: 1, penaltyXp: 50 };
+          pCurrentState.compoundDelayTier = tierInfo.tier;
+          pCurrentState.compoundPenaltyXp = tierInfo.penaltyXp;
+          const pName = PRAYER_NAMES[p]?.en || p;
+          const targetP = String(pCurrentState.delayedToPrayer || NEXT_PRAYER_DEFAULT_TARGETS[p] || 'next prayer');
+
+          const delayedEntry: XPHistoryEntry = {
+            id: `h-pray-${targetDate}-${p}-delayed`,
+            questId: `spiritual-prayer-${targetDate}-${p}-delayed`,
+            questName: `⚠️ COMPOUND DELAYED PRAYER PENALTY (Level ${tierInfo.tier}): ${pName} delayed to ${targetP.toUpperCase()}`,
+            xp: -tierInfo.penaltyXp,
+            timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'penalty',
+            source: 'penalty_failed',
+            sourceId: `spiritual-prayer-${targetDate}-${p}-delayed`,
+            activityId: `prayer-${p}-delayed`,
+            skillIds: []
+          };
+          updatedHistory.unshift(delayedEntry);
+          allUpdatedPrayers[p] = pCurrentState;
+
+          // Auto-generate / update Muhāsabah audit slip for delayed prayer
+          const auditId = `muhasabah-delay-${p}-${targetDate}`;
+          const kaffarahQuestId = `quest-kaffarah-delay-${p}-${targetDate}`;
+          const targetFormatted = targetP.charAt(0).toUpperCase() + targetP.slice(1);
+          const auditTitle = `Delayed Prayer: ${pName} (Delayed to ${targetFormatted})`;
+          const kaffarahTitle = `2 Rak'ahs of Tawbah & Surah Al-Mulk Recitation (${pName} Delay)`;
+          const kaffarahQuestName = `[KAFFĀRAH] 2 Rak'ahs of Tawbah & Surah Al-Mulk Recitation (${pName} Delay)`;
+
+          const severity: MuhasabahSeverity = 
+            tierInfo.tier >= 4 ? 'Critical' :
+            tierInfo.tier === 3 ? 'Severe' :
+            tierInfo.tier === 2 ? 'Major' : 'Moderate';
+
+          const existingAuditIndex = updatedMuhasabahEntries.findIndex(e => e.id === auditId);
+          const recoveredXP = Math.max(25, Math.round(tierInfo.penaltyXp * 0.2));
+
+          const delayAuditEntry: MuhasabahEntry = {
+            id: auditId,
+            date: targetDate,
+            timestamp: getSystemTimestamp(targetDate),
+            title: auditTitle,
+            description: `Obligatory ${pName} (${PRAYER_NAMES[p]?.ar || ''}) prayer was not executed within its prescribed window and was delayed to ${targetFormatted}. Automatic Muhāsabah audit logged under Obligations (Tier ${tierInfo.tier} delay).`,
+            category: 'Obligations',
+            severity,
+            isExempt: false,
+            rawPenalty: tierInfo.penaltyXp,
+            xpDeducted: tierInfo.penaltyXp,
+            hpDeducted: tierInfo.tier >= 2 ? 15 : 10,
+            baseHpLoss: 10,
+            coinsDeducted: 0,
+            baseCoinsDeducted: 0,
+            momentumLost: 25,
+            cause: `Postponed past prescribed window into ${targetFormatted} slot (Delay Tier ${tierInfo.tier}).`,
+            reflection: 'Obligatory prayers must be safeguarded at their appointed times. Postponing leads to spiritual friction, compounding delay penalties, and erosion of barakah.',
+            correctiveQuestId: kaffarahQuestId,
+            correctiveQuestName: kaffarahQuestName,
+            kaffarahTitle,
+            kaffarahType: 'Prayer',
+            kaffarahCompleted: existingAuditIndex >= 0 ? Boolean(updatedMuhasabahEntries[existingAuditIndex].kaffarahCompleted) : false,
+            recoveryPercentage: 20,
+            recoveredXP,
+            recurrenceCadence: 'isolated',
+            recurrenceCadenceLabel: `Delay Tier ${tierInfo.tier}`,
+            recurrenceTier: tierInfo.tier
+          };
+
+          if (existingAuditIndex >= 0) {
+            updatedMuhasabahEntries[existingAuditIndex] = {
+              ...updatedMuhasabahEntries[existingAuditIndex],
+              ...delayAuditEntry,
+              kaffarahCompleted: updatedMuhasabahEntries[existingAuditIndex].kaffarahCompleted ?? false
+            };
+          } else {
+            updatedMuhasabahEntries = [delayAuditEntry, ...updatedMuhasabahEntries];
+          }
+
+          if (!updatedQuests.some(q => q.id === kaffarahQuestId)) {
+            updatedQuests.unshift({
+              id: kaffarahQuestId,
+              name: kaffarahQuestName,
+              description: `Solemn Kaffārah Restitution for delayed ${pName} prayer (${targetDate}).\n• Root Cause: Postponed past prescribed window to ${targetFormatted} (Tier ${tierInfo.tier} compound delay).\n• Restitution Action: Perform Wudu with heightened presence, pray 2 heartfelt Rak'ahs of Tawbah in solitude, and recite Surah Al-Mulk with contemplative presence.\n• Note: Conquering this quest fulfills your penance, heals Soul Vitality (+35 HP), and restores spiritual equilibrium.`,
+              type: 'Recovery',
+              difficulty: tierInfo.tier >= 3 ? 'Hard' : tierInfo.tier === 2 ? 'Normal' : 'Easy',
+              xp: recoveredXP,
+              estimatedTime: 20,
+              deadline: targetDate,
+              status: 'Active',
+              recurrence: 'None',
+              streakCount: 0,
+              completedAt: null,
+              lastCompletedDate: null,
+              postponedFrom: null,
+              postponedTo: null,
+              goalId: null,
+              projectId: null,
+              milestoneId: null,
+              listId: null,
+              relatedSkills: [],
+              createdAt: completedTimestamp
+            });
+          }
+        } else {
+          const auditId = `muhasabah-delay-${p}-${targetDate}`;
+          const kaffarahQuestId = `quest-kaffarah-delay-${p}-${targetDate}`;
+          updatedMuhasabahEntries = updatedMuhasabahEntries.filter(e => e.id !== auditId);
+          updatedQuests = updatedQuests.filter(q => q.id !== kaffarahQuestId || q.completedAt !== null);
+        }
+      }
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        ...allUpdatedPrayers,
+        [prayer]: updatedPrayerState
+      };
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        updatedQuests
+      );
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.max(1, Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + hpDelta));
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        xpHistory: updatedHistory,
+        muhasabahEntries: updatedMuhasabahEntries,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins)
+        }
+      };
+    });
+  };
+
+  const handleMissedJumuah = (dateStr?: string, reason?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currentConsecutive = (prev.consecutiveMissedJumuahs || 0) + 1;
+      const warning = getPropheticJumuahWarning(currentConsecutive);
+
+      const penaltyEntry: XPHistoryEntry = {
+        id: `h-jumuah-missed-${targetDate}`,
+        questId: `spiritual-jumuah-missed-${targetDate}`,
+        questName: `⚠️ MISSED SALAT AL-JUMU'AH PENALTY (تفويت صلاة الجمعة)`,
+        xp: -MISSED_JUMUAH_PENALTY_XP,
+        timestamp: completedTimestamp,
+        date: targetDate,
+        type: 'penalty',
+        source: 'penalty_failed',
+        sourceId: `spiritual-jumuah-missed-${targetDate}`,
+        activityId: `prayer-jumuah-missed`,
+        skillIds: []
+      };
+
+      const updatedHistory = [
+        penaltyEntry,
+        ...prev.xpHistory.filter(h => h.questId !== `spiritual-jumuah-missed-${targetDate}`)
+      ];
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        isJumuahDay: true,
+        jumuahMissed: true,
+        jumuahPenaltyApplied: true,
+        jumuahWarningAcknowledged: true,
+        dhuhr: {
+          ...log.dhuhr,
+          fardh: false,
+          onTime: false,
+          delayed: false,
+          jumuahMissed: true,
+          jumuahSwitchedToDhuhr: true,
+          jumuahMissedReason: reason || 'Not performed'
+        }
+      };
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'warning',
+        title: warning.title,
+        content: `${warning.hadithEn} (${warning.hadithAr}). ${warning.explanation}`,
+        priority: 'high'
+      });
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.max(1, Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) - MISSED_JUMUAH_PENALTY_HP));
+
+      return {
+        ...prev,
+        consecutiveMissedJumuahs: currentConsecutive,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp
+        }
+      };
+    });
+  };
+
+  const revertMissedJumuah = (dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const updatedHistory = prev.xpHistory.filter(h => h.questId !== `spiritual-jumuah-missed-${targetDate}`);
+      const newConsecutive = Math.max(0, (prev.consecutiveMissedJumuahs || 1) - 1);
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        jumuahMissed: false,
+        jumuahPenaltyApplied: false,
+        dhuhr: {
+          ...log.dhuhr,
+          jumuahMissed: false,
+          jumuahSwitchedToDhuhr: false
+        }
+      };
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: `🕌 JUMU'AH ATTENDANCE RESTORED`,
+        content: `Salat al-Jumu'ah attendance restored for ${targetDate}. Penalty reversed (+${MISSED_JUMUAH_PENALTY_XP} XP, +${MISSED_JUMUAH_PENALTY_HP} HP).`,
+        priority: 'low'
+      });
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) + MISSED_JUMUAH_PENALTY_HP);
+
+      return {
+        ...prev,
+        consecutiveMissedJumuahs: newConsecutive,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp
+        }
+      };
+    });
+  };
+
+  const toggleJumuahSunnah = (
+    field: 'badiyahMasjid' | 'badiyahHome' | 'tahiyyah' | 'ghusl' | 'kahf',
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+
+    const sunnahConfig = {
+      badiyahMasjid: { name: "Sunnah Ba'diyyah: 4 Rak'ahs in Masjid (بعد الجمعة بالمسجد)", xp: 40, coins: 5 },
+      badiyahHome: { name: "Sunnah Ba'diyyah: 2 Rak'ahs at Home (بعد الجمعة بالبيت)", xp: 30, coins: 3 },
+      tahiyyah: { name: 'Tahiyyat al-Masjid before Khutbah (تحية المسجد)', xp: 30, coins: 3 },
+      ghusl: { name: 'Sunnah Ghusl & Cleanliness (غسل الجمعة والطيب)', xp: 30, coins: 3 },
+      kahf: { name: 'Surat Al-Kahf Recitation (قراءة سورة الكهف)', xp: 60, coins: 8 }
+    };
+    const item = sunnahConfig[field];
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const currDhuhr = log.dhuhr || createDefaultSpiritualLog(targetDate).dhuhr;
+
+      let fieldKey: keyof PrayerCheck;
+      if (field === 'badiyahMasjid') fieldKey = 'jumuahSunnahBadiyahMasjid';
+      else if (field === 'badiyahHome') fieldKey = 'jumuahSunnahBadiyahHome';
+      else if (field === 'tahiyyah') fieldKey = 'jumuahTahiyyah';
+      else if (field === 'ghusl') fieldKey = 'jumuahGhusl';
+      else fieldKey = 'jumuahSuratAlKahf';
+
+      const currentVal = Boolean(currDhuhr[fieldKey]);
+      const newVal = !currentVal;
+
+      const qId = `spiritual-jumuah-${targetDate}-${field}`;
+      let updatedHistory = [...prev.xpHistory];
+      let deltaCoins = 0;
+
+      if (newVal) {
+        updatedHistory.unshift({
+          id: `h-jumuah-${Date.now()}-${field}`,
+          questId: qId,
+          questName: `✨ JUMU'AH SUNNAH: ${item.name}`,
+          xp: item.xp,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'salah',
+          source: 'quest',
+          sourceId: qId,
+          activityId: `prayer-jumuah-${field}`,
+          skillIds: []
+        });
+        deltaCoins += item.coins;
+      } else {
+        updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+        deltaCoins -= item.coins;
+      }
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        dhuhr: {
+          ...currDhuhr,
+          [fieldKey]: newVal
+        }
+      };
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + deltaCoins)
+        }
+      };
+    });
+  };
+
+  const completePrayerQada = (
+    prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    dateStr?: string
+  ) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const pInfo = PRAYER_NAMES[prayer];
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const curr = log[prayer];
+
+      const qadaEntry: XPHistoryEntry = {
+        id: `h-qada-${Date.now()}-${prayer}`,
+        questId: `spiritual-qada-${targetDate}-${prayer}`,
+        questName: `📜 QADA' FULFILLED: Made up missed ${pInfo.en} (${pInfo.ar})`,
+        xp: 50,
+        timestamp: completedTimestamp,
+        date: targetDate,
+        type: 'salah',
+        source: 'quest',
+        sourceId: `spiritual-qada-${targetDate}-${prayer}`,
+        activityId: `prayer-${prayer}-qada`,
+        skillIds: []
+      };
+
+      const updatedHistory = [qadaEntry, ...prev.xpHistory.filter(h => h.questId !== `spiritual-qada-${targetDate}-${prayer}`)];
+
+      const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
+      const updatedQuests = prev.quests.map(q => {
+        if (q.id === qadaQuestId || q.name.includes(`Make up missed ${pInfo.en}`)) {
+          return {
+            ...q,
+            status: 'Completed' as const,
+            completedAt: completedTimestamp
+          };
+        }
+        return q;
+      });
+
+      const updatedLog: SpiritualDailyLog = {
+        ...log,
+        [prayer]: {
+          ...curr,
+          qadaCompleted: true,
+          qadaCompletedAt: completedTimestamp
+        }
+      };
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: `📜 QADA' RESTITUTION SEALED: ${pInfo.en}`,
+        content: `Missed ${pInfo.en} (${pInfo.ar}) made up with sincere repentance. Restitution acknowledged (+50 XP).`,
+        priority: 'medium'
+      });
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        updatedQuests
+      );
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: updatedLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level
+        }
+      };
+    });
+  };
+
+  const checkAndApplyMidnightPrayerPenalties = (dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    let penalizedCount = 0;
+    const penalizedPrayers: string[] = [];
+
+    setState(prev => {
+      const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const dayLog = { ...log };
+      let updatedHistory = [...prev.xpHistory];
+      let updatedQuests = [...prev.quests];
+      let healthLost = 0;
+      let modified = false;
+
+      for (const prayer of PRAYER_ORDER) {
+        const pState = dayLog[prayer];
+        if (pState && !pState.fardh && !pState.missedPastMidnight) {
+          modified = true;
+          penalizedCount++;
+          const pInfo = PRAYER_NAMES[prayer];
+          penalizedPrayers.push(pInfo.en);
+
+          dayLog[prayer] = {
+            ...pState,
+            fardh: false,
+            onTime: false,
+            delayed: false,
+            missedPastMidnight: true,
+            executionState: 'missed_midnight'
+          };
+
+          const prayXpId = `h-fail-midnight-prayer-${prayer}-${targetDate}`;
+          if (!updatedHistory.some(h => h.id === prayXpId)) {
+            updatedHistory.unshift({
+              id: prayXpId,
+              questId: `spiritual-prayer-${targetDate}-${prayer}-missedMidnight`,
+              questName: `🚨 SEVERE PRAYER PENALTY: ${pInfo.en} (${pInfo.ar}) not executed before midnight`,
+              xp: -MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+              timestamp: `${targetDate}T23:59:59.000Z`,
+              date: targetDate,
+              type: 'penalty',
+              source: 'penalty_midnight',
+              sourceId: `spiritual-prayer-${targetDate}-${prayer}`,
+              activityId: `prayer-${prayer}-missed-midnight`,
+              skillIds: []
+            });
+            healthLost += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+          }
+
+          const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
+          if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
+            updatedQuests.push({
+              id: qadaQuestId,
+              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
+              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse.`,
+              status: 'Active',
+              difficulty: 'Hard',
+              type: 'Recovery',
+              estimatedTime: 15,
+              recurrence: 'None',
+              energyLevel: 'High',
+              deadline: targetDate,
+              createdAt: `${targetDate}T23:59:59.000Z`,
+              completedAt: null,
+              xp: 50,
+              goalId: null,
+              projectId: null,
+              milestoneId: null,
+              subquests: [
+                {
+                  id: `sq-qada-${prayer}-${targetDate}-1`,
+                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+                  completed: false
+                }
+              ],
+              relatedSkills: []
+            });
+          }
+        }
+      }
+
+      if (!modified) return prev;
+
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'warning',
+        title: '🚨 MIDNIGHT PRAYER AUDIT APPLIED',
+        content: `${penalizedCount} prayer(s) were not executed before midnight: ${penalizedPrayers.join(', ')}. Severe penalty (−${penalizedCount * MIDNIGHT_MISSED_PRAYER_PENALTY_XP} XP, −${healthLost} HP) recorded. Qada' restitution required.`,
+        priority: 'high'
+      });
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        updatedQuests
+      );
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.max(1, Math.min(currentMaxHp, (prev.profile.hp ?? currentMaxHp) - healthLost));
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: dayLog
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          hp: nextHp,
+          maxHp: currentMaxHp
+        }
+      };
+    });
+
+    return { missedCount: penalizedCount, penalizedPrayers };
   };
 
   const toggleAdhkar = (type: 'sabah' | 'masa' | 'sleepDhohr' | 'sleepNight', dateStr?: string) => {
@@ -8347,7 +9725,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getQuranFreshnessScore = (targetDate?: string) => {
     const currentTracker = state.quranTracker || DEFAULT_QURAN_TRACKER;
-    return calculateQuranFreshness(currentTracker.passages, targetDate || state.systemDate || getLocalDateString());
+    return calculateQuranFreshness(currentTracker.passages || [], targetDate || state.systemDate || getLocalDateString());
   };
 
   const incrementSalawat = (amount: number, dateStr?: string) => {
@@ -9965,6 +11343,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       completeLevelUpBossGateRequirement,
       exportData,
       importData,
+      importDataDetailed,
       isQuestFinishedForToday,
       isQuestScheduledForDate,
       getWeekdayStr,
@@ -10025,6 +11404,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       getSpiritualLog,
       updateSpiritualLog,
       togglePrayer,
+      setPrayerExecutionState,
+      handleMissedJumuah,
+      revertMissedJumuah,
+      toggleJumuahSunnah,
+      completePrayerQada,
+      checkAndApplyMidnightPrayerPenalties,
       toggleAdhkar,
       incrementSalawat,
       setSalawatCount,

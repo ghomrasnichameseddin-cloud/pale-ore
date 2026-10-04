@@ -708,14 +708,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                           : 'bg-[#07080c] border-white/5 text-zinc-400 hover:text-white'
                       }`}
                     >
-                      {d === 'ALL' ? 'ALL 9 PILLARS' : d}
+                      {d === 'ALL' ? `ALL ${attributes.length} PILLARS` : d}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* 2. 9 CANONICAL ATTRIBUTES GRID */}
+            {/* 2. 18 CANONICAL ATTRIBUTES GRID */}
             {(() => {
               const displayedAttributes = attributes.filter(attr => {
                 if (selectedDomainFilter === 'ALL') return true;

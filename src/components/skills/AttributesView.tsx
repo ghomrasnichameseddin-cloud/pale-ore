@@ -102,7 +102,7 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
         <div className="flex justify-between items-center pb-2 border-b border-[#c5a059]/20">
           <span className="text-xs font-mono font-bold text-[#e5c875] uppercase tracking-wider flex items-center gap-1.5">
             <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" />
-            SOVEREIGN_ATTRIBUTES (9)
+            SOVEREIGN_ATTRIBUTES ({attributes.length})
           </span>
           <span className="text-[9px] font-mono text-zinc-500 uppercase">
             CONSTITUTION

@@ -55,7 +55,10 @@ class RootErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundar
 
   handleReset = () => {
     try {
+      localStorage.removeItem('pale_ore_pos_state');
       localStorage.removeItem('pale_ore_pos_state_v1');
+      localStorage.removeItem('pale_ore_pos_focus_session');
+      localStorage.removeItem('pale_ore_pos_visual_codex');
     } catch {
       // Ignore
     }

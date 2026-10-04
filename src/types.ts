@@ -978,16 +978,37 @@ export interface WeaknessDecayMetrics {
   canAdvanceStatus: boolean;
 }
 
+export type PrayerExecutionState = 'on_time' | 'delayed' | 'missed_midnight' | 'unperformed';
+export type DelayedToPrayerOption = 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'midnight';
+
 export interface PrayerCheck {
   fardh: boolean;
+  executionState?: PrayerExecutionState;
   onTime?: boolean; // Prayed on time (+40 XP bonus)
-  delayed?: boolean; // Prayed late / missed window (-50 XP penalty deduction)
+  delayed?: boolean; // Prayed late / in time of another prayer (Compound Penalty tier)
+  delayedToPrayer?: DelayedToPrayerOption | null; // which prayer window it was postponed to
+  compoundDelayTier?: number; // 1st, 2nd, 3rd, 4th, 5th delayed prayer
+  compoundPenaltyXp?: number; // calculated compound penalty applied (-50, -100, -175, etc.)
+  missedPastMidnight?: boolean; // Not executed before midnight (-200 XP, -10 HP severe penalty)
+  qadaCompleted?: boolean; // Made up via Qada'
+  qadaCompletedAt?: string | null;
   inMasjid: boolean; // Masjid / Jama'ah bonus (+50 XP)
   sunnahRawatib: boolean; // Sunan Rawatib bonus (+30-40 XP)
-  sunnahBefore?: boolean; // Specifically for Dhuhr (4 Rak'ahs before: 2+2) (+25 XP)
-  sunnahAfter?: boolean; // Specifically for Dhuhr (2 Rak'ahs after) (+20 XP)
+  sunnahBefore?: boolean; // Specifically for Dhuhr / Jumu'ah (4 Rak'ahs before: 2+2) (+25 XP)
+  sunnahAfter?: boolean; // Specifically for Dhuhr / Jumu'ah (2 Rak'ahs after) (+20 XP)
   completedAt?: string | null;
+  // Salat al-Jumu'ah specific tracking
+  isJumuah?: boolean; // True if this slot is Salat al-Jumu'ah on Friday
+  jumuahMissed?: boolean; // True if Jumu'ah was missed and converted to Dhuhr
+  jumuahSwitchedToDhuhr?: boolean; // Flag indicating UI switch to Dhuhr (4 Rak'ahs)
+  jumuahMissedReason?: string;
+  jumuahSunnahBadiyahMasjid?: boolean; // 4 Rak'ahs in Masjid (+40 XP)
+  jumuahSunnahBadiyahHome?: boolean; // 2 Rak'ahs at home (+30 XP)
+  jumuahTahiyyah?: boolean; // Tahiyyat al-Masjid before Khutbah (+30 XP)
+  jumuahGhusl?: boolean; // Sunnah Ghusl & Cleanliness (+30 XP)
+  jumuahSuratAlKahf?: boolean; // Recitation of Surat Al-Kahf (+60 XP)
 }
+
 
 export type FastingType = 
   | 'Ramadan'           // Fardh Ramadan Fast (صيام رمضان)
@@ -1188,6 +1209,7 @@ export interface DhikrTasbeehLog {
   tasbeehAfterSalah: boolean; // 33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar + 1 La ilaha illallah (+60 XP)
   postSalahAdhkar?: PostSalahAdhkarMap; // 5 prayers post-adhkar tracking (Standard 33x vs Mini 10x - Tasbih, Hamd, Takbir ONLY)
   postSalahIstighfar?: PostSalahIstighfarMap; // 3x Istighfār after each salah tracked separately in Post-Obligatory Prayer Remembrance
+  postSalahAyatAlKursi?: Record<string, boolean>; // Recitation of Ayat al-Kursi immediately after obligatory prayers
   postSalahSessions?: PostSalahSessionsMap; // 5 prayers session status ('not_started' | 'in_progress' | 'complete')
   postSalahItemsCompleted?: PostSalahItemsCompletedMap; // Per-prayer individual post-salah adhkar parts completed
   postSalahItemCounts?: PostSalahItemCountsMap; // Per-prayer individual post-salah adhkar parts bead counts
@@ -1293,6 +1315,11 @@ export interface SpiritualDailyLog {
   khushuRating?: number; // 1-10 Khushu' / Heart Presence rating
   totalEarnedXpToday?: number;
   notes?: string;
+  // Salat al-Jumu'ah Friday attributes:
+  isJumuahDay?: boolean;
+  jumuahMissed?: boolean;
+  jumuahPenaltyApplied?: boolean;
+  jumuahWarningAcknowledged?: boolean;
 }
 
 export interface PlayerLevelInfo {
@@ -1378,6 +1405,7 @@ export interface POSState {
   quranTracker?: QuranTrackerState;
   savedWeeklySummaries?: WeeklyMuhasabahSummary[];
   lastWeeklyMuhasabahResetDate?: string | null; // YYYY-MM-DD of last Sunday on which the weekly cycle was auto-archived
+  consecutiveMissedJumuahs?: number; // Consecutive Fridays missed (prophetic warning threshold)
   masjid40Covenant?: Masjid40DayCovenant;
   visualCodex?: VisualCodexSettings;
   customAdhkar?: AdhkarItem[];

@@ -4,13 +4,24 @@ import {
   CheckCircle2, Sparkles, Scale, Clock, Moon, Sun, Award, ChevronLeft, 
   ChevronRight, RefreshCw, AlertTriangle, BookOpen, ShieldCheck, Heart, 
   Plus, Minus, Flame, ArrowUpRight, Check, Compass, Shield, HelpCircle,
-  Calendar, Layers, Zap, Bed
+  Calendar, Layers, Zap, Bed, AlertOctagon, RotateCcw, Info, X, ChevronDown
 } from 'lucide-react';
 import { usePOS } from '../POSContext';
 import { getHijriDate } from '../utils/hijriCalendar';
 import { addDays } from '../utils/dateUtils';
 import { RubElHizbIcon, GeometricDivider, ArabesqueCorner } from './IslamicRpgDecorations';
-import { SpiritualDailyLog, PrayerCheck, PostSalahDhikrMode } from '../types';
+import { SpiritualDailyLog, PrayerCheck, PostSalahDhikrMode, DelayedToPrayerOption } from '../types';
+import { 
+  PRAYER_ORDER, 
+  PRAYER_NAMES, 
+  NEXT_PRAYER_DEFAULT_TARGETS, 
+  MIDNIGHT_MISSED_PRAYER_PENALTY_XP, 
+  MIDNIGHT_MISSED_PRAYER_PENALTY_HP, 
+  MISSED_JUMUAH_PENALTY_XP, 
+  MISSED_JUMUAH_PENALTY_HP, 
+  getCompoundDelayPenalty, 
+  getPropheticJumuahWarning 
+} from '../utils/prayerRules';
 import { SiamFastingSection } from './spiritual/SiamFastingSection';
 import { SunnahPrayersSection } from './spiritual/SunnahPrayersSection';
 import { AdhkarSection } from './spiritual/AdhkarSection';
@@ -19,6 +30,8 @@ import { SacredProtocolScorecard } from './spiritual/SacredProtocolScorecard';
 import { Masjid40DayTracker } from './spiritual/Masjid40DayTracker';
 import { PostSalahAdhkarModal } from './spiritual/PostSalahAdhkarModal';
 import { SleepAdhkarModal } from './spiritual/SleepAdhkarModal';
+import { PrayerCard } from './spiritual/PrayerCard';
+import { JumuahWarningModal } from './spiritual/JumuahWarningModal';
 
 interface SpiritualTrackerViewProps {
   onOpenMuhasabahAudit?: () => void;
@@ -41,6 +54,12 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     syncWithRealClock, 
     getSpiritualLog,
     togglePrayer,
+    setPrayerExecutionState,
+    handleMissedJumuah,
+    revertMissedJumuah,
+    toggleJumuahSunnah,
+    completePrayerQada,
+    checkAndApplyMidnightPrayerPenalties,
     toggleAllPrayersInMasjid,
     updateQiyam,
     setKhushuRating,
@@ -62,6 +81,10 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   const [isPostAdhkarModalOpen, setIsPostAdhkarModalOpen] = useState(false);
   const [sleepModalTab, setSleepModalTab] = useState<'dhohr' | 'night'>('night');
   const [isSleepModalOpen, setIsSleepModalOpen] = useState(false);
+  const [showJumuahWarningModal, setShowJumuahWarningModal] = useState(false);
+  const [jumuahReasonInput, setJumuahReasonInput] = useState('');
+  const [delaySelectorOpenFor, setDelaySelectorOpenFor] = useState<string | null>(null);
+  const [auditFeedback, setAuditFeedback] = useState<string | null>(null);
 
   const currentLog: SpiritualDailyLog = getSpiritualLog(systemDate);
   const hijriInfo = getHijriDate(systemDate);
@@ -70,6 +93,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
   const postMap = currentLog.dhikr?.postSalahAdhkar || {};
   const postIstighfarMap = currentLog.dhikr?.postSalahIstighfar || {};
+  const postAyatAlKursiMap = currentLog.dhikr?.postSalahAyatAlKursi || {};
   const completedPostPrayersCount = (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).filter(p => {
     const mode = postMap[p];
     return mode === 'standard33' || mode === 'mini10';
@@ -91,6 +115,20 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         [prayerId]: !postIstighfarMap[prayerId]
       }
     }, systemDate);
+  };
+
+  const handleTogglePostAyatAlKursi = (prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
+    updateDhikrLog({
+      postSalahAyatAlKursi: {
+        ...postAyatAlKursiMap,
+        [prayerId]: !postAyatAlKursiMap[prayerId]
+      }
+    }, systemDate);
+  };
+
+  const handleConfirmMissedJumuah = (reason?: string) => {
+    handleMissedJumuah(systemDate, reason);
+    setShowJumuahWarningModal(false);
   };
 
   const shiftDate = (days: number) => {
@@ -755,176 +793,28 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     completedAt: null
                   };
 
-                  const Icon = prayer.icon;
-
                   return (
-                    <div
+                    <PrayerCard
                       key={prayer.id}
-                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
-                        prayerState.fardh
-                          ? 'bg-gradient-to-br from-[#0c131d] to-[#070b10] border-emerald-500/40 shadow-sm'
-                          : `bg-gradient-to-br ${prayer.gradient} border-white/10 hover:border-white/20`
-                      }`}
-                    >
-                      {/* TOP HEADER */}
-                      <div>
-                        <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-2 rounded-xl border ${prayer.iconBg}`}>
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <h4 className="font-display font-bold text-base text-zinc-100">{prayer.nameEn}</h4>
-                                <span className="text-xs text-[var(--accent-bright)] font-display">({prayer.nameAr})</span>
-                              </div>
-                              <span className="text-[10px] font-mono text-zinc-400 block">{prayer.timeLabel} • {prayer.fardhRakats} Rak&apos;ahs</span>
-                            </div>
-                          </div>
-
-                          <span className="text-[10px] font-mono font-bold text-[var(--accent-bright)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded-full">
-                            +{prayer.fardhXp} XP
-                          </span>
-                        </div>
-
-                        {/* PRIMARY FARDH COMPLETION BUTTON */}
-                        <div className="pt-3">
-                          <button
-                            onClick={() => togglePrayer(prayer.id, 'fardh', systemDate)}
-                            className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
-                              prayerState.fardh
-                                ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-100 shadow-sm'
-                                : 'bg-[#07090e] hover:bg-zinc-800 border-white/10 text-zinc-200'
-                            }`}
-                          >
-                            <CheckCircle2 className={`h-4 w-4 ${prayerState.fardh ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                            <span>{prayerState.fardh ? 'FARDH COMPLETED ✓ (أُدِّيَت)' : `PRAY ${prayer.nameEn.toUpperCase()} FARDH`}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* SECONDARY MODIFIERS: ON TIME, IN MASJID, SUNAN RAWATIB */}
-                      <div className="space-y-2 pt-2 border-t border-white/5">
-                        
-                        {/* Timeliness toggle: On-Time (+40 XP) vs Delayed (-50 XP) */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[11px] font-mono text-zinc-400">Timeliness:</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => togglePrayer(prayer.id, 'onTime', systemDate)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
-                                prayerState.onTime
-                                  ? 'bg-emerald-950 border-emerald-500/60 text-emerald-200'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                            >
-                              On-Time (+40 XP)
-                            </button>
-                            <button
-                              onClick={() => togglePrayer(prayer.id, 'delayed', systemDate)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
-                                prayerState.delayed
-                                  ? 'bg-rose-950 border-rose-500/60 text-rose-200'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-500 hover:text-zinc-300'
-                              }`}
-                            >
-                              Delayed (-50 XP)
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* In Masjid / Jama'ah (+50 XP) */}
-                        <button
-                          onClick={() => togglePrayer(prayer.id, 'inMasjid', systemDate)}
-                          className={`w-full py-1.5 px-2.5 rounded-lg border text-[11px] font-mono font-bold transition flex items-center justify-between ${
-                            prayerState.inMasjid
-                              ? 'bg-indigo-950/80 border-indigo-500/60 text-indigo-200'
-                              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <span>🕌 In Masjid / Jamā&apos;ah</span>
-                            {prayerState.inMasjid && <span className="text-[9px] text-[var(--accent-highlight)] bg-[var(--accent-surface)] border border-[var(--border-subtle)] px-1 rounded">40D +1</span>}
-                          </span>
-                          <span className="text-[10px] text-indigo-300">+{prayer.masjidXp} XP</span>
-                        </button>
-
-                        {/* Sunan Rawatib (+30 to 45 XP) */}
-                        <button
-                          onClick={() => togglePrayer(prayer.id, 'sunnahRawatib', systemDate)}
-                          className={`w-full py-1.5 px-2.5 rounded-lg border text-[11px] font-mono font-bold transition flex items-center justify-between ${
-                            prayerState.sunnahRawatib
-                              ? 'bg-amber-950/80 border-amber-500/60 text-amber-200'
-                              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <span className="truncate max-w-[200px]">✨ {prayer.sunnahLabel}</span>
-                          <span className="text-[10px] text-amber-300 shrink-0 ml-1">+{prayer.sunnahXp} XP</span>
-                        </button>
-
-                        {/* Post-Salah Adhkār Row */}
-                        <div className="pt-2 border-t border-white/5 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                              <span className="text-[11px] font-mono font-bold text-zinc-300">
-                                Post-Salah Adhkār (أذكار بعد الصلاة)
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setSelectedPostPrayer(prayer.id);
-                                setIsPostAdhkarModalOpen(true);
-                              }}
-                              className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
-                            >
-                              <span>Read</span>
-                              <ArrowUpRight className="h-3 w-3" />
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-1">
-                            <button
-                              onClick={() => handleTogglePostIstighfar(prayer.id)}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postIstighfarMap[prayer.id]
-                                  ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="3x Istighfār immediately after prayer (+5 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postIstighfarMap[prayer.id] ? 'text-amber-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">3x Istighfār</span>
-                            </button>
-                            <button
-                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postMap[prayer.id] === 'standard33'
-                                  ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="Standard 33x: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr ONLY (+20 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">33x Only</span>
-                            </button>
-                            <button
-                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postMap[prayer.id] === 'mini10'
-                                  ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="Mini 10x: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr ONLY (+12 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">10x Only</span>
-                            </button>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
+                      prayer={prayer}
+                      prayerState={prayerState}
+                      systemDate={systemDate}
+                      isJumuahDay={Boolean(hijriInfo.isJumuah)}
+                      consecutiveMissedJumuahs={state.consecutiveMissedJumuahs || 0}
+                      allSpiritualLog={currentLog}
+                      onTogglePrayer={togglePrayer}
+                      onSetPrayerExecutionState={setPrayerExecutionState}
+                      onOpenMissedJumuahModal={() => setShowJumuahWarningModal(true)}
+                      onRevertMissedJumuah={() => revertMissedJumuah(systemDate)}
+                      onToggleJumuahSunnah={(field) => toggleJumuahSunnah(field, systemDate)}
+                      onCompleteQada={(pId) => completePrayerQada(pId, systemDate)}
+                      onOpenPostSalahModal={(pId) => {
+                        setSelectedPostPrayer(pId);
+                        setIsPostAdhkarModalOpen(true);
+                      }}
+                      onTogglePostIstighfar={handleTogglePostIstighfar}
+                      onTogglePostAyatAlKursi={handleTogglePostAyatAlKursi}
+                    />
                   );
                 })}
               </div>
@@ -1633,168 +1523,28 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     completedAt: null
                   };
 
-                  const Icon = prayer.icon;
-
                   return (
-                    <div
+                    <PrayerCard
                       key={prayer.id}
-                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-4 ${
-                        prayerState.fardh
-                          ? 'bg-gradient-to-br from-[#0c131d] to-[#070b10] border-emerald-500/40 shadow-sm'
-                          : `bg-gradient-to-br ${prayer.gradient} border-white/10 hover:border-white/20`
-                      }`}
-                    >
-                      {/* TOP HEADER */}
-                      <div>
-                        <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-2 rounded-xl border ${prayer.iconBg}`}>
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <h4 className="font-display font-bold text-base text-zinc-100">{prayer.nameEn}</h4>
-                                <span className="text-xs text-[var(--accent-bright)] font-display">({prayer.nameAr})</span>
-                              </div>
-                              <span className="text-[10px] font-mono text-zinc-400 block">{prayer.timeLabel} • {prayer.fardhRakats} Rak&apos;ahs</span>
-                            </div>
-                          </div>
-
-                          <span className="text-[10px] font-mono font-bold text-[var(--accent-bright)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded-full">
-                            +{prayer.fardhXp} XP
-                          </span>
-                        </div>
-
-                        {/* PRIMARY FARDH COMPLETION BUTTON */}
-                        <div className="pt-3">
-                          <button
-                            onClick={() => togglePrayer(prayer.id, 'fardh', systemDate)}
-                            className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
-                              prayerState.fardh
-                                ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-100 shadow-sm'
-                                : 'bg-[#07090e] hover:bg-zinc-800 border-white/10 text-zinc-200'
-                            }`}
-                          >
-                            <CheckCircle2 className={`h-4 w-4 ${prayerState.fardh ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                            <span>{prayerState.fardh ? 'FARDH COMPLETED ✓ (أُدِّيَت)' : `PRAY ${prayer.nameEn.toUpperCase()} FARDH`}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* SECONDARY MODIFIERS */}
-                      <div className="space-y-2 pt-2 border-t border-white/5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[11px] font-mono text-zinc-400">Timeliness:</span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => togglePrayer(prayer.id, 'onTime', systemDate)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
-                                prayerState.onTime
-                                  ? 'bg-emerald-950 border-emerald-500/60 text-emerald-200'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                            >
-                              On-Time (+40 XP)
-                            </button>
-                            <button
-                              onClick={() => togglePrayer(prayer.id, 'delayed', systemDate)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition ${
-                                prayerState.delayed
-                                  ? 'bg-rose-950 border-rose-500/60 text-rose-200'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-500 hover:text-zinc-300'
-                              }`}
-                            >
-                              Delayed (-50 XP)
-                            </button>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => togglePrayer(prayer.id, 'inMasjid', systemDate)}
-                          className={`w-full py-1.5 px-2.5 rounded-lg border text-[11px] font-mono font-bold transition flex items-center justify-between ${
-                            prayerState.inMasjid
-                              ? 'bg-indigo-950/80 border-indigo-500/60 text-indigo-200'
-                              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <span>🕌 In Masjid / Jamā&apos;ah</span>
-                          <span className="text-[10px] text-indigo-300">+{prayer.masjidXp} XP</span>
-                        </button>
-
-                        <button
-                          onClick={() => togglePrayer(prayer.id, 'sunnahRawatib', systemDate)}
-                          className={`w-full py-1.5 px-2.5 rounded-lg border text-[11px] font-mono font-bold transition flex items-center justify-between ${
-                            prayerState.sunnahRawatib
-                              ? 'bg-amber-950/80 border-amber-500/60 text-amber-200'
-                              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <span className="truncate max-w-[200px]">✨ {prayer.sunnahLabel}</span>
-                          <span className="text-[10px] text-amber-300 shrink-0 ml-1">+{prayer.sunnahXp} XP</span>
-                        </button>
-
-                        {/* Post-Salah Adhkār Row */}
-                        <div className="pt-2 border-t border-white/5 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                              <span className="text-[11px] font-mono font-bold text-zinc-300">
-                                Post-Salah Adhkār (أذكار بعد الصلاة)
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                setSelectedPostPrayer(prayer.id);
-                                setIsPostAdhkarModalOpen(true);
-                              }}
-                              className="text-[10px] font-mono text-[var(--accent-bright)] hover:underline flex items-center gap-0.5"
-                            >
-                              <span>Read</span>
-                              <ArrowUpRight className="h-3 w-3" />
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-1">
-                            <button
-                              onClick={() => handleTogglePostIstighfar(prayer.id)}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postIstighfarMap[prayer.id]
-                                  ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="3x Istighfār immediately after prayer (+5 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postIstighfarMap[prayer.id] ? 'text-amber-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">3x Istighfār</span>
-                            </button>
-                            <button
-                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'standard33' ? 'none' : 'standard33')}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postMap[prayer.id] === 'standard33'
-                                  ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="Standard 33x: 33 Tasbīḥ, 33 Ḥamd, 33 Takbīr ONLY (+20 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'standard33' ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">33x Only</span>
-                            </button>
-                            <button
-                              onClick={() => handleSetPostSalah(prayer.id, postMap[prayer.id] === 'mini10' ? 'none' : 'mini10')}
-                              className={`py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${
-                                postMap[prayer.id] === 'mini10'
-                                  ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm'
-                                  : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
-                              }`}
-                              title="Mini 10x: 10 Tasbīḥ, 10 Ḥamd, 10 Takbīr ONLY (+12 XP)"
-                            >
-                              <CheckCircle2 className={`h-3 w-3 shrink-0 ${postMap[prayer.id] === 'mini10' ? 'text-teal-400' : 'text-zinc-600'}`} />
-                              <span className="truncate">10x Only</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      prayer={prayer}
+                      prayerState={prayerState}
+                      systemDate={systemDate}
+                      isJumuahDay={Boolean(hijriInfo.isJumuah)}
+                      consecutiveMissedJumuahs={state.consecutiveMissedJumuahs || 0}
+                      allSpiritualLog={currentLog}
+                      onTogglePrayer={togglePrayer}
+                      onSetPrayerExecutionState={setPrayerExecutionState}
+                      onOpenMissedJumuahModal={() => setShowJumuahWarningModal(true)}
+                      onRevertMissedJumuah={() => revertMissedJumuah(systemDate)}
+                      onToggleJumuahSunnah={(field) => toggleJumuahSunnah(field, systemDate)}
+                      onCompleteQada={(pId) => completePrayerQada(pId, systemDate)}
+                      onOpenPostSalahModal={(pId) => {
+                        setSelectedPostPrayer(pId);
+                        setIsPostAdhkarModalOpen(true);
+                      }}
+                      onTogglePostIstighfar={handleTogglePostIstighfar}
+                      onTogglePostAyatAlKursi={handleTogglePostAyatAlKursi}
+                    />
                   );
                 })}
               </div>
@@ -1878,6 +1628,14 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
         onClose={() => setIsSleepModalOpen(false)}
         systemDate={systemDate}
         initialTab={sleepModalTab}
+      />
+
+      {/* PROPHETIC JUMU'AH WARNING MODAL */}
+      <JumuahWarningModal
+        isOpen={showJumuahWarningModal}
+        onClose={() => setShowJumuahWarningModal(false)}
+        onConfirmMissed={handleConfirmMissedJumuah}
+        consecutiveMissedCount={state.consecutiveMissedJumuahs || 0}
       />
 
     </div>

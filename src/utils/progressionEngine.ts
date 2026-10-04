@@ -42,33 +42,51 @@ export type {
 export const CORE_DOMAINS: readonly CoreDomain[] = ['Mind', 'Body', 'Soul'] as const;
 
 export const DOMAIN_ATTRIBUTES: Record<CoreDomain, readonly string[]> = {
-  Mind: ['Focus', 'Knowledge', 'Wisdom'],
-  Body: ['Strength', 'Endurance', 'Agility'],
-  Soul: ['Faith', 'Discipline', 'Social']
+  Mind: ['Focus', 'Knowledge', 'Wisdom', 'Clarity', 'Creativity', 'Memory'],
+  Body: ['Strength', 'Endurance', 'Agility', 'Vitality', 'Fortitude', 'Mobility'],
+  Soul: ['Faith', 'Discipline', 'Social', 'Ihsan', 'Sabr', 'Shukr']
 } as const;
 
 export const ATTRIBUTE_DOMAIN_MAP: Record<string, CoreDomain> = {
   Focus: 'Mind',
   Knowledge: 'Mind',
   Wisdom: 'Mind',
+  Clarity: 'Mind',
+  Creativity: 'Mind',
+  Memory: 'Mind',
   Strength: 'Body',
   Endurance: 'Body',
   Agility: 'Body',
+  Vitality: 'Body',
+  Fortitude: 'Body',
+  Mobility: 'Body',
   Faith: 'Soul',
   Discipline: 'Soul',
-  Social: 'Soul'
+  Social: 'Soul',
+  Ihsan: 'Soul',
+  Sabr: 'Soul',
+  Shukr: 'Soul'
 };
 
 export const CANONICAL_ATTRIBUTES = [
-  'Focus',
-  'Knowledge',
-  'Wisdom',
   'Strength',
   'Endurance',
   'Agility',
-  'Faith',
+  'Focus',
   'Discipline',
-  'Social'
+  'Knowledge',
+  'Wisdom',
+  'Social',
+  'Faith',
+  'Clarity',
+  'Creativity',
+  'Memory',
+  'Vitality',
+  'Fortitude',
+  'Mobility',
+  'Ihsan',
+  'Sabr',
+  'Shukr'
 ] as const;
 
 export type CanonicalAttributeName = typeof CANONICAL_ATTRIBUTES[number];
@@ -82,7 +100,16 @@ export const CANONICAL_ATTRIBUTE_IDS: Record<string, string> = {
   Knowledge: 'a-6',
   Wisdom: 'a-7',
   Social: 'a-8',
-  Faith: 'a-9'
+  Faith: 'a-9',
+  Clarity: 'a-10',
+  Creativity: 'a-11',
+  Memory: 'a-12',
+  Vitality: 'a-13',
+  Fortitude: 'a-14',
+  Mobility: 'a-15',
+  Ihsan: 'a-16',
+  Sabr: 'a-17',
+  Shukr: 'a-18'
 };
 
 export const CANONICAL_ID_TO_ATTRIBUTE: Record<string, CanonicalAttributeName> = {
@@ -94,7 +121,16 @@ export const CANONICAL_ID_TO_ATTRIBUTE: Record<string, CanonicalAttributeName> =
   'a-6': 'Knowledge',
   'a-7': 'Wisdom',
   'a-8': 'Social',
-  'a-9': 'Faith'
+  'a-9': 'Faith',
+  'a-10': 'Clarity',
+  'a-11': 'Creativity',
+  'a-12': 'Memory',
+  'a-13': 'Vitality',
+  'a-14': 'Fortitude',
+  'a-15': 'Mobility',
+  'a-16': 'Ihsan',
+  'a-17': 'Sabr',
+  'a-18': 'Shukr'
 };
 
 export interface AttributeMeta {
@@ -108,6 +144,7 @@ export interface AttributeMeta {
 }
 
 export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, AttributeMeta> = {
+  // --- MIND DOMAIN (6 PILLARS) ---
   Focus: {
     name: 'Focus',
     id: 'a-4',
@@ -135,6 +172,35 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     color: '#a78bfa',
     focusArea: 'Grand Destiny advancement, strategic trade-offs & postmortem reflection.'
   },
+  Clarity: {
+    name: 'Clarity',
+    id: 'a-10',
+    domain: 'Mind',
+    description: 'Analytical precision, mental lucidity, structured logic, and rapid deconstruction of ambiguous bottlenecks.',
+    icon: '💎',
+    color: '#06b6d4',
+    focusArea: 'Architecture documents, system debugging, complex problem breakdown & logic modeling.'
+  },
+  Creativity: {
+    name: 'Creativity',
+    id: 'a-11',
+    domain: 'Mind',
+    description: 'Lateral thinking, architectural innovation, novel solutions, and creative synthesis across disparate domains.',
+    icon: '🎨',
+    color: '#ec4899',
+    focusArea: 'Product design, UI/UX architecture, creative writing, inventive engineering & conceptual breakthroughs.'
+  },
+  Memory: {
+    name: 'Memory',
+    id: 'a-12',
+    domain: 'Mind',
+    description: 'Cognitive retention fidelity, rapid information recall, mental crystallization, and knowledge permanence.',
+    icon: '🧠',
+    color: '#6366f1',
+    focusArea: 'Qur\'an memorization (Hifz), technical syntax recall, spaced repetition & algorithmic retention.'
+  },
+
+  // --- BODY DOMAIN (6 PILLARS) ---
   Strength: {
     name: 'Strength',
     id: 'a-1',
@@ -162,6 +228,35 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     color: '#eab308',
     focusArea: 'Quick task turnaround, technical problem-solving & side quest execution.'
   },
+  Vitality: {
+    name: 'Vitality',
+    id: 'a-13',
+    domain: 'Body',
+    description: 'Bio-energetic stamina, restorative sleep quality, cellular rejuvenation, and baseline somatic wellness.',
+    icon: '🌱',
+    color: '#10b981',
+    focusArea: 'Sleep optimization, hydration, clean nutrition, active rest days & physical replenishment.'
+  },
+  Fortitude: {
+    name: 'Fortitude',
+    id: 'a-14',
+    domain: 'Body',
+    description: 'Physical toughness, pain tolerance, grit under thermal/somatic stress, and physical perseverance.',
+    icon: '🏔️',
+    color: '#f97316',
+    focusArea: 'Fasting endurance, cold exposure, grueling physical challenges & pushing past fatigue barriers.'
+  },
+  Mobility: {
+    name: 'Mobility',
+    id: 'a-15',
+    domain: 'Body',
+    description: 'Kinetic fluidity, musculoskeletal flexibility, postural alignment, joint resilience, and physical balance.',
+    icon: '🤸',
+    color: '#14b8a6',
+    focusArea: 'Daily stretching, mobility flows, postural correction, warmups & physical recovery longevity.'
+  },
+
+  // --- SOUL DOMAIN (6 PILLARS) ---
   Faith: {
     name: 'Faith',
     id: 'a-9',
@@ -188,6 +283,33 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     icon: '🤝',
     color: '#34d399',
     focusArea: 'Communication, team coordination, public speaking, writing & teaching.'
+  },
+  Ihsan: {
+    name: 'Ihsan',
+    id: 'a-16',
+    domain: 'Soul',
+    description: 'Spiritual excellence (Iḥsān), inner mindfulness of the Divine (Murāqabah), and perfection of deed quality.',
+    icon: '🌟',
+    color: '#f59e0b',
+    focusArea: 'Khushū\' in prayer, voluntary charity (Ṣadaqah), spiritual contemplation & moral purity.'
+  },
+  Sabr: {
+    name: 'Sabr',
+    id: 'a-17',
+    domain: 'Soul',
+    description: 'Patient perseverance (Ṣabr), emotional poise under distress, impulse restraint, and steadfast endurance.',
+    icon: '⚓',
+    color: '#8b5cf6',
+    focusArea: 'Emotional composure during adversity, enduring delays with poise & resisting temptations.'
+  },
+  Shukr: {
+    name: 'Shukr',
+    id: 'a-18',
+    domain: 'Soul',
+    description: 'Profound gratitude (Shukr), inner contentment (Riḍā), recognizing divine blessings, and radiant optimism.',
+    icon: '☀️',
+    color: '#eab308',
+    focusArea: 'Gratitude journaling, Hamd and Adhkār, acknowledging favors & maintaining a joyful heart.'
   }
 };
 
@@ -624,13 +746,40 @@ export function resolveQuestRewards(
     });
   }
 
-  // If no skill-derived attributes, deduce from quest type / difficulty
+  // If no skill-derived attributes, deduce from quest type / difficulty / keywords
   if (attributeRewardMap.size === 0) {
     const qName = quest.name.toLowerCase();
     const diff = (quest.difficulty || 'Normal').toLowerCase();
     const bonus = diff === 'boss' ? 4 : (diff === 'hard' ? 2 : 1);
 
-    if (quest.type === 'Habit') {
+    if (['debug', 'refactor', 'architect', 'analyze', 'logic', 'solve', 'bug', 'investigat'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Clarity', (attributeRewardMap.get('Clarity') || 0) + bonus + 1);
+      attributeRewardMap.set('Focus', (attributeRewardMap.get('Focus') || 0) + 1);
+    } else if (['design', 'ui', 'ux', 'creative', 'invent', 'compose', 'art', 'draft'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Creativity', (attributeRewardMap.get('Creativity') || 0) + bonus + 1);
+      attributeRewardMap.set('Knowledge', (attributeRewardMap.get('Knowledge') || 0) + 1);
+    } else if (['memoriz', 'hifz', 'flashcard', 'recall', 'review', 'retention'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Memory', (attributeRewardMap.get('Memory') || 0) + bonus + 1);
+      attributeRewardMap.set('Focus', (attributeRewardMap.get('Focus') || 0) + 1);
+    } else if (['sleep', 'rest', 'hydrat', 'nutrition', 'meal', 'recover', 'wellness'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Vitality', (attributeRewardMap.get('Vitality') || 0) + bonus + 1);
+      attributeRewardMap.set('Endurance', (attributeRewardMap.get('Endurance') || 0) + 1);
+    } else if (['cold', 'fasting', 'sawm', 'grit', 'tough', 'resilien'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Fortitude', (attributeRewardMap.get('Fortitude') || 0) + bonus + 1);
+      attributeRewardMap.set('Discipline', (attributeRewardMap.get('Discipline') || 0) + 1);
+    } else if (['stretch', 'mobility', 'posture', 'walk', 'flexib', 'joint'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Mobility', (attributeRewardMap.get('Mobility') || 0) + bonus + 1);
+      attributeRewardMap.set('Agility', (attributeRewardMap.get('Agility') || 0) + 1);
+    } else if (['sadaqah', 'charity', 'khushu', 'ihsan', 'contemplat'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Ihsan', (attributeRewardMap.get('Ihsan') || 0) + bonus + 1);
+      attributeRewardMap.set('Faith', (attributeRewardMap.get('Faith') || 0) + 1);
+    } else if (['patien', 'sabr', 'calm', 'forgiv', 'restraint', 'kaffarah'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Sabr', (attributeRewardMap.get('Sabr') || 0) + bonus + 1);
+      attributeRewardMap.set('Discipline', (attributeRewardMap.get('Discipline') || 0) + 1);
+    } else if (['gratitud', 'thank', 'shukr', 'praise', 'alhamdulillah'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Shukr', (attributeRewardMap.get('Shukr') || 0) + bonus + 1);
+      attributeRewardMap.set('Faith', (attributeRewardMap.get('Faith') || 0) + 1);
+    } else if (quest.type === 'Habit') {
       attributeRewardMap.set('Discipline', (attributeRewardMap.get('Discipline') || 0) + bonus + 1);
       attributeRewardMap.set('Endurance', (attributeRewardMap.get('Endurance') || 0) + 1);
     } else if (diff === 'boss' || quest.type === 'Boss') {

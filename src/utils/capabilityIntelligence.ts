@@ -155,6 +155,141 @@ export const SOVEREIGN_ATTRIBUTES_METADATA: Record<string, AttributeMetadata> = 
     icon: '✨',
     category: 'Spiritual / Transcendent',
     color: '#e5c875'
+  },
+  Clarity: {
+    id: 'a-10',
+    name: 'Clarity',
+    definition: 'Analytical precision, mental lucidity, structured logic, and rapid deconstruction of ambiguous bottlenecks.',
+    focusArea: 'Architecture documents, system debugging, complex problem breakdown & logic modeling.',
+    evidenceSources: ['Debugging Sessions', 'Architecture Blueprints', 'Root Cause Audits', 'Logic Directives'],
+    suggestedActions: [
+      'Deconstruct a complex system bottleneck into atomic directives (+4 Clarity PTS)',
+      'Resolve an insidious software bug with regression testing (+5 Clarity PTS)',
+      'Author a structured system specification or architecture document'
+    ],
+    icon: '💎',
+    category: 'Analytical / Logic',
+    color: '#06b6d4'
+  },
+  Creativity: {
+    id: 'a-11',
+    name: 'Creativity',
+    definition: 'Lateral thinking, architectural innovation, novel solutions, and creative synthesis across disparate domains.',
+    focusArea: 'Product design, UI/UX architecture, creative writing, inventive engineering & conceptual breakthroughs.',
+    evidenceSources: ['Design Directives', 'Frontend UI Prototypes', 'Creative Writing', 'Novel Mechanics'],
+    suggestedActions: [
+      'Design and prototype a high-fidelity user interface (+4 Creativity PTS)',
+      'Invent a novel technical or operational solution to an intractable challenge',
+      'Synthesize ideas from two distinct domains into a unified framework'
+    ],
+    icon: '🎨',
+    category: 'Synthesis / Ideation',
+    color: '#ec4899'
+  },
+  Memory: {
+    id: 'a-12',
+    name: 'Memory',
+    definition: 'Cognitive retention fidelity, rapid information recall, mental crystallization, and knowledge permanence.',
+    focusArea: 'Qur\'an memorization (Hifz), technical syntax recall, spaced repetition & algorithmic retention.',
+    evidenceSources: ['Qur\'an Hifz Reviews', 'Vocabulary Drills', 'Spaced Repetition Cards', 'Mental Recalls'],
+    suggestedActions: [
+      'Conduct a 20-minute flawless Qur\'an Hifz revision session (+4 Memory PTS)',
+      'Review 50 spaced repetition flashcards without error (+3 Memory PTS)',
+      'Memorize and reproduce a technical algorithm or data structure from memory'
+    ],
+    icon: '🧠',
+    category: 'Cognitive / Retention',
+    color: '#6366f1'
+  },
+  Vitality: {
+    id: 'a-13',
+    name: 'Vitality',
+    definition: 'Bio-energetic stamina, restorative sleep quality, cellular rejuvenation, and baseline somatic wellness.',
+    focusArea: 'Sleep optimization, hydration, clean nutrition, active rest days & physical replenishment.',
+    evidenceSources: ['8h Rest Cycles', 'Hydration Logs', 'Clean Nutrition Covenants', 'Active Rest Overlay'],
+    suggestedActions: [
+      'Log 7.5+ hours of restorative sleep before 06:00 (+5 Vitality PTS)',
+      'Maintain pure hydration and clean fueling protocol throughout operating hours (+3 Vitality PTS)',
+      'Execute a planned Active Rest session to clear physical fatigue'
+    ],
+    icon: '🌱',
+    category: 'Bio-Somatic / Recovery',
+    color: '#10b981'
+  },
+  Fortitude: {
+    id: 'a-14',
+    name: 'Fortitude',
+    definition: 'Physical toughness, pain tolerance, grit under thermal/somatic stress, and physical perseverance.',
+    focusArea: 'Fasting endurance, cold exposure, grueling physical challenges & pushing past fatigue barriers.',
+    evidenceSources: ['Voluntary Fasting (Sawm)', 'Thermal Contrast / Cold Drills', 'High-Exertion Grinds'],
+    suggestedActions: [
+      'Complete a sunnah fast (White Days or Mon/Thu) with steadfast composure (+6 Fortitude PTS)',
+      'Conquer a cold exposure or high-friction physical challenge (+4 Fortitude PTS)',
+      'Push through intense physical exertion without quitting or cutting reps'
+    ],
+    icon: '🏔️',
+    category: 'Somatic / Grit',
+    color: '#f97316'
+  },
+  Mobility: {
+    id: 'a-15',
+    name: 'Mobility',
+    definition: 'Kinetic fluidity, musculoskeletal flexibility, postural alignment, joint resilience, and physical balance.',
+    focusArea: 'Daily stretching, mobility flows, postural correction, warmups & physical recovery longevity.',
+    evidenceSources: ['Stretching Routines', 'Mobility Drills', 'Postural Alignment', 'Kinetic Warmups'],
+    suggestedActions: [
+      'Complete a 15-minute full-body mobility and deep stretching flow (+4 Mobility PTS)',
+      'Conduct daily postural alignment and ergonomic desk reset (+3 Mobility PTS)',
+      'Complete kinetic warm-up and cool-down protocols around heavy training'
+    ],
+    icon: '🤸',
+    category: 'Kinetic / Flexibility',
+    color: '#14b8a6'
+  },
+  Ihsan: {
+    id: 'a-16',
+    name: 'Ihsan',
+    definition: 'Spiritual excellence (Iḥsān), inner mindfulness of the Divine (Murāqabah), and perfection of deed quality.',
+    focusArea: 'Khushū\' in prayer, voluntary charity (Ṣadaqah), spiritual contemplation & moral purity.',
+    evidenceSources: ['Khushu in Salaat', 'Secret Sadaqah Deeds', 'Deep Contemplation (Tafakkur)', 'Moral Beauty'],
+    suggestedActions: [
+      'Pray 2 Rak\'ahs with profound stillness and verified Khushū\' (+5 Ihsan PTS)',
+      'Give secret voluntary charity (Ṣadaqah) seeking only Allah\'s pleasure (+6 Ihsan PTS)',
+      'Spend 15 minutes in silent contemplation (Tafakkur) of divine creation'
+    ],
+    icon: '🌟',
+    category: 'Spiritual / Excellence',
+    color: '#f59e0b'
+  },
+  Sabr: {
+    id: 'a-17',
+    name: 'Sabr',
+    definition: 'Patient perseverance (Ṣabr), emotional poise under distress, impulse restraint, and steadfast endurance.',
+    focusArea: 'Emotional composure during adversity, enduring delays with poise & resisting temptations.',
+    evidenceSources: ['Overcoming Emotional Triggers', 'Patience During Delays', 'Fasting Restraint', 'Kaffarah'],
+    suggestedActions: [
+      'Restrain anger and maintain dignified silence during sudden operational friction (+5 Sabr PTS)',
+      'Complete an active Kaffārah penance with humility and resolve (+4 Sabr PTS)',
+      'Endure a major setback without complaining or despairing'
+    ],
+    icon: '⚓',
+    category: 'Character / Poise',
+    color: '#8b5cf6'
+  },
+  Shukr: {
+    id: 'a-18',
+    name: 'Shukr',
+    definition: 'Profound gratitude (Shukr), inner contentment (Riḍā), recognizing divine blessings, and radiant optimism.',
+    focusArea: 'Gratitude journaling, Hamd and Adhkār, acknowledging favors & maintaining a joyful heart.',
+    evidenceSources: ['Gratitude Journaling', 'Alhamdulillah Adhkar', 'Acknowledging Blessings', 'Contentment'],
+    suggestedActions: [
+      'Write down 5 specific divine blessings with deep reflection and praise (+4 Shukr PTS)',
+      'Express sincere verbal gratitude to someone who assisted or supported you (+3 Shukr PTS)',
+      'Engage in 100 recitations of Tahmīd (Al-Ḥamdu lillāh) with heart-presence'
+    ],
+    icon: '☀️',
+    category: 'Spiritual / Gratitude',
+    color: '#eab308'
   }
 };
 
@@ -164,23 +299,50 @@ export const SOVEREIGN_ATTRIBUTES_METADATA: Record<string, AttributeMetadata> = 
 export function getDefaultAttributesForSkill(skillName: string): { primaryId: string; secondaryIds: string[] } {
   const lower = skillName.toLowerCase();
 
+  if (lower.includes('design') || lower.includes('ui') || lower.includes('ux') || lower.includes('art') || lower.includes('creative') || lower.includes('invent')) {
+    return { primaryId: 'a-11', secondaryIds: ['a-10', 'a-4', 'a-6'] }; // Creativity -> Clarity, Focus, Knowledge
+  }
+  if (lower.includes('debug') || lower.includes('architect') || lower.includes('logic') || lower.includes('refactor')) {
+    return { primaryId: 'a-10', secondaryIds: ['a-6', 'a-4', 'a-7'] }; // Clarity -> Knowledge, Focus, Wisdom
+  }
+  if (lower.includes('hifz') || lower.includes('memoriz') || lower.includes('retention') || lower.includes('flashcard')) {
+    return { primaryId: 'a-12', secondaryIds: ['a-9', 'a-4', 'a-5'] }; // Memory -> Faith, Focus, Discipline
+  }
+  if (lower.includes('sleep') || lower.includes('recover') || lower.includes('nutrition') || lower.includes('diet') || lower.includes('health')) {
+    return { primaryId: 'a-13', secondaryIds: ['a-2', 'a-5', 'a-1'] }; // Vitality -> Endurance, Discipline, Strength
+  }
+  if (lower.includes('fast') || lower.includes('cold') || lower.includes('grit') || lower.includes('tough') || lower.includes('martial')) {
+    return { primaryId: 'a-14', secondaryIds: ['a-1', 'a-2', 'a-5'] }; // Fortitude -> Strength, Endurance, Discipline
+  }
+  if (lower.includes('stretch') || lower.includes('mobility') || lower.includes('posture') || lower.includes('yoga') || lower.includes('flexib')) {
+    return { primaryId: 'a-15', secondaryIds: ['a-3', 'a-13', 'a-2'] }; // Mobility -> Agility, Vitality, Endurance
+  }
+  if (lower.includes('charity') || lower.includes('sadaqah') || lower.includes('ihsan') || lower.includes('khushu') || lower.includes('tafakkur')) {
+    return { primaryId: 'a-16', secondaryIds: ['a-9', 'a-8', 'a-7'] }; // Ihsan -> Faith, Social, Wisdom
+  }
+  if (lower.includes('patience') || lower.includes('sabr') || lower.includes('restraint') || lower.includes('stoic')) {
+    return { primaryId: 'a-17', secondaryIds: ['a-5', 'a-7', 'a-9'] }; // Sabr -> Discipline, Wisdom, Faith
+  }
+  if (lower.includes('gratitude') || lower.includes('shukr') || lower.includes('journal') || lower.includes('thanks')) {
+    return { primaryId: 'a-18', secondaryIds: ['a-9', 'a-7', 'a-8'] }; // Shukr -> Faith, Wisdom, Social
+  }
   if (lower.includes('code') || lower.includes('program') || lower.includes('python') || lower.includes('script') || lower.includes('react') || lower.includes('dev') || lower.includes('software') || lower.includes('web')) {
-    return { primaryId: 'a-6', secondaryIds: ['a-4', 'a-5', 'a-3'] }; // Knowledge -> Focus, Discipline, Agility
+    return { primaryId: 'a-6', secondaryIds: ['a-10', 'a-4', 'a-5'] }; // Knowledge -> Clarity, Focus, Discipline
   }
   if (lower.includes('fitness') || lower.includes('workout') || lower.includes('gym') || lower.includes('strength') || lower.includes('run') || lower.includes('cardio')) {
-    return { primaryId: 'a-1', secondaryIds: ['a-2', 'a-5', 'a-3'] }; // Strength -> Endurance, Discipline, Agility
+    return { primaryId: 'a-1', secondaryIds: ['a-2', 'a-14', 'a-15'] }; // Strength -> Endurance, Fortitude, Mobility
   }
   if (lower.includes('qur') || lower.includes('islam') || lower.includes('hadith') || lower.includes('fiqh') || lower.includes('deen') || lower.includes('salah')) {
-    return { primaryId: 'a-9', secondaryIds: ['a-6', 'a-4', 'a-5'] }; // Faith -> Knowledge, Focus, Discipline
+    return { primaryId: 'a-9', secondaryIds: ['a-16', 'a-12', 'a-6'] }; // Faith -> Ihsan, Memory, Knowledge
   }
   if (lower.includes('arabic') || lower.includes('english') || lower.includes('french') || lower.includes('language') || lower.includes('german')) {
-    return { primaryId: 'a-6', secondaryIds: ['a-5', 'a-4', 'a-8'] }; // Knowledge -> Discipline, Focus, Social
+    return { primaryId: 'a-6', secondaryIds: ['a-12', 'a-5', 'a-8'] }; // Knowledge -> Memory, Discipline, Social
   }
   if (lower.includes('write') || lower.includes('speak') || lower.includes('communicat') || lower.includes('social') || lower.includes('market') || lower.includes('sales')) {
-    return { primaryId: 'a-8', secondaryIds: ['a-6', 'a-4', 'a-7'] }; // Social -> Knowledge, Focus, Wisdom
+    return { primaryId: 'a-8', secondaryIds: ['a-11', 'a-6', 'a-7'] }; // Social -> Creativity, Knowledge, Wisdom
   }
   if (lower.includes('strategy') || lower.includes('architect') || lower.includes('business') || lower.includes('finance') || lower.includes('invest')) {
-    return { primaryId: 'a-7', secondaryIds: ['a-6', 'a-4', 'a-5'] }; // Wisdom -> Knowledge, Focus, Discipline
+    return { primaryId: 'a-7', secondaryIds: ['a-10', 'a-6', 'a-4'] }; // Wisdom -> Clarity, Knowledge, Focus
   }
 
   // Fallback
@@ -294,6 +456,17 @@ export function getAttributeEvidence(attributeName: string, state: POSState): At
     const linkedQuest = (state.quests || []).find(q => q.id === h.questId);
     if (attributeName === 'Focus' && linkedQuest?.type === 'Main') return true;
     if (attributeName === 'Discipline' && linkedQuest?.type === 'Habit') return true;
+
+    const qName = linkedQuest?.name?.toLowerCase() || h.questName?.toLowerCase() || '';
+    if (attributeName === 'Clarity' && ['debug', 'refactor', 'architect', 'analyze', 'logic', 'solve', 'bug'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Creativity' && ['design', 'ui', 'ux', 'creative', 'invent', 'art', 'compose'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Memory' && ['memoriz', 'hifz', 'flashcard', 'recall', 'review', 'retention'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Vitality' && ['sleep', 'rest', 'hydrat', 'nutrition', 'meal', 'recover'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Fortitude' && ['cold', 'fasting', 'sawm', 'grit', 'tough', 'resilien'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Mobility' && ['stretch', 'mobility', 'posture', 'walk', 'flexib'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Ihsan' && ['sadaqah', 'charity', 'khushu', 'ihsan', 'contemplat'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Sabr' && ['patien', 'sabr', 'calm', 'forgiv', 'restraint', 'kaffarah'].some(w => qName.includes(w))) return true;
+    if (attributeName === 'Shukr' && ['gratitud', 'thank', 'shukr', 'praise', 'alhamdulillah'].some(w => qName.includes(w))) return true;
     return false;
   });
 

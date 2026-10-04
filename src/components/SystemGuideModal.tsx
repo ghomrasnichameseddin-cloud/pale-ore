@@ -5,7 +5,8 @@ import {
   Zap, Timer, Coins, ArrowRight, GitFork,
   Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Check, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon,
   FolderTree, FileText, Search, BarChart3, Split, Lightbulb, CheckSquare, Layers, Clock, RefreshCw, ChevronRight, History,
-  Hourglass, FileSpreadsheet, Palette, Volume2, ArrowUpRight, Play, Database, Sliders, BarChart2
+  Hourglass, FileSpreadsheet, Palette, Volume2, ArrowUpRight, Play, Database, Sliders, BarChart2,
+  Brain, Dumbbell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
@@ -45,9 +46,9 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
     },
     {
       id: 'core-attributes',
-      title: '3. Attributes & Math Engine',
+      title: '3. Core Domains & 18 Attributes Matrix',
       icon: Cpu,
-      badge: 'MECHANICS',
+      badge: 'DOMAINS & 18 PILLARS',
       color: 'text-purple-400',
     },
     {
@@ -733,87 +734,403 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
             {activeSection === 'core-attributes' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
-                    <Cpu className="h-5 w-5 text-purple-400" />
-                    3. Attribute Matrix & Precision Mathematical Engine
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                      <Cpu className="h-5 w-5 text-purple-400" />
+                      3. Tripartite Core Domains & 18 Sovereign Attributes Matrix
+                    </h3>
+                    <span className="text-[9px] font-mono bg-purple-950 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      18_PILLARS_V2
+                    </span>
+                  </div>
                   <p className="text-xs font-mono text-zinc-400 mt-1">
-                    How core stats are dynamically computed using baseline levels, quest completion evidence, and skill practice.
+                    Complete mathematical taxonomy of the 3 Core Domains (Mind, Body, Soul) partitioned into 18 distinct Sovereign Attributes with live evidence grounding, dynamic leveling curves, and arithmetic mean domain scoring.
                   </p>
                 </div>
 
-                {/* EXACT MATHEMATICAL FORMULA BOX */}
+                {/* TRIPARTITE CORE DOMAIN OVERVIEW CARDS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="p-4 bg-gradient-to-br from-sky-950/40 via-zinc-900 to-sky-950/20 border border-sky-500/40 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-sky-500/20 pb-1.5">
+                      <span className="text-xs font-mono font-bold text-sky-300 uppercase flex items-center gap-1.5">
+                        <Brain className="h-4 w-4 text-sky-400" />
+                        MIND DOMAIN (العَقْل)
+                      </span>
+                      <span className="text-[9px] font-mono bg-sky-950 text-sky-400 px-1.5 py-0.5 rounded font-bold">6 PILLARS</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      Cognitive power, intellectual synthesis, analytical precision, creative ideation, and memory retention.
+                    </p>
+                    <div className="text-[10px] font-mono text-sky-200/80 pt-1 border-t border-white/5 space-y-0.5">
+                      <div>• Focus (🎯) • Knowledge (📖) • Wisdom (👁️)</div>
+                      <div>• Clarity (💎) • Creativity (🎨) • Memory (🧠)</div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-rose-950/40 via-zinc-900 to-rose-950/20 border border-rose-500/40 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-rose-500/20 pb-1.5">
+                      <span className="text-xs font-mono font-bold text-rose-300 uppercase flex items-center gap-1.5">
+                        <Dumbbell className="h-4 w-4 text-rose-400" />
+                        BODY DOMAIN (الجَسَد)
+                      </span>
+                      <span className="text-[9px] font-mono bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded font-bold">6 PILLARS</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      Physical vitality, explosive force, cardiovascular stamina, somatic recovery, fortitude, and kinetic fluidity.
+                    </p>
+                    <div className="text-[10px] font-mono text-rose-200/80 pt-1 border-t border-white/5 space-y-0.5">
+                      <div>• Strength (⚡) • Endurance (🛡️) • Agility (⚔️)</div>
+                      <div>• Vitality (🌱) • Fortitude (🏔️) • Mobility (🤸)</div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-br from-amber-950/40 via-zinc-900 to-amber-950/20 border border-amber-500/40 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-1.5">
+                      <span className="text-xs font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4 text-amber-400" />
+                        SOUL DOMAIN (الرُّوح)
+                      </span>
+                      <span className="text-[9px] font-mono bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded font-bold">6 PILLARS</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      Spiritual alignment, ironclad consistency, interpersonal diplomacy, spiritual excellence, steadfast patience, and radiant gratitude.
+                    </p>
+                    <div className="text-[10px] font-mono text-amber-200/80 pt-1 border-t border-white/5 space-y-0.5">
+                      <div>• Faith (✨) • Discipline (⚖️) • Social (🤝)</div>
+                      <div>• Ihsan (🌟) • Sabr (⚓) • Shukr (☀️)</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* EXACT MATHEMATICAL ENGINE & DOMAIN SCORING */}
                 <div className="p-4 bg-purple-950/40 border border-purple-500/30 rounded-xl space-y-3 font-mono">
                   <div className="text-xs font-bold text-purple-300 uppercase flex items-center justify-between">
-                    <span>EXPLICIT ATTRIBUTE FORMULA</span>
-                    <span className="text-[10px] text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded">FORMULA_VERIFIED</span>
+                    <span>EXPLICIT MATHEMATICAL SCORING ENGINE</span>
+                    <span className="text-[10px] text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded">FORMULAS_VERIFIED</span>
                   </div>
-                  <div className="p-3 bg-zinc-950 border border-white/10 rounded-lg text-center text-sm sm:text-base font-extrabold text-white">
-                    <div>
-                      <span className="text-amber-300">Total Level</span> = <span className="text-zinc-300">Base Baseline</span> + <span className="text-emerald-400">Earned Bonus</span> + <span className="text-purple-400">Class Boost</span>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-zinc-950 border border-white/10 rounded-lg space-y-1">
+                      <span className="text-amber-300 font-bold block">1. Domain Level (Arithmetic Mean):</span>
+                      <div className="text-[11px] text-white">
+                        <code>Domain Level = (Σ Attribute Levels in Domain) / 6</code>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Rounded to 1 decimal place. Reflected on the Dashboard and Skills tree as the authoritative measure of domain mastery.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950 border border-white/10 rounded-lg space-y-1">
+                      <span className="text-emerald-300 font-bold block">2. Progressive Attribute Curve:</span>
+                      <div className="text-[11px] text-white">
+                        <code>Points to Level Up = Base Cost + (Current Level &minus; 1) &times; Growth</code>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 font-sans">
+                        Standard stats use Base Cost = 14 and Growth = 4. Endurance uses Base Cost = 24, Growth = 8 to reflect daily recurring volume.
+                      </p>
                     </div>
                   </div>
-                  <p className="text-xs font-sans text-zinc-300 leading-relaxed">
-                    Each attribute has a configurable base baseline (e.g. 10), plus earned bonus levels calculated from completed quest evidence and skill practice.
-                  </p>
-                </div>
 
-                {/* 8 ATTRIBUTES DETAILED BREAKDOWN */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    The 8 Core Attributes & Progression Drivers:
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-red-400 block font-mono">1. Strength</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Increases by completing Fitness skills, physical workouts, and Boss Quests.</p>
+                  <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-lg text-xs space-y-1 font-sans text-zinc-300">
+                    <strong className="text-purple-300 font-mono text-[11px]">Directives Evidence Multipliers:</strong>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[10px] text-zinc-400 pt-1">
+                      <div>• Easy Quest: <span className="text-zinc-200">+1 Point</span></div>
+                      <div>• Normal Quest: <span className="text-zinc-200">+2 Points</span></div>
+                      <div>• Hard Quest: <span className="text-emerald-400">+4 Points</span></div>
+                      <div>• Boss Quest: <span className="text-amber-400">+8 Points</span></div>
                     </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-cyan-400 block font-mono">2. Focus</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Grows through completing Main Quests and logging Pomodoro focus sessions.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-blue-400 block font-mono">3. Knowledge</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Grows via Programming, Languages, and Chess skill practice.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-emerald-400 block font-mono">4. Discipline</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Driven by maintaining daily habits routines and side directive completions.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-amber-400 block font-mono">5. Agility</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Measures speed of quest resolution and rapid daily habit response.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-purple-400 block font-mono">6. Wisdom</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Grows by completing strategic vision Goals and executing SOP planning docs.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-white/5 rounded-xl space-y-1">
-                      <span className="font-bold text-pink-400 block font-mono">7. Social</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Driven by Writing, Communication, Business, and Cooking skills.</p>
-                    </div>
-
-                    <div className="p-3 bg-zinc-900/80 border border-emerald-300 rounded-xl space-y-1">
-                      <span className="font-bold text-emerald-300 block font-mono">8. Faith</span>
-                      <p className="text-zinc-400 text-[11px] font-sans">Grows through Qur'an study, language mastery, and spiritual habits.</p>
+                    <div className="text-[10px] text-zinc-400 pt-1">
+                      Directives linked to skills feed the skill's Primary Attribute (+2 Points) and Secondary Attribute (+1 Point). Deep focus sessions award +4 to +5 Focus and Endurance points.
                     </div>
                   </div>
                 </div>
 
-                {/* DASHBOARD FILTER FEATURE */}
-                <div className="p-4 bg-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2">
-                  <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
-                    <Zap className="h-4 w-4" /> Interactive Dashboard Attribute Filter
-                  </h4>
-                  <p className="text-xs text-zinc-300 font-sans">
-                    Clicking any attribute card in the Dashboard matrix instantly filters your Quests Board to display only tasks that actively boost that stat!
+                {/* THE 18 SOVEREIGN ATTRIBUTES BREAKDOWN */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" />
+                      THE 18 SOVEREIGN PILLARS ARCHITECTURAL TAXONOMY:
+                    </h4>
+                    <span className="text-[9px] font-mono bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded font-bold">
+                      6 / 6 / 6 PARTITION
+                    </span>
+                  </div>
+
+                  {/* 1. MIND DOMAIN ATTRIBUTES */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-mono font-bold text-sky-400 uppercase flex items-center gap-1.5">
+                      <Brain className="h-3.5 w-3.5" />
+                      MIND DOMAIN — INTELLECTUAL & COGNITIVE MASTERY (6 PILLARS)
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                      <div className="p-3 bg-zinc-900/90 border border-sky-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-sky-300">🎯 1. Focus (a-4)</span>
+                          <span className="text-[9px] bg-sky-950 text-sky-400 px-1 rounded">CONCENTRATION</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Capacity to concentrate deeply on high-stakes directives without distraction, interruption, or cognitive drift.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Pomodoro blocks, Main directives, continuous focus streaks.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-indigo-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-indigo-300">📖 2. Knowledge (a-6)</span>
+                          <span className="text-[9px] bg-indigo-950 text-indigo-400 px-1 rounded">LITERACY</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Theoretical foundations, syntax, programming languages, technical blueprints, and structured academic study.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Coding documentation, technical reading, language grammar, research.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-purple-300">👁️ 3. Wisdom (a-7)</span>
+                          <span className="text-[9px] bg-purple-950 text-purple-400 px-1 rounded">DISCERNMENT</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Synthesizing knowledge into sound strategic judgment, priority filtering, and high-impact long-term decisions.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Grand Destinies advancement, Strategic Decisions log, postmortems.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-cyan-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-cyan-300">💎 4. Clarity (a-10)</span>
+                          <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1 rounded">LOGIC</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Analytical precision, mental lucidity, structured logic, and rapid deconstruction of ambiguous bottlenecks.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Architecture documents, bug debugging, system refactoring, root causes.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-pink-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-pink-300">🎨 5. Creativity (a-11)</span>
+                          <span className="text-[9px] bg-pink-950 text-pink-400 px-1 rounded">IDEATION</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Lateral thinking, architectural innovation, novel solutions, and creative synthesis across disparate domains.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: UI/UX design, creative writing, inventive engineering, conceptual breakthroughs.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-blue-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-blue-300">🧠 6. Memory (a-12)</span>
+                          <span className="text-[9px] bg-blue-950 text-blue-400 px-1 rounded">RETENTION</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Cognitive retention fidelity, rapid information recall, mental crystallization, and knowledge permanence.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Qur'an Hifz revision, spaced repetition drills, algorithmic recall.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. BODY DOMAIN ATTRIBUTES */}
+                  <div className="space-y-2 pt-2">
+                    <span className="text-xs font-mono font-bold text-rose-400 uppercase flex items-center gap-1.5">
+                      <Dumbbell className="h-3.5 w-3.5" />
+                      BODY DOMAIN — PHYSICAL VITALITY & SOMATIC POWER (6 PILLARS)
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                      <div className="p-3 bg-zinc-900/90 border border-red-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-red-300">⚡ 7. Strength (a-1)</span>
+                          <span className="text-[9px] bg-red-950 text-red-400 px-1 rounded">POWER</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Physical power, muscular output, and physical resistance capacity built through demanding exertion.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Heavy resistance training, Boss directives, calisthenics, physical milestones.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-orange-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-orange-300">🛡️ 8. Endurance (a-2)</span>
+                          <span className="text-[9px] bg-orange-950 text-orange-400 px-1 rounded">STAMINA</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Physical stamina, long-haul grit, and cognitive resilience to repeat demanding routines without fatigue.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Cumulative directives volume, 100+ min focus days, unbroken daily chains.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-amber-300">⚔️ 9. Agility (a-3)</span>
+                          <span className="text-[9px] bg-amber-950 text-amber-400 px-1 rounded">DEXTERITY</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Mental dexterity, tactical adaptation, and rapid context-switching across multi-domain challenges.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Side directives, fast turnaround loops, prompt problem resolution.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-emerald-300">🌱 10. Vitality (a-13)</span>
+                          <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1 rounded">RECOVERY</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Bio-energetic stamina, restorative sleep quality, cellular rejuvenation, and baseline somatic wellness.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: 7.5h+ sleep cycles, hydration logs, clean fueling covenants, Active Rest overlay.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-orange-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-orange-300">🏔️ 11. Fortitude (a-14)</span>
+                          <span className="text-[9px] bg-orange-950 text-orange-400 px-1 rounded">GRIT</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Physical toughness, pain tolerance, grit under thermal/somatic stress, and physical perseverance.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Fasting (Sawm), cold water contrast drills, pushing past physical fatigue barriers.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-teal-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-teal-300">🤸 12. Mobility (a-15)</span>
+                          <span className="text-[9px] bg-teal-950 text-teal-400 px-1 rounded">FLEXIBILITY</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Kinetic fluidity, musculoskeletal flexibility, postural alignment, joint resilience, and physical balance.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Daily stretching flows, postural corrections, ergonomic desk resets, kinetic warmups.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. SOUL DOMAIN ATTRIBUTES */}
+                  <div className="space-y-2 pt-2">
+                    <span className="text-xs font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      SOUL DOMAIN — SPIRITUAL ALIGNMENT & MORAL INTEGRITY (6 PILLARS)
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                      <div className="p-3 bg-zinc-900/90 border border-yellow-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-yellow-300">✨ 13. Faith (a-9)</span>
+                          <span className="text-[9px] bg-yellow-950 text-yellow-400 px-1 rounded">IKHLĀṢ</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Spiritual alignment, intentional sincerity (Ikhlāṣ), sacred discipline, and connection to the Divine.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Masjid 40-Day Covenant, 5 on-time prayers, Adhkār loops, Qur'an study.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-[#c5a059]/40 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-[#fef08a]">⚖️ 14. Discipline (a-5)</span>
+                          <span className="text-[9px] bg-[#3a2e12] text-[#fef08a] px-1 rounded">WILLPOWER</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Ironclad consistency in fulfilling daily covenanted duties and non-negotiables regardless of emotional state.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Habit streaks, daily covenants, zero deferrals, fulfilling Kaffārah promptly.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-emerald-300">🤝 15. Social (a-8)</span>
+                          <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1 rounded">ADAB</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Interpersonal diplomacy, collaborative leadership, persuasive articulation, and communal uplift.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Righteous brotherhood, family duties, mentorship, articulate technical writing.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-amber-300">🌟 16. Ihsan (a-16)</span>
+                          <span className="text-[9px] bg-amber-950 text-amber-400 px-1 rounded">EXCELLENCE</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Spiritual excellence (Iḥsān), inner mindfulness of the Divine (Murāqabah), and perfection of deed quality.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Deep Khushū' in prayer, secret Ṣadaqah, silent contemplation (Tafakkur).
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-purple-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-purple-300">⚓ 17. Sabr (a-17)</span>
+                          <span className="text-[9px] bg-purple-950 text-purple-400 px-1 rounded">PATIENCE</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Patient perseverance (Ṣabr), emotional poise under distress, impulse restraint, and steadfast endurance.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Anger restraint under friction, enduring setbacks with poise, resisting nafs impulses.
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-zinc-900/90 border border-yellow-500/30 rounded-xl space-y-1">
+                        <div className="flex items-center justify-between font-mono font-bold">
+                          <span className="text-yellow-300">☀️ 18. Shukr (a-18)</span>
+                          <span className="text-[9px] bg-yellow-950 text-yellow-400 px-1 rounded">GRATITUDE</span>
+                        </div>
+                        <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+                          Profound gratitude (Shukr), inner contentment (Riḍā), recognizing divine blessings, and radiant optimism.
+                        </p>
+                        <div className="text-[9.5px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+                          Sources: Gratitude journaling, 100x Tahmīd Adhkār, acknowledging favors, cheerful service.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DASHBOARD & SPIDERWEB RADAR INTEGRATION */}
+                <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-zinc-900 to-cyan-950/40 border border-cyan-500/30 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase flex items-center gap-1.5">
+                      <Zap className="h-4 w-4" /> Interactive 18-Pillar Matrix & Spiderweb Radar
+                    </h4>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded font-bold">
+                      VISUAL_INTELLIGENCE
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    The Dashboard features a unified <strong>18-Pillar Matrix</strong> with instant domain filter pills (<code>ALL 18 PILLARS</code>, <code>MIND</code>, <code>BODY</code>, <code>SOUL</code>). Clicking any attribute card instantly filters your Quests Board to show all operations feeding that specific pillar! Furthermore, the <strong>Spiderweb Graph</strong> dynamically projects all 18 attribute nodes onto concentric operational orbits, visualizing live circuits between Grand Destinies, Campaigns, Skills, and your constitutional attributes.
                   </p>
                 </div>
               </div>
@@ -908,16 +1225,17 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                     {/* RECOVERY */}
                     <div className="p-3.5 bg-zinc-900/90 border border-amber-500/40 rounded-xl space-y-1.5">
                       <div className="flex items-center justify-between font-mono font-bold">
-                        <span className="text-amber-300 flex items-center gap-1.5">🛡️ Recovery Quest (`Recovery`)</span>
+                        <span className="text-amber-300 flex items-center gap-1.5">🛡️ Recovery &amp; Restitution Directives (`Recovery`)</span>
                         <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">RESTORATIVE</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Specialized restorative directives assigned during Recovery Mode to help operators rebuild momentum safely.
+                        Specialized restorative directives assigned to rebuild momentum and expiate spiritual/operational lapses. Encompasses three specialized archetypes:
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
-                        <div>• <strong>Shop Lock:</strong> Mandatory to complete before the Reward Shop vault unlocks.</div>
-                        <div>• <strong>View Isolation:</strong> Restorative directives prioritized while standard quests are paused.</div>
-                        <div>• <strong>Deactivation:</strong> Must be completed to restore momentum and deactivate Recovery Mode.</div>
+                        <div>• <strong>1. Standard Habit Recovery:</strong> Cuts estimated time to 50% to rapidly rebuild broken habit streaks.</div>
+                        <div>• <strong>2. Qada' Restitution (`📜 QADA'`):</strong> Auto-minted for prayers unperformed at midnight; fulfills the mandatory jurisprudential obligation.</div>
+                        <div>• <strong>3. Kaffārah Restitution (`[KAFFĀRAH]`):</strong> Auto-minted for delayed prayers and Muhāsabah slips; awards <strong>+35 HP Soul Vitality</strong>, refunds 20% lost XP, and unlocks the Luminescent Shop.</div>
+                        <div>• <strong>Deactivation:</strong> Clearing recovery quests lifts Recovery Mode and restores moral equilibrium.</div>
                       </div>
                     </div>
 
@@ -1695,26 +2013,113 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {/* PILLAR 1: 5 SALAATS */}
-                    <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3">
+                    {/* PILLAR 1: 5 SALAATS & TRI-STATE EXECUTION PROTOCOL */}
+                    <div className="p-4 bg-zinc-900/90 border border-amber-500/30 rounded-xl space-y-3.5 md:col-span-2">
                       <div className="flex items-center justify-between border-b border-white/10 pb-2">
                         <span className="font-mono font-bold text-amber-300 uppercase text-xs flex items-center gap-1.5">
-                          🕌 1. 5 Mandatory Salaats (الصَّلَوَاتُ الخَمْس)
+                          🕌 1. 5 Mandatory Salaats & Tri-State Execution Protocol (الصَّلَوَاتُ الخَمْسُ وَأَحْوَالُ الأَدَاءِ)
                         </span>
-                        <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                          BEDROCK
+                        <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded font-mono font-bold border border-amber-500/30">
+                          BEDROCK_FOUNDATION
                         </span>
                       </div>
                       <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                        The non-negotiable bedrock of daily discipline: <strong>Fajr, Dhuhr, Asr, Maghrib, and Isha</strong>.
+                        The bedrock of discipline and divine alignment: <strong>Fajr, Dhuhr, Asr, Maghrib, and Isha</strong>. The system models realistic prayer execution through a rigorous <strong>Tri-State Execution Architecture</strong>:
                       </p>
-                      <div className="space-y-2 text-xs font-mono">
-                        <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-zinc-200 font-bold">Base Prayer Completion</span>
-                            <span className="text-emerald-400 font-bold">+50 to +100 XP / prayer</span>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+                        {/* STATE 1: ON-TIME */}
+                        <div className="p-3 bg-zinc-950 rounded-lg border border-emerald-500/40 space-y-2">
+                          <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-emerald-500/20 pb-1">
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>1. ON-TIME (فِي وَقْتِهَا)</span>
+                            </span>
+                            <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.2 rounded">+40 XP BONUS</span>
                           </div>
-                          <p className="text-[10.5px] text-zinc-400 font-sans">Fulfilled on time; establishes daily divine anchoring and anchors temporal rhythm.</p>
+                          <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                            Executed within the prescribed prophetic window. Awards full Fardh XP and coins plus the <strong>On-Time Bonus (+40 XP, +5 Coins)</strong>:
+                          </p>
+                          <ul className="text-[10px] space-y-1 text-zinc-400">
+                            <li>• <strong>Fajr (2R):</strong> +150 Fardh XP (+15c) + 40 On-Time XP (+5c) = <strong className="text-emerald-300">190 XP / 20 Coins</strong></li>
+                            <li>• <strong>Dhuhr (4R):</strong> +100 Fardh XP (+10c) + 40 On-Time XP (+5c) = <strong className="text-emerald-300">140 XP / 15 Coins</strong></li>
+                            <li>• <strong>Asr (4R):</strong> +120 Fardh XP (+12c) + 40 On-Time XP (+5c) = <strong className="text-emerald-300">160 XP / 17 Coins</strong></li>
+                            <li>• <strong>Maghrib (3R):</strong> +100 Fardh XP (+10c) + 40 On-Time XP (+5c) = <strong className="text-emerald-300">140 XP / 15 Coins</strong></li>
+                            <li>• <strong>Isha (4R):</strong> +100 Fardh XP (+10c) + 40 On-Time XP (+5c) = <strong className="text-emerald-300">140 XP / 15 Coins</strong></li>
+                          </ul>
+                        </div>
+
+                        {/* STATE 2: DELAYED & AUTO-MUHASABAH */}
+                        <div className="p-3 bg-zinc-950 rounded-lg border border-amber-500/40 space-y-2">
+                          <div className="flex items-center justify-between text-amber-300 font-bold border-b border-amber-500/20 pb-1">
+                            <span className="flex items-center gap-1">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                              <span>2. DELAYED (تَأْخِيرُ الصَّلَاةِ)</span>
+                            </span>
+                            <span className="text-[9px] bg-amber-950 text-amber-400 px-1.5 py-0.2 rounded">AUTO AUDIT</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                            Obligation fulfilled, but postponed past its window into a future prayer. Forfeits the On-Time bonus and triggers <strong>Compounding Delay Tiers</strong>:
+                          </p>
+                          <div className="p-1.5 bg-black/40 rounded border border-white/5 text-[9.5px] space-y-0.5">
+                            <div>• Tier 1 (1st delay): <strong className="text-amber-400">−50 XP</strong></div>
+                            <div>• Tier 2 (2nd delay): <strong className="text-amber-400">−100 XP</strong></div>
+                            <div>• Tier 3 (3rd delay): <strong className="text-amber-400">−175 XP</strong></div>
+                            <div>• Tier 4 (4th delay): <strong className="text-amber-400">−275 XP</strong></div>
+                            <div>• Tier 5 (5th delay): <strong className="text-amber-400">−400 XP</strong></div>
+                          </div>
+                          <p className="text-[10px] text-amber-200/90 font-sans">
+                            <strong>⚡ Auto-Muhāsabah Engine:</strong> Marking any prayer delayed automatically creates an audit slip under <code>Obligations</code> with a linked <code>[KAFFĀRAH] 2 Rak'ahs of Tawbah</code> recovery quest (+35 HP, 20% XP recovered).
+                          </p>
+                        </div>
+
+                        {/* STATE 3: MIDNIGHT MISSED PENALTY & QADA */}
+                        <div className="p-3 bg-zinc-950 rounded-lg border border-rose-500/40 space-y-2">
+                          <div className="flex items-center justify-between text-rose-300 font-bold border-b border-rose-500/20 pb-1">
+                            <span className="flex items-center gap-1">
+                              <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+                              <span>3. MIDNIGHT LAPSE (تَفْوِيت)</span>
+                            </span>
+                            <span className="text-[9px] bg-rose-950 text-rose-300 px-1.5 py-0.2 rounded font-bold">SEVERE</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                            Leaving any prayer unexecuted when midnight arrives (23:59:59) triggers an automated disciplinary sweep:
+                          </p>
+                          <div className="p-2 bg-rose-950/30 rounded border border-rose-500/30 text-[10px] space-y-1">
+                            <div className="text-rose-300 font-bold flex justify-between">
+                              <span>Midnight Deduction:</span>
+                              <span>−200 XP • −10 HP</span>
+                            </div>
+                            <p className="text-zinc-300 font-sans text-[10px]">
+                              Applied per unexecuted prayer; instantly tilts the Balance Scale into severe deficit.
+                            </p>
+                          </div>
+                          <p className="text-[10px] text-zinc-300 font-sans">
+                            <strong>📜 Mandatory Qada' Directive:</strong> Generates <code>📜 QADA' OBLIGATION</code> in active Quests (15m, High energy, 50 XP, Istighfar + full Rak'ahs) required to clear the spiritual lapse.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* JUMU'AH & 5/5 DIVINE FORTRESS SEAL */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-lg space-y-1 text-xs">
+                          <span className="font-mono font-bold text-emerald-300 flex items-center gap-1.5 text-[11px]">
+                            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                            5/5 DAILY PRAYERS DIVINE FORTRESS SEAL
+                          </span>
+                          <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                            Completing all 5 obligatory prayers (Fajr, Dhuhr, Asr, Maghrib, Isha) erects the daily fortress and immediately grants <strong className="text-emerald-300">+15 HP Soul Vitality</strong> recovery, lifting fatigue and solidifying spiritual momentum.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-teal-950/20 border border-teal-500/30 rounded-lg space-y-1 text-xs">
+                          <span className="font-mono font-bold text-teal-300 flex items-center gap-1.5 text-[11px]">
+                            <Moon className="h-3.5 w-3.5 text-teal-400" />
+                            SALAT AL-JUMU'AH & PROPHETIC WARNING ENGINE
+                          </span>
+                          <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                            On Fridays, Dhuhr transitions to <strong>Salat al-Jumu'ah</strong> (2 Rak'ahs + Khutbah) with dedicated Sunnah tracking (Ghusl, Siwak, Surah Al-Kahf, Hour of Response). Missing Jumu'ah triggers escalating heart-sealing hadith warnings (1st, 2nd, 3rd consecutive) and a strict <strong>−150 XP / −15 HP</strong> deduction.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1725,27 +2130,31 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="font-mono font-bold text-cyan-300 uppercase text-xs flex items-center gap-1.5">
                           🏛️ 2. Masjid Congregation & 40-Day Covenant (جَمَاعَةُ المَسْجِدِ)
                         </span>
-                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                          CONGREGATION
+                        <span className="text-[9px] bg-cyan-950 text-cyan-400 px-1.5 py-0.5 rounded font-mono font-bold border border-cyan-500/30">
+                          27X_REWARD
                         </span>
                       </div>
                       <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                        Praying in the house of Allah with the Muslim body, pursuing the prophetic 40-day covenant of Takbīrat al-Iḥrām.
+                        Praying in the house of Allah with the congregation, pursuing the prophetic 40-day covenant of Takbīrat al-Iḥrām:
                       </p>
                       <div className="space-y-2 text-xs font-mono">
                         <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-cyan-300 font-bold">Masjid Bonus Per Salah</span>
-                            <span className="text-cyan-400 font-bold">+30 Bonus XP</span>
+                            <span className="text-cyan-400 font-bold">+50 XP / +5 Coins</span>
                           </div>
-                          <p className="text-[10.5px] text-zinc-400 font-sans">27x spiritual multiplication represented through elevated positive scale weight.</p>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">
+                            27x prophetic spiritual multiplication reflected through elevated positive weight on the Daily Balance Scale.
+                          </p>
                         </div>
                         <div className="p-2.5 bg-zinc-950 rounded border border-cyan-500/20 space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-zinc-200 font-bold">40-Day Masjid Milestone</span>
-                            <span className="text-amber-400 font-bold">Divine Shield</span>
+                            <span className="text-zinc-200 font-bold">40-Day Takbīrat al-Iḥrām Covenant</span>
+                            <span className="text-amber-400 font-bold">Shield of Immunity</span>
                           </div>
-                          <p className="text-[10.5px] text-zinc-400 font-sans">Tracks consecutive days with full 5-prayer masjid attendance.</p>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">
+                            Tracks consecutive unbroken days with full 5-prayer congregation attendance in pursuit of the two prophetic exemptions: freedom from the Fire and freedom from hypocrisy (البراءة من النار والبراءة من النفاق).
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -2113,19 +2522,31 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <ul className="text-[10.5px] space-y-1 font-mono text-zinc-300">
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Minor Slips (اللَّمَم):</strong> −150 XP (fleeting distractions, brief procrastination, idle chatter).</span>
+                          <span><strong>Minor Slips (اللَّمَم):</strong> −100 XP (fleeting distractions, brief procrastination, idle chatter).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Moderate Lapses (الغَفْلَة):</strong> −300 XP (doomscrolling feeds, broken promises, skipping workouts).</span>
+                          <span><strong>Moderate Lapses (الغَفْلَة):</strong> −200 XP (doomscrolling feeds, broken promises, skipping workouts).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Major Breaches (الكَبَائِر):</strong> −500 XP (delayed/missed Fajr or prayers, giving in to desires/triggers).</span>
+                          <span><strong>Major Breaches (الكَبَائِر):</strong> −300 XP (giving in to desire triggers, harsh speech, grave neglect).</span>
                         </li>
                         <li className="flex items-start gap-1.5">
                           <span className="text-rose-400 font-bold shrink-0">✦</span>
-                          <span><strong>Critical Failures (الجُرْم):</strong> −1000 XP (severe relapse, complete breakdown of daily discipline).</span>
+                          <span><strong>Severe Violations:</strong> −400 XP (habitual relapses, chronic boundary collapse, major rights violation).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Critical Failures (الجُرْم):</strong> −500 XP (destructive surrender to nafs, complete breakdown of discipline).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-amber-400 font-bold shrink-0">✦</span>
+                          <span><strong>Automated Delayed Prayer Audits:</strong> −50 XP to −400 XP (Tier 1 to 5 compound delay penalty logged under Obligations).</span>
+                        </li>
+                        <li className="flex items-start gap-1.5">
+                          <span className="text-rose-400 font-bold shrink-0">✦</span>
+                          <span><strong>Midnight Missed Prayer Penalty:</strong> −200 XP & −10 HP per unperformed prayer + mandatory Qada' directive.</span>
                         </li>
                       </ul>
                     </div>
@@ -2401,6 +2822,65 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                {/* AUTOMATED PRAYER AUDITS: DELAYED SLIPS & MIDNIGHT RESTITUTION */}
+                <div className="p-4 bg-gradient-to-br from-[#1c150a] via-[#120f18] to-[#0c0d14] border border-amber-500/50 rounded-xl space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                    <div className="font-mono font-bold text-amber-300 uppercase flex items-center gap-2 text-xs">
+                      <Scale className="h-4 w-4 text-amber-400" />
+                      <span>AUTOMATED PRAYER AUDITS: DELAYED SLIPS &amp; MIDNIGHT RESTITUTION (المُحَاسَبَةُ التِّلْقَائِيَّةُ)</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-amber-950 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold uppercase">
+                      ZERO_MANUAL_EFFORT
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Preserving the prescribed times of prayer is the first foundation of personal accountability. Rather than requiring manual slip entry, the system features a <strong>Zero-Friction Automated Muhāsabah Synchronizer</strong> for prayer times:
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="p-3 bg-zinc-950/90 rounded-lg border border-amber-500/30 space-y-1.5">
+                      <span className="text-amber-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                        1. AUTO-GENERATED DELAY SLIPS
+                      </span>
+                      <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                        Whenever any prayer (Fajr, Dhuhr, Asr, Maghrib, Isha) is toggled to <strong>Delayed</strong>, the engine instantly logs an audit entry in today's ledger under <code>Obligations</code>. Severity escalates with the compound delay tier (Tier 1: <em>Moderate</em>, Tier 2: <em>Major</em>, Tier 3: <em>Severe</em>, Tier 4+: <em>Critical</em>) and records the exact delay penalty (−50 XP to −400 XP) directly on the Daily Balance Scale.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 rounded-lg border border-emerald-500/30 space-y-1.5">
+                      <span className="text-emerald-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                        2. AUTO-MINTED KAFFĀRAH DIRECTIVE
+                      </span>
+                      <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                        Every delayed prayer audit immediately creates an active penance in your Quest Log: <code>[KAFFĀRAH] 2 Rak'ahs of Tawbah &amp; Surah Al-Mulk Recitation (&lt;Prayer&gt; Delay)</code>. Completing it restores <strong>+35 HP Soul Vitality</strong>, recovers <strong>20% of lost XP</strong>, lifts Reward Shop freezes, and reconciles the slip.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 rounded-lg border border-cyan-500/30 space-y-1.5">
+                      <span className="text-cyan-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <RotateCcw className="h-3.5 w-3.5 text-cyan-400" />
+                        3. IN-PLACE REALIGNMENT &amp; CLEANUP
+                      </span>
+                      <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                        If you adjust the delayed target prayer (e.g. from <em>Asr</em> to <em>Dhuhr</em>), the existing audit entry updates in place with zero duplicate records. If you mark the prayer back to <em>On-Time</em> or clear it, the auto-generated delay slip and its active Kaffārah quest are safely expunged.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-zinc-950/90 rounded-lg border border-rose-500/30 space-y-1.5">
+                      <span className="text-rose-300 font-bold block text-[11px] flex items-center gap-1.5">
+                        <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+                        4. MIDNIGHT LAPSE &amp; QADA' MANDATE
+                      </span>
+                      <p className="text-[10.5px] text-zinc-300 font-sans leading-relaxed">
+                        Any prayer left unexecuted at 23:59:59 triggers an automatic severe penalty of <strong>−200 XP</strong> and <strong>−10 HP</strong> per missed prayer via <code>checkAndApplyMidnightPrayerPenalties</code>, alongside an auto-generated <code>📜 QADA' OBLIGATION</code> quest required to clear the spiritual debt.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -2743,6 +3223,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                           <li><strong>Compounding Severity Penalty:</strong> Future slips linked to this weakness suffer an automatic <strong>+25% XP deduction compounding penalty floor</strong>.</li>
                           <li><strong>High-Alert Red Lockout:</strong> The weakness card turns blood-red with an escalating warning banner.</li>
                           <li><strong>Mandatory Preventive Protocol:</strong> You must articulate the exact <em>Trigger Cue (المُثِير)</em> and deploy a strict <em>Preventive Boundary Rule (قَاعِدَةُ الحَدِّ السُّلُوكِيّ)</em>.</li>
+                          <li><strong>Clean-Day Slot Decay (التعافي الزمني):</strong> For every 2 consecutive clean calendar days without a relapse, 1 active pip automatically heals and decays (<code>decayIntervalDays: 2</code>), steadily reversing vulnerability slots.</li>
                           <li><strong>Thabāt Restraint Streak:</strong> Daily restraint starts counting. 7 days clean transitions status to <em>"Under Control"</em>, and 21 days clean marks it <em>"Overcome"</em>, dissolving the chronic chain.</li>
                         </ul>
                       </div>
@@ -3355,23 +3836,23 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono text-xs">
                     <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                      <div className="text-emerald-400 font-bold">1. 1-Click JSON Backup</div>
+                      <div className="text-emerald-400 font-bold">1. Multi-Channel JSON Backup</div>
                       <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Export your full state (profile, quests, habits, ledger histories, inventory, and spiritual logs) into a single portable <code>.json</code> file.
+                        Export your full state into a portable <code>.json</code> archive via 1-click file download, direct clipboard copy with size verification, or raw payload inspector.
                       </p>
                     </div>
 
                     <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                      <div className="text-cyan-400 font-bold">2. Safe State Restore</div>
+                      <div className="text-cyan-400 font-bold">2. Resilient Schema Hydration</div>
                       <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Import past backups with instant schema validation and atomic state hydration, safeguarding years of progress.
+                        Restore via drag-and-drop file upload or direct text paste. The sanitizer cleans markdown code fences, auto-unwraps payloads, and reconciles all 18 sovereign pillars.
                       </p>
                     </div>
 
                     <div className="p-2.5 bg-zinc-950 rounded border border-white/5 space-y-1">
-                      <div className="text-amber-400 font-bold">3. System Overrides</div>
+                      <div className="text-amber-400 font-bold">3. Disaster Recovery & Overrides</div>
                       <p className="text-[10.5px] text-zinc-400 font-sans">
-                        Manually calibrate starting base attributes or simulate system dates (<code>SYS_DATE</code>) for operational testing.
+                        Restores are instantly persisted to local storage and announced via system dispatch alerts, safeguarding historical data across browser restarts.
                       </p>
                     </div>
                   </div>

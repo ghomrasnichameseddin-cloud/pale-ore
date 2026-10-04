@@ -552,7 +552,7 @@ export const ImperialCirculationLedger: React.FC<ImperialCirculationLedgerProps>
 
       // 3. Time Filter
       if (timeFilter === 'today') {
-        if (entry.date !== todayStr && !entry.timestamp.startsWith(todayStr)) return false;
+        if (entry.date !== todayStr && !(Boolean(entry.timestamp) && entry.timestamp.startsWith(todayStr))) return false;
       } else if (timeFilter === '7days') {
         const t = new Date(entry.timestamp).getTime();
         if (nowTime - t > sevenDays) return false;
