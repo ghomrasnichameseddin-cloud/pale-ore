@@ -276,42 +276,64 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     if (directiveTypeFilter === 'OPTIONAL' && q.type !== 'Optional') return false;
 
     if (selectedAttributeName) {
-      const attrLower = selectedAttributeName.toLowerCase();
-      if (attrLower === 'strength') {
-        return q.type === 'Boss' || q.difficulty === 'Hard' || q.relatedSkills.some(sId => {
-          const sk = state.skills.find(s => s.id === sId);
-          return sk?.name.toLowerCase().includes('fitness') || sk?.name.toLowerCase().includes('workout');
-        });
+      const canonical = canonicalizeAttributeName(selectedAttributeName);
+
+      // 1. Direct attribute reward match on quest
+      if (q.attributeRewards && q.attributeRewards.some(ar => canonicalizeAttributeName(ar.attribute) === canonical)) {
+        return true;
       }
-      if (attrLower === 'focus') {
-        return q.type === 'Main' || q.type === 'Boss';
-      }
-      if (attrLower === 'knowledge') {
-        return q.relatedSkills.some(sId => {
-          const sk = state.skills.find(s => s.id === sId);
-          return ['programming', 'english', 'arabic', 'french', 'chess', 'coding'].some(k => sk?.name.toLowerCase().includes(k));
-        });
-      }
-      if (attrLower === 'discipline') {
-        return q.type === 'Habit' || q.recurrence === 'Daily' || q.type === 'Side';
-      }
-      if (attrLower === 'agility') {
-        return q.type === 'Side' || q.type === 'Optional' || q.estimatedTime <= 15;
-      }
-      if (attrLower === 'wisdom') {
-        return q.goalId !== null || q.projectId !== null;
-      }
-      if (attrLower === 'social') {
-        return q.relatedSkills.some(sId => {
-          const sk = state.skills.find(s => s.id === sId);
-          return ['writing', 'cooking', 'business', 'communication'].some(k => sk?.name.toLowerCase().includes(k));
-        });
-      }
-      if (attrLower === 'faith') {
-        return q.relatedSkills.some(sId => {
-          const sk = state.skills.find(s => s.id === sId);
-          return ['qur\'an', 'arabic', 'spirituality'].some(k => sk?.name.toLowerCase().includes(k));
-        });
+
+      // 2. Matching skill primary or secondary attribute
+      const hasSkillMatch = (q.relatedSkills || []).some(sId => {
+        const sk = state.skills.find(s => s.id === sId);
+        if (!sk) return false;
+        const prim = canonicalizeAttributeName(sk.primaryAttribute);
+        const sec = sk.secondaryAttribute ? canonicalizeAttributeName(sk.secondaryAttribute) : null;
+        return prim === canonical || sec === canonical;
+      });
+      if (hasSkillMatch) return true;
+
+      // 3. Thematic / semantic match across all 18 pillars
+      const qText = `${q.name} ${q.description || ''}`.toLowerCase();
+      switch (canonical) {
+        case 'Strength':
+          return q.type === 'Boss' || q.difficulty === 'Hard' || ['workout', 'gym', 'fitness', 'lift', 'strength', 'heavy'].some(w => qText.includes(w));
+        case 'Endurance':
+          return q.estimatedTime >= 45 || q.type === 'Habit' || ['stamina', 'run', 'cardio', 'walk', 'endurance', 'sustained', 'long'].some(w => qText.includes(w));
+        case 'Agility':
+          return q.type === 'Side' || q.type === 'Optional' || q.estimatedTime <= 15 || ['speed', 'quick', 'sprint', 'agility', 'fast'].some(w => qText.includes(w));
+        case 'Vitality':
+          return ['sleep', 'rest', 'hydrat', 'nutrition', 'meal', 'wellness', 'health', 'recovery', 'clean'].some(w => qText.includes(w));
+        case 'Fortitude':
+          return ['cold', 'fasting', 'sawm', 'grit', 'tough', 'resilien', 'perseverance', 'hardship'].some(w => qText.includes(w));
+        case 'Mobility':
+          return ['stretch', 'mobility', 'posture', 'flexib', 'joint', 'yoga', 'desk'].some(w => qText.includes(w));
+        case 'Focus':
+          return q.type === 'Main' || q.type === 'Boss' || ['focus', 'pomodoro', 'concentrat', 'deep work'].some(w => qText.includes(w));
+        case 'Knowledge':
+          return ['programming', 'english', 'arabic', 'french', 'chess', 'coding', 'study', 'learn', 'read', 'book'].some(w => qText.includes(w));
+        case 'Wisdom':
+          return q.goalId !== null || q.projectId !== null || ['strategy', 'decision', 'plan', 'reflect', 'review', 'wisdom'].some(w => qText.includes(w));
+        case 'Clarity':
+          return ['debug', 'refactor', 'architect', 'analyze', 'logic', 'solve', 'bug', 'investigat', 'clarity'].some(w => qText.includes(w));
+        case 'Creativity':
+          return ['design', 'ui', 'ux', 'creative', 'invent', 'art', 'compose', 'draft', 'prototype', 'idea'].some(w => qText.includes(w));
+        case 'Memory':
+          return ['memoriz', 'hifz', 'flashcard', 'recall', 'review', 'retention', 'anki', 'vocab'].some(w => qText.includes(w));
+        case 'Faith':
+          return ['quran', 'qur\'an', 'spirituality', 'salah', 'prayer', 'dua', 'tahajjud', 'masjid', 'faith', 'deen'].some(w => qText.includes(w));
+        case 'Discipline':
+          return q.type === 'Habit' || q.recurrence === 'Daily' || q.type === 'Side' || ['discipline', 'covenant', 'routine'].some(w => qText.includes(w));
+        case 'Social':
+          return ['writing', 'cooking', 'business', 'communication', 'team', 'mentor', 'teach', 'social'].some(w => qText.includes(w));
+        case 'Ihsan':
+          return ['sadaqah', 'charity', 'khushu', 'ihsan', 'excellence', 'sincerity', 'tafakkur', 'contemplat'].some(w => qText.includes(w));
+        case 'Sabr':
+          return ['sabr', 'patience', 'calm', 'forgiv', 'restraint', 'kaffarah', 'impulse'].some(w => qText.includes(w));
+        case 'Shukr':
+          return ['shukr', 'gratitude', 'thank', 'alhamdulillah', 'praise', 'blessing', 'contentment'].some(w => qText.includes(w));
+        default:
+          return false;
       }
     }
 

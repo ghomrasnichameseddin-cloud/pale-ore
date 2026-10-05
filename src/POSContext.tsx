@@ -2403,6 +2403,229 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         streak: q?.streakCount || 0
       };
     });
+    // ---------------------------------------------------------
+    // SACRED PROTOCOL & MUHASABA ATTRIBUTE PROGRESSION ENGINE
+    // ---------------------------------------------------------
+    // Links Soul Domain progression (Faith, Discipline, Social, Ihsan, Sabr, Shukr)
+    // directly to rites performed in the Sacred Protocol & Muhasabah systems.
+    const spiritualLogs = state.spiritualLogs || {};
+    const logDates = Object.keys(spiritualLogs);
+    const muhasabahEntries = state.muhasabahEntries || [];
+    const weaknesses = state.weaknesses || [];
+    const quranTracker = state.quranTracker;
+
+    const getSpiritualAndMuhasabaBonusPoints = (attrName: string, resetCutoff?: string | null): number => {
+      let bonus = 0;
+      const cutoffDate = resetCutoff ? resetCutoff.slice(0, 10) : null;
+
+      // 1. Process Spiritual Daily Logs
+      logDates.forEach(dateStr => {
+        if (cutoffDate && dateStr < cutoffDate) return;
+        const log = spiritualLogs[dateStr];
+        if (!log) return;
+
+        const prayersList = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+
+        if (attrName === 'Faith') {
+          // Obligatory prayers, Adhkār fortress, Qur'an, Sincerity
+          prayersList.forEach(p => {
+            const pr = log[p];
+            if (pr?.fardh) {
+              bonus += 1.0;
+              if (pr.onTime) bonus += 0.5;
+              if (pr.inMasjid) bonus += 1.0;
+              if (pr.isJumuah || (p === 'dhuhr' && log.dhuhr?.jumuahSuratAlKahf)) bonus += 2.0;
+            }
+            if (pr?.qadaCompleted) bonus += 1.0;
+          });
+
+          // Daily Adhkār Fortress
+          if (log.adhkarSabah || log.adhkarSessions?.morning === 'complete') bonus += 1.5;
+          if (log.adhkarMasa || log.adhkarSessions?.evening === 'complete') bonus += 1.5;
+          if (log.adhkarSleepNight || log.adhkarSleepDhohr || log.adhkarSessions?.sleep === 'complete') bonus += 1.0;
+
+          // Qur'an engagement
+          if (log.quran?.pagesRead && log.quran.pagesRead > 0) {
+            bonus += Math.min(5, Math.floor(log.quran.pagesRead / 2));
+          }
+          if (log.quran?.memorizationReviewed || (log.quran?.passagesRevisedToday && log.quran.passagesRevisedToday.length > 0)) {
+            bonus += 2.0;
+          }
+          if (log.quran?.newMemorizationPassages && log.quran.newMemorizationPassages.length > 0) {
+            bonus += Math.min(5, log.quran.newMemorizationPassages.length * 2);
+          }
+
+          // Fasting for Allah
+          if (log.fasting?.isFasting) bonus += 2.0;
+
+          // Night vigil
+          if (log.qiyamRakats && log.qiyamRakats > 0) bonus += 2.0;
+          if (log.qiyamWitr) bonus += 1.0;
+        }
+
+        else if (attrName === 'Discipline') {
+          // Ironclad consistency, 12 Sunan Rawatib, Routine protection, Zero midnight misses
+          let dailyFardhCount = 0;
+          let anyMissedMidnight = false;
+          prayersList.forEach(p => {
+            const pr = log[p];
+            if (pr?.fardh) {
+              dailyFardhCount++;
+              if (pr.sunnahRawatib || pr.sunnahBefore || pr.sunnahAfter) bonus += 0.5;
+              if (pr.inMasjid) bonus += 0.5;
+            }
+            if (pr?.missedPastMidnight) anyMissedMidnight = true;
+          });
+
+          // All 5 prayers fulfilled without midnight drop
+          if (dailyFardhCount === 5 && !anyMissedMidnight) bonus += 2.0;
+
+          // Adhkār consistency (completed both morning & evening)
+          if ((log.adhkarSabah || log.adhkarSessions?.morning === 'complete') &&
+              (log.adhkarMasa || log.adhkarSessions?.evening === 'complete')) {
+            bonus += 2.0;
+          }
+
+          // Post-Salah Adhkār consistency (3+ prayers with adhkar)
+          const postDoneCount = prayersList.filter(p => {
+            const mode = log.dhikr?.postSalahAdhkar?.[p];
+            return mode === 'standard33' || mode === 'mini10';
+          }).length;
+          if (postDoneCount >= 3) bonus += 2.0;
+
+          // Fasting discipline
+          if (log.fasting?.isFasting && log.fasting?.suhurTaken) bonus += 2.0;
+        }
+
+        else if (attrName === 'Social') {
+          // Communal presence, Masjid Jamā'ah, Friday Jumu'ah gathering, collective rites
+          prayersList.forEach(p => {
+            const pr = log[p];
+            if (pr?.fardh && pr?.inMasjid) bonus += 1.5;
+            if (p === 'dhuhr' && (pr?.isJumuah || pr?.jumuahSunnahBadiyahMasjid || pr?.jumuahTahiyyah)) {
+              bonus += 2.5;
+            }
+          });
+          if (log.sunnahPrayers?.tahiyyatAlMasjid) bonus += 1.0;
+        }
+
+        else if (attrName === 'Ihsan') {
+          // Spiritual excellence, Khushū' in prayer, Tahajjud, Nawafil, Tadabbur
+          if (log.khushuRating && log.khushuRating >= 4) {
+            bonus += log.khushuRating === 5 ? 3.0 : 2.0;
+          }
+          if (log.qiyamRakats && log.qiyamRakats > 0) {
+            bonus += Math.min(6, Math.floor(log.qiyamRakats / 2) * 1.5);
+          }
+          if (log.qiyamWitr) bonus += 1.0;
+
+          // Nawafil devotion
+          if (log.sunnahPrayers?.duhaRakats && log.sunnahPrayers.duhaRakats > 0) bonus += 1.5;
+          if (log.sunnahPrayers?.sunnatAlWudu) bonus += 1.0;
+          if (log.sunnahPrayers?.tahiyyatAlMasjid) bonus += 1.0;
+          if (log.sunnahPrayers?.istikhara) bonus += 1.5;
+          if (log.sunnahPrayers?.tawbah) bonus += 2.0;
+
+          // Quran contemplation
+          if (log.quran?.tadabburNotes && log.quran.tadabburNotes.trim().length > 0) bonus += 2.5;
+
+          // Full Standard 33x tasbeeh/tahmid/takbir presence
+          prayersList.forEach(p => {
+            if (log.dhikr?.postSalahAdhkar?.[p] === 'standard33') bonus += 1.0;
+          });
+        }
+
+        else if (attrName === 'Sabr') {
+          // Fasting restraint, enduring difficulties, Qadā' recovery
+          if (log.fasting?.isFasting) {
+            bonus += 4.0; // Fasting is half of Sabr
+          }
+          prayersList.forEach(p => {
+            const pr = log[p];
+            if (pr?.qadaCompleted) bonus += 2.0; // Promptly making up missed prayer
+          });
+          if (log.sunnahPrayers?.tawbah) bonus += 1.5;
+        }
+
+        else if (attrName === 'Shukr') {
+          // Hamd, Tasbeeh, Sujud ash-Shukr, Salawāt, Dua at Iftar
+          prayersList.forEach(p => {
+            const mode = log.dhikr?.postSalahAdhkar?.[p];
+            if (mode === 'standard33' || mode === 'mini10') bonus += 1.0;
+            if (log.dhikr?.postSalahIstighfar?.[p]) bonus += 0.5;
+          });
+
+          if (log.sunnahPrayers?.sujudShukrOrTilawah) bonus += 2.5;
+          if (log.sunnahPrayers?.duhaRakats && log.sunnahPrayers.duhaRakats > 0) bonus += 1.0; // Salat ad-Duha is gratitude for 360 joints
+          if (log.fasting?.duaMadeAtIftar) bonus += 1.5;
+
+          // Praises & Salawat
+          if (log.salawatCount && log.salawatCount > 0) {
+            bonus += Math.min(6, Math.floor(log.salawatCount / 33));
+          }
+          if (log.dhikr?.hamdCount && log.dhikr.hamdCount > 0) {
+            bonus += Math.min(5, Math.floor(log.dhikr.hamdCount / 50));
+          }
+        }
+      });
+
+      // 2. Global Quran Tracker & Masjid Covenant
+      if (attrName === 'Faith' && quranTracker?.memorizedPagesCount) {
+        bonus += Math.min(10, quranTracker.memorizedPagesCount * 0.5);
+      }
+      if (attrName === 'Faith' && quranTracker?.khatmahCount) {
+        bonus += quranTracker.khatmahCount * 15;
+      }
+      if (attrName === 'Discipline' && state.masjid40Covenant && state.masjid40Covenant.currentStreak > 0) {
+        bonus += Math.min(15, (state.masjid40Covenant.currentStreak || 0) * 1.5);
+      }
+
+      // 3. Process Muhasaba System Entries & Weaknesses
+      muhasabahEntries.forEach(m => {
+        if (cutoffDate && m.timestamp && m.timestamp.slice(0, 10) < cutoffDate) return;
+
+        // Honest self-accounting reflection
+        if (m.reflection && m.reflection.trim().length > 10) {
+          if (attrName === 'Ihsan') bonus += 2.0; // Murāqabah and self-scrutiny
+          if (attrName === 'Faith') bonus += 1.0;
+          if (attrName === 'Sabr') bonus += 1.0;  // Humility and emotional acceptance
+        }
+
+        // Kaffarah and corrective actions completed
+        if (m.kaffarahCompleted) {
+          if (attrName === 'Sabr') bonus += 2.5; // Enduring expiation
+          if (attrName === 'Ihsan') bonus += 2.5; // Restoring spiritual purity
+          if (attrName === 'Discipline') bonus += 2.0;
+          if (m.kaffarahType === 'Sadaqah' || m.kaffarahType === 'Service') {
+            if (attrName === 'Social') bonus += 3.0; // Direct communal restitution
+          }
+        }
+
+        if (m.isExempt) {
+          if (attrName === 'Sabr') bonus += 1.0;
+        }
+      });
+
+      // Weaknesses actively under control or overcome
+      weaknesses.forEach(w => {
+        if (w.status === 'Under Control') {
+          if (attrName === 'Discipline') bonus += 3.0;
+          if (attrName === 'Sabr') bonus += 3.0; // Restraining nafs from habitual slips
+          if (w.category === 'Speech' || w.category === 'Rights') {
+            if (attrName === 'Social') bonus += 2.5;
+          }
+        } else if (w.status === 'Overcome') {
+          if (attrName === 'Discipline') bonus += 6.0;
+          if (attrName === 'Sabr') bonus += 6.0;
+          if (w.category === 'Speech' || w.category === 'Rights') {
+            if (attrName === 'Social') bonus += 5.0;
+          }
+        }
+      });
+
+      return Math.round(bonus * 10) / 10;
+    };
+
     const canonicalAttrs = ensureCanonicalAttributes(state.attributes || []);
     return canonicalAttrs.map(attr => {
       // Check if this attribute or all attributes have been restarted/reset
@@ -2493,6 +2716,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Discipline', resetCutoff);
       } else if (attr.name === 'Knowledge') {
         baseCost = 14;
         growth = 4;
@@ -2535,6 +2760,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Social', resetCutoff);
       } else if (attr.name === 'Faith') {
         baseCost = 14;
         growth = 4;
@@ -2551,6 +2778,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Faith', resetCutoff);
       } else if (attr.name === 'Clarity') {
         baseCost = 14;
         growth = 4;
@@ -2635,6 +2864,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Ihsan', resetCutoff);
       } else if (attr.name === 'Sabr') {
         baseCost = 14;
         growth = 4;
@@ -2647,6 +2878,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Sabr', resetCutoff);
       } else if (attr.name === 'Shukr') {
         baseCost = 14;
         growth = 4;
@@ -2659,6 +2892,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Sacred Protocol & Muhasaba progression link
+        totalPoints += getSpiritualAndMuhasabaBonusPoints('Shukr', resetCutoff);
       } else {
         baseCost = 14;
         growth = 4;

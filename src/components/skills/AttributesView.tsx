@@ -82,6 +82,7 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
       xp: directiveDifficulty === 'Hard' ? 120 : (directiveDifficulty === 'Easy' ? 40 : 75),
       type: 'Main',
       relatedSkills: primarySkill ? [primarySkill.id] : [],
+      attributeRewards: [{ attribute: currentAttr.name, points: directiveDifficulty === 'Hard' ? 4 : 2 }],
       goalId: null,
       projectId: null,
       status: 'Active',

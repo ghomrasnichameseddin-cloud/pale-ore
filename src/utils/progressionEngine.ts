@@ -791,7 +791,16 @@ export function resolveQuestRewards(
     } else if (['workout', 'gym', 'run', 'pushup', 'calisthenics', 'fitness'].some(w => qName.includes(w))) {
       attributeRewardMap.set('Strength', (attributeRewardMap.get('Strength') || 0) + bonus);
       attributeRewardMap.set('Endurance', (attributeRewardMap.get('Endurance') || 0) + 1);
-    } else if (['salah', 'quran', 'adhkar', 'prayer', 'dua'].some(w => qName.includes(w))) {
+    } else if (['sabr', 'fasting', 'sawm', 'restraint', 'patience'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Sabr', (attributeRewardMap.get('Sabr') || 0) + bonus);
+      attributeRewardMap.set('Discipline', (attributeRewardMap.get('Discipline') || 0) + 1);
+    } else if (['shukr', 'gratitude', 'thank', 'hamd', 'praise'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Shukr', (attributeRewardMap.get('Shukr') || 0) + bonus);
+      attributeRewardMap.set('Faith', (attributeRewardMap.get('Faith') || 0) + 1);
+    } else if (['ihsan', 'khushu', 'tahajjud', 'qiyam', 'excellence', 'charity', 'sadaqah'].some(w => qName.includes(w))) {
+      attributeRewardMap.set('Ihsan', (attributeRewardMap.get('Ihsan') || 0) + bonus);
+      attributeRewardMap.set('Faith', (attributeRewardMap.get('Faith') || 0) + 1);
+    } else if (['salah', 'quran', 'adhkar', 'prayer', 'dua', 'muhasaba', 'mizan', 'spiritual'].some(w => qName.includes(w))) {
       attributeRewardMap.set('Faith', (attributeRewardMap.get('Faith') || 0) + bonus);
       attributeRewardMap.set('Discipline', (attributeRewardMap.get('Discipline') || 0) + 1);
     } else {

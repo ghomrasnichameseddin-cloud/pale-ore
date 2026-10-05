@@ -72,7 +72,8 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     getTodayMuhasabahStats,
     getMasjid40Stats,
     getAdhkarFortressStats,
-    getQuranFreshnessScore
+    getQuranFreshnessScore,
+    setPostSalahItemStatus
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'salaat' | 'masjid40' | 'sunnah' | 'siam' | 'adhkar' | 'quran' | 'audit'>('overview');
@@ -108,13 +109,41 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     }, systemDate);
   };
 
+  const handleTogglePostSalahMode = (
+    prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
+    targetMode: 'mini10' | 'standard33'
+  ) => {
+    const currentMode = postMap[prayerId] || 'none';
+    const nextMode: PostSalahDhikrMode = currentMode === targetMode ? 'none' : targetMode;
+
+    if (nextMode === 'standard33') {
+      setPostSalahItemStatus(prayerId, 'post-tasbih-standard', true, 99, systemDate);
+      setPostSalahItemStatus(prayerId, 'post-tasbih-mini', false, 0, systemDate);
+    } else if (nextMode === 'mini10') {
+      setPostSalahItemStatus(prayerId, 'post-tasbih-mini', true, 30, systemDate);
+      setPostSalahItemStatus(prayerId, 'post-tasbih-standard', false, 0, systemDate);
+    } else {
+      setPostSalahItemStatus(prayerId, 'post-tasbih-standard', false, 0, systemDate);
+      setPostSalahItemStatus(prayerId, 'post-tasbih-mini', false, 0, systemDate);
+    }
+
+    updateDhikrLog({
+      postSalahAdhkar: {
+        ...postMap,
+        [prayerId]: nextMode
+      }
+    }, systemDate);
+  };
+
   const handleTogglePostIstighfar = (prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
+    const nextDone = !postIstighfarMap[prayerId];
     updateDhikrLog({
       postSalahIstighfar: {
         ...postIstighfarMap,
-        [prayerId]: !postIstighfarMap[prayerId]
+        [prayerId]: nextDone
       }
     }, systemDate);
+    setPostSalahItemStatus(prayerId, 'post-istighfar', nextDone, nextDone ? 3 : 0, systemDate);
   };
 
   const handleTogglePostAyatAlKursi = (prayerId: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => {
@@ -813,6 +842,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         setIsPostAdhkarModalOpen(true);
                       }}
                       onTogglePostIstighfar={handleTogglePostIstighfar}
+                      onTogglePostSalahMode={handleTogglePostSalahMode}
                       onTogglePostAyatAlKursi={handleTogglePostAyatAlKursi}
                     />
                   );
@@ -1543,6 +1573,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         setIsPostAdhkarModalOpen(true);
                       }}
                       onTogglePostIstighfar={handleTogglePostIstighfar}
+                      onTogglePostSalahMode={handleTogglePostSalahMode}
                       onTogglePostAyatAlKursi={handleTogglePostAyatAlKursi}
                     />
                   );

@@ -487,19 +487,86 @@ export function getAttributeEvidence(attributeName: string, state: POSState): At
     return q?.difficulty === 'Boss' || q?.type === 'Boss';
   }).length;
 
+  // Count contributing spiritual protocol and muhasabah actions for Soul attributes
+  let spiritualProtocolCount = 0;
+  let muhasabahActionsCount = 0;
+
+  if (['Faith', 'Discipline', 'Social', 'Ihsan', 'Sabr', 'Shukr'].includes(attributeName)) {
+    const sLogs = state.spiritualLogs || {};
+    const mEntries = state.muhasabahEntries || [];
+
+    Object.values(sLogs).forEach(log => {
+      if (!log) return;
+      const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+
+      if (attributeName === 'Faith') {
+        prayers.forEach(p => { if (log[p]?.fardh) spiritualProtocolCount++; });
+        if (log.adhkarSabah) spiritualProtocolCount++;
+        if (log.adhkarMasa) spiritualProtocolCount++;
+        if (log.fasting?.isFasting) spiritualProtocolCount++;
+        if (log.quran?.pagesRead) spiritualProtocolCount++;
+      } else if (attributeName === 'Discipline') {
+        prayers.forEach(p => { if (log[p]?.sunnahRawatib) spiritualProtocolCount++; });
+        if (log.adhkarSabah && log.adhkarMasa) spiritualProtocolCount++;
+        if (log.fasting?.isFasting) spiritualProtocolCount++;
+      } else if (attributeName === 'Social') {
+        prayers.forEach(p => { if (log[p]?.inMasjid) spiritualProtocolCount++; });
+        if (log.dhuhr?.isJumuah || log.dhuhr?.jumuahSunnahBadiyahMasjid) spiritualProtocolCount++;
+      } else if (attributeName === 'Ihsan') {
+        if (log.khushuRating && log.khushuRating >= 4) spiritualProtocolCount++;
+        if (log.qiyamRakats && log.qiyamRakats > 0) spiritualProtocolCount++;
+        if (log.sunnahPrayers?.duhaRakats) spiritualProtocolCount++;
+        if (log.quran?.tadabburNotes && log.quran.tadabburNotes.trim().length > 0) spiritualProtocolCount++;
+      } else if (attributeName === 'Sabr') {
+        if (log.fasting?.isFasting) spiritualProtocolCount++;
+        prayers.forEach(p => { if (log[p]?.qadaCompleted) spiritualProtocolCount++; });
+      } else if (attributeName === 'Shukr') {
+        prayers.forEach(p => {
+          if (log.dhikr?.postSalahAdhkar?.[p] || log.dhikr?.postSalahIstighfar?.[p]) spiritualProtocolCount++;
+        });
+        if (log.sunnahPrayers?.sujudShukrOrTilawah) spiritualProtocolCount++;
+        if (log.fasting?.duaMadeAtIftar) spiritualProtocolCount++;
+        if (log.salawatCount && log.salawatCount > 0) spiritualProtocolCount++;
+      }
+    });
+
+    mEntries.forEach(m => {
+      if (attributeName === 'Ihsan' && m.reflection) muhasabahActionsCount++;
+      if (attributeName === 'Sabr' && (m.kaffarahCompleted || m.isExempt)) muhasabahActionsCount++;
+      if (attributeName === 'Social' && m.kaffarahCompleted && (m.kaffarahType === 'Sadaqah' || m.kaffarahType === 'Service')) muhasabahActionsCount++;
+      if (attributeName === 'Discipline' && m.kaffarahCompleted) muhasabahActionsCount++;
+      if (attributeName === 'Faith' && m.reflection) muhasabahActionsCount++;
+      if (attributeName === 'Shukr' && m.reflection) muhasabahActionsCount++;
+    });
+
+    (state.weaknesses || []).forEach(w => {
+      if (w.status !== 'Active') {
+        if (attributeName === 'Discipline' || attributeName === 'Sabr') muhasabahActionsCount += 2;
+        if (attributeName === 'Social' && (w.category === 'Speech' || w.category === 'Rights')) muhasabahActionsCount += 2;
+      }
+    });
+  }
+
   let explanation = '';
-  if (completedEvents.length === 0) {
-    explanation = `No recorded directives yet for ${attributeName}. Execute relevant directives or deep work sessions to initiate momentum.`;
+  const totalSoulActions = spiritualProtocolCount + muhasabahActionsCount;
+  if (completedEvents.length === 0 && totalSoulActions === 0) {
+    explanation = `No recorded directives or spiritual actions yet for ${attributeName}. Execute relevant directives, sacred protocol duties, or muhasabah accounting to initiate momentum.`;
   } else {
-    explanation = `Grounded across ${completedEvents.length} completed operations, ${relatedSkills.length} linked craft disciplines, and ${relatedCampaigns.length} operational campaigns.`;
+    const parts: string[] = [];
+    if (completedEvents.length > 0) parts.push(`${completedEvents.length} completed operations`);
+    if (spiritualProtocolCount > 0) parts.push(`${spiritualProtocolCount} sacred protocol rites (prayers, adhkar, fasts)`);
+    if (muhasabahActionsCount > 0) parts.push(`${muhasabahActionsCount} muhāsabah accountability audits & remedies`);
+    if (relatedSkills.length > 0) parts.push(`${relatedSkills.length} linked craft disciplines`);
+    if (relatedCampaigns.length > 0) parts.push(`${relatedCampaigns.length} operational campaigns`);
+    explanation = `Grounded across ${parts.join(', ')}.`;
   }
 
   return {
-    directivesCount: completedEvents.length,
+    directivesCount: completedEvents.length + totalSoulActions,
     focusMinutesTotal: focusMinutes,
     habitStreakBest: state.profile.focusStreak || 0,
     bossVictories: bossCount,
-    recentEventsCount: completedEvents.slice(0, 7).length,
+    recentEventsCount: Math.min(10, completedEvents.slice(0, 7).length + totalSoulActions),
     relatedSkills,
     relatedCampaigns,
     explanation

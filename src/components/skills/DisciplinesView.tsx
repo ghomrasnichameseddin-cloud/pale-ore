@@ -285,22 +285,14 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
               onChange={(e) => setFilterAttribute(e.target.value)}
               className="w-full bg-[#07080c] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#c5a059]"
             >
-              <option value="ALL">🛡️ All Attributes</option>
-              <optgroup label="Mind Attributes">
-                <option value="Focus">Focus</option>
-                <option value="Knowledge">Knowledge</option>
-                <option value="Wisdom">Wisdom</option>
-              </optgroup>
-              <optgroup label="Body Attributes">
-                <option value="Strength">Strength</option>
-                <option value="Endurance">Endurance</option>
-                <option value="Agility">Agility</option>
-              </optgroup>
-              <optgroup label="Soul Attributes">
-                <option value="Faith">Faith</option>
-                <option value="Discipline">Discipline</option>
-                <option value="Social">Social</option>
-              </optgroup>
+              <option value="ALL">🛡️ All Attributes (18 Pillars)</option>
+              {CORE_DOMAINS.map(domain => (
+                <optgroup key={domain} label={`${domain} Domain`}>
+                  {DOMAIN_ATTRIBUTES[domain].map(attrName => (
+                    <option key={attrName} value={attrName}>{attrName}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
 
@@ -927,21 +919,13 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                     onChange={(e) => setNewSkillPrimaryAttr(e.target.value as CanonicalAttributeName)}
                     className="w-full bg-[#07080c] border border-white/15 rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#c5a059]"
                   >
-                    <optgroup label="Mind Domain">
-                      <option value="Focus">Focus</option>
-                      <option value="Knowledge">Knowledge</option>
-                      <option value="Wisdom">Wisdom</option>
-                    </optgroup>
-                    <optgroup label="Body Domain">
-                      <option value="Strength">Strength</option>
-                      <option value="Endurance">Endurance</option>
-                      <option value="Agility">Agility</option>
-                    </optgroup>
-                    <optgroup label="Soul Domain">
-                      <option value="Faith">Faith</option>
-                      <option value="Discipline">Discipline</option>
-                      <option value="Social">Social</option>
-                    </optgroup>
+                    {CORE_DOMAINS.map(domain => (
+                      <optgroup key={domain} label={`${domain} Domain`}>
+                        {DOMAIN_ATTRIBUTES[domain].map(attrName => (
+                          <option key={attrName} value={attrName}>{attrName}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -958,21 +942,13 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                     className="w-full bg-[#07080c] border border-white/15 rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#c5a059]"
                   >
                     <option value="none">-- None --</option>
-                    <optgroup label="Mind Domain">
-                      <option value="Focus">Focus</option>
-                      <option value="Knowledge">Knowledge</option>
-                      <option value="Wisdom">Wisdom</option>
-                    </optgroup>
-                    <optgroup label="Body Domain">
-                      <option value="Strength">Strength</option>
-                      <option value="Endurance">Endurance</option>
-                      <option value="Agility">Agility</option>
-                    </optgroup>
-                    <optgroup label="Soul Domain">
-                      <option value="Faith">Faith</option>
-                      <option value="Discipline">Discipline</option>
-                      <option value="Social">Social</option>
-                    </optgroup>
+                    {CORE_DOMAINS.map(domain => (
+                      <optgroup key={domain} label={`${domain} Domain`}>
+                        {DOMAIN_ATTRIBUTES[domain].map(attrName => (
+                          <option key={attrName} value={attrName}>{attrName}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
 
@@ -1101,21 +1077,13 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                     onChange={(e) => setEditSkillPrimaryAttr(e.target.value as CanonicalAttributeName)}
                     className="w-full bg-[#07080c] border border-white/15 rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#c5a059]"
                   >
-                    <optgroup label="Mind Domain">
-                      <option value="Focus">Focus</option>
-                      <option value="Knowledge">Knowledge</option>
-                      <option value="Wisdom">Wisdom</option>
-                    </optgroup>
-                    <optgroup label="Body Domain">
-                      <option value="Strength">Strength</option>
-                      <option value="Endurance">Endurance</option>
-                      <option value="Agility">Agility</option>
-                    </optgroup>
-                    <optgroup label="Soul Domain">
-                      <option value="Faith">Faith</option>
-                      <option value="Discipline">Discipline</option>
-                      <option value="Social">Social</option>
-                    </optgroup>
+                    {CORE_DOMAINS.map(domain => (
+                      <optgroup key={domain} label={`${domain} Domain`}>
+                        {DOMAIN_ATTRIBUTES[domain].map(attrName => (
+                          <option key={attrName} value={attrName}>{attrName}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1131,21 +1099,13 @@ export const DisciplinesView: React.FC<DisciplinesViewProps> = ({
                   className="w-full bg-[#07080c] border border-white/15 rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#c5a059]"
                 >
                   <option value="none">-- None --</option>
-                  <optgroup label="Mind Domain">
-                    <option value="Focus">Focus</option>
-                    <option value="Knowledge">Knowledge</option>
-                    <option value="Wisdom">Wisdom</option>
-                  </optgroup>
-                  <optgroup label="Body Domain">
-                    <option value="Strength">Strength</option>
-                    <option value="Endurance">Endurance</option>
-                    <option value="Agility">Agility</option>
-                  </optgroup>
-                  <optgroup label="Soul Domain">
-                    <option value="Faith">Faith</option>
-                    <option value="Discipline">Discipline</option>
-                    <option value="Social">Social</option>
-                  </optgroup>
+                  {CORE_DOMAINS.map(domain => (
+                    <optgroup key={domain} label={`${domain} Domain`}>
+                      {DOMAIN_ATTRIBUTES[domain].map(attrName => (
+                        <option key={attrName} value={attrName}>{attrName}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
 

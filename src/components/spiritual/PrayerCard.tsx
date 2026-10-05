@@ -61,7 +61,8 @@ interface PrayerCardProps {
   onCompleteQada?: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => void;
   onOpenPostSalahModal: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => void;
   onTogglePostIstighfar: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => void;
-  onTogglePostAyatAlKursi: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => void;
+  onTogglePostSalahMode: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha', mode: 'mini10' | 'standard33') => void;
+  onTogglePostAyatAlKursi?: (prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha') => void;
 }
 
 export const PrayerCard: React.FC<PrayerCardProps> = ({
@@ -78,6 +79,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   onCompleteQada,
   onOpenPostSalahModal,
   onTogglePostIstighfar,
+  onTogglePostSalahMode,
   onTogglePostAyatAlKursi
 }) => {
   const [showDelayPicker, setShowDelayPicker] = useState(false);
@@ -512,43 +514,49 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         </div>
 
         <div className="grid grid-cols-3 gap-1">
+          {/* 1. 3x istighfar */}
           <button
             type="button"
             onClick={() => onTogglePostIstighfar(prayer.id)}
-            className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
+            title="3x istighfar (Astaghfirullah) • +5 XP"
+            className={`py-1.5 px-1 rounded-lg text-[9.5px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
               allSpiritualLog.dhikr?.postSalahIstighfar?.[prayer.id]
-                ? 'bg-emerald-950 border-emerald-500/60 text-emerald-200'
-                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+                ? 'bg-emerald-950 border-emerald-500/60 text-emerald-200 shadow-sm'
+                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/10'
             }`}
           >
-            <Check className={`h-3 w-3 ${allSpiritualLog.dhikr?.postSalahIstighfar?.[prayer.id] ? 'text-emerald-400' : 'text-zinc-600'}`} />
-            <span className="truncate">3x Astaghfirullah</span>
+            <Check className={`h-3 w-3 shrink-0 ${allSpiritualLog.dhikr?.postSalahIstighfar?.[prayer.id] ? 'text-emerald-400' : 'text-zinc-600'}`} />
+            <span className="truncate">3x istighfar</span>
           </button>
 
+          {/* 2. x10 tasbih, hmd, takbir */}
           <button
             type="button"
-            onClick={() => onTogglePostAyatAlKursi(prayer.id)}
-            className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
-              allSpiritualLog.dhikr?.postSalahAyatAlKursi?.[prayer.id]
-                ? 'bg-indigo-950 border-indigo-500/60 text-indigo-200'
-                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+            onClick={() => onTogglePostSalahMode?.(prayer.id, 'mini10')}
+            title="x10 tasbih, hmd, takbir (10 SubhanAllah, 10 Alhamdulillah, 10 Allahu Akbar) • +12 XP"
+            className={`py-1.5 px-1 rounded-lg text-[9.5px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
+              allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'mini10'
+                ? 'bg-cyan-950 border-cyan-500/60 text-cyan-200 shadow-sm'
+                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/10'
             }`}
           >
-            <Check className={`h-3 w-3 ${allSpiritualLog.dhikr?.postSalahAyatAlKursi?.[prayer.id] ? 'text-indigo-400' : 'text-zinc-600'}`} />
-            <span className="truncate">Ayat al-Kursi</span>
+            <Check className={`h-3 w-3 shrink-0 ${allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'mini10' ? 'text-cyan-400' : 'text-zinc-600'}`} />
+            <span className="truncate">x10 tasbih, hmd, takbir</span>
           </button>
 
+          {/* 3. x33 tasbih, hmd, takbir */}
           <button
             type="button"
-            onClick={() => onOpenPostSalahModal(prayer.id)}
-            className={`py-1 px-1 rounded-lg text-[10px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
-              allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'standard33' || allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'mini10'
-                ? 'bg-teal-950 border-teal-500/60 text-teal-200'
-                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+            onClick={() => onTogglePostSalahMode?.(prayer.id, 'standard33')}
+            title="x33 tasbih, hmd, takbir (33 SubhanAllah, 33 Alhamdulillah, 33 Allahu Akbar) • +20 XP"
+            className={`py-1.5 px-1 rounded-lg text-[9.5px] font-mono font-bold border transition flex items-center justify-center gap-1 ${
+              allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'standard33'
+                ? 'bg-teal-950 border-teal-500/60 text-teal-200 shadow-sm'
+                : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200 hover:border-white/10'
             }`}
           >
-            <Check className={`h-3 w-3 ${allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] ? 'text-teal-400' : 'text-zinc-600'}`} />
-            <span className="truncate">33 Tasbeeh</span>
+            <Check className={`h-3 w-3 shrink-0 ${allSpiritualLog.dhikr?.postSalahAdhkar?.[prayer.id] === 'standard33' ? 'text-teal-400' : 'text-zinc-600'}`} />
+            <span className="truncate">x33 tasbih, hmd, takbir</span>
           </button>
         </div>
       </div>

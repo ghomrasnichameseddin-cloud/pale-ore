@@ -12,6 +12,13 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { addDays } from '../utils/dateUtils';
 import { calculateHabitFormation, isHabitQuest, getHabitStageDetails } from '../utils/habitFormation';
+import { 
+  CORE_DOMAINS, 
+  DOMAIN_ATTRIBUTES, 
+  CANONICAL_ATTRIBUTE_METADATA, 
+  CanonicalAttributeName,
+  canonicalizeAttributeName 
+} from '../utils/progressionEngine';
 
 export const getCategoryDetails = (type: string) => {
   const t = (type || '').toLowerCase();
@@ -841,6 +848,13 @@ export const ActiveDirectives: React.FC = () => {
     );
   };
 
+  const [editQuestAttributes, setEditQuestAttributes] = useState<string[]>([]);
+  const handleEditAttributeToggle = (attrName: string) => {
+    setEditQuestAttributes(prev =>
+      prev.includes(attrName) ? prev.filter(a => a !== attrName) : [...prev, attrName]
+    );
+  };
+
   const startEditingQuest = (quest: Quest) => {
     setEditingQuestId(quest.id);
     setEditQuestName(quest.name);
@@ -853,6 +867,9 @@ export const ActiveDirectives: React.FC = () => {
     setEditQuestDeadline(quest.deadline || '');
     setEditQuestCue(quest.cue || quest.cueTrigger || '');
     setEditQuestSkills(quest.relatedSkills || []);
+    setEditQuestAttributes(
+      (quest.attributeRewards || []).map(ar => canonicalizeAttributeName(ar.attribute))
+    );
     setEditQuestDuration(quest.estimatedTime || 30);
     setEditQuestActualMinutes(quest.actualMinutesWorked || 0);
 
@@ -904,7 +921,8 @@ export const ActiveDirectives: React.FC = () => {
       description: editQuestDescription,
       energyLevel: 'Medium',
       deadline: editQuestDeadline ? editQuestDeadline : null,
-      relatedSkills: editQuestSkills
+      relatedSkills: editQuestSkills,
+      attributeRewards: editQuestAttributes.map(attr => ({ attribute: attr, points: 2 }))
     });
     setEditingQuestId(null);
   };
@@ -1650,6 +1668,53 @@ export const ActiveDirectives: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  {/* Target Constitutional Attributes (18 Pillars) */}
+                  <div className="space-y-1.5 pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] font-mono text-[#c5a059] uppercase tracking-wider block font-bold flex items-center gap-1">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Target Constitutional Attributes (18 Pillars)
+                      </span>
+                      {editQuestAttributes.length > 0 && (
+                        <span className="text-[8px] font-mono text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                          {editQuestAttributes.length} Attributes Linked (+2 pts each)
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      {CORE_DOMAINS.map(domain => {
+                        const accent = domain === 'Mind' ? '#38bdf8' : (domain === 'Body' ? '#f87171' : '#e5c875');
+                        return (
+                          <div key={domain} className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[8px] font-mono font-bold uppercase w-12 shrink-0" style={{ color: accent }}>
+                              {domain}:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {DOMAIN_ATTRIBUTES[domain].map(attrName => {
+                                const isSelected = editQuestAttributes.includes(attrName);
+                                const meta = CANONICAL_ATTRIBUTE_METADATA[attrName as CanonicalAttributeName];
+                                return (
+                                  <button
+                                    key={attrName}
+                                    type="button"
+                                    onClick={() => handleEditAttributeToggle(attrName)}
+                                    className={`text-[9px] font-mono px-2 py-0.5 rounded border transition-all flex items-center gap-1 cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-[#3a2e12] text-[#fef08a] border-[#c5a059] font-bold shadow-[0_0_8px_rgba(197,160,89,0.3)]'
+                                        : 'bg-zinc-950 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white'
+                                    }`}
+                                  >
+                                    <span>{meta?.icon || '⚡'}</span>
+                                    <span>{attrName}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
