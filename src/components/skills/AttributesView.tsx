@@ -391,6 +391,165 @@ export const AttributesView: React.FC<AttributesViewProps> = ({
             )}
           </div>
 
+          {/* 2B. STRATEGY & CODEX PROGRESSION ANCHORS (MIND DOMAIN) */}
+          {currentDomain === 'Mind' && (
+            <div className="bg-[#0b1018] border border-cyan-500/25 rounded-xl p-5 space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                <span className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Compass className="h-3.5 w-3.5 text-cyan-400" />
+                  STRATEGY & CODEX PROGRESSION ANCHORS
+                </span>
+                <span className="text-[9px] font-mono text-cyan-400/90 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-500/30 font-bold">
+                  MIND DOMAIN LINK
+                </span>
+              </div>
+
+              <p className="text-xs text-zinc-300 leading-relaxed bg-[#07080c] p-3 rounded-lg border border-white/5">
+                Constitutional progression for <strong className="text-cyan-300">{currentAttr.name}</strong> is dynamically powered by your Codex vault codifications, strategic decisions, falsifiable experiments, operating doctrines, and root-cause postmortems.
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                {currentAttr.name === 'Focus' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Strategic Freeze</span>
+                      <span className={`font-bold ${state.strategicFreeze ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                        {state.strategicFreeze ? 'ACTIVE (+4.0 PTS)' : 'INACTIVE'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Focus Doctrines</span>
+                      <span className="font-bold text-cyan-300">
+                        {(state.doctrines || []).filter(d => d.status === 'Active' && ['focus', 'temporal', 'execution'].some(c => (d.category || '').toLowerCase().includes(c) || `${d.name} ${d.rule}`.toLowerCase().includes('focus'))).length} ACTIVE
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Operations SOPs</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.planningDocuments || []).filter(d => d.path.includes('04 Operations') || d.docType === 'SOP').length} CODIFIED
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {currentAttr.name === 'Knowledge' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Codex Vault Docs</span>
+                      <span className="font-bold text-cyan-300">
+                        {(state.planningDocuments || []).filter(d => d.status !== 'Deprecated').length} ACTIVE DOCS
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">SOPs & Frameworks</span>
+                      <span className="font-bold text-indigo-300">
+                        {(state.planningDocuments || []).filter(d => d.path.includes('05 Standard Operating Procedures') || d.path.includes('06 Mental Models') || d.docType === 'Framework' || d.docType === 'SOP').length} PLAYBOOKS
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Knowledge Doctrines</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.doctrines || []).filter(d => d.status === 'Active' && ['knowledge', 'architecture', 'cognitive'].some(c => (d.category || '').toLowerCase().includes(c))).length} CODIFIED
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {currentAttr.name === 'Wisdom' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Strategic Decisions</span>
+                      <span className="font-bold text-cyan-300">
+                        {(state.strategicDecisions || []).length} JOURNALED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Validated Outcomes</span>
+                      <span className="font-bold text-emerald-400">
+                        {(state.strategicDecisions || []).filter(d => d.status === 'Validated' || Boolean(d.actualResult || d.actualOutcome)).length} VALIDATED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Operating Doctrines</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.doctrines || []).filter(d => d.status === 'Active').length} ENFORCED
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {currentAttr.name === 'Clarity' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Postmortem Audits</span>
+                      <span className="font-bold text-cyan-300">
+                        {(state.strategicPostmortems || []).length} 5-WHYS LOGS
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Architecture Playbooks</span>
+                      <span className="font-bold text-indigo-300">
+                        {(state.planningDocuments || []).filter(d => d.path.includes('05 Standard Operating Procedures') || d.path.includes('03 Tactical Playbooks') || d.path.includes('02 Master Plans')).length} CODIFIED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Analytical Frameworks</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.strategicDecisions || []).filter(d => ['root cause', 'ooda', 'swot', 'first principles', 'work backwards', '5 whys'].some(f => (d.frameworkUsed || '').toLowerCase().includes(f))).length} STRUCTURED
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {currentAttr.name === 'Creativity' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Strategic Experiments</span>
+                      <span className="font-bold text-pink-400">
+                        {(state.strategicExperiments || []).length} BETS TESTED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Lateral Frameworks</span>
+                      <span className="font-bold text-cyan-300">
+                        {(state.planningDocuments || []).filter(d => d.path.includes('06 Mental Models') || d.path.includes('07 Experiments') || d.docType === 'Framework' || d.docType === 'Experiment').length} MODELS
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Divergent Decisions</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.strategicDecisions || []).filter(d => (d.options || []).length >= 3 || ['scamper', 'lateral', 'brainstorm', 'mind map'].some(f => (d.frameworkUsed || '').toLowerCase().includes(f))).length} MULTI-OPTION
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {currentAttr.name === 'Memory' && (
+                  <>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Reviewed Codex Assets</span>
+                      <span className="font-bold text-indigo-300">
+                        {(state.planningDocuments || []).filter(d => Boolean(d.lastReviewed) || (d.version && d.version !== 'v1.0')).length} REVIEWED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Institutional SOPs</span>
+                      <span className="font-bold text-emerald-400">
+                        {(state.strategicPostmortems || []).filter(p => Boolean(p.codifiedSOP || p.codifiedSopOrDoctrine)).length} PRESERVED
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-[#07080c] rounded-lg border border-white/5">
+                      <span className="text-[10px] text-zinc-500 block uppercase">Crystallized Doctrines</span>
+                      <span className="font-bold text-[#e5c875]">
+                        {(state.doctrines || []).filter(d => d.status === 'Active').length} RECALLED
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* 3. ACTIVE WEAKNESSES IDENTIFIED IN MUHASABAH */}
           {linkedWeaknesses.length > 0 && (
             <div className="bg-[#160c0c] border border-red-500/30 rounded-xl p-4 space-y-3">

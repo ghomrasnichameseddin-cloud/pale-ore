@@ -152,7 +152,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Capacity to concentrate deeply on high-stakes directives without distraction or cognitive drift.',
     icon: '🎯',
     color: '#38bdf8',
-    focusArea: 'Deep-work Pomodoro blocks, main directives & distraction shielding.'
+    focusArea: 'Deep-work Pomodoro blocks, main directives, distraction shielding, strategic freeze & focus doctrines.'
   },
   Knowledge: {
     name: 'Knowledge',
@@ -161,7 +161,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Theoretical foundations, syntax, programming, language grammar, and structured academic study.',
     icon: '📖',
     color: '#818cf8',
-    focusArea: 'Coding documentation, technical reading, language syntax & research.'
+    focusArea: 'Coding documentation, technical reading, language syntax, codex vault documents & mental models.'
   },
   Wisdom: {
     name: 'Wisdom',
@@ -170,7 +170,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Synthesizing knowledge into sound strategic judgment, priority filtering, and high-impact long-term decisions.',
     icon: '👁️',
     color: '#a78bfa',
-    focusArea: 'Grand Destiny advancement, strategic trade-offs & postmortem reflection.'
+    focusArea: 'Grand Destiny advancement, strategic decisions journal, high-impact trade-offs & operating doctrines.'
   },
   Clarity: {
     name: 'Clarity',
@@ -179,7 +179,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Analytical precision, mental lucidity, structured logic, and rapid deconstruction of ambiguous bottlenecks.',
     icon: '💎',
     color: '#06b6d4',
-    focusArea: 'Architecture documents, system debugging, complex problem breakdown & logic modeling.'
+    focusArea: 'Architecture documents, system debugging, complex problem breakdown, strategic postmortems & SOP playbooks.'
   },
   Creativity: {
     name: 'Creativity',
@@ -188,7 +188,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Lateral thinking, architectural innovation, novel solutions, and creative synthesis across disparate domains.',
     icon: '🎨',
     color: '#ec4899',
-    focusArea: 'Product design, UI/UX architecture, creative writing, inventive engineering & conceptual breakthroughs.'
+    focusArea: 'Product design, UI/UX architecture, inventive engineering, strategic experiments lab & lateral models.'
   },
   Memory: {
     name: 'Memory',
@@ -197,7 +197,7 @@ export const CANONICAL_ATTRIBUTE_METADATA: Record<CanonicalAttributeName, Attrib
     description: 'Cognitive retention fidelity, rapid information recall, mental crystallization, and knowledge permanence.',
     icon: '🧠',
     color: '#6366f1',
-    focusArea: 'Qur\'an memorization (Hifz), technical syntax recall, spaced repetition & algorithmic retention.'
+    focusArea: 'Qur\'an memorization (Hifz), technical recall, spaced repetition, codex reviews & codified institutional SOPs.'
   },
 
   // --- BODY DOMAIN (6 PILLARS) ---

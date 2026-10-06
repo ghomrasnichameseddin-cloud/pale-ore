@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, Pause, Play, X, RotateCcw, Sparkles, Coffee, 
@@ -71,8 +72,14 @@ export const ActiveRestOverlay: React.FC = () => {
 
   const contemplation = REST_CONTEMPLATIONS[contemplationIndex];
 
-  return (
-    <div className="fixed z-50 pointer-events-none inset-0 flex items-end sm:items-center justify-center p-4">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className={`fixed z-[100] inset-0 flex ${
+      isMinimized 
+        ? 'pointer-events-none items-end justify-center sm:justify-end p-4 sm:p-6' 
+        : 'pointer-events-auto items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto'
+    }`}>
       <AnimatePresence>
         {isMinimized ? (
           // MINIMIZED FLOATING PILL
@@ -101,7 +108,7 @@ export const ActiveRestOverlay: React.FC = () => {
             <div className="flex items-center gap-1 pl-2 border-l border-white/10">
               <button
                 onClick={session.paused ? resumeActiveRestSession : pauseActiveRestSession}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition cursor-pointer"
                 title={session.paused ? "Resume rest" : "Pause rest"}
               >
                 {session.paused ? <Play className="h-3.5 w-3.5 text-emerald-400" /> : <Pause className="h-3.5 w-3.5 text-zinc-300" />}
@@ -109,7 +116,7 @@ export const ActiveRestOverlay: React.FC = () => {
 
               <button
                 onClick={() => setIsMinimized(false)}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition cursor-pointer"
                 title="Expand"
               >
                 <Maximize2 className="h-3.5 w-3.5" />
@@ -117,7 +124,7 @@ export const ActiveRestOverlay: React.FC = () => {
 
               <button
                 onClick={handleEarlyFinish}
-                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 transition"
+                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 transition cursor-pointer"
                 title="Conclude rest & refund unspent time"
               >
                 <X className="h-3.5 w-3.5" />
@@ -127,10 +134,11 @@ export const ActiveRestOverlay: React.FC = () => {
         ) : (
           // FULL SERENE DIALOG
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="pointer-events-auto w-full max-w-md bg-[#090b10] border border-emerald-500/30 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.15)] backdrop-blur-2xl p-6 relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.2 }}
+            className="pointer-events-auto w-full max-w-md bg-[#090b10] border border-emerald-500/40 rounded-2xl shadow-[0_0_60px_rgba(0,0,0,0.85),0_0_30px_rgba(16,185,129,0.2)] backdrop-blur-2xl p-5 sm:p-6 relative overflow-hidden max-h-[92vh] overflow-y-auto my-auto custom-scrollbar"
             id="active-rest-full-modal"
           >
             {/* Background Ambient Glow */}
@@ -157,14 +165,14 @@ export const ActiveRestOverlay: React.FC = () => {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setIsMinimized(true)}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-200 transition"
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
                   title="Minimize to floating pill"
                 >
                   <Minimize2 className="h-4 w-4" />
                 </button>
                 <button
                   onClick={handleEarlyFinish}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-300 transition"
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-300 transition cursor-pointer"
                   title="Conclude Rest Early"
                 >
                   <X className="h-4 w-4" />
@@ -173,8 +181,8 @@ export const ActiveRestOverlay: React.FC = () => {
             </div>
 
             {/* Central Circular Progress & Timer */}
-            <div className="py-8 flex flex-col items-center justify-center relative z-10">
-              <div className="relative w-44 h-44 flex items-center justify-center">
+            <div className="py-6 sm:py-7 flex flex-col items-center justify-center relative z-10">
+              <div className="relative w-40 h-40 sm:w-44 sm:h-44 flex items-center justify-center">
                 {/* SVG Progress Circle */}
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle
@@ -211,7 +219,7 @@ export const ActiveRestOverlay: React.FC = () => {
               {/* Contemplation Card */}
               <div 
                 onClick={cycleContemplation}
-                className="mt-6 p-4 rounded-xl bg-[#121622]/90 border border-white/5 hover:border-emerald-500/30 text-center cursor-pointer transition group relative max-w-sm"
+                className="mt-5 p-3.5 sm:p-4 rounded-xl bg-[#121622]/90 border border-white/5 hover:border-emerald-500/30 text-center cursor-pointer transition group relative max-w-sm"
                 title="Click for next reflection"
               >
                 <p className="text-xs text-zinc-300 italic font-serif leading-relaxed">
@@ -227,14 +235,14 @@ export const ActiveRestOverlay: React.FC = () => {
             {/* Action Bar */}
             <div className="border-t border-white/10 pt-4 flex items-center justify-between relative z-10">
               <div className="text-[11px] font-mono text-zinc-400">
-                <span>Guilt-Free Rest Currency Spent: </span>
+                <span>Rest Currency: </span>
                 <span className="text-emerald-400 font-bold">{session.totalMinutes}m</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={session.paused ? resumeActiveRestSession : pauseActiveRestSession}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition border ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition border cursor-pointer ${
                     session.paused
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
                       : 'bg-white/5 text-zinc-200 border-white/10 hover:bg-white/10'
@@ -255,7 +263,7 @@ export const ActiveRestOverlay: React.FC = () => {
 
                 <button
                   onClick={handleEarlyFinish}
-                  className="px-3 py-2 rounded-xl text-xs font-mono font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-xl text-xs font-mono font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition flex items-center gap-1.5 cursor-pointer"
                   title="Refund unused minutes"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
@@ -266,6 +274,7 @@ export const ActiveRestOverlay: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   );
 };

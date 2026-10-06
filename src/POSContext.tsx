@@ -2626,6 +2626,249 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return Math.round(bonus * 10) / 10;
     };
 
+    // ---------------------------------------------------------
+    // STRATEGY & CODEX ATTRIBUTE PROGRESSION ENGINE
+    // ---------------------------------------------------------
+    // Links Mind Domain progression (Focus, Knowledge, Wisdom, Clarity, Creativity, Memory)
+    // directly to codified knowledge assets, operating doctrines, and strategic actions.
+    const planningDocs = state.planningDocuments || [];
+    const doctrines = state.doctrines || [];
+    const strategicDecisions = state.strategicDecisions || [];
+    const strategicExperiments = state.strategicExperiments || [];
+    const strategicPostmortems = state.strategicPostmortems || [];
+
+    const getStrategyAndCodexBonusPoints = (attrName: string, resetCutoff?: string | null): number => {
+      let bonus = 0;
+      const cutoffDate = resetCutoff ? resetCutoff.slice(0, 10) : null;
+      const isEligibleDate = (dateStr?: string | null) => {
+        if (!cutoffDate || !dateStr) return true;
+        return dateStr.slice(0, 10) >= cutoffDate;
+      };
+
+      if (attrName === 'Focus') {
+        // 1. Strategic Freeze: deliberate prioritization freeze protects cognitive bandwidth
+        if (state.strategicFreeze) {
+          bonus += 4.0;
+        }
+
+        // 2. Focus & Temporal Operating Doctrines (protecting golden hours & preventing distraction)
+        doctrines.forEach(d => {
+          if (d.status === 'Active' && isEligibleDate(d.createdAt)) {
+            const cat = (d.category || '').toLowerCase();
+            const text = `${d.name} ${d.rule}`.toLowerCase();
+            if (cat === 'focus' || cat === 'temporal' || cat === 'execution' || text.includes('focus') || text.includes('golden hours') || text.includes('distraction')) {
+              bonus += 2.0;
+            }
+          }
+        });
+
+        // 3. Operations & Daily Directives Codex Docs
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated' && isEligibleDate(doc.updatedAt || doc.lastReviewed)) {
+            if (doc.path.includes('04 Operations') || doc.path.includes('Tactical') || doc.docType === 'SOP') {
+              bonus += 1.5;
+            }
+          }
+        });
+
+        // 4. Strategic decisions applying focus prioritization frameworks (Eisenhower, Pareto 80/20)
+        strategicDecisions.forEach(d => {
+          if (isEligibleDate(d.createdAt)) {
+            const fw = (d.frameworkUsed || '').toLowerCase();
+            if (fw.includes('eisenhower') || fw.includes('pareto') || fw.includes('80/20')) {
+              bonus += 2.0;
+            }
+          }
+        });
+      }
+
+      else if (attrName === 'Knowledge') {
+        // 1. Codex Vault documents: systematic codification of domain models and playbooks
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated' && isEligibleDate(doc.updatedAt || doc.lastReviewed)) {
+            bonus += doc.status === 'Active' ? 1.5 : 1.0;
+            if (doc.content && doc.content.length > 300) {
+              bonus += Math.min(3.0, Math.floor(doc.content.length / 300) * 0.5);
+            }
+            if (doc.path.includes('05 Standard Operating Procedures') || 
+                doc.path.includes('06 Mental Models') || 
+                doc.path.includes('02 Master Plans') ||
+                doc.docType === 'Framework' || doc.docType === 'SOP') {
+              bonus += 1.5;
+            }
+            if (doc.linkedSkills && doc.linkedSkills.length > 0) {
+              bonus += Math.min(3.0, doc.linkedSkills.length * 1.0);
+            }
+          }
+        });
+
+        // 2. Knowledge & Architecture Doctrines
+        doctrines.forEach(d => {
+          if (d.status === 'Active' && isEligibleDate(d.createdAt)) {
+            const cat = (d.category || '').toLowerCase();
+            if (cat === 'knowledge' || cat === 'architecture' || cat === 'cognitive') {
+              bonus += 2.0;
+            }
+          }
+        });
+      }
+
+      else if (attrName === 'Wisdom') {
+        // 1. Strategic Decisions Journal: deliberate trade-offs, sound judgment
+        strategicDecisions.forEach(d => {
+          if (isEligibleDate(d.createdAt)) {
+            bonus += 2.5;
+            if (d.status === 'Validated' || d.actualResult || d.actualOutcome) {
+              bonus += 3.0;
+            }
+            if (d.confidence && d.confidence >= 80) {
+              bonus += 1.0;
+            }
+            if (d.lesson && d.lesson.trim().length > 10) {
+              bonus += 2.0;
+            }
+          }
+        });
+
+        // 2. Active Operating Doctrines: long-term life principles
+        doctrines.forEach(d => {
+          if (d.status === 'Active' && isEligibleDate(d.createdAt)) {
+            bonus += 2.0;
+          }
+        });
+
+        // 3. Vision & Grand Destiny Codex Architecture
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated' && isEligibleDate(doc.updatedAt || doc.lastReviewed)) {
+            if (doc.path.includes('00 Vision') || doc.path.includes('01 Strategies') || doc.docType === 'Doctrine' || doc.docType === 'Strategy') {
+              bonus += 2.5;
+            }
+          }
+        });
+
+        // 4. Strategic Postmortems: wisdom distilled from reality checks
+        strategicPostmortems.forEach(p => {
+          if (isEligibleDate(p.createdAt || p.date)) {
+            bonus += 2.5;
+            if (p.lesson && p.lesson.trim().length > 10) {
+              bonus += 1.5;
+            }
+          }
+        });
+      }
+
+      else if (attrName === 'Clarity') {
+        // 1. Strategic Postmortems & Root-Cause Analysis (eliminating ambiguity)
+        strategicPostmortems.forEach(p => {
+          if (isEligibleDate(p.createdAt || p.date)) {
+            bonus += 3.0;
+            if (p.rootCause && p.rootCause.trim().length > 10) {
+              bonus += 1.5;
+            }
+            if (p.correctiveAction || p.codifiedSOP || p.codifiedSopOrDoctrine) {
+              bonus += 2.0;
+            }
+          }
+        });
+
+        // 2. Codex SOPs and Master Plans (unambiguous playbooks & system architectures)
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated' && isEligibleDate(doc.updatedAt || doc.lastReviewed)) {
+            if (doc.path.includes('05 Standard Operating Procedures') || doc.path.includes('03 Tactical Playbooks') || doc.path.includes('02 Master Plans')) {
+              bonus += 2.5;
+            }
+            const linksCount = (doc.linkedGoals?.length || 0) + (doc.linkedProjects?.length || 0) + (doc.linkedQuests?.length || 0);
+            if (linksCount > 0) {
+              bonus += Math.min(3.0, linksCount * 0.75);
+            }
+          }
+        });
+
+        // 3. Analytical Strategic Decisions (formal frameworks)
+        strategicDecisions.forEach(d => {
+          if (isEligibleDate(d.createdAt)) {
+            const fw = (d.frameworkUsed || '').toLowerCase();
+            if (fw.includes('root cause') || fw.includes('5 whys') || fw.includes('ooda') || fw.includes('swot') || fw.includes('first principles') || fw.includes('work backwards')) {
+              bonus += 2.5;
+            }
+          }
+        });
+      }
+
+      else if (attrName === 'Creativity') {
+        // 1. Strategic Experiments Lab: formulating falsifiable bets & non-linear innovation
+        strategicExperiments.forEach(e => {
+          if (isEligibleDate(e.createdAt || e.startDate)) {
+            bonus += 2.5;
+            if (e.status === 'Concluded' || (e.verdict && e.verdict !== 'Pending')) {
+              bonus += 2.0;
+            }
+            if (e.verdict === 'Keep' || e.codifiedSopOrDoctrine) {
+              bonus += 2.5;
+            }
+          }
+        });
+
+        // 2. Mental Models & Experimental Codex Documents
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated' && isEligibleDate(doc.updatedAt || doc.lastReviewed)) {
+            if (doc.path.includes('06 Mental Models') || doc.path.includes('07 Experiments') || doc.docType === 'Experiment' || doc.docType === 'Framework') {
+              bonus += 2.5;
+            }
+          }
+        });
+
+        // 3. Divergent Ideation in Decisions (multi-option analysis)
+        strategicDecisions.forEach(d => {
+          if (isEligibleDate(d.createdAt)) {
+            const optsCount = (d.options || d.optionsConsidered || []).length;
+            if (optsCount >= 3) {
+              bonus += 2.0;
+            }
+            const fw = (d.frameworkUsed || '').toLowerCase();
+            if (fw.includes('scamper') || fw.includes('lateral') || fw.includes('brainstorm') || fw.includes('mind map')) {
+              bonus += 2.5;
+            }
+          }
+        });
+      }
+
+      else if (attrName === 'Memory') {
+        // 1. Spaced Repetition & Codex Review Cadence: reviewing docs preserves knowledge retention
+        planningDocs.forEach(doc => {
+          if (doc.status !== 'Deprecated') {
+            if (doc.lastReviewed && isEligibleDate(doc.lastReviewed)) {
+              bonus += 2.0;
+            }
+            if (doc.version && doc.version !== 'v1.0') {
+              bonus += 1.5;
+            }
+            if (doc.path.includes('08 Lessons Learned') || doc.docType === 'Lesson') {
+              bonus += 2.0;
+            }
+          }
+        });
+
+        // 2. Codified SOPs from Postmortems (institutional memory preservation)
+        strategicPostmortems.forEach(p => {
+          if (isEligibleDate(p.createdAt || p.date)) {
+            if (p.codifiedSOP || p.codifiedSopOrDoctrine) {
+              bonus += 3.0;
+            }
+          }
+        });
+
+        // 3. Active Doctrines: ingrained heuristics recalled on demand
+        doctrines.forEach(d => {
+          if (d.status === 'Active' && isEligibleDate(d.createdAt)) {
+            bonus += 1.5;
+          }
+        });
+      }
+
+      return Math.round(bonus * 10) / 10;
+    };
+
     const canonicalAttrs = ensureCanonicalAttributes(state.attributes || []);
     return canonicalAttrs.map(attr => {
       // Check if this attribute or all attributes have been restarted/reset
@@ -2704,6 +2947,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (state.profile.focusStreak && state.profile.focusStreak > 0) {
           totalPoints += Math.min(15, state.profile.focusStreak * 2);
         }
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Focus', resetCutoff);
       } else if (attr.name === 'Discipline') {
         // Completing habits and side routines consistently with streak protection
         baseCost = 16;
@@ -2734,6 +2979,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Knowledge', resetCutoff);
       } else if (attr.name === 'Wisdom') {
         baseCost = 16;
         growth = 5;
@@ -2744,6 +2991,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Wisdom', resetCutoff);
       } else if (attr.name === 'Social') {
         baseCost = 14;
         growth = 4;
@@ -2792,6 +3041,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Clarity', resetCutoff);
       } else if (attr.name === 'Creativity') {
         baseCost = 14;
         growth = 4;
@@ -2804,6 +3055,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Creativity', resetCutoff);
       } else if (attr.name === 'Memory') {
         baseCost = 14;
         growth = 4;
@@ -2816,6 +3069,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             totalPoints += (link === 1 ? Math.max(1, Math.round(pts * 0.75)) : pts);
           }
         });
+        // Strategy & Codex progression link
+        totalPoints += getStrategyAndCodexBonusPoints('Memory', resetCutoff);
       } else if (attr.name === 'Vitality') {
         baseCost = 14;
         growth = 4;

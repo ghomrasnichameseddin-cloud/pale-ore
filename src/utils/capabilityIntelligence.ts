@@ -547,13 +547,70 @@ export function getAttributeEvidence(attributeName: string, state: POSState): At
     });
   }
 
+  // Count contributing strategy and codex actions for Mind attributes
+  let strategyAndCodexCount = 0;
+  let codexDocsCount = 0;
+  let strategicDecisionsCount = 0;
+  let strategicExperimentsCount = 0;
+  let strategicPostmortemsCount = 0;
+  let activeDoctrinesCount = 0;
+
+  if (['Focus', 'Knowledge', 'Wisdom', 'Clarity', 'Creativity', 'Memory'].includes(attributeName)) {
+    const docs = state.planningDocuments || [];
+    const doctrines = state.doctrines || [];
+    const decisions = state.strategicDecisions || [];
+    const experiments = state.strategicExperiments || [];
+    const postmortems = state.strategicPostmortems || [];
+
+    if (attributeName === 'Focus') {
+      if (state.strategicFreeze) strategyAndCodexCount += 2;
+      activeDoctrinesCount = doctrines.filter(d => d.status === 'Active' && ['focus', 'temporal', 'execution'].some(c => (d.category || '').toLowerCase().includes(c) || `${d.name} ${d.rule}`.toLowerCase().includes('focus'))).length;
+      codexDocsCount = docs.filter(d => d.path.includes('04 Operations') || d.docType === 'SOP').length;
+      strategicDecisionsCount = decisions.filter(d => (d.frameworkUsed || '').toLowerCase().includes('eisenhower') || (d.frameworkUsed || '').toLowerCase().includes('pareto')).length;
+      strategyAndCodexCount += activeDoctrinesCount + codexDocsCount + strategicDecisionsCount;
+    } else if (attributeName === 'Knowledge') {
+      codexDocsCount = docs.filter(d => d.status !== 'Deprecated').length;
+      activeDoctrinesCount = doctrines.filter(d => d.status === 'Active' && ['knowledge', 'architecture', 'cognitive'].some(c => (d.category || '').toLowerCase().includes(c))).length;
+      strategyAndCodexCount += codexDocsCount + activeDoctrinesCount;
+    } else if (attributeName === 'Wisdom') {
+      strategicDecisionsCount = decisions.length;
+      activeDoctrinesCount = doctrines.filter(d => d.status === 'Active').length;
+      codexDocsCount = docs.filter(d => d.path.includes('00 Vision') || d.path.includes('01 Strategies') || d.docType === 'Doctrine' || d.docType === 'Strategy').length;
+      strategicPostmortemsCount = postmortems.length;
+      strategyAndCodexCount += strategicDecisionsCount + activeDoctrinesCount + codexDocsCount + strategicPostmortemsCount;
+    } else if (attributeName === 'Clarity') {
+      strategicPostmortemsCount = postmortems.length;
+      codexDocsCount = docs.filter(d => d.path.includes('05 Standard Operating Procedures') || d.path.includes('03 Tactical Playbooks') || d.path.includes('02 Master Plans')).length;
+      strategicDecisionsCount = decisions.filter(d => ['root cause', 'ooda', 'swot', 'first principles', 'work backwards', '5 whys'].some(f => (d.frameworkUsed || '').toLowerCase().includes(f))).length;
+      strategyAndCodexCount += strategicPostmortemsCount + codexDocsCount + strategicDecisionsCount;
+    } else if (attributeName === 'Creativity') {
+      strategicExperimentsCount = experiments.length;
+      codexDocsCount = docs.filter(d => d.path.includes('06 Mental Models') || d.path.includes('07 Experiments') || d.docType === 'Framework' || d.docType === 'Experiment').length;
+      strategicDecisionsCount = decisions.filter(d => (d.options || []).length >= 3 || ['scamper', 'lateral', 'brainstorm', 'mind map'].some(f => (d.frameworkUsed || '').toLowerCase().includes(f))).length;
+      strategyAndCodexCount += strategicExperimentsCount + codexDocsCount + strategicDecisionsCount;
+    } else if (attributeName === 'Memory') {
+      codexDocsCount = docs.filter(d => Boolean(d.lastReviewed) || (d.version && d.version !== 'v1.0') || d.path.includes('08 Lessons Learned') || d.docType === 'Lesson').length;
+      strategicPostmortemsCount = postmortems.filter(p => Boolean(p.codifiedSOP || p.codifiedSopOrDoctrine)).length;
+      activeDoctrinesCount = doctrines.filter(d => d.status === 'Active').length;
+      strategyAndCodexCount += codexDocsCount + strategicPostmortemsCount + activeDoctrinesCount;
+    }
+  }
+
   let explanation = '';
   const totalSoulActions = spiritualProtocolCount + muhasabahActionsCount;
-  if (completedEvents.length === 0 && totalSoulActions === 0) {
-    explanation = `No recorded directives or spiritual actions yet for ${attributeName}. Execute relevant directives, sacred protocol duties, or muhasabah accounting to initiate momentum.`;
+  const totalStrategicActions = strategyAndCodexCount;
+  const totalSupplementaryActions = totalSoulActions + totalStrategicActions;
+
+  if (completedEvents.length === 0 && totalSupplementaryActions === 0) {
+    explanation = `No recorded directives, strategic assets, or spiritual actions yet for ${attributeName}. Execute relevant directives, codify codex docs, journal strategic decisions, or complete protocol duties to initiate momentum.`;
   } else {
     const parts: string[] = [];
     if (completedEvents.length > 0) parts.push(`${completedEvents.length} completed operations`);
+    if (codexDocsCount > 0) parts.push(`${codexDocsCount} codified Codex vault documents`);
+    if (strategicDecisionsCount > 0) parts.push(`${strategicDecisionsCount} strategic decision journals`);
+    if (strategicExperimentsCount > 0) parts.push(`${strategicExperimentsCount} strategic experiments`);
+    if (strategicPostmortemsCount > 0) parts.push(`${strategicPostmortemsCount} postmortem root-cause audits`);
+    if (activeDoctrinesCount > 0) parts.push(`${activeDoctrinesCount} operating doctrines`);
     if (spiritualProtocolCount > 0) parts.push(`${spiritualProtocolCount} sacred protocol rites (prayers, adhkar, fasts)`);
     if (muhasabahActionsCount > 0) parts.push(`${muhasabahActionsCount} muhāsabah accountability audits & remedies`);
     if (relatedSkills.length > 0) parts.push(`${relatedSkills.length} linked craft disciplines`);
@@ -562,11 +619,11 @@ export function getAttributeEvidence(attributeName: string, state: POSState): At
   }
 
   return {
-    directivesCount: completedEvents.length + totalSoulActions,
+    directivesCount: completedEvents.length + totalSupplementaryActions,
     focusMinutesTotal: focusMinutes,
     habitStreakBest: state.profile.focusStreak || 0,
     bossVictories: bossCount,
-    recentEventsCount: Math.min(10, completedEvents.slice(0, 7).length + totalSoulActions),
+    recentEventsCount: Math.min(10, completedEvents.slice(0, 7).length + totalSupplementaryActions),
     relatedSkills,
     relatedCampaigns,
     explanation

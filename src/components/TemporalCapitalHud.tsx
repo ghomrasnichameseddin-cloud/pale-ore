@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, Moon, Coffee, ShieldAlert, Sparkles, ChevronRight, 
@@ -39,6 +40,17 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
   const [customMinutes, setCustomMinutes] = useState<number>(25);
   const [customTitle, setCustomTitle] = useState<string>('Mindful Breathing & Qaylulah');
   const [customCategory, setCustomCategory] = useState<RestCategory>('restorative');
+
+  useEffect(() => {
+    if (!isQuickRedeemOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsQuickRedeemOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isQuickRedeemOpen]);
 
   const accounting = getTemporalAccounting();
   const dailyRest = getDailyRestState();
@@ -784,119 +796,152 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
       </div>
 
       {/* QUICK REDEEM REST BLOCK MODAL */}
-      <AnimatePresence>
-        {isQuickRedeemOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-sm bg-[#0d1017] border border-emerald-500/40 rounded-2xl p-5 shadow-2xl relative space-y-4"
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isQuickRedeemOpen && (
+            <div 
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setIsQuickRedeemOpen(false);
+              }}
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <Coffee className="h-4 w-4" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-md bg-[#0d1017] border border-emerald-500/40 rounded-2xl p-5 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.85),0_0_30px_rgba(16,185,129,0.2)] relative space-y-4 max-h-[92vh] overflow-y-auto my-auto custom-scrollbar"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <Coffee className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold font-serif text-zinc-100 flex items-center gap-1.5">
+                        <RubElHizbIcon className="h-2.5 w-2.5 text-[#c5a059]" />
+                        <span>Redeem Active Rest Block</span>
+                      </h4>
+                      <p className="text-[10px] font-mono text-zinc-400">
+                        Intentional Guilt-Free Restoration
+                      </p>
+                    </div>
                   </div>
-                  <h4 className="text-sm font-bold font-serif text-zinc-100">
-                    Redeem Active Rest Block
-                  </h4>
+                  <button
+                    onClick={() => setIsQuickRedeemOpen(false)}
+                    className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-lg bg-white/5 hover:bg-white/10 transition cursor-pointer"
+                    title="Close window (Esc)"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsQuickRedeemOpen(false)}
-                  className="p-1 text-zinc-400 hover:text-zinc-200"
+
+                <div className="text-xs font-mono text-zinc-300 flex items-center justify-between bg-black/50 p-2.5 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-400 text-[11px]">Bank:</span>
+                    <span className="text-emerald-400 font-bold">{state.profile.timeCredits ?? 60}m</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-400 text-[11px]">Today's Allowance:</span>
+                    <span className="text-teal-400 font-bold">{dailyRest.remainingAllowance}m</span>
+                  </div>
+                </div>
+
+                {/* Preset Block Choices */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono uppercase text-zinc-400 font-bold tracking-wider block">
+                    Recommended Rest Protocols
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { title: 'Quick Coffee & Dhikr', mins: 15, icon: '☕', category: 'restorative' as RestCategory },
+                      { title: 'Sunnah Qaylulah (Nap)', mins: 25, icon: '😴', category: 'restorative' as RestCategory },
+                      { title: 'Intentional Leisure Block', mins: 45, icon: '🍿', category: 'leisure' as RestCategory },
+                      { title: 'Deep Recreation Voucher', mins: 60, icon: '🎮', category: 'recreation' as RestCategory }
+                    ].map(preset => {
+                      const hasBank = (state.profile.timeCredits ?? 60) >= preset.mins;
+                      const hasAllowance = preset.category === 'restorative' || dailyRest.remainingAllowance >= preset.mins;
+                      const canRedeem = hasBank && hasAllowance;
+
+                      return (
+                        <button
+                          key={preset.mins}
+                          disabled={!canRedeem}
+                          onClick={() => handleLaunchRest(preset.title, preset.mins)}
+                          className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                            canRedeem
+                              ? 'bg-[#141926] hover:bg-emerald-500/15 border-white/10 hover:border-emerald-500/40 cursor-pointer text-zinc-200 shadow-sm'
+                              : 'bg-white/5 border-transparent opacity-40 cursor-not-allowed text-zinc-500'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-base">{preset.icon}</span>
+                            <span className="font-mono font-bold text-xs text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/20">{preset.mins}m</span>
+                          </div>
+                          <span className="text-[11px] font-serif mt-2 font-medium leading-tight line-clamp-2">
+                            {preset.title}
+                          </span>
+                          <span className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
+                            {preset.category}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Minutes Input */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if ((state.profile.timeCredits ?? 60) >= customMinutes) {
+                      handleLaunchRest(customTitle.trim() || 'Custom Rest Block', customMinutes);
+                    }
+                  }}
+                  className="pt-3 border-t border-white/10 space-y-2.5"
                 >
-                  ✕
-                </button>
-              </div>
+                  <label className="text-[10px] font-mono uppercase text-zinc-400 font-bold tracking-wider block">
+                    Custom Duration Protocol
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={customTitle}
+                      onChange={e => setCustomTitle(e.target.value)}
+                      placeholder="Rest Activity Title"
+                      className="flex-1 bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 transition"
+                    />
+                    <input
+                      type="number"
+                      min={5}
+                      max={state.profile.timeCredits ?? 60}
+                      value={customMinutes}
+                      onChange={e => setCustomMinutes(Math.max(5, parseInt(e.target.value) || 5))}
+                      className="w-16 bg-black/50 border border-white/10 rounded-lg px-2 py-2 text-xs font-mono text-zinc-200 text-center focus:outline-none focus:border-emerald-500 transition"
+                    />
+                    <span className="text-xs font-mono text-zinc-400 font-bold">m</span>
+                  </div>
 
-              <div className="text-xs font-mono text-zinc-300 flex justify-between bg-black/40 p-2 rounded-lg border border-white/5">
-                <div>
-                  Bank: <span className="text-emerald-400 font-bold">{state.profile.timeCredits ?? 60}m</span>
-                </div>
-                <div>
-                  Today's Allowance: <span className="text-teal-400 font-bold">{dailyRest.remainingAllowance}m</span>
-                </div>
-              </div>
-
-              {/* Preset Block Choices */}
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { title: 'Quick Coffee & Dhikr', mins: 15, icon: '☕', category: 'restorative' as RestCategory },
-                  { title: 'Sunnah Qaylulah (Nap)', mins: 25, icon: '😴', category: 'restorative' as RestCategory },
-                  { title: 'Intentional Leisure Block', mins: 45, icon: '🍿', category: 'leisure' as RestCategory },
-                  { title: 'Deep Recreation Voucher', mins: 60, icon: '🎮', category: 'recreation' as RestCategory }
-                ].map(preset => {
-                  const hasBank = (state.profile.timeCredits ?? 60) >= preset.mins;
-                  const hasAllowance = preset.category === 'restorative' || dailyRest.remainingAllowance >= preset.mins;
-                  const canRedeem = hasBank && hasAllowance;
-
-                  return (
-                    <button
-                      key={preset.mins}
-                      disabled={!canRedeem}
-                      onClick={() => handleLaunchRest(preset.title, preset.mins)}
-                      className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
-                        canRedeem
-                          ? 'bg-[#141926] hover:bg-emerald-500/15 border-white/10 hover:border-emerald-500/40 cursor-pointer text-zinc-200'
-                          : 'bg-white/5 border-transparent opacity-40 cursor-not-allowed text-zinc-500'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center text-sm">
-                        <span>{preset.icon}</span>
-                        <span className="font-mono font-bold text-xs text-emerald-400">{preset.mins}m</span>
-                      </div>
-                      <span className="text-[11px] font-serif mt-2 font-medium leading-tight line-clamp-2">
-                        {preset.title}
-                      </span>
-                      <span className="text-[9px] font-mono text-zinc-400 mt-1 uppercase">
-                        {preset.category}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom Minutes Input */}
-              <div className="pt-2 border-t border-white/10 space-y-2">
-                <label className="text-[11px] font-mono text-zinc-400 block">
-                  Or Custom Duration:
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customTitle}
-                    onChange={e => setCustomTitle(e.target.value)}
-                    placeholder="Rest Activity Title"
-                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500"
-                  />
-                  <input
-                    type="number"
-                    min={5}
-                    max={state.profile.timeCredits ?? 60}
-                    value={customMinutes}
-                    onChange={e => setCustomMinutes(Math.max(5, parseInt(e.target.value) || 5))}
-                    className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-zinc-200 text-center focus:outline-none focus:border-emerald-500"
-                  />
-                  <span className="text-xs font-mono text-zinc-400">m</span>
-                </div>
-
-                <button
-                  disabled={(state.profile.timeCredits ?? 60) < customMinutes}
-                  onClick={() => handleLaunchRest(customTitle || 'Custom Rest Block', customMinutes)}
-                  className={`w-full py-2 rounded-xl text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 ${
-                    (state.profile.timeCredits ?? 60) >= customMinutes
-                      ? 'bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                      : 'bg-white/10 text-zinc-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Launch {customMinutes}m Rest Block</span>
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  <button
+                    type="submit"
+                    disabled={(state.profile.timeCredits ?? 60) < customMinutes}
+                    className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 shadow-md ${
+                      (state.profile.timeCredits ?? 60) >= customMinutes
+                        ? 'bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                        : 'bg-white/10 text-zinc-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Coffee className="h-3.5 w-3.5" />
+                    <span>Launch {customMinutes}m Rest Block</span>
+                  </button>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
