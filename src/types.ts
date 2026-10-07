@@ -1140,6 +1140,8 @@ export interface QuranLog {
   memorizationReviewed?: boolean; // Hifdh / revision (+50 XP)
   passagesRevisedToday?: string[]; // IDs of passages revised today
   newMemorizationPassages?: string[]; // IDs of new passages memorized today
+  fridaySurahAlBaqarahRead?: boolean; // Friday recitation of Surah Al-Baqarah (+75 XP)
+  fridaySurahAlKahfRead?: boolean; // Friday recitation of Surah Al-Kahf (+60 XP)
 }
 
 export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';

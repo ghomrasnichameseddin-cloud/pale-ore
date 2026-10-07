@@ -102,10 +102,14 @@ export const SacredProtocolScorecard: React.FC<SacredProtocolScorecardProps> = (
   const hasJuz = !!currentLog.quran?.juzRead;
   const hasTadabbur = !!currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0;
   const hasHifdh = !!currentLog.quran?.memorizationReviewed;
+  const fridayQuranReadings = Number(Boolean(currentLog.quran?.fridaySurahAlBaqarahRead)) + Number(Boolean(currentLog.quran?.fridaySurahAlKahfRead));
   let rawPillar9 = Math.min(5, quranPages * 0.5);
   if (hasJuz) rawPillar9 = 5;
   if (hasTadabbur) rawPillar9 += 2.5;
   if (hasHifdh) rawPillar9 += 2.5;
+  if (systemDate && new Date(`${systemDate}T12:00:00`).getDay() === 5) {
+    rawPillar9 = Math.min(10, rawPillar9 + fridayQuranReadings * 2.5);
+  }
   rawPillar9 = Math.min(10, Math.round(rawPillar9 * 10) / 10);
 
   // 10. Pillar 10: Khushu & Heart Presence

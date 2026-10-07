@@ -3,7 +3,9 @@ import {
   calculateAdhkarFortressStats,
   calculateQuranFreshness,
   advanceRevisionQueueStatus,
-  regressRevisionQueueStatus
+  regressRevisionQueueStatus,
+  isFridayQuranReadingRequired,
+  getFridayQuranReadingStatus
 } from '../quranAndAdhkarEngine';
 import { QuranPassage, SpiritualDailyLog } from '../../types';
 import { createDefaultSpiritualLog } from '../../initialState';
@@ -54,6 +56,37 @@ describe('Qur\'an and Adhkār Sacred Protocol Engine', () => {
       expect(stats.integrityScore).toBe(67);
       expect(stats.statusLabel).toBe('Fortified Bastion');
       expect(stats.completedCount).toBe(2);
+    });
+  });
+
+  describe('Friday Qur\'an Reading Requirements', () => {
+    it('requires Surah Al-Baqarah and Al-Kahf only on Fridays', () => {
+      expect(isFridayQuranReadingRequired('2026-10-02')).toBe(true);
+      expect(isFridayQuranReadingRequired('2026-10-03')).toBe(false);
+    });
+
+    it('does not treat non-Friday dates as eligible for Friday readings', () => {
+      expect(isFridayQuranReadingRequired('2026-10-03')).toBe(false);
+      expect(getFridayQuranReadingStatus(createDefaultSpiritualLog('2026-10-03'))).toEqual({
+        alBaqarah: false,
+        alKahf: false,
+        allComplete: false
+      });
+    });
+
+    it('reports the completion state for each Friday reading', () => {
+      const log = createDefaultSpiritualLog('2026-10-02');
+      log.quran = {
+        ...log.quran,
+        fridaySurahAlBaqarahRead: true,
+        fridaySurahAlKahfRead: false
+      };
+
+      expect(getFridayQuranReadingStatus(log)).toEqual({
+        alBaqarah: true,
+        alKahf: false,
+        allComplete: false
+      });
     });
   });
 

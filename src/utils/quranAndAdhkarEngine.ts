@@ -6,7 +6,24 @@ import {
   QuranRevisionStatus,
   SpiritualDailyLog
 } from '../types';
-import { addDays, getDaysDifference, getLocalDateString } from './dateUtils';
+import { addDays, getDaysDifference, getLocalDateString, parseDateSafe } from './dateUtils';
+
+export function isFridayQuranReadingRequired(date: string): boolean {
+  return parseDateSafe(date).getDay() === 5;
+}
+
+export function getFridayQuranReadingStatus(log: SpiritualDailyLog): {
+  alBaqarah: boolean;
+  alKahf: boolean;
+  allComplete: boolean;
+} {
+  const quran = log.quran || undefined;
+  return {
+    alBaqarah: Boolean(quran?.fridaySurahAlBaqarahRead),
+    alKahf: Boolean(quran?.fridaySurahAlKahfRead),
+    allComplete: Boolean(quran?.fridaySurahAlBaqarahRead && quran?.fridaySurahAlKahfRead)
+  };
+}
 
 /**
  * Calculates the Fortress Integrity score and metrics for a given date.

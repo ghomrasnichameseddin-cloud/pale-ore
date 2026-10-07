@@ -44,12 +44,14 @@ interface QuranSectionProps {
   systemDate: string;
   spiritualLog: SpiritualDailyLog;
   onOpenGuide?: (section?: string) => void;
+  onToggleFridayQuranReading?: (surah: 'al-baqarah' | 'al-kahf', dateStr?: string) => void;
 }
 
 export const QuranSection: React.FC<QuranSectionProps> = ({
   systemDate,
   spiritualLog,
-  onOpenGuide
+  onOpenGuide,
+  onToggleFridayQuranReading
 }) => {
   const {
     quranTracker,
@@ -251,6 +253,7 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
   const allReflections = quranTracker.reflections || [];
   const activeReflections = allReflections.filter(r => !r.isArchived);
   const archivedReflections = allReflections.filter(r => Boolean(r.isArchived));
+  const isFriday = new Date(`${systemDate}T12:00:00`).getDay() === 5;
 
   const filteredReflections = allReflections.filter(r => {
     if (reflectionFilter === 'active') return !r.isArchived;
@@ -445,6 +448,40 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
               Juz {quranTracker.currentJuz || 1} • {quranTracker.currentSurah || 'Al-Baqarah'}
             </span>
           </div>
+
+          {/* Friday Reading Covenant */}
+          {isFriday && (
+            <div className="p-2.5 bg-amber-950/20 border border-amber-500/30 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-amber-300 uppercase block font-bold">FRIDAY COVENANT</span>
+                <BookOpen className="h-3 w-3 text-amber-400" />
+              </div>
+              <div className="mt-2 space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => onToggleFridayQuranReading?.('al-baqarah', systemDate)}
+                  className={`w-full text-left px-2 py-1.5 rounded-lg border text-[10px] font-mono font-bold transition ${
+                    quranLog.fridaySurahAlBaqarahRead
+                      ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                      : 'bg-black/20 border-white/10 text-zinc-300 hover:border-white/20'
+                  }`}
+                >
+                  {quranLog.fridaySurahAlBaqarahRead ? '✓' : '○'} Al-Baqarah (+75 XP)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleFridayQuranReading?.('al-kahf', systemDate)}
+                  className={`w-full text-left px-2 py-1.5 rounded-lg border text-[10px] font-mono font-bold transition ${
+                    quranLog.fridaySurahAlKahfRead
+                      ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                      : 'bg-black/20 border-white/10 text-zinc-300 hover:border-white/20'
+                  }`}
+                >
+                  {quranLog.fridaySurahAlKahfRead ? '✓' : '○'} Al-Kahf (+60 XP)
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Revision Queue Status & Vault */}
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">

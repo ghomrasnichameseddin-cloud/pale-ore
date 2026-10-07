@@ -537,6 +537,7 @@ interface POSContextType {
   ) => void;
   updateSunnahPrayers: (updates: Partial<SunnahPrayersLog>, dateStr?: string) => void;
   updateQuranLog: (updates: Partial<QuranLog>, dateStr?: string) => void;
+  toggleFridayQuranReading: (surah: 'al-baqarah' | 'al-kahf', dateStr?: string) => void;
   updateDhikrLog: (updates: Partial<DhikrTasbeehLog>, dateStr?: string) => void;
   setKhushuRating: (rating: number, dateStr?: string) => void;
   getMasjid40Stats: (dateStr?: string) => Masjid40Stats;
@@ -10592,7 +10593,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       surahNumber: undefined,
       ayahNumber: undefined,
       tadabburNotes: '',
-      memorizationReviewed: false
+      memorizationReviewed: false,
+      fridaySurahAlBaqarahRead: false,
+      fridaySurahAlKahfRead: false
     };
 
     const updatedQuran: QuranLog = {
@@ -10661,6 +10664,83 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xp: totalXp,
           level: gated.level,
           coins: Math.max(0, (prev.profile.coins ?? 150) + coinsEarned)
+        }
+      };
+    });
+  };
+
+  const toggleFridayQuranReading = (surah: 'al-baqarah' | 'al-kahf', dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    if (new Date(`${targetDate}T12:00:00`).getDay() !== 5) return;
+
+    const completedTimestamp = getSystemTimestamp(targetDate);
+    const currentLog = getSpiritualLog(targetDate);
+    const currentQuran = currentLog.quran || {
+      pagesRead: 0,
+      juzRead: undefined,
+      surahName: '',
+      surahNumber: undefined,
+      ayahNumber: undefined,
+      tadabburNotes: '',
+      memorizationReviewed: false,
+      fridaySurahAlBaqarahRead: false,
+      fridaySurahAlKahfRead: false
+    };
+    const nextValue = surah === 'al-baqarah'
+      ? !currentQuran.fridaySurahAlBaqarahRead
+      : !currentQuran.fridaySurahAlKahfRead;
+    const xpReward = surah === 'al-baqarah' ? 75 : 60;
+    const coinReward = surah === 'al-baqarah' ? 10 : 8;
+    const questIdentifier = `spiritual-friday-quran-${surah}-${targetDate}`;
+
+    setState(prev => {
+      const log = prev.spiritualLogs?.[targetDate] || createDefaultSpiritualLog(targetDate);
+      const oldQuran = log.quran || currentQuran;
+      const updatedQuran = {
+        ...oldQuran,
+        fridaySurahAlBaqarahRead: surah === 'al-baqarah' ? nextValue : oldQuran.fridaySurahAlBaqarahRead,
+        fridaySurahAlKahfRead: surah === 'al-kahf' ? nextValue : oldQuran.fridaySurahAlKahfRead
+      };
+      const wasAlreadyCompleted = surah === 'al-baqarah'
+        ? Boolean(oldQuran.fridaySurahAlBaqarahRead)
+        : Boolean(oldQuran.fridaySurahAlKahfRead);
+
+      let updatedHistory = prev.xpHistory.filter(h => h.questId !== questIdentifier);
+      if (nextValue && !wasAlreadyCompleted) {
+        updatedHistory = [{
+          id: `h-friday-quran-${Date.now()}`,
+          questId: questIdentifier,
+          questName: `📖 Friday Qur'ān: ${surah === 'al-baqarah' ? 'Surah Al-Baqarah' : 'Surah Al-Kahf'}`,
+          xp: xpReward,
+          timestamp: completedTimestamp,
+          skillIds: []
+        }, ...updatedHistory];
+      }
+
+      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        prev.quests
+      );
+      const coinsDelta = nextValue && !wasAlreadyCompleted ? coinReward : 0;
+
+      return {
+        ...prev,
+        xpHistory: updatedHistory,
+        spiritualLogs: {
+          ...(prev.spiritualLogs || {}),
+          [targetDate]: {
+            ...log,
+            quran: updatedQuran
+          }
+        },
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + coinsDelta)
         }
       };
     });
@@ -11868,6 +11948,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       toggleFasting,
       updateSunnahPrayers,
       updateQuranLog,
+      toggleFridayQuranReading,
       updateDhikrLog,
       setKhushuRating,
       getMasjid40Stats,

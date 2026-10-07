@@ -56,7 +56,9 @@ export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
     surahNumber: undefined,
     ayahNumber: undefined,
     tadabburNotes: '',
-    memorizationReviewed: false
+    memorizationReviewed: false,
+    fridaySurahAlBaqarahRead: false,
+    fridaySurahAlKahfRead: false
   },
   dhikr: {
     tasbeehAfterSalah: false,

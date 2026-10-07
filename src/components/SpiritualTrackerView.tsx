@@ -69,6 +69,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     updateSunnahPrayers,
     updateDhikrLog,
     updateQuranLog,
+    toggleFridayQuranReading,
     getTodayMuhasabahStats,
     getMasjid40Stats,
     getAdhkarFortressStats,
@@ -1619,6 +1620,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
             systemDate={systemDate}
             spiritualLog={currentLog}
             onOpenGuide={onOpenGuide}
+            onToggleFridayQuranReading={toggleFridayQuranReading}
           />
         )}
 
