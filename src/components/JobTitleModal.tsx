@@ -84,7 +84,7 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ['ALL', 'Knowledge', 'Iron Will', 'Passion', 'Strategy', 'Logic', 'Mystery', 'Strength', 'Architecture', 'Shadow Energy'];
+  const categories = ['ALL', 'Knowledge', 'Iron Will', 'Passion', 'Strategy', 'Logic', 'Mystery', 'Strength', 'Architecture'];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" id="job-title-modal">
@@ -240,7 +240,7 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                     mode: 'edit-job',
                     job
                   })}
-                  onLevelUp={job.id === 'job-shadow-warden' ? undefined : () => setLevelUpState({
+                  onLevelUp={() => setLevelUpState({
                     isOpen: true,
                     job
                   })}

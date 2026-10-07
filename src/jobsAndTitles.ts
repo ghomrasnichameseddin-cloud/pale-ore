@@ -81,15 +81,6 @@ export interface TitleSpec {
 
 export const JOBS_LIST: JobSpec[] = [
   {
-    id: 'job-shadow-warden',
-    name: 'Umbral Warden',
-    category: 'Shadow Energy',
-    iconName: 'MoonStar',
-    description: 'Channels long-term reserves of Shadow Energy through disciplined vessel progression and balanced domain harmony.',
-    perk: '+10% Shadow Energy gains from completed directives',
-    unlockedAtLevel: 1
-  },
-  {
     id: 'job-cyber-architect',
     name: 'Cyber Architect',
     category: 'Architecture',
@@ -291,26 +282,6 @@ export const TITLES_LIST: TitleSpec[] = [
     checkUnlocked: (_state, _completedCount, level) => level >= 10
   },
   {
-    id: 'title-veiled-vessel',
-    name: 'Veiled Vessel',
-    badge: 'VEILED',
-    category: 'Shadow Energy',
-    iconName: 'MoonStar',
-    description: 'Holds the first reservoir of Shadow Energy and begins the long-term vessel cycle.',
-    unlockCondition: 'Reach 200 Shadow Energy',
-    checkUnlocked: (state) => (state.shadowEnergy?.current || 0) >= 200
-  },
-  {
-    id: 'title-shadow-archon',
-    name: 'Shadow Archon',
-    badge: 'ARCHON',
-    category: 'Shadow Energy',
-    iconName: 'MoonStar',
-    description: 'Completed the vessel cycle and manifests equilibrium through sustained harmony.',
-    unlockCondition: 'Reach 1500 Shadow Energy',
-    checkUnlocked: (state) => (state.shadowEnergy?.current || 0) >= 1500
-  },
-  {
     id: 'title-deep-work-monk',
     name: 'Deep Work Monk',
     badge: 'DEEP WORK',
@@ -332,8 +303,8 @@ export const TITLES_LIST: TitleSpec[] = [
   }
 ];
 
-export const PROTECTED_DEFAULT_JOB_IDS = new Set(['job-shadow-warden']);
-export const PROTECTED_DEFAULT_TITLE_IDS = new Set(['title-veiled-vessel', 'title-shadow-archon']);
+export const PROTECTED_DEFAULT_JOB_IDS = new Set<string>();
+export const PROTECTED_DEFAULT_TITLE_IDS = new Set<string>();
 
 export function isDefaultJobProtected(jobId: string): boolean {
   return PROTECTED_DEFAULT_JOB_IDS.has(jobId);
@@ -917,11 +888,6 @@ export function evaluateLevelConditions(
 export function getJobLevel(jobId: string, state: POSState): number {
   const job = getAllJobs(state.customJobs || [], state.deletedJobIds || []).find(j => j.id === jobId);
   if (!job) return 1;
-
-  if (job.id === 'job-shadow-warden') {
-    const completedCoreCount = state.shadowEnergy?.completedVessels?.length || 0;
-    return Math.min(7, Math.max(1, completedCoreCount));
-  }
 
   const storedLevel = state.profile.jobLevels?.[jobId];
   if (storedLevel && storedLevel >= 1 && storedLevel <= 7) {
