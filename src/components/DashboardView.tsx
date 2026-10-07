@@ -37,7 +37,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     toggleBatterySaverMode, toggleRecoveryMode, getAttributes, getCoreDomains, getGoalProgress,
     getProjectProgress, addQuest, getSkillXpAndLevel, getTodayMuhasabahStats, restartAttribute
   } = usePOS();
-  const shadowEnergy = state.shadowEnergy;
 
   const isBatterySaver = state.batterySettings?.batterySaverMode ?? false;
   const muhasabahStats = getTodayMuhasabahStats();
@@ -469,17 +468,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* GROUPED PROGRESSION METRICS: XP, SYSTEM LEVEL, VITALITY, SHADOW ENERGY */}
+            {/* LEVEL & XP PROGRESSION HUD: Clean 2x2 on Mobile, 4-col on Desktop */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mt-6 pt-6 border-t border-[var(--border-subtle)] relative z-10">
-              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
+              {/* Level indicator */}
+              <div className="col-span-1 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
                 <span className="text-[10px] font-mono text-[var(--accent-bright)] uppercase font-bold">SYS_LEVEL</span>
                 <span className="text-xl sm:text-2xl font-display font-bold text-white mt-1">LVL {levelInfo.level}</span>
-                <span className="mt-2 text-[9px] font-mono text-zinc-400">Rank: {levelInfo.rank}</span>
               </div>
 
-              <div
+              {/* Momentum Indicator */}
+              <div className="col-span-1 bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
+                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-300 uppercase font-bold">
+                  <span className="text-[var(--accent-bright)]">MOMENTUM</span>
+                  <Flame className={`h-3.5 w-3.5 ${state.profile.momentum > 50 ? 'text-[var(--accent-bright)] animate-pulse' : 'text-zinc-500'}`} />
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-bold text-white mt-0.5">
+                  {state.profile.momentum}%
+                </div>
+                <div className="w-full bg-[var(--bg-void)] rounded-full h-1.5 overflow-hidden mt-1 border border-white/5">
+                  <div 
+                    className={`h-full transition-all duration-300 ${
+                      state.profile.momentum > 75 ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-highlight)]' : state.profile.momentum > 40 ? 'bg-[var(--accent-primary)]' : 'bg-zinc-600'
+                    }`}
+                    style={{ width: `${state.profile.momentum}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* XP progress */}
+              <div 
                 onClick={() => onNavigate?.('xp_history')}
-                className="bg-[var(--bg-surface)]/80 hover:bg-[var(--accent-surface)] border border-[var(--border-subtle)] hover:border-[#c5a059]/40 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-sm"
+                className="col-span-2 lg:col-span-2 bg-[var(--bg-surface)]/80 hover:bg-[var(--accent-surface)] border border-[var(--border-subtle)] hover:border-[#c5a059]/40 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between cursor-pointer transition group shadow-sm"
                 title="Click to view full XP History & Audit Ledger"
               >
                 <div className="flex justify-between text-[10px] font-mono text-zinc-300 uppercase font-bold">
@@ -489,53 +508,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                       LEDGER ↗
                     </span>
                   </span>
-                  <span className="text-[var(--accent-bright)] font-bold">{levelInfo.totalXp}</span>
+                  <span className="text-[var(--accent-bright)] font-bold">{levelInfo.totalXp} XP</span>
                 </div>
-                <div className="mt-2 text-xl sm:text-2xl font-display font-bold text-white">{levelInfo.totalXp} XP</div>
-                <div className="mt-2 w-full bg-[var(--bg-void)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
-                  <div
-                    className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all duration-200 shadow-[0_0_10px_var(--glow-color)]"
-                    style={{ width: `${levelInfo.progress}%` }}
-                  />
-                </div>
-                <div className="mt-1 flex justify-between text-[9px] font-mono text-zinc-400 font-bold">
-                  <span>{levelInfo.xpIntoLevel} / {levelInfo.xpRequiredForNextLevel}</span>
-                  <span className="text-[var(--accent-bright)]">{levelInfo.xpUntilNextLevel} to next</span>
-                </div>
-              </div>
-
-              <div className="bg-[var(--bg-surface)]/80 border border-[var(--border-subtle)] rounded-xl p-3 sm:p-3.5 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300 uppercase font-bold">
-                  <span className="text-rose-300">VITALITY</span>
-                  <span className="text-rose-300">{muhasabahStats.currentHp}/{muhasabahStats.maxHp}</span>
-                </div>
-                <div className="text-xl sm:text-2xl font-display font-bold text-white mt-1">{muhasabahStats.currentHp} HP</div>
-                <div className="mt-2 w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-rose-500/20">
-                  <div
-                    className="h-full rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"
-                    style={{ width: `${Math.min(100, Math.max(0, (muhasabahStats.currentHp / Math.max(1, muhasabahStats.maxHp)) * 100))}%` }}
-                  />
+                <div className="mt-2 space-y-1">
+                  <div className="w-full bg-[var(--bg-void)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)]">
+                    <div 
+                      className="bg-gradient-to-r from-[var(--accent-dim)] to-[var(--accent-bright)] h-full transition-all duration-200 shadow-[0_0_10px_var(--glow-color)]" 
+                      style={{ width: `${levelInfo.progress}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-mono text-zinc-400 font-bold">
+                    <span>{levelInfo.xpIntoLevel} / {levelInfo.xpRequiredForNextLevel} XP</span>
+                    <span className="text-[var(--accent-bright)]">{levelInfo.xpUntilNextLevel} XP TO NEXT LVL</span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => onNavigate?.('shadow_energy' as any)}
-                className="bg-[var(--bg-surface)]/80 border border-violet-500/25 hover:border-violet-400/40 rounded-xl p-3 sm:p-3.5 flex flex-col justify-between text-left transition-colors hover:bg-violet-950/15"
-              >
-                <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold text-violet-300">
-                  <span>SHADOW_ENERGY</span>
-                  <span>OPEN ↗</span>
-                </div>
-                <div className="mt-2 text-xl sm:text-2xl font-display font-bold text-white">{state.shadowEnergy?.current ?? 0}</div>
-                <div className="mt-2 w-full bg-black/40 rounded-full h-1.5 overflow-hidden border border-violet-500/20">
-                  <div
-                    className="h-full bg-gradient-to-r from-violet-500 via-purple-400 to-fuchsia-300 transition-all"
-                    style={{ width: `${Math.min(100, Math.round(((state.shadowEnergy?.current ?? 0) / Math.max(1, [200,400,600,800,1000,1250,1500][(state.shadowEnergy?.currentVessel ?? 1) - 1] ?? 200)) * 100))}%` }}
-                  />
-                </div>
-                <div className="mt-1 text-[9px] font-mono text-violet-200">Vessel {state.shadowEnergy?.currentVessel ?? 1}</div>
-              </button>
             </div>
 
             {/* FOCUS HUD & PERFORMANCE METRICS */}
@@ -550,6 +538,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 <span className="text-[9px] font-mono text-[var(--accent-bright)] uppercase font-bold block">FOCUS STREAK</span>
                 <span className="text-sm font-mono font-bold text-[var(--accent-bright)] mt-1 flex items-center gap-1.5">
                   🔥 {state.profile.focusStreak || 0} Days
+                </span>
+              </div>
+              <div className="col-span-2 lg:col-span-1 bg-rose-950/20 border border-rose-500/30 rounded-xl p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-mono text-rose-300 uppercase font-bold">SOUL VITALITY</span>
+                  <span className="text-[10px] font-mono font-bold text-rose-300">
+                    {muhasabahStats.currentHp}/{muhasabahStats.maxHp} HP
+                  </span>
+                </div>
+                <div className="h-1.5 mt-2 rounded-full bg-zinc-900 border border-rose-500/20 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"
+                    style={{ width: `${Math.min(100, Math.max(0, (muhasabahStats.currentHp / Math.max(1, muhasabahStats.maxHp)) * 100))}%` }}
+                  />
+                </div>
+                <span className="text-[9px] font-mono text-rose-300/80 mt-1 block">
+                  {muhasabahStats.todayLostHp > 0 ? `−${muhasabahStats.todayLostHp} HP today` : 'No HP loss today'} • +5 max HP / level
                 </span>
               </div>
             </div>

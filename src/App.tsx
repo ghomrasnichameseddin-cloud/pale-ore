@@ -27,13 +27,12 @@ import {
   Terminal, Shield, Flame, Clock, Menu, X, Pickaxe, Swords,
   Calendar, ChevronLeft, ChevronRight, Gem, Cloud, CloudOff, RefreshCw, FolderOpen, Compass,
   Inbox, Timer, Bell, Network, Sparkles, ShoppingBag, Coins, Gift, BatteryCharging, Battery, Zap,
-  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet, MoonStar
+  BookOpen, HelpCircle, Lock, Scale, Moon, Layers, Palette, LayoutGrid, FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActiveRestOverlay } from './components/ActiveRestOverlay';
-import { ShadowEnergyHub } from './components/ShadowEnergyHub';
 
-type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'shadow_energy' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history';
+type TabId = 'dashboard' | 'quests' | 'spiritual' | 'muhasabah' | 'strategy_codex' | 'skills' | 'shop' | 'oracle_system' | 'spiderweb' | 'goals' | 'projects' | 'planning' | 'frameworks' | 'analytics' | 'system' | 'appearance' | 'xp_history';
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -135,11 +134,6 @@ function AppContent() {
         return `${count} ${count === 1 ? 'skill' : 'skills'}`;
       }
 
-      case 'shadow_energy': {
-        const shadow = state.shadowEnergy;
-        return `${shadow?.completedVessels?.length ?? 0}/7`;
-      }
-
       case 'shop':
         return `🪙 ${state.profile.coins ?? 150}`;
 
@@ -194,7 +188,6 @@ function AppContent() {
       title: 'MASTERY & PROGRESSION',
       items: [
         { id: 'skills', label: 'Skills & Competencies', icon: Award, desc: 'Core mastery & competency tracks' },
-        { id: 'shadow_energy', label: 'Shadow Energy', icon: MoonStar, desc: 'Long-term vessel harmony & meta-progression' },
         { id: 'shop', label: 'Imperial Vault', icon: ShoppingBag, desc: 'Channel gold dinars into bounties & perks' }
       ]
     },
@@ -763,7 +756,6 @@ function AppContent() {
               )}
               {activeTab === 'frameworks' && <FrameworksView />}
               {activeTab === 'skills' && <SkillsView />}
-              {activeTab === 'shadow_energy' && <ShadowEnergyHub />}
               {activeTab === 'shop' && <RewardShopView />}
               {(activeTab === 'oracle_system' || activeTab === 'analytics' || activeTab === 'system' || activeTab === 'appearance' || activeTab === 'xp_history') && (
                 <OracleSystemView 
