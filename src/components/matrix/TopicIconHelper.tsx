@@ -8,7 +8,8 @@ import {
   Eye, Key, Moon, Wand2,
   Dumbbell, Swords, Shield, Trophy, Activity,
   Building, LayoutGrid, Boxes, Landmark, DraftingCompass,
-  Award
+  Award,
+  MoonStar
 } from 'lucide-react';
 
 export interface IconOption {
@@ -160,6 +161,7 @@ export const renderTopicIcon = (iconName?: string, className: string = "h-5 w-5"
     case 'Eye': return <Eye className={`${className} text-purple-400`} />;
     case 'Key': return <Key className={`${className} text-amber-300`} />;
     case 'Moon': return <Moon className={`${className} text-indigo-300`} />;
+    case 'MoonStar': return <MoonStar className={`${className} text-violet-300`} />;
     case 'Wand2': return <Wand2 className={`${className} text-fuchsia-400`} />;
 
     // Strength

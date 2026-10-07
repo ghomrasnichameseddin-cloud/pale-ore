@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { usePOS } from '../POSContext';
-import { 
-  JobSpec, TitleSpec, getAllJobs, getAllTitles, getActiveJob, 
-  getActiveTitle, isJobUnlocked, isTitleUnlocked, getJobScaledPerk 
+import {
+  JobSpec, TitleSpec, getAllJobs, getAllTitles, getActiveJob,
+  getActiveTitle, isJobUnlocked, isTitleUnlocked, getJobScaledPerk,
+  canDeleteJob, canDeleteTitle
 } from '../jobsAndTitles';
 import { renderTopicIcon } from './matrix/TopicIconHelper';
 import { MatrixCard } from './matrix/MatrixCard';
@@ -83,7 +84,7 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ['ALL', 'Knowledge', 'Iron Will', 'Passion', 'Strategy', 'Logic', 'Mystery', 'Strength', 'Architecture'];
+  const categories = ['ALL', 'Knowledge', 'Iron Will', 'Passion', 'Strategy', 'Logic', 'Mystery', 'Strength', 'Architecture', 'Shadow Energy'];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" id="job-title-modal">
@@ -239,14 +240,14 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                     mode: 'edit-job',
                     job
                   })}
-                  onLevelUp={() => setLevelUpState({
+                  onLevelUp={job.id === 'job-shadow-warden' ? undefined : () => setLevelUpState({
                     isOpen: true,
                     job
                   })}
-                  onDelete={() => {
+                  onDelete={canDeleteJob(job.id) ? () => {
                     deleteJobSpec(job.id);
                     showToast(`Deleted job class "${job.name}"`);
-                  }}
+                  } : undefined}
                   onEquip={() => {
                     updateJob(job.id);
                     showToast(`Switched active Job Class to "${job.name}"!`);
@@ -277,10 +278,10 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
                     isOpen: true,
                     title
                   })}
-                  onDelete={() => {
+                  onDelete={canDeleteTitle(title.id) ? () => {
                     deleteTitleSpec(title.id);
                     showToast(`Deleted title "${title.name}"`);
-                  }}
+                  } : undefined}
                   onEquip={() => {
                     updateTitle(title.id);
                     showToast(`Equipped honorific title "${title.name}"!`);

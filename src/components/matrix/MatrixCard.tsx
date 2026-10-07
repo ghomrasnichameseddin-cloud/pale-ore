@@ -16,7 +16,7 @@ interface MatrixCardProps {
   isJob: boolean;
   isActive: boolean;
   onEdit: () => void;
-  onLevelUp: () => void;
+  onLevelUp?: () => void;
   onDelete?: () => void;
   onEquip: () => void;
 }

@@ -80,36 +80,43 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
       color: 'text-amber-300',
     },
     {
+      id: 'shadow-energy',
+      title: '8. Shadow Energy: Veiled Vessel Cycle',
+      icon: Moon,
+      badge: 'META-PROGRESSION',
+      color: 'text-violet-300',
+    },
+    {
       id: 'spiritual-tracker',
-      title: '8. Sacred Protocol & Hijri Calendar',
+      title: '9. Sacred Protocol & Hijri Calendar',
       icon: Moon,
       badge: 'SACRED RITES',
       color: 'text-[#fef08a]',
     },
     {
       id: 'muhasabah',
-      title: '9. Muhāsabah: Self-Accountability & Moral Friction',
+      title: '10. Muhāsabah: Self-Accountability & Moral Friction',
       icon: Scale,
       badge: 'ACCOUNTABILITY',
       color: 'text-amber-400',
     },
     {
       id: 'shop-rewards',
-      title: '10. Dual-Currency Vault & Temporal Capital',
+      title: '11. Dual-Currency Vault & Temporal Capital',
       icon: Hourglass,
       badge: 'TIME AS CURRENCY',
       color: 'text-emerald-400',
     },
     {
       id: 'observatories',
-      title: '11. Observatories: XP Ledger & Temporal Control',
+      title: '12. Observatories: XP Ledger & Temporal Control',
       icon: FileSpreadsheet,
       badge: 'FORENSIC AUDIT',
       color: 'text-indigo-400',
     },
     {
       id: 'visual-system',
-      title: '12. Visual Codex, Sound FX & Sanctum Engine',
+      title: '13. Visual Codex, Sound FX & Sanctum Engine',
       icon: Palette,
       badge: 'CUSTOMIZATION',
       color: 'text-rose-400',
@@ -1229,13 +1236,13 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         <span className="text-[9px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">RESTORATIVE</span>
                       </div>
                       <p className="text-zinc-300 text-[11px] leading-relaxed">
-                        Specialized restorative directives assigned to rebuild momentum and expiate spiritual/operational lapses. Encompasses three specialized archetypes:
+                        Specialized restorative directives assigned to rebuild momentum and expiate spiritual/operational lapses. Recovery items are stored in the dedicated Recovery list and displayed at the top of the terminal when Recovery Mode is active.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-400 space-y-0.5 pt-1 border-t border-white/5">
                         <div>• <strong>1. Standard Habit Recovery:</strong> Cuts estimated time to 50% to rapidly rebuild broken habit streaks.</div>
                         <div>• <strong>2. Qada' Restitution (`📜 QADA'`):</strong> Auto-minted for prayers unperformed at midnight; fulfills the mandatory jurisprudential obligation.</div>
-                        <div>• <strong>3. Kaffārah Restitution (`[KAFFĀRAH]`):</strong> Auto-minted for delayed prayers and Muhāsabah slips; awards <strong>+35 HP Soul Vitality</strong>, refunds 20% lost XP, and unlocks the Luminescent Shop.</div>
-                        <div>• <strong>Deactivation:</strong> Clearing recovery quests lifts Recovery Mode and restores moral equilibrium.</div>
+                        <div>• <strong>3. Kaffārah Restitution (`[KAFFĀRAH]`):</strong> Created for delayed prayers or Muhāsabah slips. Every recovery quest offers a clear choice between the Sunnah Rawātib of the affected prayer and 2 Rak'ahs of Qiyām al-Layl.</div>
+                        <div>• <strong>Completion:</strong> The chosen Sacred Protocol action is recorded automatically, while cleared Recovery quests are removed from the active archive and only uncleared items remain archived.</div>
                       </div>
                     </div>
 
@@ -1290,16 +1297,16 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         1. MIDNIGHT AUDIT
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        When system date advances past midnight (`SYS_DATE`), active **Main**, **Boss**, or **Habit** quests left incomplete are marked as failed/overdue.
+                        When the system date advances past midnight, active <strong>Main</strong>, <strong>Boss</strong>, and <strong>Habit</strong> quests left incomplete are marked failed or overdue. Missed quests also reduce the relevant streak by one and apply the habit's updated stability rule.
                       </p>
                     </div>
 
                     <div className="p-3 bg-zinc-950 border border-amber-500/30 rounded-xl space-y-1">
                       <div className="text-amber-400 font-bold text-[10px] flex items-center gap-1">
-                        2. 50% TIME & XP RECOVERY
+                        2. RECOVERY QUEST GENERATION
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        For failed/lapsed <strong>Main</strong>, <strong>Habit</strong>, and <strong>Boss</strong> directives, the system applies the XP deduction and spawns a <code>🛡️ RECOVERY</code> quest with half the time (<code>origEstTime / 2</code>) and half the positive XP (<code>origXp / 2</code>) to rapidly restore operational velocity.
+                        Failed or lapsed directives spawn a <code>🛡️ RECOVERY</code> quest with half the original time and a shortened positive XP value. Recovery quests are isolated in their own terminal list and are displayed above other lists while Recovery Mode is active.
                       </p>
                     </div>
 
@@ -1308,7 +1315,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         3. DIRECTIVE ISOLATION
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        `recoveryMode` locks ON (`RECOVERING_OPERATOR`). Standard quests are hidden to remove overwhelm and focus strictly on Recovery items.
+                        `recoveryMode` locks ON (`RECOVERING_OPERATOR`). Standard quests are hidden to reduce overload and keep the operator focused on restorative obligations.
                       </p>
                     </div>
 
@@ -1317,7 +1324,7 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                         4. AUTO-DEACTIVATION
                       </div>
                       <p className="text-zinc-300 font-sans text-[11px]">
-                        Completing all active Penalty and Recovery quests automatically turns off `recoveryMode` and restores full operational velocity.
+                        Completing all active Penalty and Recovery quests automatically turns off `recoveryMode`. The system archives only uncleared Recovery quests; cleared items are removed from the active archive.
                       </p>
                     </div>
                   </div>
@@ -1961,7 +1968,48 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
               </div>
             )}
 
-            {/* 8. SACRED PROTOCOL & HIJRI CALENDAR */}
+            {/* 8. SHADOW ENERGY: VEILED VESSEL CYCLE */}
+            {activeSection === 'shadow-energy' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-violet-500/30 pb-3">
+                  <h3 className="text-lg sm:text-xl font-display font-bold text-white flex items-center gap-2">
+                    <Moon className="h-5 w-5 text-violet-400" />
+                    8. Shadow Energy: Veiled Vessel Cycle
+                  </h3>
+                  <p className="text-xs font-mono text-violet-300/80 mt-1">
+                    A long-term meta-progression track that rewards sustained harmony without replacing XP, skills, or attributes.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
+                  <div className="p-4 bg-zinc-900/90 border border-violet-500/30 rounded-xl space-y-2">
+                    <div className="font-mono font-bold uppercase text-violet-300">Harmony Formula</div>
+                    <p className="font-mono text-[11px] text-cyan-300 bg-black/30 border border-white/5 rounded-lg p-2">
+                      Harmony = 70% average domain score + 30% balance score
+                    </p>
+                    <p className="text-zinc-300 font-sans leading-relaxed">
+                      Harmony is calculated from the Mind, Body, and Soul domain scores. It determines the effectiveness of Shadow Energy gains while the domain scores remain the permanent source of growth.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-zinc-900/90 border border-violet-500/30 rounded-xl space-y-2">
+                    <div className="font-mono font-bold uppercase text-violet-300">Vessel Progression</div>
+                    <p className="text-zinc-300 font-sans leading-relaxed">
+                      The cycle contains seven vessels. Each vessel requires a fixed amount of stored energy, and completing one advances the cycle while preserving the stored energy that is carried forward into the next milestone.
+                    </p>
+                    <div className="text-[10px] font-mono text-violet-200">
+                      200 → 400 → 600 → 800 → 1000 → 1250 → 1500 energy
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-violet-950/25 border border-violet-500/30 rounded-xl text-xs text-zinc-300 font-sans leading-relaxed">
+                  <strong className="text-violet-200">Important:</strong> Shadow Energy is cumulative meta-progression, not a replacement for XP. Completion events can generate Shadow Energy, but domain scores, attributes, skills, levels, and XP remain authoritative. The ledger records the source, domain, harmony, multipliers, generated energy, and timestamp for each manifestation.
+                </div>
+              </div>
+            )}
+
+            {/* 9. SACRED PROTOCOL & HIJRI CALENDAR */}
             {activeSection === 'spiritual-tracker' && (
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-white/10 pb-3">
@@ -2327,6 +2375,14 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                             <span className="text-emerald-400 font-bold">+50 to +120 XP</span>
                           </div>
                           <p className="text-[10.5px] text-zinc-400 font-sans">Surah selector, page milestone logging, and consecutive day reading streak.</p>
+                        </div>
+
+                        <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-300 font-bold">Friday Qur'an Reading</span>
+                            <span className="text-emerald-400 font-bold">Al-Baqarah &amp; Al-Kahf</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">Every Friday requires two completion checks: Surah Al-Baqarah and Surah Al-Kahf. Completing both marks the weekly obligation as fulfilled and awards the Sacred Protocol reward.</p>
                         </div>
                       </div>
                     </div>

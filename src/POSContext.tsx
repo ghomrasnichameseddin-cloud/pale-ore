@@ -104,7 +104,7 @@ import { createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
 import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties } from './utils/penaltyEngine';
 export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties };
-import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES } from './jobsAndTitles';
+import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES, canDeleteJob, canDeleteTitle } from './jobsAndTitles';
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
 } from './utils/perkEvaluator';
@@ -5834,14 +5834,19 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const levelUpJob = (jobId: string, targetLvl?: number, forceLevelUp?: boolean): { success: boolean; message: string } => {
+    const allJobs = getAllJobs(stateRef.current.customJobs || [], stateRef.current.deletedJobIds || []);
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) return { success: false, message: 'Job Class not found' };
+
+    if (job.id === 'job-shadow-warden') {
+      return { success: false, message: 'Umbral Warden levels automatically as completed cores are activated.' };
+    }
+
     const currentLvl = getJobLevel(jobId, stateRef.current);
     const nextLvl = targetLvl ? Math.min(7, Math.max(1, targetLvl)) : (currentLvl < 7 ? currentLvl + 1 : 7);
     if (currentLvl >= 7 && nextLvl <= currentLvl && !forceLevelUp) {
       return { success: false, message: 'Job Class is already at MAX Level 7 (Apex Legend)!' };
     }
-    const allJobs = getAllJobs(stateRef.current.customJobs || [], stateRef.current.deletedJobIds || []);
-    const job = allJobs.find(j => j.id === jobId);
-    if (!job) return { success: false, message: 'Job Class not found' };
 
     if (!forceLevelUp) {
       const evalRes = evaluateLevelConditions(job, nextLvl, stateRef.current);
@@ -5949,11 +5954,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteJobSpec = (jobId: string) => {
+    if (!canDeleteJob(jobId)) return;
+
     setState(prev => {
       const newCustomJobs = (prev.customJobs || []).filter(j => j.id !== jobId);
       const newDeletedJobIds = Array.from(new Set([...(prev.deletedJobIds || []), jobId]));
       const allJobsRemaining = getAllJobs(newCustomJobs, newDeletedJobIds);
-      const fallbackJobId = allJobsRemaining[0]?.id || 'job-cyber-architect';
+      const fallbackJobId = allJobsRemaining[0]?.id || 'job-shadow-warden';
 
       return {
         ...prev,
@@ -6004,11 +6011,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteTitleSpec = (titleId: string) => {
+    if (!canDeleteTitle(titleId)) return;
+
     setState(prev => {
       const newCustomTitles = (prev.customTitles || []).filter(t => t.id !== titleId);
       const newDeletedTitleIds = Array.from(new Set([...(prev.deletedTitleIds || []), titleId]));
       const allTitlesRemaining = getAllTitles(newCustomTitles, newDeletedTitleIds);
-      const fallbackTitleId = allTitlesRemaining[0]?.id || 'title-novice-operator';
+      const fallbackTitleId = allTitlesRemaining[0]?.id || 'title-veiled-vessel';
 
       return {
         ...prev,
