@@ -10,6 +10,7 @@ import {
   DEFAULT_STRATEGIC_POSTMORTEMS 
 } from './data/defaultStrategyData';
 import { DEFAULT_STARTER_SKILLS, ensureCanonicalAttributes } from './utils/progressionEngine';
+import { createDefaultShadowEnergyState } from './utils/shadowEnergy';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
@@ -491,5 +492,6 @@ export const INITIAL_STATE: POSState = {
   strategicExperiments: DEFAULT_STRATEGIC_EXPERIMENTS,
   strategicPostmortems: DEFAULT_STRATEGIC_POSTMORTEMS,
   strategicFreeze: false,
-  customRadars: DEFAULT_CUSTOM_RADARS
+  customRadars: DEFAULT_CUSTOM_RADARS,
+  shadowEnergy: createDefaultShadowEnergyState()
 };

@@ -1,4 +1,5 @@
 import type { JobSpec, TitleSpec } from './jobsAndTitles';
+import type { ShadowEnergyState } from './utils/shadowEnergy';
 
 export type GoalStatus = 'Active' | 'Paused' | 'Planned' | 'Completed' | 'Archived';
 export type GoalPriority = 'Low' | 'Medium' | 'High';
@@ -1420,6 +1421,7 @@ export interface POSState {
   adhkarRecitations?: Record<string, Record<string, number>>;
   appUsageLimits?: AppUsageLimit[];
   appUsageLogs?: AppUsageLogEntry[];
+  shadowEnergy?: ShadowEnergyState;
   doctrines?: Doctrine[];
   strategicDecisions?: StrategicDecision[];
   strategicExperiments?: StrategicExperiment[];
