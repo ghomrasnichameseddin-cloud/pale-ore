@@ -220,8 +220,7 @@ interface POSContextType {
     customEstimatedTime?: number,
     customXp?: number
   ) => string;
-  purgeClearedArchivedRecoveryQuests: () => number;
-  
+
   // Folders & Lists CRUD
   addFolder: (name: string, description?: string, color?: string) => string;
   updateFolder: (id: string, updates: { name?: string; description?: string; color?: string }) => void;
@@ -4106,25 +4105,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return id;
   };
 
-  const purgeClearedArchivedRecoveryQuests = (): number => {
-    let purgedCount = 0;
-    setState(prev => {
-      const remaining = prev.quests.filter(q => {
-        const isClearedRecovery = q.type?.toUpperCase() === 'RECOVERY' && q.archived && q.recoveryCleared;
-        if (isClearedRecovery) {
-          purgedCount++;
-          return false;
-        }
-        return true;
-      });
-      return {
-        ...prev,
-        quests: remaining
-      };
-    });
-    return purgedCount;
-  };
-
   const completeQuest = (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => {
     const questToComplete = state.quests.find(q => q.id === id);
     if (!questToComplete) return;
@@ -4263,8 +4243,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               postponedFrom: null,
               postponedTo: null,
               ...(isRecovery ? {
-                archived: true,
-                archivedAt: completedTimestamp,
+                archived: false,
+                archivedAt: null,
                 recoveryArchivedReason: 'completed' as const,
                 recoveryCleared: isClearingQuest ? true : false,
                 recoveryClearedAt: isClearingQuest ? completedTimestamp : null
@@ -4280,10 +4260,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return questDraft;
           }
         }
-        // Mark targeted archived recovery quests as cleared
+        // Remove cleared recovery targets from the archive immediately. Their historical records remain,
+        // but they are no longer visible or counted as pending recovery deficits.
         if (questToComplete.clearsRecoveryQuestIds?.includes(q.id)) {
           return {
             ...q,
+            archived: false,
+            archivedAt: null,
             recoveryCleared: true,
             recoveryClearedAt: completedTimestamp
           };
@@ -4601,6 +4584,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           goalId: questToFail.goalId || null,
           projectId: questToFail.projectId || null,
           milestoneId: questToFail.milestoneId || null,
+          listId: null,
           subquests: [
             {
               id: `sq-rec-${questToFail.id}-1`,
@@ -11705,7 +11689,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unarchiveQuest,
       getQuestHabitFormation,
       generateClearingRecoveryQuest,
-      purgeClearedArchivedRecoveryQuests,
       addFolder,
       updateFolder,
       deleteFolder,

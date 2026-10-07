@@ -171,8 +171,7 @@ export const ActiveDirectives: React.FC = () => {
     selectedListId,
     updateSubQuest,
     logQuestWorkTime,
-    generateClearingRecoveryQuest,
-    purgeClearedArchivedRecoveryQuests
+    generateClearingRecoveryQuest
   } = usePOS();
 
   const [editingSubquestId, setEditingSubquestId] = useState<string | null>(null);
@@ -182,7 +181,6 @@ export const ActiveDirectives: React.FC = () => {
   const [focusChoiceQuestId, setFocusChoiceQuestId] = useState<string | null>(null);
   const [isRecoveryArchiveOpen, setIsRecoveryArchiveOpen] = useState(false);
   const [selectedArchiveQuestIds, setSelectedArchiveQuestIds] = useState<string[]>([]);
-  const [archiveFilterTab, setArchiveFilterTab] = useState<'all' | 'uncleared' | 'cleared'>('uncleared');
   const [archiveSearchQuery, setArchiveSearchQuery] = useState('');
 
   // Persistent Quest View Settings (Filter, Group By, Sort By, Tab)
@@ -605,14 +603,6 @@ export const ActiveDirectives: React.FC = () => {
       setTerminalTab('recovery');
       setIsRecoveryArchiveOpen(true);
       setTerminalLog(`[INFO] RECOVERY ARCHIVE VAULT ACCESSED: Viewing registered recovery records.`);
-      setQuickInputText('');
-      setTimeout(() => setTerminalLog(null), 5000);
-      return;
-    }
-
-    if (firstWord === 'purge-cleared' || firstWord === 'purge-recovery') {
-      const purged = purgeClearedArchivedRecoveryQuests();
-      setTerminalLog(`[SUCCESS] RECOVERY ARCHIVE PURGED: ${purged} cleared recovery record(s) removed.`);
       setQuickInputText('');
       setTimeout(() => setTerminalLog(null), 5000);
       return;
@@ -1218,18 +1208,11 @@ export const ActiveDirectives: React.FC = () => {
 
   const archivedRecoveryQuests = useMemo(() => {
     return state.quests.filter(q => 
-      q.type?.toUpperCase() === 'RECOVERY' && 
-      q.archived
+      q.type?.toUpperCase() === 'RECOVERY' &&
+      q.archived &&
+      !q.recoveryCleared
     );
   }, [state.quests]);
-
-  const unclearedArchivedRecovery = useMemo(() => {
-    return archivedRecoveryQuests.filter(q => !q.recoveryCleared);
-  }, [archivedRecoveryQuests]);
-
-  const clearedArchivedRecovery = useMemo(() => {
-    return archivedRecoveryQuests.filter(q => q.recoveryCleared);
-  }, [archivedRecoveryQuests]);
 
   const activeClearingDirectives = useMemo(() => {
     return state.quests.filter(q => 
@@ -1258,18 +1241,12 @@ export const ActiveDirectives: React.FC = () => {
     );
   };
 
-  const handleSelectAllUncleared = () => {
-    if (selectedArchiveQuestIds.length === unclearedArchivedRecovery.length && unclearedArchivedRecovery.length > 0) {
+  const handleSelectAllArchiveQuests = () => {
+    if (selectedArchiveQuestIds.length === archivedRecoveryQuests.length && archivedRecoveryQuests.length > 0) {
       setSelectedArchiveQuestIds([]);
     } else {
-      setSelectedArchiveQuestIds(unclearedArchivedRecovery.map(q => q.id));
+      setSelectedArchiveQuestIds(archivedRecoveryQuests.map(q => q.id));
     }
-  };
-
-  const handlePurgeCleared = () => {
-    const count = purgeClearedArchivedRecoveryQuests();
-    setTerminalLog(`[SUCCESS] RECOVERY ARCHIVE PURGED: Removed ${count} cleared record(s).`);
-    setTimeout(() => setTerminalLog(null), 4000);
   };
 
   const handleMoveToTomorrow = (questId: string) => {
@@ -2919,14 +2896,14 @@ export const ActiveDirectives: React.FC = () => {
                     className={`flex items-center gap-1 px-2 py-1 text-[9px] font-mono rounded uppercase transition-all duration-150 border ${
                       terminalTab === 'recovery' && isRecoveryArchiveOpen
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold shadow-[0_0_8px_rgba(245,158,11,0.15)]'
-                        : unclearedArchivedRecovery.length > 0
+                        : archivedRecoveryQuests.length > 0
                         ? 'bg-amber-950/40 text-amber-400 border-amber-500/30 hover:bg-amber-900/40'
                         : 'bg-transparent text-zinc-500 border-white/5 hover:text-zinc-300'
                     }`}
                     title="Toggle Recovery Archive Vault"
                   >
                     <Archive className="h-3 w-3 text-amber-400" />
-                    <span>VAULT ({archivedRecoveryQuests.length}{unclearedArchivedRecovery.length > 0 ? ` • ${unclearedArchivedRecovery.length} UNCLEARED` : ''})</span>
+                    <span>VAULT ({archivedRecoveryQuests.length})</span>
                   </button>
                 )}
               </div>
@@ -2991,17 +2968,15 @@ export const ActiveDirectives: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {unclearedArchivedRecovery.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateClearingDirective()}
-                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-[9.5px] font-mono font-bold transition flex items-center gap-1.5 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
-                      title="Synthesize a consolidated clearing directive for all uncleared archived recovery deficits"
-                    >
-                      <Sparkles className="h-3 w-3 text-amber-400" />
-                      <span>CLEAR ARCHIVE ({unclearedArchivedRecovery.length})</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateClearingDirective()}
+                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded text-[9.5px] font-mono font-bold transition flex items-center gap-1.5 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
+                    title="Synthesize a consolidated clearing directive for all pending archived recovery deficits"
+                  >
+                    <Sparkles className="h-3 w-3 text-amber-400" />
+                    <span>CLEAR ARCHIVE ({archivedRecoveryQuests.length})</span>
+                  </button>
 
                   <button
                     type="button"
@@ -3016,18 +2991,6 @@ export const ActiveDirectives: React.FC = () => {
                     <span>{isRecoveryArchiveOpen ? 'HIDE ARCHIVE VAULT' : `OPEN ARCHIVE VAULT (${archivedRecoveryQuests.length})`}</span>
                     {isRecoveryArchiveOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </button>
-
-                  {clearedArchivedRecovery.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handlePurgeCleared}
-                      className="px-2 py-1 bg-zinc-900 hover:bg-rose-950/50 text-zinc-400 hover:text-rose-300 border border-white/10 hover:border-rose-500/30 rounded text-[9.5px] font-mono transition flex items-center gap-1"
-                      title="Purge already-cleared recovery records from archive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      <span>PURGE CLEARED ({clearedArchivedRecovery.length})</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -3053,65 +3016,26 @@ export const ActiveDirectives: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-[9.5px] text-zinc-400 font-mono mt-0.5">
-                          Quests archived from completion or deletion. Generate clearing recovery directives to expiate these records in the terminal.
+                          Pending recovery deficits awaiting clearance. Generate clearing recovery directives in the terminal.
                         </p>
-                      </div>
-
-                      {/* Filter Tabs */}
-                      <div className="flex items-center gap-1 bg-zinc-900/80 p-0.5 rounded border border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => setArchiveFilterTab('all')}
-                          className={`px-2 py-0.5 text-[9px] font-mono rounded ${
-                            archiveFilterTab === 'all'
-                              ? 'bg-amber-950 text-amber-300 font-bold border border-amber-500/30'
-                              : 'text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          ALL ({archivedRecoveryQuests.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setArchiveFilterTab('uncleared')}
-                          className={`px-2 py-0.5 text-[9px] font-mono rounded ${
-                            archiveFilterTab === 'uncleared'
-                              ? 'bg-amber-950 text-amber-300 font-bold border border-amber-500/30'
-                              : 'text-zinc-500 hover:text-amber-400'
-                          }`}
-                        >
-                          UNCLEARED ({unclearedArchivedRecovery.length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setArchiveFilterTab('cleared')}
-                          className={`px-2 py-0.5 text-[9px] font-mono rounded ${
-                            archiveFilterTab === 'cleared'
-                              ? 'bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/30'
-                              : 'text-zinc-500 hover:text-emerald-400'
-                          }`}
-                        >
-                          CLEARED ({clearedArchivedRecovery.length})
-                        </button>
                       </div>
                     </div>
 
                     {/* Batch Actions & Search Bar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-0.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        {unclearedArchivedRecovery.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={handleSelectAllUncleared}
-                            className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/10 rounded text-[9px] font-mono flex items-center gap-1.5 transition"
-                          >
-                            {selectedArchiveQuestIds.length === unclearedArchivedRecovery.length && unclearedArchivedRecovery.length > 0 ? (
-                              <CheckSquare className="h-3 w-3 text-cyan-400" />
-                            ) : (
-                              <Square className="h-3 w-3 text-zinc-500" />
-                            )}
-                            <span>{selectedArchiveQuestIds.length === unclearedArchivedRecovery.length ? 'DESELECT ALL' : 'SELECT ALL UNCLEARED'}</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={handleSelectAllArchiveQuests}
+                          className="px-2 py-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/10 rounded text-[9px] font-mono flex items-center gap-1.5 transition"
+                        >
+                          {selectedArchiveQuestIds.length === archivedRecoveryQuests.length && archivedRecoveryQuests.length > 0 ? (
+                            <CheckSquare className="h-3 w-3 text-cyan-400" />
+                          ) : (
+                            <Square className="h-3 w-3 text-zinc-500" />
+                          )}
+                          <span>{selectedArchiveQuestIds.length === archivedRecoveryQuests.length ? 'DESELECT ALL' : 'SELECT ALL'}</span>
+                        </button>
 
                         {selectedArchiveQuestIds.length > 0 && (
                           <button
@@ -3147,28 +3071,21 @@ export const ActiveDirectives: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Filtered Archived Quests List */}
+                    {/* Pending Archived Quests List */}
                     <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
                       {(() => {
-                        let displayed = archivedRecoveryQuests;
-                        if (archiveFilterTab === 'uncleared') {
-                          displayed = unclearedArchivedRecovery;
-                        } else if (archiveFilterTab === 'cleared') {
-                          displayed = clearedArchivedRecovery;
-                        }
-                        if (archiveSearchQuery.trim()) {
-                          const q = archiveSearchQuery.toLowerCase();
-                          displayed = displayed.filter(item => 
-                            item.name.toLowerCase().includes(q) ||
-                            (item.description && item.description.toLowerCase().includes(q))
-                          );
-                        }
+                        const displayed = archivedRecoveryQuests.filter(item =>
+                          archiveSearchQuery.trim()
+                            ? item.name.toLowerCase().includes(archiveSearchQuery.toLowerCase()) ||
+                              (item.description && item.description.toLowerCase().includes(archiveSearchQuery.toLowerCase()))
+                            : true
+                        );
 
                         if (displayed.length === 0) {
                           return (
                             <div className="text-center py-6 px-3 border border-dashed border-white/5 rounded-lg bg-zinc-950/40">
                               <p className="text-[10px] font-mono text-zinc-500">
-                                {archiveSearchQuery ? 'No archived recovery records matching search.' : 'No records found in this archive filter.'}
+                                {archiveSearchQuery ? 'No archived recovery records matching search.' : 'No pending recovery records.'}
                               </p>
                             </div>
                           );
@@ -3176,41 +3093,35 @@ export const ActiveDirectives: React.FC = () => {
 
                         return displayed.map(quest => {
                           const isSelected = selectedArchiveQuestIds.includes(quest.id);
-                          const isCleared = quest.recoveryCleared;
                           const reason = quest.recoveryArchivedReason || 'deleted';
 
                           return (
                             <div
                               key={quest.id}
                               className={`p-2 rounded border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${
-                                isCleared 
-                                  ? 'bg-zinc-900/30 border-white/5 opacity-70' 
-                                  : isSelected
+                                isSelected
                                   ? 'bg-cyan-950/30 border-cyan-500/40'
                                   : 'bg-zinc-900/60 border-amber-500/20 hover:border-amber-500/40'
                               }`}
                             >
                               <div className="flex items-center gap-2 min-w-0 flex-1">
-                                {!isCleared && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleSelectArchiveQuest(quest.id)}
-                                    className="text-zinc-500 hover:text-cyan-400 shrink-0"
-                                  >
-                                    {isSelected ? (
-                                      <CheckSquare className="h-3.5 w-3.5 text-cyan-400" />
-                                    ) : (
-                                      <Square className="h-3.5 w-3.5" />
-                                    )}
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSelectArchiveQuest(quest.id)}
+                                  className="text-zinc-500 hover:text-cyan-400 shrink-0"
+                                >
+                                  {isSelected ? (
+                                    <CheckSquare className="h-3.5 w-3.5 text-cyan-400" />
+                                  ) : (
+                                    <Square className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
 
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[11px] font-sans font-medium text-zinc-200 truncate">
                                       {quest.name}
                                     </span>
-                                    {/* Reason badge */}
                                     <span className={`text-[8px] font-mono px-1.5 py-0.2 rounded border font-semibold ${
                                       reason === 'completed'
                                         ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30'
@@ -3218,18 +3129,10 @@ export const ActiveDirectives: React.FC = () => {
                                     }`}>
                                       {reason === 'completed' ? 'DONE' : 'DELETED'}
                                     </span>
-                                    {/* Cleared badge */}
-                                    {isCleared ? (
-                                      <span className="text-[8px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded flex items-center gap-1 font-bold">
-                                        <Check className="h-2.5 w-2.5" />
-                                        <span>EXPIATED / CLEARED</span>
-                                      </span>
-                                    ) : (
-                                      <span className="text-[8px] font-mono bg-amber-950/80 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded flex items-center gap-1">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                        <span>PENDING CLEARANCE</span>
-                                      </span>
-                                    )}
+                                    <span className="text-[8px] font-mono bg-amber-950/80 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded flex items-center gap-1">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                      <span>PENDING CLEARANCE</span>
+                                    </span>
                                   </div>
 
                                   <div className="flex items-center gap-2 text-[9px] font-mono text-zinc-500 mt-0.5">
@@ -3244,29 +3147,20 @@ export const ActiveDirectives: React.FC = () => {
                                         <span>Archived: {new Date(quest.archivedAt).toLocaleDateString()}</span>
                                       </>
                                     )}
-                                    {quest.recoveryClearedAt && (
-                                      <>
-                                        <span>•</span>
-                                        <span className="text-emerald-400/80">Cleared: {new Date(quest.recoveryClearedAt).toLocaleDateString()}</span>
-                                      </>
-                                    )}
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Actions on right */}
                               <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
-                                {!isCleared && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleGenerateClearingDirective([quest.id])}
-                                    className="px-2 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[9px] font-mono font-bold flex items-center gap-1 transition"
-                                    title="Synthesize a recovery directive targeting this specific archived deficit"
-                                  >
-                                    <Sparkles className="h-2.5 w-2.5" />
-                                    <span>CLEAR SOLO</span>
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleGenerateClearingDirective([quest.id])}
+                                  className="px-2 py-0.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[9px] font-mono font-bold flex items-center gap-1 transition"
+                                  title="Synthesize a recovery directive targeting this specific pending deficit"
+                                >
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  <span>CLEAR SOLO</span>
+                                </button>
 
                                 <button
                                   type="button"
@@ -3400,7 +3294,7 @@ export const ActiveDirectives: React.FC = () => {
                     </div>
                   );
                 }
-                if (unclearedArchivedRecovery.length > 0) {
+                if (archivedRecoveryQuests.length > 0) {
                   return (
                     <div className="text-center py-10 px-4 border border-dashed border-amber-500/30 bg-amber-950/10 rounded-lg space-y-3">
                       <ShieldAlert className="h-8 w-8 text-amber-400 mx-auto animate-pulse" />
@@ -3409,7 +3303,7 @@ export const ActiveDirectives: React.FC = () => {
                           NO ACTIVE RECOVERY DIRECTIVES IN RUNTIME
                         </p>
                         <p className="text-[10px] text-zinc-400 font-mono mt-1 max-w-md mx-auto">
-                          However, <span className="text-amber-400 font-bold">{unclearedArchivedRecovery.length} recovery quest(s)</span> are registered in the archive (from previous completions or deletions). Generate a new recovery directive to clear the archive backlog.
+                          However, <span className="text-amber-400 font-bold">{archivedRecoveryQuests.length} recovery quest(s)</span> are pending in the archive. Generate a new recovery directive to clear the archive backlog.
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -3419,7 +3313,7 @@ export const ActiveDirectives: React.FC = () => {
                           className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded text-xs font-mono font-bold transition flex items-center gap-2 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
                         >
                           <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                          <span>⚡ GENERATE CLEARING RECOVERY DIRECTIVE ({unclearedArchivedRecovery.length})</span>
+                          <span>⚡ GENERATE CLEARING RECOVERY DIRECTIVE ({archivedRecoveryQuests.length})</span>
                         </button>
                         <button
                           type="button"
@@ -3440,18 +3334,6 @@ export const ActiveDirectives: React.FC = () => {
                       <p className="text-xs text-emerald-300 font-mono font-bold uppercase tracking-wider">ALL RECOVERY DIRECTIVES &amp; ARCHIVES RESOLVED</p>
                       <p className="text-[9.5px] text-zinc-500 font-mono mt-0.5">Operational protocol normal. No active recovery directives and 0 pending archive deficits.</p>
                     </div>
-                    {clearedArchivedRecovery.length > 0 && (
-                      <div className="pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setIsRecoveryArchiveOpen(true)}
-                          className="px-3 py-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 rounded text-[10px] font-mono transition inline-flex items-center gap-1.5"
-                        >
-                          <Archive className="h-3 w-3" />
-                          <span>INSPECT CLEARED ARCHIVE ({clearedArchivedRecovery.length})</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
                 );
               }

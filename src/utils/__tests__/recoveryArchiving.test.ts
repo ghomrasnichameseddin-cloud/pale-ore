@@ -23,33 +23,30 @@ const createMockQuest = (overrides: Partial<Quest>): Quest => ({
 });
 
 describe('Recovery Quest Archiving and Clearance Protocol', () => {
-  it('archives a recovery quest with reason "completed" when done', () => {
+  it('does not assign recovery quests to a list and archives them with reason "completed" when done', () => {
     const activeRecoveryQuest = createMockQuest({
       id: 'q-rec-1',
       name: '🛡️ RECOVERY: Resolve "Morning Workout"',
       description: 'Recovery directive generated for failed workout',
       type: 'Recovery',
-      xp: 25
+      xp: 25,
+      listId: null
     });
 
-    // Simulate completeQuest archiving
     const completedTimestamp = '2026-09-30T10:00:00.000Z';
-    const isRecovery = activeRecoveryQuest.type?.toUpperCase() === 'RECOVERY';
-    const isClearingQuest = Boolean(activeRecoveryQuest.clearsRecoveryQuestIds && activeRecoveryQuest.clearsRecoveryQuestIds.length > 0);
-
     const completedQuest: Quest = {
       ...activeRecoveryQuest,
       status: 'Completed',
       completedAt: completedTimestamp,
       lastCompletedDate: '2026-09-30',
-      ...(isRecovery ? {
-        archived: true,
-        archivedAt: completedTimestamp,
-        recoveryArchivedReason: 'completed',
-        recoveryCleared: isClearingQuest
-      } : {})
+      listId: null,
+      archived: true,
+      archivedAt: completedTimestamp,
+      recoveryArchivedReason: 'completed',
+      recoveryCleared: false
     };
 
+    expect(completedQuest.listId).toBeNull();
     expect(completedQuest.status).toBe('Completed');
     expect(completedQuest.archived).toBe(true);
     expect(completedQuest.recoveryArchivedReason).toBe('completed');
@@ -196,8 +193,8 @@ describe('Recovery Quest Archiving and Clearance Protocol', () => {
           completedAt: completedTimestamp,
           lastCompletedDate: '2026-09-30',
           ...(isRecovery ? {
-            archived: true,
-            archivedAt: completedTimestamp,
+            archived: false,
+            archivedAt: null,
             recoveryArchivedReason: 'completed',
             recoveryCleared: isClearingQuest,
             recoveryClearedAt: isClearingQuest ? completedTimestamp : null
@@ -207,6 +204,8 @@ describe('Recovery Quest Archiving and Clearance Protocol', () => {
       if (clearingQuest.clearsRecoveryQuestIds?.includes(q.id)) {
         return {
           ...q,
+          archived: false,
+          archivedAt: null,
           recoveryCleared: true,
           recoveryClearedAt: completedTimestamp
         };
@@ -220,13 +219,17 @@ describe('Recovery Quest Archiving and Clearance Protocol', () => {
 
     expect(target1.recoveryCleared).toBe(true);
     expect(target1.recoveryClearedAt).toBe(completedTimestamp);
+    expect(target1.archived).toBe(false);
+    expect(target1.archivedAt).toBeNull();
 
     expect(target2.recoveryCleared).toBe(true);
     expect(target2.recoveryClearedAt).toBe(completedTimestamp);
+    expect(target2.archived).toBe(false);
+    expect(target2.archivedAt).toBeNull();
 
-    // The clearing quest itself should be archived with recoveryCleared: true
+    // Clearing quests are fulfilled, not archived; only uncleared recovery deficits remain in the archive.
     expect(completedClearingQuest.status).toBe('Completed');
-    expect(completedClearingQuest.archived).toBe(true);
+    expect(completedClearingQuest.archived).toBe(false);
     expect(completedClearingQuest.recoveryCleared).toBe(true);
   });
 
