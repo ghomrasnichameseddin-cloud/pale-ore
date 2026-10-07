@@ -22,7 +22,8 @@ import {
   LevelUpBossRequirement,
   CustomRadarConfig, CustomRadarAxis,
   CoreDomain, SkillType, SkillRank, SkillReward, AttributeReward, RewardPayload, CoreDomainProgress,
-  HabitFormation, HabitStabilityStage
+  HabitFormation, HabitStabilityStage,
+  PrayerRecoveryAction
 } from './types';
 import {
   PRAYER_ORDER,
@@ -93,6 +94,7 @@ import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
+import { createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
 import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties } from './utils/penaltyEngine';
 export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties };
@@ -200,7 +202,7 @@ interface POSContextType {
   addQuest: (quest: Partial<Quest> & { name: string; description: string }) => string;
   updateQuest: (id: string, updates: Partial<Quest>) => void;
   deleteQuest: (id: string) => void;
-  completeQuest: (id: string, additionalElapsedMinutes?: number) => void;
+  completeQuest: (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => void;
   logQuestWorkTime: (questId: string, minutes: number) => void;
   reopenQuest: (id: string) => void;
   failQuest: (id: string) => void;
@@ -4123,7 +4125,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return purgedCount;
   };
 
-  const completeQuest = (id: string, additionalElapsedMinutes?: number) => {
+  const completeQuest = (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => {
     const questToComplete = state.quests.find(q => q.id === id);
     if (!questToComplete) return;
     // If it's a non-recurring quest and is already completed, ignore
@@ -4148,6 +4150,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ? (questToComplete.xp !== 0 ? Math.abs(questToComplete.xp) : (questToComplete.difficulty === 'Boss' ? 250 : questToComplete.difficulty === 'Hard' ? 100 : questToComplete.difficulty === 'Easy' ? 25 : 50))
       : Math.max(0, questToComplete.xp);
 
+    const recoveryAction = selectedRecoveryAction || questToComplete.recoveryAction;
     const isCampaignRelated = Boolean(questToComplete.goalId || questToComplete.projectId);
     const eventType = questToComplete.type === 'Boss' || questToComplete.difficulty === 'Boss'
       ? 'boss'
@@ -4410,6 +4413,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         content: isKaffarahQuest ? `Spiritual remedy "${questToComplete.name}" fulfilled. Sincere restitution recorded; spiritual equilibrium restored and shop locks lifted.` : completionMessage,
         priority: 'high'
       });
+
+      if (recoveryAction?.kind === 'sunnah-prayer') {
+        togglePrayer(recoveryAction.prayer, 'sunnahRawatib', state.systemDate);
+      } else if (recoveryAction?.kind === 'qiyam') {
+        updateQiyam(2, undefined, state.systemDate);
+      }
 
       if (questToComplete.clearsRecoveryQuestIds && questToComplete.clearsRecoveryQuestIds.length > 0) {
         addSystemMessage({
@@ -8425,29 +8434,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
 
           if (!updatedQuests.some(q => q.id === kaffarahQuestId)) {
-            updatedQuests.unshift({
-              id: kaffarahQuestId,
-              name: kaffarahQuestName,
-              description: `Solemn Kaffārah Restitution for delayed ${pName} prayer (${targetDate}).\n• Root Cause: Postponed past prescribed window to ${targetFormatted} (Tier ${tierInfo.tier} compound delay).\n• Restitution Action: Perform Wudu with heightened presence, pray 2 heartfelt Rak'ahs of Tawbah in solitude, and recite Surah Al-Mulk with contemplative presence.\n• Note: Conquering this quest fulfills your penance, heals Soul Vitality (+35 HP), and restores spiritual equilibrium.`,
-              type: 'Recovery',
-              difficulty: tierInfo.tier >= 3 ? 'Hard' : tierInfo.tier === 2 ? 'Normal' : 'Easy',
+            updatedQuests.unshift(createPrayerRecoveryQuest({
+              prayer: p,
+              targetDate,
+              completedAt: completedTimestamp,
               xp: recoveredXP,
-              estimatedTime: 20,
-              deadline: targetDate,
-              status: 'Active',
-              recurrence: 'None',
-              streakCount: 0,
-              completedAt: null,
-              lastCompletedDate: null,
-              postponedFrom: null,
-              postponedTo: null,
-              goalId: null,
-              projectId: null,
-              milestoneId: null,
-              listId: null,
-              relatedSkills: [],
-              createdAt: completedTimestamp
-            });
+              tier: tierInfo.tier,
+            }));
           }
         } else {
           const auditId = `muhasabah-delay-${p}-${targetDate}`;
@@ -8858,29 +8851,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
 
           if (!updatedQuests.some(q => q.id === kaffarahQuestId)) {
-            updatedQuests.unshift({
-              id: kaffarahQuestId,
-              name: kaffarahQuestName,
-              description: `Solemn Kaffārah Restitution for delayed ${pName} prayer (${targetDate}).\n• Root Cause: Postponed past prescribed window to ${targetFormatted} (Tier ${tierInfo.tier} compound delay).\n• Restitution Action: Perform Wudu with heightened presence, pray 2 heartfelt Rak'ahs of Tawbah in solitude, and recite Surah Al-Mulk with contemplative presence.\n• Note: Conquering this quest fulfills your penance, heals Soul Vitality (+35 HP), and restores spiritual equilibrium.`,
-              type: 'Recovery',
-              difficulty: tierInfo.tier >= 3 ? 'Hard' : tierInfo.tier === 2 ? 'Normal' : 'Easy',
+            updatedQuests.unshift(createPrayerRecoveryQuest({
+              prayer: p,
+              targetDate,
+              completedAt: completedTimestamp,
               xp: recoveredXP,
-              estimatedTime: 20,
-              deadline: targetDate,
-              status: 'Active',
-              recurrence: 'None',
-              streakCount: 0,
-              completedAt: null,
-              lastCompletedDate: null,
-              postponedFrom: null,
-              postponedTo: null,
-              goalId: null,
-              projectId: null,
-              milestoneId: null,
-              listId: null,
-              relatedSkills: [],
-              createdAt: completedTimestamp
-            });
+              tier: tierInfo.tier,
+            }));
           }
         } else {
           const auditId = `muhasabah-delay-${p}-${targetDate}`;

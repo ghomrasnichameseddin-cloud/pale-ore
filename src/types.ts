@@ -258,6 +258,10 @@ export interface HabitFormation {
   targetDaysInLast30Days?: number;
 }
 
+export type PrayerRecoveryAction =
+  | { kind: 'sunnah-prayer'; prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' }
+  | { kind: 'qiyam'; rakats: 2 };
+
 export interface Quest {
   id: string;
   name: string;
@@ -299,6 +303,8 @@ export interface Quest {
   recoveryCleared?: boolean; // True when cleared/expiated by a clearing recovery quest
   recoveryClearedAt?: string | null; // ISO timestamp when cleared
   clearsRecoveryQuestIds?: string[]; // Target archived recovery quests cleared by this quest
+  recoveryAction?: PrayerRecoveryAction;
+  recoveryActionOptions?: PrayerRecoveryAction[];
 }
 
 export interface LevelUpBossRequirement {

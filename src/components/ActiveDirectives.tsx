@@ -821,6 +821,7 @@ export const ActiveDirectives: React.FC = () => {
 
   // Quest Editing State
   const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
+  const [selectedRecoveryAction, setSelectedRecoveryAction] = useState<Record<string, Quest['recoveryAction']>>({});
   const [editingQuestId, setEditingQuestId] = useState<string | null>(null);
   const [editQuestName, setEditQuestName] = useState('');
   const [editQuestDiff, setEditQuestDiff] = useState<QuestDifficulty>('Normal');
@@ -2624,11 +2625,40 @@ export const ActiveDirectives: React.FC = () => {
           {/* CORE STATE CONTROLLERS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1.5">
             {/* Complete/Reopen */}
+            {quest.type === 'Recovery' && quest.recoveryActionOptions && quest.recoveryActionOptions.length > 1 && !finished && (
+              <div className="col-span-2 sm:col-span-4 md:col-span-8 flex flex-col gap-1.5 rounded-lg border border-teal-500/20 bg-teal-950/20 p-2">
+                <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-teal-300">RESTITUTION ACTION</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {quest.recoveryActionOptions.map(option => {
+                    const isSelected = selectedRecoveryAction[quest.id] === option || (!selectedRecoveryAction[quest.id] && option === quest.recoveryAction);
+                    const label = option.kind === 'sunnah-prayer'
+                      ? `Sunnah Rawātib (${option.prayer})`
+                      : `2 Rak'ahs Qiyām`;
+
+                    return (
+                      <button
+                        key={`${quest.id}-${option.kind}-${option.kind === 'sunnah-prayer' ? option.prayer : 'qiyam'}`}
+                        type="button"
+                        onClick={() => setSelectedRecoveryAction(prev => ({ ...prev, [quest.id]: option }))}
+                        className={`rounded border px-2 py-1 text-[9px] font-mono font-bold transition ${
+                          isSelected
+                            ? 'border-teal-400 bg-teal-500/20 text-teal-200'
+                            : 'border-[#c5a059]/15 bg-[#0b0d13] text-zinc-300 hover:border-teal-500/30'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={() => {
                 if (finished) reopenQuest(quest.id);
-                else completeQuest(quest.id);
+                else completeQuest(quest.id, undefined, selectedRecoveryAction[quest.id] || quest.recoveryAction);
               }}
               className={`py-1 bg-[#0b0d13]/80 border rounded-lg text-[9px] font-mono font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
                 finished 
