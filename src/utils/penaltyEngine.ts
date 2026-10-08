@@ -292,6 +292,33 @@ export function processMultiDayPenalties(
       );
 
       if (!hasActiveRecovery) {
+        const sourceSkillIds = q.relatedSkills || [];
+        const recoveryAttributeRewards = sourceSkillIds.reduce<Quest['attributeRewards']>((acc, skillId) => {
+          const skill = prev.skills.find(s => s.id === skillId);
+          if (!skill) return acc;
+
+          const primaryAttribute = skill.primaryAttribute;
+          const secondaryAttribute = skill.secondaryAttribute;
+          const primaryIndex = (acc || []).findIndex(r => r.attribute === primaryAttribute);
+
+          if (primaryIndex >= 0) {
+            (acc || [])[primaryIndex].points += 1;
+          } else {
+            (acc || []).push({ attribute: primaryAttribute, points: 1 });
+          }
+
+          if (secondaryAttribute) {
+            const secondaryIndex = (acc || []).findIndex(r => r.attribute === secondaryAttribute);
+            if (secondaryIndex >= 0) {
+              (acc || [])[secondaryIndex].points += 1;
+            } else {
+              (acc || []).push({ attribute: secondaryAttribute, points: 1 });
+            }
+          }
+
+          return acc;
+        }, []);
+
         const recoveryQuest: Quest = {
           id: `q-recovery-${q.id}-${dayStr}`,
           name: `🛡️ RECOVERY: Resolve "${q.name}"`,
@@ -316,7 +343,8 @@ export function processMultiDayPenalties(
               completed: false
             }
           ],
-          relatedSkills: q.relatedSkills || []
+          relatedSkills: sourceSkillIds,
+          attributeRewards: recoveryAttributeRewards
         };
         updatedQuests.push(recoveryQuest);
         recoveryModeActivated = true;

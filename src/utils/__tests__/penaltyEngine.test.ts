@@ -55,6 +55,41 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       expect(recoveryQuest?.name).toContain('Resolve "Morning Fajr in Congregation"');
     });
 
+    it('inherits the source quest skills and attributes in its recovery directive', () => {
+      const skillId = 'skill-logic';
+      const state = createTestState([createBaseQuest({
+        id: 'oneoff-attribute-1',
+        name: 'Solve logic problem',
+        type: 'Main',
+        recurrence: 'None',
+        deadline: '2026-08-20',
+        difficulty: 'Normal',
+        relatedSkills: [skillId]
+      })], 100);
+      state.skills = [{
+        id: skillId,
+        name: 'Logic',
+        description: 'Reasoning',
+        type: 'primary',
+        xp: 100,
+        rank: 'F',
+        primaryAttribute: 'Logic',
+        secondaryAttribute: 'Focus',
+        tags: ['logic'],
+        createdAt: '2026-08-01T00:00:00.000Z',
+        updatedAt: '2026-08-01T00:00:00.000Z'
+      }];
+
+      const result = processMultiDayPenalties(state, '2026-08-20', '2026-08-21');
+      const recoveryQuest = result.updatedQuests.find(q => q.type === 'Recovery');
+
+      expect(recoveryQuest?.relatedSkills).toEqual([skillId]);
+      expect(recoveryQuest?.attributeRewards).toEqual([
+        { attribute: 'Logic', points: 1 },
+        { attribute: 'Focus', points: 1 }
+      ]);
+    });
+
     it('marks a one-off quest due on oldDate as Failed with 1 penalty', () => {
       const oneOff = createBaseQuest({
         id: 'oneoff-1',

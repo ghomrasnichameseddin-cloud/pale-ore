@@ -4568,6 +4568,33 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSideOrOptional) {
         spawnedQuest = null;
       } else {
+        const sourceSkillIds = questToFail.relatedSkills || [];
+        const recoveryAttributeRewards = sourceSkillIds.reduce<AttributeReward[]>((acc, skillId) => {
+          const skill = state.skills.find(s => s.id === skillId);
+          if (!skill) return acc;
+
+          const primaryAttribute = canonicalizeAttributeName(skill.primaryAttribute);
+          const secondaryAttribute = skill.secondaryAttribute ? canonicalizeAttributeName(skill.secondaryAttribute) : null;
+          const existingIndex = acc.findIndex(r => canonicalizeAttributeName(r.attribute) === primaryAttribute);
+
+          if (existingIndex >= 0) {
+            acc[existingIndex].points += 1;
+          } else {
+            acc.push({ attribute: primaryAttribute, points: 1 });
+          }
+
+          if (secondaryAttribute) {
+            const secondaryIndex = acc.findIndex(r => canonicalizeAttributeName(r.attribute) === secondaryAttribute);
+            if (secondaryIndex >= 0) {
+              acc[secondaryIndex].points += 1;
+            } else {
+              acc.push({ attribute: secondaryAttribute, points: 1 });
+            }
+          }
+
+          return acc;
+        }, []);
+
         spawnedQuest = {
           id: `q-recovery-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           name: `🛡️ RECOVERY: Resolve "${questToFail.name}"`,
@@ -4593,7 +4620,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               completed: false
             }
           ],
-          relatedSkills: questToFail.relatedSkills || []
+          relatedSkills: sourceSkillIds,
+          attributeRewards: recoveryAttributeRewards
         };
       }
 
