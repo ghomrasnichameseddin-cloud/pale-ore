@@ -36,7 +36,8 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
   const { 
     state, addSystemMessage, markSystemMessageRead, 
     markAllSystemMessagesRead, deleteSystemMessage, clearAllSystemMessages,
-    updateNotificationSettings, scanDelayedTasks, updateQuest, updateGoal, updateProject
+    updateNotificationSettings, scanDelayedTasks, updateQuest, updateGoal, updateProject,
+    completeQuest, ignoreOverdueQuest, claimDelayedAction
   } = usePOS();
 
   const messages = state.messages || [];
@@ -120,51 +121,90 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
   };
 
   const handleResolveTask = (entityType?: string, entityId?: string, msgId?: string) => {
-    if (entityId) {
-      if (entityType === 'quest') {
-        updateQuest(entityId, { status: 'Completed', completedAt: new Date().toISOString() });
-      } else if (entityType === 'goal') {
+    if (!entityId || (entityType !== 'quest' && entityType !== 'goal' && entityType !== 'project')) return;
+    if (!claimDelayedAction(entityType, entityId, 'complete')) return;
+
+    if (entityType === 'quest') {
+      completeQuest(entityId);
+    } else if (entityType === 'goal') {
         updateGoal(entityId, { status: 'Completed' });
-      } else if (entityType === 'project') {
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: 'Overdue Goal Completed',
+          content: `Goal "${state.goals.find(goal => goal.id === entityId)?.name || entityId}" was completed from the overdue inbox.`,
+          priority: 'medium'
+        });
+    } else {
         updateProject(entityId, { status: 'Completed' });
-      }
+        addSystemMessage({
+          sender: 'SYSTEM',
+          category: 'achievement',
+          title: 'Overdue Project Completed',
+          content: `Project "${state.projects.find(project => project.id === entityId)?.name || entityId}" was completed from the overdue inbox.`,
+          priority: 'medium'
+        });
     }
-    if (msgId) {
-      markSystemMessageRead(msgId);
-    }
+
+    delayedMessages
+      .filter(message => message.entityType === entityType && message.entityId === entityId)
+      .forEach(message => markSystemMessageRead(message.id));
+    if (msgId) markSystemMessageRead(msgId);
     soundSystem.playNotification('achievement');
     showFeedback('Task marked completed and resolved!', 'success');
   };
 
   const handleSnoozeTask = (entityType?: string, entityId?: string, msgId?: string, days = 1) => {
-    if (entityId && entityType) {
-      const newDate = snoozeEntity(
-        entityType as any,
-        entityId,
-        days,
-        state,
-        { updateQuest, updateGoal, updateProject }
-      );
-      if (msgId) {
-        markSystemMessageRead(msgId);
-      }
-      soundSystem.playNotification('note');
-      showFeedback(`Rescheduled +${days} day${days > 1 ? 's' : ''} (New deadline: ${newDate})`, 'info');
-    }
+    if (!entityId || (entityType !== 'quest' && entityType !== 'goal' && entityType !== 'project')) return;
+    if (!claimDelayedAction(entityType, entityId, 'snooze')) return;
+
+    const newDate = snoozeEntity(entityType, entityId, days, state, { updateQuest, updateGoal, updateProject });
+    delayedMessages
+      .filter(message => message.entityType === entityType && message.entityId === entityId)
+      .forEach(message => markSystemMessageRead(message.id));
+    if (msgId) markSystemMessageRead(msgId);
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'note',
+      title: `Directive Rescheduled (+${days}d)`,
+      content: `"${entityId}" postponed to ${newDate}.`,
+      priority: 'low'
+    });
+    soundSystem.playNotification('note');
+    showFeedback(`Rescheduled +${days} day${days > 1 ? 's' : ''} (New deadline: ${newDate})`, 'info');
+  };
+
+  const handleIgnoreOverdueQuest = (questId: string) => {
+    const penaltyXp = ignoreOverdueQuest(questId);
+    delayedMessages
+      .filter(message => message.entityType === 'quest' && message.entityId === questId)
+      .forEach(message => markSystemMessageRead(message.id));
+    soundSystem.playNotification('warning');
+    showFeedback(`Quest ignored and deleted${penaltyXp > 0 ? `; -${penaltyXp} XP penalty applied` : ''}.`, 'warn');
   };
 
   const handleSnoozeAllDelayed = (days = 1) => {
     let count = 0;
-    const delayedQuests = (state.quests || []).filter(q => q.status === 'Active' && (q.postponedTo || q.deadline) && (q.postponedTo || q.deadline)! < (state.systemDate || ''));
-    
-    delayedQuests.forEach(q => {
-      snoozeEntity('quest', q.id, days, state, { updateQuest, updateGoal, updateProject });
+    delayedScan.items.forEach(item => {
+      if (!claimDelayedAction(item.entityType, item.id, 'snooze')) return;
+      snoozeEntity(item.entityType, item.id, days, state, { updateQuest, updateGoal, updateProject });
+      delayedMessages
+        .filter(message => message.entityType === item.entityType && message.entityId === item.id)
+        .forEach(message => markSystemMessageRead(message.id));
       count++;
     });
 
-    delayedMessages.forEach(m => markSystemMessageRead(m.id));
+    if (count > 0) {
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'note',
+        title: `Overdue Items Rescheduled (+${days}d)`,
+        content: `${count} overdue item(s) were rescheduled from the message box.`,
+        priority: 'low'
+      });
+    }
     soundSystem.playNotification('note');
-    showFeedback(`Postponed ${count} overdue quest${count !== 1 ? 's' : ''} forward by ${days} day.`, 'success');
+    showFeedback(`Postponed ${count} overdue item${count !== 1 ? 's' : ''} by ${days} day${days !== 1 ? 's' : ''}.`, 'success');
   };
 
   const handleDispatch = (e: React.FormEvent) => {
@@ -665,6 +705,7 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
         <div className="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
           {filteredMessages.map(msg => {
             const isDelayed = msg.category === 'delayed';
+            const entityStillOverdue = delayedScan.items.some(item => item.entityType === msg.entityType && item.id === msg.entityId);
             return (
               <div 
                 key={msg.id}
@@ -749,8 +790,22 @@ export const SystemMessageBox: React.FC<SystemMessageBoxProps> = ({
                 </p>
 
                 {/* DIRECT ACTION BAR ON CARD FOR DELAYED DIRECTIVES (10/10 WORKFLOW) */}
-                {isDelayed && msg.entityId && (
+                {isDelayed && msg.entityId && entityStillOverdue && (
                   <div className="mt-2.5 pl-7 flex items-center gap-2 flex-wrap">
+                    {msg.entityType === 'quest' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleIgnoreOverdueQuest(msg.entityId!);
+                        }}
+                        className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Delete this overdue quest and apply its XP penalty"
+                      >
+                        <Trash2 className="h-3 w-3 text-rose-400" />
+                        IGNORE (-XP)
+                      </button>
+                    )}
                     {/* Mark Done */}
                     <button
                       type="button"

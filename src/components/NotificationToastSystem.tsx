@@ -3,13 +3,13 @@ import { usePOS } from '../POSContext';
 import { SystemMessage } from '../types';
 import { 
   Award, Bell, ShieldAlert, Terminal, MessageSquare, AlertTriangle, 
-  X, Inbox, Sparkles, ChevronRight, Volume2, VolumeX, Clock, 
+  X, Inbox, Sparkles, ChevronRight, Volume2, VolumeX, Clock, Trash2,
   Laptop, Smartphone, CheckCircle2, CalendarPlus 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundSystem } from '../utils/soundEffects';
 import { getNotificationPermission, sendNativeNotification } from '../utils/nativeNotifications';
-import { snoozeEntity } from '../utils/delayedTaskScanner';
+import { scanAllDelayedItems, snoozeEntity } from '../utils/delayedTaskScanner';
 
 interface NotificationToastSystemProps {
   onOpenInbox?: () => void;
@@ -17,13 +17,20 @@ interface NotificationToastSystemProps {
 
 export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = ({ onOpenInbox }) => {
   const { 
-    state, markSystemMessageRead, updateQuest, updateGoal, updateProject, addSystemMessage 
+    state, markSystemMessageRead, updateQuest, updateGoal, updateProject, addSystemMessage,
+    completeQuest, ignoreOverdueQuest, claimDelayedAction
   } = usePOS();
   const [activeToast, setActiveToast] = useState<SystemMessage | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [isMuted, setIsMuted] = useState(soundSystem.getMuted());
 
   const messages = state.messages || [];
+
+  const markEntityDelayedMessagesRead = (entityType: 'quest' | 'goal' | 'project', entityId: string) => {
+    messages
+      .filter(message => message.category === 'delayed' && message.entityType === entityType && message.entityId === entityId)
+      .forEach(message => markSystemMessageRead(message.id));
+  };
 
   useEffect(() => {
     // Find unread messages that haven't been shown in toast yet
@@ -38,6 +45,15 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
       soundSystem.playNotification(latest.category);
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!activeToast) return;
+    const toastMessage = messages.find(message => message.id === activeToast.id);
+    const entityIsOverdue = activeToast.entityType && activeToast.entityId
+      ? scanAllDelayedItems(state).items.some(item => item.entityType === activeToast.entityType && item.id === activeToast.entityId)
+      : true;
+    if (toastMessage?.read || !entityIsOverdue) setActiveToast(null);
+  }, [activeToast, messages, state.quests, state.goals, state.projects, state.systemDate]);
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -116,23 +132,41 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
   const handleQuickComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!activeToast || !activeToast.entityId) return;
+    if (activeToast.entityType !== 'quest' && activeToast.entityType !== 'goal' && activeToast.entityType !== 'project') return;
+    if (!claimDelayedAction(activeToast.entityType, activeToast.entityId, 'complete')) return;
 
     if (activeToast.entityType === 'quest') {
-      updateQuest(activeToast.entityId, { status: 'Completed', completedAt: new Date().toISOString() });
+      completeQuest(activeToast.entityId);
     } else if (activeToast.entityType === 'goal') {
       updateGoal(activeToast.entityId, { status: 'Completed' });
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: 'Overdue Goal Completed',
+        content: `Goal "${state.goals.find(goal => goal.id === activeToast.entityId)?.name || activeToast.entityId}" was completed from the notification.`,
+        priority: 'medium'
+      });
     } else if (activeToast.entityType === 'project') {
       updateProject(activeToast.entityId, { status: 'Completed' });
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'achievement',
+        title: 'Overdue Project Completed',
+        content: `Project "${state.projects.find(project => project.id === activeToast.entityId)?.name || activeToast.entityId}" was completed from the notification.`,
+        priority: 'medium'
+      });
     }
 
     soundSystem.playNotification('achievement');
-    markSystemMessageRead(activeToast.id);
+    markEntityDelayedMessagesRead(activeToast.entityType, activeToast.entityId);
     setActiveToast(null);
   };
 
   const handleQuickSnooze = (e: React.MouseEvent, days: number = 1) => {
     e.stopPropagation();
     if (!activeToast || !activeToast.entityId || !activeToast.entityType) return;
+    if (activeToast.entityType !== 'quest' && activeToast.entityType !== 'goal' && activeToast.entityType !== 'project') return;
+    if (!claimDelayedAction(activeToast.entityType, activeToast.entityId, 'snooze')) return;
 
     const newDate = snoozeEntity(
       activeToast.entityType as any,
@@ -143,7 +177,7 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
     );
 
     soundSystem.playNotification('note');
-    markSystemMessageRead(activeToast.id);
+    markEntityDelayedMessagesRead(activeToast.entityType, activeToast.entityId);
     setActiveToast(null);
 
     addSystemMessage({
@@ -153,6 +187,16 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
       content: `"${activeToast.title}" postponed to ${newDate}. Maintain focus and pace.`,
       priority: 'low'
     });
+  };
+
+  const handleQuickIgnore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activeToast || activeToast.entityType !== 'quest' || !activeToast.entityId) return;
+
+    ignoreOverdueQuest(activeToast.entityId);
+    soundSystem.playNotification('warning');
+    markEntityDelayedMessagesRead('quest', activeToast.entityId);
+    setActiveToast(null);
   };
 
   return (
@@ -230,6 +274,17 @@ export const NotificationToastSystem: React.FC<NotificationToastSystemProps> = (
                     <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     DONE
                   </button>
+                  {activeToast.entityType === 'quest' && (
+                    <button
+                      type="button"
+                      onClick={handleQuickIgnore}
+                      className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Delete this overdue quest and apply its XP penalty"
+                    >
+                      <Trash2 className="h-3 w-3 text-rose-400" />
+                      IGNORE
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => handleQuickSnooze(e, 1)}

@@ -158,7 +158,7 @@ const loadSavedQuestViewSettings = (): QuestViewSettings => {
 
 export const ActiveDirectives: React.FC = () => {
   const { 
-    state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, duplicateQuest,
+    state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, deleteRecoveryQuestsWithPenalty, duplicateQuest,
     archiveQuest, unarchiveQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, pauseFocusSession, resumeFocusSession, stopFocusSession,
@@ -1151,6 +1151,27 @@ export const ActiveDirectives: React.FC = () => {
     if (!matchesCategory(q)) return false;
     return q.type === 'Recovery' || q.type === 'Penalty';
   });
+
+  const handleDeleteAllRecoveryQuests = () => {
+    if (recoveryQuests.length === 0) return;
+    const count = recoveryQuests.length;
+    const cumulativePenaltyXp = recoveryQuests.reduce((sum, quest) => sum + Math.abs(quest.xp || 0), 0);
+    if (!window.confirm(`Permanently delete all ${count} active recovery quests and apply a cumulative -${cumulativePenaltyXp} XP penalty?`)) return;
+
+    const appliedPenaltyXp = deleteRecoveryQuestsWithPenalty(recoveryQuests.map(quest => quest.id));
+    setTerminalLog(`[SUCCESS] DELETED ${count} ACTIVE RECOVERY QUEST(S). CUMULATIVE PENALTY: -${appliedPenaltyXp} XP.`);
+    setTimeout(() => setTerminalLog(null), 5000);
+  };
+
+  const handleClearAllRecoveryQuests = () => {
+    if (recoveryQuests.length === 0) return;
+    const count = recoveryQuests.length;
+    if (!window.confirm(`Complete all ${count} active recovery quests shown in this terminal? Normal XP, attribute rewards, and linked spiritual actions will apply.`)) return;
+
+    recoveryQuests.forEach(quest => completeQuest(quest.id));
+    setTerminalLog(`[SUCCESS] COMPLETED ${count} ACTIVE RECOVERY QUEST(S) WITH NORMAL REWARDS.`);
+    setTimeout(() => setTerminalLog(null), 5000);
+  };
 
   const handleMoveToTomorrow = (questId: string) => {
     const tomorrowStr = getTomorrowStr();
@@ -2797,7 +2818,28 @@ export const ActiveDirectives: React.FC = () => {
                     RECOVERY DIRECTIVES &amp; DEFICIT EXPIATION PROTOCOL • RESTITUTION SECTOR
                   </div>
                 </div>
-
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleClearAllRecoveryQuests}
+                    disabled={recoveryQuests.length === 0}
+                    className="px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-900/70 disabled:opacity-40 disabled:cursor-not-allowed text-emerald-300 border border-emerald-500/40 rounded text-[9.5px] font-mono font-bold transition flex items-center gap-1.5"
+                    title="Complete all active recovery quests with their normal rewards and linked actions"
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>CLEAR ALL ({recoveryQuests.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAllRecoveryQuests}
+                    disabled={recoveryQuests.length === 0}
+                    className="px-2.5 py-1 bg-rose-950/50 hover:bg-rose-900/70 disabled:opacity-40 disabled:cursor-not-allowed text-rose-300 border border-rose-500/40 rounded text-[9.5px] font-mono font-bold transition flex items-center gap-1.5"
+                    title="Delete all active recovery quests shown here and apply their cumulative XP penalty"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>DELETE ALL ({recoveryQuests.length})</span>
+                  </button>
+                </div>
               </div>
 
             </div>

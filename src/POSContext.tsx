@@ -204,10 +204,13 @@ interface POSContextType {
   addQuest: (quest: Partial<Quest> & { name: string; description: string }) => string;
   updateQuest: (id: string, updates: Partial<Quest>) => void;
   deleteQuest: (id: string) => void;
+  deleteRecoveryQuestsWithPenalty: (questIds: string[]) => number;
   completeQuest: (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => void;
   logQuestWorkTime: (questId: string, minutes: number) => void;
   reopenQuest: (id: string) => void;
-  failQuest: (id: string) => void;
+  failQuest: (id: string, options?: { deleteQuest?: boolean; createRecoveryQuest?: boolean }) => number;
+  ignoreOverdueQuest: (id: string) => number;
+  claimDelayedAction: (entityType: 'quest' | 'goal' | 'project', entityId: string, action: 'complete' | 'snooze' | 'ignore') => boolean;
   duplicateQuest: (id: string) => string;
   mergeQuests: (idA: string, idB: string, mergedName: string, mergedDescription: string) => string;
   splitQuest: (id: string, questAName: string, questBName: string, xpRatio: number) => void;
@@ -1018,6 +1021,7 @@ export function reconcilePOSState(rawInput: any): POSState {
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isGeneratingWeeklySummaryRef = useRef(false);
+  const claimedDelayedActionsRef = useRef(new Map<string, 'complete' | 'snooze' | 'ignore'>());
   const [state, setState] = useState<POSState>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -3890,6 +3894,81 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteRecoveryQuestsWithPenalty = (questIds: string[]) => {
+    const requestedIds = new Set(questIds);
+    const eligibleQuests = state.quests.filter(q =>
+      requestedIds.has(q.id) &&
+      q.status === 'Active' &&
+      (q.type.toUpperCase() === 'RECOVERY' || q.type.toUpperCase() === 'PENALTY') &&
+      !isQuestArchived(q, state.lists, state.folders)
+    );
+    if (eligibleQuests.length === 0) return 0;
+
+    const questIdsToDelete = new Set(eligibleQuests.map(q => q.id));
+    const cumulativePenaltyXp = eligibleQuests.reduce((sum, q) => sum + Math.abs(q.xp || 0), 0);
+    const penaltyTimestamp = getSystemTimestamp(state.systemDate);
+
+    setState(prev => {
+      const questsToDelete = prev.quests.filter(q =>
+        questIdsToDelete.has(q.id) &&
+        q.status === 'Active' &&
+        (q.type.toUpperCase() === 'RECOVERY' || q.type.toUpperCase() === 'PENALTY') &&
+        !isQuestArchived(q, prev.lists, prev.folders)
+      );
+      if (questsToDelete.length === 0) return prev;
+
+      const deletedIds = new Set(questsToDelete.map(q => q.id));
+      const updatedQuests = prev.quests.filter(q => !deletedIds.has(q.id));
+      const penaltyAmount = questsToDelete.reduce((sum, q) => sum + Math.abs(q.xp || 0), 0);
+      const updatedHistory = penaltyAmount > 0
+        ? [{
+            id: `h-recovery-delete-${Date.now()}`,
+            questId: null,
+            questName: `💀 PENALTY: Abandoned ${questsToDelete.length} Recovery Quest(s)`,
+            xp: -penaltyAmount,
+            timestamp: penaltyTimestamp,
+            date: prev.systemDate,
+            type: 'penalty',
+            source: 'penalty_failed',
+            sourceId: `recovery-deletion-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            activityId: 'recovery-deletion',
+            skillIds: [],
+            notes: `Recovery quests deleted: ${questsToDelete.map(q => q.name).join('; ')}`
+          } satisfies XPHistoryEntry, ...prev.xpHistory]
+        : prev.xpHistory;
+      const totalXp = Math.max(0, updatedHistory.reduce((sum, entry) => sum + entry.xp, 0));
+      const gated = calculateGatedPlayerLevel(
+        totalXp,
+        prev.profile.level,
+        prev.profile.levelUpBossRequirement,
+        updatedQuests
+      );
+      const hasRemainingRecoveryQuests = updatedQuests.some(q =>
+        q.status === 'Active' &&
+        (q.type.toUpperCase() === 'RECOVERY' || q.type.toUpperCase() === 'PENALTY') &&
+        !isQuestArchived(q, prev.lists, prev.folders)
+      );
+
+      return {
+        ...prev,
+        quests: updatedQuests,
+        xpHistory: updatedHistory,
+        profile: {
+          ...prev.profile,
+          xp: totalXp,
+          level: gated.level,
+          recoveryMode: hasRemainingRecoveryQuests ? prev.profile.recoveryMode : false
+        }
+      };
+    });
+
+    if (activeFocusSession?.questId && questIdsToDelete.has(activeFocusSession.questId)) {
+      stopFocusSession();
+    }
+
+    return cumulativePenaltyXp;
+  };
+
   const archiveQuest = (id: string) => {
     setState(prev => {
       const qToArchive = prev.quests.find(q => q.id === id);
@@ -4022,7 +4101,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Calculate momentum boost (+10% on completion + Perk Multiplier, cap 100)
     const momentumPerkMult = getMomentumMultiplier(activeJob);
-    const newMomentum = Math.min(100, state.profile.momentum + Math.round(10 * momentumPerkMult));
 
     // Calculate Coins Earned (+10% of earned XP + streak bonus + Job Coin Perk)
     const baseCoinsEarned = Math.max(5, Math.round(earnedXp / 10));
@@ -4064,6 +4142,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setState(prev => {
+      const currentLeisureBalance = prev.profile.timeCredits ?? 60;
+      const nextLeisureBalance = alreadyMinted ? currentLeisureBalance : currentLeisureBalance + earnedTimeCredits;
+      const nextMomentum = Math.min(100, (prev.profile.momentum || 0) + Math.round(10 * momentumPerkMult));
+      const updatedQuestTimeTx = questTimeTx
+        ? { ...questTimeTx, endingBalance: nextLeisureBalance, balanceAfter: nextLeisureBalance }
+        : null;
+
       // Add XP history and dynamically resolve any negative penalties if they earned the XP back!
       const rawHistory = newHistoryEntry ? [newHistoryEntry, ...prev.xpHistory] : prev.xpHistory;
       const updatedHistory = resolveRecoveredPenalties(rawHistory);
@@ -4265,7 +4350,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         skills: updatedSkills,
         attributes: updatedAttributes,
         xpHistory: updatedHistory,
-        timeHistory: (!alreadyMinted && questTimeTx) ? [questTimeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
+        timeHistory: (!alreadyMinted && updatedQuestTimeTx) ? [updatedQuestTimeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
         muhasabahEntries: updatedMuhasabahEntries,
         profile: {
           ...prev.profile,
@@ -4273,11 +4358,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           level,
           levelUpBossRequirement: updatedRequirement,
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
-          timeCredits: newLeisureBalance,
-          totalTimeEarned: (!alreadyMinted && questTimeTx) ? (prev.profile.totalTimeEarned || 0) + earnedTimeCredits : (prev.profile.totalTimeEarned || 0),
+          timeCredits: nextLeisureBalance,
+          totalTimeEarned: (!alreadyMinted && updatedQuestTimeTx) ? (prev.profile.totalTimeEarned || 0) + earnedTimeCredits : (prev.profile.totalTimeEarned || 0),
           hp: Math.min(nextMaxHp, nextHp + (isKaffarahQuest ? 35 : 2)),
           maxHp: nextMaxHp,
-          momentum: Math.min(100, newMomentum + (isKaffarahQuest ? 15 : 0)),
+          momentum: Math.min(100, nextMomentum + (isKaffarahQuest ? 15 : 0)),
           recoveryMode: newRecoveryMode,
           fatigueLevel: newFatigue,
           lastFatigueUpdateDate: prev.systemDate
@@ -4330,10 +4415,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const failQuest = (id: string) => {
+  const failQuest = (
+    id: string,
+    options: { deleteQuest?: boolean; createRecoveryQuest?: boolean } = {}
+  ): number => {
     const questToFail = state.quests.find(q => q.id === id);
-    if (!questToFail) return;
-    if (questToFail.status !== 'Active') return;
+    if (!questToFail) return 0;
+    if (questToFail.status !== 'Active') return 0;
 
     const failedTimestamp = new Date().toISOString();
     const isDailyOrHabit = questToFail.type.toUpperCase() === 'HABIT' || questToFail.recurrence === 'Daily' || (questToFail.recurrence && questToFail.recurrence !== 'None');
@@ -4379,20 +4467,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newMomentum = Math.max(0, state.profile.momentum - momentumLoss);
 
     setState(prev => {
-      const updatedQuests = prev.quests.map(q => {
-        if (q.id === id) {
-          return {
-            ...q,
-            status: 'Failed' as const,
-            completedAt: failedTimestamp
-          };
-        }
-        return q;
-      });
+      const updatedQuests = options.deleteQuest
+        ? prev.quests.filter(q => q.id !== id)
+        : prev.quests.map(q => q.id === id
+          ? { ...q, status: 'Failed' as const, completedAt: failedTimestamp }
+          : q
+        );
 
       // Generate the recovery quest for failed objectives
       let spawnedQuest: Quest | null = null;
-      if (isSideOrOptional) {
+      if (isSideOrOptional || options.createRecoveryQuest === false) {
         spawnedQuest = null;
       } else {
         const recoveryCompetencyRewards = resolveRecoveryQuestRewards(questToFail, recoveryXp, state.skills);
@@ -4451,8 +4535,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
 
       const typeUpper = questToFail.type.toUpperCase();
-      const activatesRecovery = isSideOrOptional ? false : (typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT' || isDailyOrHabit);
-      const newRecoveryMode = activatesRecovery ? true : prev.profile.recoveryMode;
+      const activatesRecovery = !options.deleteQuest && !isSideOrOptional &&
+        (typeUpper === 'MAIN' || typeUpper === 'BOSS' || typeUpper === 'HABIT' || isDailyOrHabit);
+      const hasRemainingDeactivatingQuest = finalQuestsList.some(q =>
+        q.status === 'Active' &&
+        (q.type.toUpperCase() === 'PENALTY' || q.type.toUpperCase() === 'RECOVERY') &&
+        !isQuestArchived(q, prev.lists, prev.folders)
+      );
+      const newRecoveryMode = activatesRecovery
+        ? true
+        : options.deleteQuest && !hasRemainingDeactivatingQuest
+          ? false
+          : prev.profile.recoveryMode;
 
       return {
         ...prev,
@@ -4468,6 +4562,43 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+
+    return penaltyEntry ? Math.round(finalPenaltyXp) : 0;
+  };
+
+  const claimDelayedAction = (
+    entityType: 'quest' | 'goal' | 'project',
+    entityId: string,
+    action: 'complete' | 'snooze' | 'ignore'
+  ): boolean => {
+    const currentState = stateRef.current;
+    const isStillOverdue = scanAllDelayedItems(currentState).items.some(
+      item => item.entityType === entityType && item.id === entityId
+    );
+    if (!isStillOverdue) return false;
+
+    const actionKey = `${currentState.systemDate}:${entityType}:${entityId}`;
+    if (claimedDelayedActionsRef.current.has(actionKey)) return false;
+    claimedDelayedActionsRef.current.set(actionKey, action);
+    return true;
+  };
+
+  const ignoreOverdueQuest = (id: string): number => {
+    const quest = stateRef.current.quests.find(item => item.id === id);
+    if (!quest || !claimDelayedAction('quest', id, 'ignore')) return 0;
+
+    const penaltyXp = failQuest(id, { deleteQuest: true, createRecoveryQuest: false });
+    if (activeFocusSession?.questId === id) stopFocusSession();
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'warning',
+      title: 'Overdue Quest Ignored',
+      content: penaltyXp > 0
+        ? `"${quest.name}" was deleted from the overdue queue. A ${penaltyXp} XP failure penalty was applied.`
+        : `"${quest.name}" was deleted from the overdue queue.`,
+      priority: 'high'
+    });
+    return penaltyXp;
   };
 
   const duplicateQuest = (id: string): string => {
@@ -11631,10 +11762,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addQuest,
       updateQuest,
       deleteQuest,
+      deleteRecoveryQuestsWithPenalty,
       completeQuest,
       logQuestWorkTime,
       reopenQuest,
       failQuest,
+      ignoreOverdueQuest,
+      claimDelayedAction,
       duplicateQuest,
       mergeQuests,
       splitQuest,

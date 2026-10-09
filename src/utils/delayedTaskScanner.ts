@@ -154,7 +154,7 @@ export const generateDelayedNotifications = async (
     return { addedCount: 0, scanResult };
   }
 
-  // Find items that don't already have an active unread delayed message today
+  // Keep one persistent inbox message per delayed entity and system date.
   const itemsToNotify: DelayedItem[] = [];
 
   scanResult.items.forEach(item => {
@@ -164,7 +164,7 @@ export const generateDelayedNotifications = async (
       Boolean(m.timestamp && m.timestamp.startsWith(currentSysDate))
     );
 
-    if (options.forceNotify || !alreadyNotifiedToday) {
+    if (!alreadyNotifiedToday) {
       itemsToNotify.push(item);
     }
   });
@@ -192,9 +192,10 @@ export const generateDelayedNotifications = async (
   });
 
   // If there are multiple items, send an aggregated native PC & Mobile notification
-  if (itemsToNotify.length > 0) {
-    const topItem = itemsToNotify[0];
-    const moreText = itemsToNotify.length > 1 ? ` (+${itemsToNotify.length - 1} other directives delayed)` : '';
+  const nativeNotificationItems = options.forceNotify ? scanResult.items : itemsToNotify;
+  if (nativeNotificationItems.length > 0) {
+    const topItem = nativeNotificationItems[0];
+    const moreText = nativeNotificationItems.length > 1 ? ` (+${nativeNotificationItems.length - 1} other directives delayed)` : '';
 
     await sendNativeNotification({
       title: `⚔️ Pale Ore: ${scanResult.totalDelayedCount} Directives Overdue`,
