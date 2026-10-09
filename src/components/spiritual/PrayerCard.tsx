@@ -125,6 +125,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const Icon = prayer.icon;
 
+  const handleToggleFardh = () => {
+    if (isJumuahActive && !isJumuahMissed && prayerState.fardh) {
+      onOpenMissedJumuahModal();
+      return;
+    }
+    onTogglePrayer(prayer.id, 'fardh', systemDate);
+  };
+
   // Background styling
   const cardBgStyle = isJumuahActive && !isJumuahMissed
     ? prayerState.fardh
@@ -207,7 +215,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       <div className="space-y-1.5">
         <button
           type="button"
-          onClick={() => onTogglePrayer(prayer.id, 'fardh', systemDate)}
+          onClick={handleToggleFardh}
           className={`w-full py-2 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
             prayerState.fardh
               ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-100 shadow-md shadow-emerald-950/40'

@@ -820,6 +820,43 @@ export function resolveQuestRewards(
   };
 }
 
+export function resolveRecoveryQuestRewards(
+  sourceQuest: Quest,
+  recoveryXp: number,
+  allSkills: Skill[] = []
+): Pick<Quest, 'relatedSkills' | 'skillRewards' | 'attributeRewards'> {
+  const relatedSkills = Array.from(new Set([
+    ...(sourceQuest.relatedSkills || []),
+    ...(sourceQuest.skillRewards || []).map(reward => reward.skillId)
+  ]));
+  const xpPerSkill = relatedSkills.length > 0
+    ? Math.max(1, Math.round(Math.max(0, recoveryXp) / relatedSkills.length))
+    : 0;
+  const skillRewards = relatedSkills.map(skillId => ({ skillId, xp: xpPerSkill }));
+
+  let attributeRewards = sourceQuest.attributeRewards?.map(reward => ({ ...reward })) || [];
+  if (attributeRewards.length === 0) {
+    const attributePoints = new Map<string, number>();
+    relatedSkills.forEach(skillId => {
+      const skill = allSkills.find(candidate => candidate.id === skillId);
+      if (!skill) return;
+
+      const primary = canonicalizeAttributeName(skill.primaryAttribute);
+      attributePoints.set(primary, (attributePoints.get(primary) || 0) + 1);
+      if (skill.secondaryAttribute) {
+        const secondary = canonicalizeAttributeName(skill.secondaryAttribute);
+        attributePoints.set(secondary, (attributePoints.get(secondary) || 0) + 1);
+      }
+    });
+
+    attributeRewards = attributePoints.size > 0
+      ? Array.from(attributePoints, ([attribute, points]) => ({ attribute, points }))
+      : resolveQuestRewards(sourceQuest, allSkills).attributeRewards || [];
+  }
+
+  return { relatedSkills, skillRewards, attributeRewards };
+}
+
 /**
  * Ensures the nine canonical attributes exist in the state with correct Core Domain bindings.
  */

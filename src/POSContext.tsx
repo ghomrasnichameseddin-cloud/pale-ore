@@ -55,6 +55,7 @@ import {
   createCustomSkill,
   DEFAULT_STARTER_SKILLS,
   resolveQuestRewards,
+  resolveRecoveryQuestRewards,
   ensureCanonicalAttributes,
   canonicalizeAttributeName,
   SkillRankDetails
@@ -119,6 +120,7 @@ import {
   WEEKLY_SCORE_WEIGHTS
 } from './utils/weeklyCycle';
 import {
+  getMuhasabahAttributePenalty,
   SEVERITY_XP_PENALTIES,
   SEVERITY_COIN_FINES,
   SEVERITY_MOMENTUM_PENALTIES,
@@ -2579,6 +2581,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       muhasabahEntries.forEach(m => {
         if (cutoffDate && m.timestamp && m.timestamp.slice(0, 10) < cutoffDate) return;
 
+        bonus -= getMuhasabahAttributePenalty(m, attrName);
+
         // Honest self-accounting reflection
         if (m.reflection && m.reflection.trim().length > 10) {
           if (attrName === 'Ihsan') bonus += 2.0; // Murāqabah and self-scrutiny
@@ -4385,32 +4389,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isSideOrOptional) {
         spawnedQuest = null;
       } else {
-        const sourceSkillIds = questToFail.relatedSkills || [];
-        const recoveryAttributeRewards = sourceSkillIds.reduce<AttributeReward[]>((acc, skillId) => {
-          const skill = state.skills.find(s => s.id === skillId);
-          if (!skill) return acc;
-
-          const primaryAttribute = canonicalizeAttributeName(skill.primaryAttribute);
-          const secondaryAttribute = skill.secondaryAttribute ? canonicalizeAttributeName(skill.secondaryAttribute) : null;
-          const existingIndex = acc.findIndex(r => canonicalizeAttributeName(r.attribute) === primaryAttribute);
-
-          if (existingIndex >= 0) {
-            acc[existingIndex].points += 1;
-          } else {
-            acc.push({ attribute: primaryAttribute, points: 1 });
-          }
-
-          if (secondaryAttribute) {
-            const secondaryIndex = acc.findIndex(r => canonicalizeAttributeName(r.attribute) === secondaryAttribute);
-            if (secondaryIndex >= 0) {
-              acc[secondaryIndex].points += 1;
-            } else {
-              acc.push({ attribute: secondaryAttribute, points: 1 });
-            }
-          }
-
-          return acc;
-        }, []);
+        const recoveryCompetencyRewards = resolveRecoveryQuestRewards(questToFail, recoveryXp, state.skills);
 
         spawnedQuest = {
           id: `q-recovery-${questToFail.id}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -4437,8 +4416,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               completed: false
             }
           ],
-          relatedSkills: sourceSkillIds,
-          attributeRewards: recoveryAttributeRewards
+          ...recoveryCompetencyRewards
         };
       }
 
@@ -8757,10 +8735,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         skillIds: []
       };
 
+      const dhuhrPrefix = `spiritual-prayer-${targetDate}-dhuhr`;
       const updatedHistory = [
         penaltyEntry,
-        ...prev.xpHistory.filter(h => h.questId !== `spiritual-jumuah-missed-${targetDate}`)
+        ...prev.xpHistory.filter(h =>
+          h.questId !== `spiritual-jumuah-missed-${targetDate}` &&
+          !h.questId?.startsWith(dhuhrPrefix)
+        )
       ];
+      const dhuhrRewardsToRevoke =
+        (log.dhuhr?.fardh ? 10 : 0) +
+        (log.dhuhr?.onTime ? 5 : 0) +
+        (log.dhuhr?.inMasjid ? 5 : 0) +
+        (log.dhuhr?.sunnahRawatib ? 5 : 0) +
+        (log.dhuhr?.sunnahBefore ? 3 : 0) +
+        (log.dhuhr?.sunnahAfter ? 2 : 0);
 
       const updatedLog: SpiritualDailyLog = {
         ...log,
@@ -8773,6 +8762,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           fardh: false,
           onTime: false,
           delayed: false,
+          missedPastMidnight: false,
+          executionState: 'unperformed',
+          delayedToPrayer: null,
+          completedAt: null,
           jumuahMissed: true,
           jumuahSwitchedToDhuhr: true,
           jumuahMissedReason: reason || 'Not performed'
@@ -8810,7 +8803,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           xp: totalXp,
           level: gated.level,
           hp: nextHp,
-          maxHp: currentMaxHp
+          maxHp: currentMaxHp,
+          coins: Math.max(0, (prev.profile.coins ?? 150) - dhuhrRewardsToRevoke)
         }
       };
     });

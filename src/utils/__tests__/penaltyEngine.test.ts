@@ -84,8 +84,9 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       const recoveryQuest = result.updatedQuests.find(q => q.type === 'Recovery');
 
       expect(recoveryQuest?.relatedSkills).toEqual([skillId]);
+      expect(recoveryQuest?.skillRewards).toEqual([{ skillId, xp: 25 }]);
       expect(recoveryQuest?.attributeRewards).toEqual([
-        { attribute: 'Logic', points: 1 },
+        { attribute: 'Knowledge', points: 1 },
         { attribute: 'Focus', points: 1 }
       ]);
     });

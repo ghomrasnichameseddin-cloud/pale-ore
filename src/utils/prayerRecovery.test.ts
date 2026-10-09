@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createPrayerRecoveryQuest, createQiyamRecoveryQuest } from './prayerRecovery';
+import { ATTRIBUTE_DOMAIN_MAP } from './progressionEngine';
 
 describe('prayer recovery actions', () => {
   it('creates a sunnah rawatib recovery for a delayed prayer', () => {
@@ -14,6 +15,8 @@ describe('prayer recovery actions', () => {
     expect(quest.recoveryAction).toEqual({ kind: 'sunnah-prayer', prayer: 'fajr' });
     expect(quest.name).toContain('Fajr');
     expect(quest.type).toBe('Recovery');
+    expect(quest.attributeRewards).toEqual([{ attribute: 'Discipline', points: 1 }]);
+    expect(ATTRIBUTE_DOMAIN_MAP.Discipline).toBe('Soul');
   });
 
   it('creates a qiyam recovery with exactly two rakahs', () => {
@@ -25,5 +28,6 @@ describe('prayer recovery actions', () => {
 
     expect(quest.recoveryAction).toEqual({ kind: 'qiyam', rakats: 2 });
     expect(quest.name).toContain('2 Rak’ahs');
+    expect(quest.attributeRewards).toEqual([{ attribute: 'Discipline', points: 1 }]);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateCompoundDelayTiers } from '../prayerRules';
+import { getMuhasabahAttributePenalty } from '../muhasabahConsequences';
 import { SpiritualDailyLog, MuhasabahEntry } from '../../types';
 
 describe('Automatic Muhasabah Audit for Delayed Prayers', () => {
@@ -101,5 +102,19 @@ describe('Automatic Muhasabah Audit for Delayed Prayers', () => {
       penalties.dhuhr.tier === 2 ? 'Major' : 'Moderate';
 
     expect(severityForTier2).toBe('Major');
+  });
+
+  it('penalizes Discipline and the category-linked Soul attribute by severity', () => {
+    const audit = {
+      category: 'Obligations' as const,
+      severity: 'Major' as const,
+      isExempt: false,
+      recurrenceMultiplier: 2
+    };
+
+    expect(getMuhasabahAttributePenalty(audit, 'Discipline')).toBe(6);
+    expect(getMuhasabahAttributePenalty(audit, 'Faith')).toBe(6);
+    expect(getMuhasabahAttributePenalty(audit, 'Clarity')).toBe(0);
+    expect(getMuhasabahAttributePenalty({ ...audit, isExempt: true }, 'Discipline')).toBe(0);
   });
 });

@@ -1,4 +1,4 @@
-import { MuhasabahSeverity } from '../types';
+import { MuhasabahCategory, MuhasabahEntry, MuhasabahSeverity } from '../types';
 
 export interface SeverityConsequences {
   baseHp: number;
@@ -85,4 +85,32 @@ export const SEVERITY_HP_LOSS: Record<MuhasabahSeverity, number> = {
   Major: SEVERITY_BASE_CONSEQUENCES.Major.baseHp,
   Severe: SEVERITY_BASE_CONSEQUENCES.Severe.baseHp,
   Critical: SEVERITY_BASE_CONSEQUENCES.Critical.baseHp
+};
+
+const CATEGORY_SOUL_ATTRIBUTE: Record<MuhasabahCategory, string> = {
+  Obligations: 'Faith',
+  Desires: 'Sabr',
+  Speech: 'Social',
+  Heart: 'Ihsan',
+  Rights: 'Social',
+  'Wasted Potential': 'Discipline'
+};
+
+const SEVERITY_ATTRIBUTE_PENALTY: Record<MuhasabahSeverity, number> = {
+  Minor: 1,
+  Moderate: 2,
+  Major: 3,
+  Severe: 4,
+  Critical: 5
+};
+
+export const getMuhasabahAttributePenalty = (
+  entry: Pick<MuhasabahEntry, 'category' | 'severity' | 'isExempt' | 'recurrenceMultiplier'>,
+  attributeName: string
+): number => {
+  if (entry.isExempt) return 0;
+  if (attributeName !== 'Discipline' && attributeName !== CATEGORY_SOUL_ATTRIBUTE[entry.category]) return 0;
+
+  const recurrenceMultiplier = Math.max(1, entry.recurrenceMultiplier || 1);
+  return Math.ceil(SEVERITY_ATTRIBUTE_PENALTY[entry.severity] * recurrenceMultiplier);
 };
