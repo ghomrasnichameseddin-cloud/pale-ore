@@ -46,7 +46,7 @@ interface PrayerCardProps {
   allSpiritualLog: Partial<SpiritualDailyLog>;
   onTogglePrayer: (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
+    field: 'fardh' | 'inMasjid' | 'tahiyyatAlMasjid' | 'sunnatAlWudu' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
     dateStr?: string
   ) => void;
   onSetPrayerExecutionState: (
@@ -420,6 +420,35 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         </span>
         <span className="text-[10px] text-indigo-300">+{prayer.masjidXp} XP</span>
       </button>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <button
+          type="button"
+          aria-pressed={Boolean(prayerState.tahiyyatAlMasjid)}
+          onClick={() => onTogglePrayer(prayer.id, 'tahiyyatAlMasjid', systemDate)}
+          className={`min-w-0 py-1.5 px-2 rounded-xl border text-[10px] font-mono font-bold transition flex items-center justify-between gap-1 ${
+            prayerState.tahiyyatAlMasjid
+              ? 'bg-amber-950/80 border-amber-500/60 text-amber-200'
+              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <span className="truncate">2 R. Taḥiyyat al-Masjid</span>
+          <span className="text-amber-300 shrink-0">{prayerState.tahiyyatAlMasjid ? '✓' : '+35 XP'}</span>
+        </button>
+        <button
+          type="button"
+          aria-pressed={Boolean(prayerState.sunnatAlWudu)}
+          onClick={() => onTogglePrayer(prayer.id, 'sunnatAlWudu', systemDate)}
+          className={`min-w-0 py-1.5 px-2 rounded-xl border text-[10px] font-mono font-bold transition flex items-center justify-between gap-1 ${
+            prayerState.sunnatAlWudu
+              ? 'bg-cyan-950/80 border-cyan-500/60 text-cyan-200'
+              : 'bg-[#07090e] border-white/5 text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <span className="truncate">2 R. Sunnat al-Wuḍū&apos;</span>
+          <span className="text-cyan-300 shrink-0">{prayerState.sunnatAlWudu ? '✓' : '+30 XP'}</span>
+        </button>
+      </div>
 
       {/* 5. SUNNAH SECTION: SIMPLIFIED FRIDAY JUMU'AH SUNNAHS vs STANDARD RAWATIB */}
       {isJumuahActive && !isJumuahMissed ? (

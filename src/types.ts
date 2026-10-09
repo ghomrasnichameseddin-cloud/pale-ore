@@ -995,6 +995,8 @@ export interface PrayerCheck {
   qadaCompleted?: boolean; // Made up via Qada'
   qadaCompletedAt?: string | null;
   inMasjid: boolean; // Masjid / Jama'ah bonus (+50 XP)
+  tahiyyatAlMasjid?: boolean; // 2 Rak'ahs of greeting upon entering the masjid
+  sunnatAlWudu?: boolean; // 2 Rak'ahs after ablution
   sunnahRawatib: boolean; // Sunan Rawatib bonus (+30-40 XP)
   sunnahBefore?: boolean; // Specifically for Dhuhr / Jumu'ah (4 Rak'ahs before: 2+2) (+25 XP)
   sunnahAfter?: boolean; // Specifically for Dhuhr / Jumu'ah (2 Rak'ahs after) (+20 XP)

@@ -992,27 +992,43 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <div className="p-2.5 bg-[#07090e] border border-white/10 rounded-xl flex items-center justify-between">
+                        <span className="text-xs font-mono text-zinc-300">Ḍuḥā Rak&apos;ahs:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            aria-label="Decrease Duha by two rakahs"
+                            disabled={duhaRakats <= 0}
+                            onClick={() => updateSunnahPrayers({ duhaRakats: Math.max(0, duhaRakats - 2) }, systemDate)}
+                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="text-xs font-mono font-bold text-amber-300 min-w-[20px] text-center">
+                            {duhaRakats} R
+                          </span>
+                          <button
+                            type="button"
+                            aria-label="Increase Duha by two rakahs"
+                            disabled={duhaRakats >= 8}
+                            onClick={() => updateSunnahPrayers({ duhaRakats: Math.min(8, duhaRakats + 2) }, systemDate)}
+                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() => updateQiyam(qiyamRakats, !qiyamWitr, systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
+                        className={`w-full py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
                           qiyamWitr
                             ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-200'
                             : 'bg-zinc-900/60 border-white/5 text-zinc-400'
                         }`}
                       >
                         {qiyamWitr ? '✓ Witr Sealed' : 'Witr (+40 XP)'}
-                      </button>
-
-                      <button
-                        onClick={() => updateSunnahPrayers({ duhaRakats: duhaRakats > 0 ? 0 : 2 }, systemDate)}
-                        className={`py-1.5 px-2 rounded-lg border text-[10px] font-mono font-bold transition ${
-                          duhaRakats > 0
-                            ? 'bg-amber-950/80 border-amber-500/50 text-amber-200'
-                            : 'bg-zinc-900/60 border-white/5 text-zinc-400'
-                        }`}
-                      >
-                        {duhaRakats > 0 ? `✓ Ḍuḥā (${duhaRakats}R)` : 'Ḍuḥā (+35 XP)'}
                       </button>
                     </div>
 

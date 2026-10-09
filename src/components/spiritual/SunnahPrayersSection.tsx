@@ -36,19 +36,19 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
   const qiyamWitr = !!activeLog?.qiyamWitr;
 
   const duhaRakats = sunnahLog?.duhaRakats || 0;
-  const tahiyyatAlMasjid = sunnahLog?.tahiyyatAlMasjid || false;
-  const sunnatAlWudu = sunnahLog?.sunnatAlWudu || false;
   const istikhara = sunnahLog?.istikhara || false;
   const tawbah = sunnahLog?.tawbah || false;
   const hajah = sunnahLog?.hajah || false;
   const sujud = sunnahLog?.sujudShukrOrTilawah || false;
 
-  const totalNawafilCompletedCount = 
+  const perPrayerNawafilCount = [activeLog?.fajr, activeLog?.dhuhr, activeLog?.asr, activeLog?.maghrib, activeLog?.isha]
+    .reduce((count, prayer) => count + Number(Boolean(prayer?.tahiyyatAlMasjid)) + Number(Boolean(prayer?.sunnatAlWudu)), 0);
+
+  const totalNawafilCompletedCount =
     (qiyamRakats > 0 ? 1 : 0) +
     (qiyamWitr ? 1 : 0) +
     (duhaRakats > 0 ? 1 : 0) + 
-    (tahiyyatAlMasjid ? 1 : 0) + 
-    (sunnatAlWudu ? 1 : 0) + 
+    perPrayerNawafilCount +
     (istikhara ? 1 : 0) + 
     (tawbah ? 1 : 0) + 
     (hajah ? 1 : 0) + 
@@ -69,6 +69,10 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
 
   const setDuha = (rakats: number) => {
     updateSunnahPrayers({ duhaRakats: rakats }, systemDate);
+  };
+
+  const adjustDuha = (delta: number) => {
+    setDuha(Math.min(8, Math.max(0, duhaRakats + delta)));
   };
 
   const toggleField = (field: keyof SunnahPrayersLog) => {
@@ -522,24 +526,29 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
             </div>
           </div>
 
-          {/* RAK'AH SELECTOR BUTTONS (0, 2, 4, 6, 8) */}
-          <div className="flex items-center gap-1.5 bg-[#080503] p-1.5 rounded-xl border border-amber-500/30 shrink-0">
-            <span className="text-[10px] font-mono text-zinc-400 px-2 uppercase font-bold">Ḍuḥā:</span>
-            {[0, 2, 4, 6, 8].map(count => (
-              <button
-                key={count}
-                onClick={() => setDuha(count)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition ${
-                  duhaRakats === count
-                    ? count === 0
-                      ? 'bg-zinc-800 text-zinc-300 border border-zinc-600'
-                      : 'bg-amber-500 text-black border border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                }`}
-              >
-                {count === 0 ? 'None' : `${count} R`}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 bg-[#080503] p-2 rounded-xl border border-amber-500/30 shrink-0">
+            <span className="text-[10px] font-mono text-zinc-400 px-1 uppercase font-bold">Ḍuḥā:</span>
+            <button
+              type="button"
+              aria-label="Decrease Duha by two rakahs"
+              disabled={duhaRakats <= 0}
+              onClick={() => adjustDuha(-2)}
+              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[3.5rem] text-center text-xs font-mono font-bold text-amber-300">
+              {duhaRakats} R
+            </span>
+            <button
+              type="button"
+              aria-label="Increase Duha by two rakahs"
+              disabled={duhaRakats >= 8}
+              onClick={() => adjustDuha(2)}
+              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
 
@@ -580,78 +589,6 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           
-          {/* 1. TAHIYYAT AL-MASJID (تحية المسجد) */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
-            tahiyyatAlMasjid
-              ? 'bg-gradient-to-br from-[#1c180d] to-[#0e0c06] border-amber-500/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-amber-500/30'
-          }`}>
-            <div>
-              <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-500/30 text-amber-300">
-                    <Compass className="h-4 w-4" />
-                  </div>
-                  <span className="font-display font-bold text-zinc-100 text-sm">Taḥiyyat al-Masjid (تَحِيَّةُ المَسْجِد)</span>
-                </div>
-                <span className="text-[10px] font-mono text-amber-300 font-bold bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  +35 XP
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 font-sans my-3 leading-relaxed">
-                2 Rak&apos;ahs of greeting upon entering Allah&apos;s house before sitting down.
-              </p>
-            </div>
-
-            <button
-              onClick={() => toggleField('tahiyyatAlMasjid')}
-              className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
-                tahiyyatAlMasjid
-                  ? 'bg-amber-950/80 border-amber-500/70 text-amber-100 shadow-sm'
-                  : 'bg-[#07090e] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-4 w-4 ${tahiyyatAlMasjid ? 'text-amber-400' : 'text-zinc-600'}`} />
-              <span>{tahiyyatAlMasjid ? 'COMPLETED (2 RAK\'AHS) ✓' : 'LOG TAHIYYAT AL-MASJID'}</span>
-            </button>
-          </div>
-
-          {/* 2. SUNNAT AL-WUDU (سنة الوضوء / ركعتا بلال) */}
-          <div className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
-            sunnatAlWudu
-              ? 'bg-gradient-to-br from-[#0e181c] to-[#070c0e] border-cyan-500/50 shadow-sm'
-              : 'bg-[#0a080f] border-white/10 hover:border-cyan-500/30'
-          }`}>
-            <div>
-              <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-cyan-950/60 border border-cyan-500/30 text-cyan-300">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <span className="font-display font-bold text-zinc-100 text-sm">Sunnat al-Wuḍū&apos; (سُنَّةُ الوُضُوء)</span>
-                </div>
-                <span className="text-[10px] font-mono text-cyan-300 font-bold bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-full">
-                  +30 XP
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 font-sans my-3 leading-relaxed">
-                2 Rak&apos;ahs after performing ablution (The practice of Bilal RA).
-              </p>
-            </div>
-
-            <button
-              onClick={() => toggleField('sunnatAlWudu')}
-              className={`w-full py-2.5 px-3 rounded-xl border font-mono text-xs font-bold transition flex items-center justify-center gap-2 ${
-                sunnatAlWudu
-                  ? 'bg-cyan-950/80 border-cyan-500/70 text-cyan-100 shadow-sm'
-                  : 'bg-[#07090e] hover:bg-zinc-800 border-white/10 text-zinc-200'
-              }`}
-            >
-              <CheckCircle2 className={`h-4 w-4 ${sunnatAlWudu ? 'text-cyan-400' : 'text-zinc-600'}`} />
-              <span>{sunnatAlWudu ? 'COMPLETED (2 RAK\'AHS) ✓' : 'LOG SUNNAT AL-WUDU'}</span>
-            </button>
-          </div>
-
           {/* 3. SALAT AL-ISTIKHARA (صلاة الاستخارة) */}
           <div className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
             istikhara

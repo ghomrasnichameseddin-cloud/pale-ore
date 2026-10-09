@@ -500,7 +500,7 @@ interface POSContextType {
   updateSpiritualLog: (dateStr: string, updates: Partial<SpiritualDailyLog>) => void;
   togglePrayer: (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
+    field: 'fardh' | 'inMasjid' | 'tahiyyatAlMasjid' | 'sunnatAlWudu' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
     dateStr?: string
   ) => void;
   setPrayerExecutionState: (
@@ -2414,6 +2414,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const getSpiritualAndMuhasabaBonusPoints = (attrName: string, resetCutoff?: string | null): number => {
       let bonus = 0;
       const cutoffDate = resetCutoff ? resetCutoff.slice(0, 10) : null;
+      const getPerPrayerNawafilCount = (log: SpiritualDailyLog, field: 'tahiyyatAlMasjid' | 'sunnatAlWudu') =>
+        (['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const)
+          .filter(prayer => log[prayer]?.[field]).length;
 
       // 1. Process Spiritual Daily Logs
       logDates.forEach(dateStr => {
@@ -2473,6 +2476,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
             if (pr?.missedPastMidnight) anyMissedMidnight = true;
           });
+          bonus += Math.max(getPerPrayerNawafilCount(log, 'tahiyyatAlMasjid'), Number(log.sunnahPrayers?.tahiyyatAlMasjid)) * 0.5;
+          bonus += Math.max(getPerPrayerNawafilCount(log, 'sunnatAlWudu'), Number(log.sunnahPrayers?.sunnatAlWudu)) * 0.5;
 
           // All 5 prayers fulfilled without midnight drop
           if (dailyFardhCount === 5 && !anyMissedMidnight) bonus += 2.0;
@@ -2499,11 +2504,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           prayersList.forEach(p => {
             const pr = log[p];
             if (pr?.fardh && pr?.inMasjid) bonus += 1.5;
+            if (pr?.tahiyyatAlMasjid) bonus += 1.0;
             if (p === 'dhuhr' && (pr?.isJumuah || pr?.jumuahSunnahBadiyahMasjid || pr?.jumuahTahiyyah)) {
               bonus += 2.5;
             }
           });
-          if (log.sunnahPrayers?.tahiyyatAlMasjid) bonus += 1.0;
+          if (getPerPrayerNawafilCount(log, 'tahiyyatAlMasjid') === 0 && log.sunnahPrayers?.tahiyyatAlMasjid) bonus += 1.0;
         }
 
         else if (attrName === 'Ihsan') {
@@ -2518,8 +2524,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           // Nawafil devotion
           if (log.sunnahPrayers?.duhaRakats && log.sunnahPrayers.duhaRakats > 0) bonus += 1.5;
-          if (log.sunnahPrayers?.sunnatAlWudu) bonus += 1.0;
-          if (log.sunnahPrayers?.tahiyyatAlMasjid) bonus += 1.0;
+          bonus += Math.max(getPerPrayerNawafilCount(log, 'sunnatAlWudu'), Number(log.sunnahPrayers?.sunnatAlWudu));
+          bonus += Math.max(getPerPrayerNawafilCount(log, 'tahiyyatAlMasjid'), Number(log.sunnahPrayers?.tahiyyatAlMasjid));
           if (log.sunnahPrayers?.istikhara) bonus += 1.5;
           if (log.sunnahPrayers?.tawbah) bonus += 2.0;
 
@@ -7713,7 +7719,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const togglePrayer = (
     prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha',
-    field: 'fardh' | 'inMasjid' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
+    field: 'fardh' | 'inMasjid' | 'tahiyyatAlMasjid' | 'sunnatAlWudu' | 'sunnahRawatib' | 'sunnahBefore' | 'sunnahAfter' | 'onTime' | 'delayed' | 'missedPastMidnight',
     dateStr?: string
   ) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
@@ -8139,6 +8145,35 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           updatedHistory = updatedHistory.filter(h => h.questId !== qId);
           deltaCoins -= reward.sunnahCoins;
+        }
+      } else if (field === 'tahiyyatAlMasjid' || field === 'sunnatAlWudu') {
+        const isTahiyyat = field === 'tahiyyatAlMasjid';
+        const isCompleted = !curr[field];
+        const qId = `${prayerPrefix}-${field}`;
+        const xp = isTahiyyat ? 35 : 30;
+        updatedPrayerState = { ...updatedPrayerState, [field]: isCompleted };
+
+        if (isCompleted) {
+          const entry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-${field}`,
+            questId: qId,
+            questName: isTahiyyat
+              ? `🕌 PRAYER: 2 Rak'ahs Tahiyyat al-Masjid after ${reward.name}`
+              : `💧 PRAYER: 2 Rak'ahs Sunnat al-Wudu after ${reward.name}`,
+            xp,
+            timestamp: completedTimestamp,
+            date: targetDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: qId,
+            activityId: `prayer-${prayer}-${field}`,
+            skillIds: []
+          };
+          updatedHistory = [entry, ...updatedHistory.filter(h => h.questId !== qId)];
+          deltaCoins += 5;
+        } else {
+          updatedHistory = updatedHistory.filter(h => h.questId !== qId);
+          deltaCoins -= 5;
         }
       }
 
