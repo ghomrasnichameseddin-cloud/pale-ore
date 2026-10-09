@@ -213,13 +213,6 @@ interface POSContextType {
   archiveQuest: (id: string) => void;
   unarchiveQuest: (id: string, targetListId?: string | null) => void;
   getQuestHabitFormation: (quest: Quest) => HabitFormation;
-  generateClearingRecoveryQuest: (
-    targetArchivedQuestIds?: string[],
-    customTitle?: string,
-    customDescription?: string,
-    customEstimatedTime?: number,
-    customXp?: number
-  ) => string;
 
   // Folders & Lists CRUD
   addFolder: (name: string, description?: string, color?: string) => string;
@@ -3844,33 +3837,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteQuest = (id: string) => {
-    let wasActiveRecoveryArchived = false;
-    let archivedRecoveryName = '';
-
     setState(prev => {
       const deletedQuest = prev.quests.find(q => q.id === id);
-      const isRecovery = deletedQuest?.type.toUpperCase() === 'RECOVERY';
-
-      let updatedQuestsList: Quest[];
-      // If an active recovery quest is deleted, archive it to the recovery archive rather than discarding
-      if (isRecovery && !deletedQuest?.archived) {
-        wasActiveRecoveryArchived = true;
-        archivedRecoveryName = deletedQuest?.name || 'Recovery Directive';
-        updatedQuestsList = prev.quests.map(q => {
-          if (q.id === id) {
-            return {
-              ...q,
-              archived: true,
-              archivedAt: new Date().toISOString(),
-              recoveryArchivedReason: 'deleted' as const,
-              recoveryCleared: false
-            };
-          }
-          return q;
-        });
-      } else {
-        updatedQuestsList = prev.quests.filter(q => q.id !== id);
-      }
+      const updatedQuestsList = prev.quests.filter(q => q.id !== id);
 
       const isDeactivatingQuest = deletedQuest 
         ? (deletedQuest.type.toUpperCase() === 'PENALTY' || deletedQuest.type.toUpperCase() === 'RECOVERY')
@@ -3909,27 +3878,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeFocusSession?.questId === id) {
       stopFocusSession();
     }
-
-    if (wasActiveRecoveryArchived) {
-      addSystemMessage({
-        sender: 'SYSTEM',
-        category: 'alert',
-        title: '🛡️ Recovery Directive Archived',
-        content: `Recovery directive "${archivedRecoveryName}" was discarded from active queue and archived in the recovery vault for future expiation.`,
-        priority: 'medium'
-      });
-    }
   };
 
   const archiveQuest = (id: string) => {
-    let isRecovery = false;
-    let targetName = '';
-
     setState(prev => {
       const qToArchive = prev.quests.find(q => q.id === id);
       if (!qToArchive) return prev;
-      isRecovery = qToArchive.type?.toUpperCase() === 'RECOVERY';
-      targetName = qToArchive.name;
       return {
         ...prev,
         quests: prev.quests.map(q => {
@@ -3937,11 +3891,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return {
               ...q,
               archived: true,
-              archivedAt: new Date().toISOString(),
-              ...(isRecovery ? {
-                recoveryArchivedReason: q.recoveryArchivedReason || 'deleted' as const,
-                recoveryCleared: q.recoveryCleared ?? false
-              } : {})
+              archivedAt: new Date().toISOString()
             };
           }
           return q;
@@ -3954,10 +3904,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addSystemMessage({
       sender: 'SYSTEM',
       category: 'log',
-      title: isRecovery ? '🛡️ Recovery Directive Archived' : 'Quest Archived',
-      content: isRecovery
-        ? `Recovery directive "${targetName}" moved to the recovery archive vault.`
-        : `Quest was moved to the Archive vault. Exempt from midnight rules.`,
+      title: 'Quest Archived',
+      content: 'Quest was moved to the Archive vault. Exempt from midnight rules.',
       priority: 'low'
     });
   };
@@ -4011,99 +3959,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getQuestHabitFormation = (quest: Quest): HabitFormation => {
     return calculateHabitFormation(quest, state.xpHistory || [], state.systemDate);
-  };
-
-  const generateClearingRecoveryQuest = (
-    targetArchivedQuestIds?: string[],
-    customTitle?: string,
-    customDescription?: string,
-    customEstimatedTime?: number,
-    customXp?: number
-  ): string => {
-    // Collect target archived recovery quests (either specifically requested or all uncleared)
-    // Exclude quests that are themselves clearing directives to avoid circular targets
-    const allUnclearedArchived = state.quests.filter(q => 
-      q.type?.toUpperCase() === 'RECOVERY' && 
-      q.archived && 
-      !q.recoveryCleared &&
-      (!q.clearsRecoveryQuestIds || q.clearsRecoveryQuestIds.length === 0)
-    );
-
-    const targets = (targetArchivedQuestIds && targetArchivedQuestIds.length > 0)
-      ? state.quests.filter(q => targetArchivedQuestIds.includes(q.id))
-      : allUnclearedArchived;
-
-    const targetIds = targets.map(t => t.id);
-    const count = targets.length;
-
-    const id = `q-rec-clear-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const estTime = customEstimatedTime || Math.min(60, Math.max(15, count * 10));
-    const xpReward = customXp !== undefined ? customXp : Math.min(250, Math.max(50, count * 35));
-    const diff: QuestDifficulty = count > 3 ? 'Hard' : count > 1 ? 'Normal' : 'Easy';
-
-    const title = customTitle || (
-      count > 0 
-        ? `🛡️ RESTITUTION: Clear ${count} Archived Recovery Directive${count > 1 ? 's' : ''}`
-        : `🛡️ RESTITUTION: Archive Clearing & Purification Protocol`
-    );
-
-    const description = customDescription || (
-      count > 0
-        ? `Consolidated recovery protocol designed to clear and expiate ${count} archived recovery record(s) from the system archive:\n${targets.map(t => `• ${t.name}`).join('\n')}\n\nExecute this condensed directive in the terminal to resolve the backlog and purge the archive.`
-        : `Consolidated restoration expedition. Complete this operation in the terminal to purge lingering deficit states from the system archive.`
-    );
-
-    const subquests: SubQuest[] = targets.slice(0, 5).map((t, idx) => ({
-      id: `sq-clear-${id}-${idx}`,
-      name: `Expiate deficit: ${t.name.slice(0, 60)}`,
-      completed: false
-    }));
-
-    if (subquests.length === 0) {
-      subquests.push({
-        id: `sq-clear-${id}-1`,
-        name: `Execute terminal recovery routine and re-calibrate operations`,
-        completed: false
-      });
-    }
-
-    const newClearingQuest: Quest = {
-      id,
-      name: title,
-      description,
-      status: 'Active',
-      difficulty: diff,
-      type: 'Recovery',
-      estimatedTime: estTime,
-      recurrence: 'None',
-      energyLevel: 'Medium',
-      deadline: state.systemDate, // Appears in Terminal Today and Recovery tabs
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      xp: xpReward,
-      goalId: null,
-      projectId: null,
-      milestoneId: null,
-      relatedSkills: [],
-      subquests,
-      clearsRecoveryQuestIds: targetIds,
-      archived: false
-    };
-
-    setState(prev => ({
-      ...prev,
-      quests: [newClearingQuest, ...prev.quests]
-    }));
-
-    addSystemMessage({
-      sender: 'SYSTEM',
-      category: 'alert',
-      title: '🛡️ CLEARING RECOVERY DIRECTIVE GENERATED',
-      content: `Clearing Recovery Directive "${title}" synthesized. Now active in Terminal operational log under Today and Recovery sectors.`,
-      priority: 'high'
-    });
-
-    return id;
   };
 
   const completeQuest = (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => {
@@ -4233,8 +4088,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               formation
             };
           } else {
-            const isRecovery = q.type?.toUpperCase() === 'RECOVERY';
-            const isClearingQuest = Boolean(q.clearsRecoveryQuestIds && q.clearsRecoveryQuestIds.length > 0);
             const questDraft: Quest = {
               ...q,
               actualMinutesWorked: totalLaborMinutes,
@@ -4242,14 +4095,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               completedAt: completedTimestamp,
               lastCompletedDate: state.systemDate,
               postponedFrom: null,
-              postponedTo: null,
-              ...(isRecovery ? {
-                archived: false,
-                archivedAt: null,
-                recoveryArchivedReason: 'completed' as const,
-                recoveryCleared: isClearingQuest ? true : false,
-                recoveryClearedAt: isClearingQuest ? completedTimestamp : null
-              } : {})
+              postponedTo: null
             };
             if (isHabitQuest(q)) {
               questDraft.formation = calculateHabitFormation(
@@ -4260,17 +4106,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
             return questDraft;
           }
-        }
-        // Remove cleared recovery targets from the archive immediately. Their historical records remain,
-        // but they are no longer visible or counted as pending recovery deficits.
-        if (questToComplete.clearsRecoveryQuestIds?.includes(q.id)) {
-          return {
-            ...q,
-            archived: false,
-            archivedAt: null,
-            recoveryCleared: true,
-            recoveryClearedAt: completedTimestamp
-          };
         }
         return q;
       });
@@ -4402,24 +4237,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         togglePrayer(recoveryAction.prayer, 'sunnahRawatib', state.systemDate);
       } else if (recoveryAction?.kind === 'qiyam') {
         updateQiyam(2, undefined, state.systemDate);
-      }
-
-      if (questToComplete.clearsRecoveryQuestIds && questToComplete.clearsRecoveryQuestIds.length > 0) {
-        addSystemMessage({
-          sender: 'SYSTEM',
-          category: 'achievement',
-          title: '🛡️ RESTITUTION ARCHIVE CLEARED',
-          content: `Recovery directive completed. ${questToComplete.clearsRecoveryQuestIds.length} archived recovery record(s) have been officially cleared and expiated from the system archive!`,
-          priority: 'high'
-        });
-      } else if (questToComplete.type?.toUpperCase() === 'RECOVERY') {
-        addSystemMessage({
-          sender: 'SYSTEM',
-          category: 'log',
-          title: '🛡️ Recovery Directive Conquered',
-          content: `Recovery directive "${questToComplete.name}" was conquered and preserved in the recovery archive vault.`,
-          priority: 'medium'
-        });
       }
 
       if (gateJustCleared) {
@@ -11796,7 +11613,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       archiveQuest,
       unarchiveQuest,
       getQuestHabitFormation,
-      generateClearingRecoveryQuest,
       addFolder,
       updateFolder,
       deleteFolder,

@@ -299,10 +299,6 @@ export interface Quest {
   levelUpThreshold?: number; // The target gate threshold (10, 20, 30...) this quest is linked to
   skillRewards?: SkillReward[];
   attributeRewards?: AttributeReward[];
-  recoveryArchivedReason?: 'completed' | 'deleted' | 'abandoned';
-  recoveryCleared?: boolean; // True when cleared/expiated by a clearing recovery quest
-  recoveryClearedAt?: string | null; // ISO timestamp when cleared
-  clearsRecoveryQuestIds?: string[]; // Target archived recovery quests cleared by this quest
   recoveryAction?: PrayerRecoveryAction;
   recoveryActionOptions?: PrayerRecoveryAction[];
 }
