@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createPrayerRecoveryQuest, createQiyamRecoveryQuest } from './prayerRecovery';
+import { addQiyamRakats, createPrayerRecoveryQuest, createQiyamRecoveryQuest } from './prayerRecovery';
 import { ATTRIBUTE_DOMAIN_MAP } from './progressionEngine';
 
 describe('prayer recovery actions', () => {
+  it('adds each Qiyam recovery pair to the existing daily count', () => {
+    expect(addQiyamRakats(0, 2)).toBe(2);
+    expect(addQiyamRakats(2, 2)).toBe(4);
+    expect(addQiyamRakats(4, 2)).toBe(6);
+  });
+
   it('creates a sunnah rawatib recovery for a delayed prayer', () => {
     const quest = createPrayerRecoveryQuest({
       prayer: 'fajr',

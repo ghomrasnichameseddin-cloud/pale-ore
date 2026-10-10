@@ -1,5 +1,8 @@
 import { Quest, PrayerRecoveryAction } from '../types';
 
+export const addQiyamRakats = (currentRakats: number, rakatsToAdd: number): number =>
+  Math.max(0, currentRakats) + Math.max(0, rakatsToAdd);
+
 export const createPrayerRecoveryQuest = ({
   prayer,
   targetDate,

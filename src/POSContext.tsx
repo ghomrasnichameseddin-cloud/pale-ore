@@ -95,7 +95,7 @@ import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
-import { createPrayerRecoveryQuest } from './utils/prayerRecovery';
+import { addQiyamRakats as addQiyamRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
 import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties } from './utils/penaltyEngine';
 export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties };
@@ -527,6 +527,7 @@ interface POSContextType {
   incrementSalawat: (amount: number, dateStr?: string) => void;
   setSalawatCount: (count: number, dateStr?: string) => void;
   updateQiyam: (rakats: number, witr?: boolean, dateStr?: string) => void;
+  addQiyamRakats: (rakats: number, witr?: boolean, dateStr?: string) => void;
   setQiyamRakats: (rakats: number, witr?: boolean, dateStr?: string) => void;
   toggleFasting: (
     field: 'isFasting' | 'suhurTaken' | 'iftarCompleted' | 'duaMadeAtIftar',
@@ -4328,12 +4329,6 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         priority: 'high'
       });
 
-      if (recoveryAction?.kind === 'sunnah-prayer') {
-        togglePrayer(recoveryAction.prayer, 'sunnahRawatib', state.systemDate);
-      } else if (recoveryAction?.kind === 'qiyam') {
-        updateQiyam(2, undefined, state.systemDate);
-      }
-
       if (gateJustCleared) {
         addSystemMessage({
           sender: 'SYSTEM',
@@ -4369,6 +4364,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
     });
+
+    if (recoveryAction?.kind === 'sunnah-prayer') {
+      const prayerLog = state.spiritualLogs?.[state.systemDate]?.[recoveryAction.prayer];
+      if (!prayerLog?.sunnahRawatib) {
+        togglePrayer(recoveryAction.prayer, 'sunnahRawatib', state.systemDate);
+      }
+    } else if (recoveryAction?.kind === 'qiyam') {
+      addQiyamRakats(recoveryAction.rakats, undefined, state.systemDate);
+    }
   };
 
   const reopenQuest = (id: string) => {
@@ -10261,33 +10265,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const updateQiyam = (rakats: number, witr?: boolean, dateStr?: string) => {
+  const setQiyam = (rakats: number, witr: boolean | undefined, dateStr: string | undefined, increment: boolean) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const completedTimestamp = getSystemTimestamp(targetDate);
-    const existingLog = getSpiritualLog(targetDate);
-    const newRakats = Math.max(0, rakats);
-    const newWitr = witr !== undefined ? witr : existingLog.qiyamWitr;
     const questIdentifier = `spiritual-qiyam-${targetDate}`;
-
-    // Calculate XP: 2 rakats mandatory base (+100 XP), plus 40 XP per extra pair
-    let qiyamXp = 0;
-    let coinsEarned = 0;
-    if (newRakats >= 2) {
-      qiyamXp += 100;
-      coinsEarned += 15;
-      const extraPairs = Math.floor((newRakats - 2) / 2);
-      if (extraPairs > 0) {
-        qiyamXp += extraPairs * 40;
-        coinsEarned += extraPairs * 5;
-      }
-    }
-    if (newWitr) {
-      qiyamXp += 50;
-      coinsEarned += 5;
-    }
 
     setState(prev => {
       const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
+      const newRakats = increment
+        ? addQiyamRakahCount(log.qiyamRakats || 0, rakats)
+        : Math.max(0, rakats);
+      const newWitr = witr !== undefined ? witr : log.qiyamWitr;
+      let qiyamXp = 0;
+      let coinsEarned = 0;
+      if (newRakats >= 2) {
+        const extraPairs = Math.floor((newRakats - 2) / 2);
+        qiyamXp = 100 + extraPairs * 40;
+        coinsEarned = 15 + extraPairs * 5;
+      }
+      if (newWitr) {
+        qiyamXp += 50;
+        coinsEarned += 5;
+      }
+
       const updatedLog: SpiritualDailyLog = {
         ...log,
         qiyamRakats: newRakats,
@@ -10349,6 +10349,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     });
   };
+
+  const updateQiyam = (rakats: number, witr?: boolean, dateStr?: string) =>
+    setQiyam(rakats, witr, dateStr, false);
+
+  const addQiyamRakats = (rakats: number, witr?: boolean, dateStr?: string) =>
+    setQiyam(rakats, witr, dateStr, true);
 
   const toggleFasting = (
     field: 'isFasting' | 'suhurTaken' | 'iftarCompleted' | 'duaMadeAtIftar',
@@ -11951,6 +11957,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       incrementSalawat,
       setSalawatCount,
       updateQiyam,
+      addQiyamRakats,
       setQiyamRakats: updateQiyam,
       toggleFasting,
       updateSunnahPrayers,
