@@ -124,6 +124,31 @@ export const isQuestArchived = (
 };
 
 /**
+ * Calculates Soul Vitality (HP) penalty for a failed, skipped, or lapsed quest.
+ */
+export const getQuestHpPenalty = (
+  quest: { difficulty?: string; type?: string },
+  penaltyReduction = 1
+): number => {
+  const typeUpper = (quest.type || '').toUpperCase();
+  if (typeUpper === 'SIDE' || typeUpper === 'OPTIONAL') return 0;
+
+  let penaltyHp = 5;
+  if (quest.difficulty === 'Easy') penaltyHp = 3;
+  else if (quest.difficulty === 'Normal') penaltyHp = 5;
+  else if (quest.difficulty === 'Hard') penaltyHp = 10;
+  else if (quest.difficulty === 'Boss') penaltyHp = 20;
+
+  const isCritical =
+    typeUpper === 'MAIN' ||
+    typeUpper === 'BOSS' ||
+    quest.difficulty === 'Hard' ||
+    quest.difficulty === 'Boss';
+  const basePenaltyHp = isCritical ? Math.round(penaltyHp * 1.5) : penaltyHp;
+  return Math.max(1, Math.round(basePenaltyHp * penaltyReduction));
+};
+
+/**
  * Iterates through all missed days between oldDate and newDateStr (capped at MAX_PENALTY_DAYS_LOOKBACK),
  * applying quest failures, XP deductions, momentum penalties, and recovery directives.
  */
@@ -247,6 +272,8 @@ export function processMultiDayPenalties(
       const isCritical = typeUpper === 'MAIN' || typeUpper === 'BOSS' || q.difficulty === 'Hard' || q.difficulty === 'Boss';
       const basePenaltyXp = isCritical ? penaltyXp * 1.5 : penaltyXp;
       const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
+      const finalPenaltyHp = getQuestHpPenalty(q, penaltyReduction);
+      totalHealthLost += finalPenaltyHp;
 
       const xpHistoryId = `h-fail-midnight-${q.id}-${dayStr}`;
       if (!updatedHistory.some(h => h.id === xpHistoryId)) {

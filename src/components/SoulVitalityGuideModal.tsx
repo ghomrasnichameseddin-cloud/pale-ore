@@ -209,12 +209,84 @@ export const SoulVitalityGuideModal: React.FC<SoulVitalityGuideModalProps> = ({
               </div>
             </div>
 
-            {/* Section 2: How to Permanently Expand Max HP */}
+            {/* Section 2: How Soul HP is Damaged & Depleted */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                <Flame className="h-4 w-4 text-rose-400" />
+                <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+                  2. Soul Vitality Depletion & Penalty Sources
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Unfinished / Skipped Quests */}
+                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-rose-200 text-[11px] flex items-center gap-1.5">
+                      ⚔️ Unfinished & Skipped Quests
+                    </span>
+                    <span className="font-mono text-rose-300 font-bold bg-rose-500/20 px-1.5 py-0.2 rounded border border-rose-500/30 text-[10px]">
+                      −3 to −20 HP
+                    </span>
+                  </div>
+                  <p className="text-zinc-300 text-[11px] leading-relaxed">
+                    Skipping, failing, or letting scheduled directives lapse past midnight drains Soul HP based on difficulty: Easy (−3 HP), Normal (−5 HP), Hard (−10 HP), Boss (−20 HP). Main & Boss receive 1.5× impact.
+                  </p>
+                </div>
+
+                {/* Abandoned Recovery Quests */}
+                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-rose-200 text-[11px] flex items-center gap-1.5">
+                      💀 Abandoned Recovery Quests
+                    </span>
+                    <span className="font-mono text-rose-300 font-bold bg-rose-500/20 px-1.5 py-0.2 rounded border border-rose-500/30 text-[10px]">
+                      −5 HP / Quest
+                    </span>
+                  </div>
+                  <p className="text-zinc-300 text-[11px] leading-relaxed">
+                    Deleting or purging active 🛡️ RECOVERY directives without resolving them inflicts an operational breach penalty directly on Soul Vitality.
+                  </p>
+                </div>
+
+                {/* Midnight Missed Prayers */}
+                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-rose-200 text-[11px] flex items-center gap-1.5">
+                      🕌 Missed Farḍ at Midnight
+                    </span>
+                    <span className="font-mono text-rose-300 font-bold bg-rose-500/20 px-1.5 py-0.2 rounded border border-rose-500/30 text-[10px]">
+                      −10 HP (−200 XP)
+                    </span>
+                  </div>
+                  <p className="text-zinc-300 text-[11px] leading-relaxed">
+                    Obligatory prayers not performed before 00:00 trigger severe neglect penalties and issue mandatory Qada' restitution quests.
+                  </p>
+                </div>
+
+                {/* Muhasabah Sins */}
+                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-rose-200 text-[11px] flex items-center gap-1.5">
+                      ⚖️ Muhāsabah Slips & Sins
+                    </span>
+                    <span className="font-mono text-rose-300 font-bold bg-rose-500/20 px-1.5 py-0.2 rounded border border-rose-500/30 text-[10px]">
+                      −10 to −75 HP
+                    </span>
+                  </div>
+                  <p className="text-zinc-300 text-[11px] leading-relaxed">
+                    Logging ethical lapses (Minor to Critical) inflicts heavy spiritual damage, amplified up to 3× for recurring behavioral weaknesses.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: How to Permanently Expand Max HP */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 border-b border-white/10 pb-2">
                 <Shield className="h-4 w-4 text-cyan-400" />
                 <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
-                  2. Permanent Max HP Capacity Expansion
+                  3. Permanent Max HP Capacity Expansion
                 </h4>
               </div>
 

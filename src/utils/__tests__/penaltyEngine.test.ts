@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { processMultiDayPenalties } from '../penaltyEngine';
+import { processMultiDayPenalties, getQuestHpPenalty } from '../penaltyEngine';
 import { POSState, Quest } from '../../types';
 import { INITIAL_STATE } from '../../initialState';
 
@@ -36,6 +36,16 @@ describe('Multi-Day Midnight Penalty Engine', () => {
     }
   });
 
+  describe('Quest HP Penalty Calculations', () => {
+    it('calculates proper HP penalties based on difficulty and criticality', () => {
+      expect(getQuestHpPenalty({ difficulty: 'Easy', type: 'Side' })).toBe(0);
+      expect(getQuestHpPenalty({ difficulty: 'Easy', type: 'Normal' })).toBe(3);
+      expect(getQuestHpPenalty({ difficulty: 'Normal', type: 'Habit' })).toBe(5);
+      expect(getQuestHpPenalty({ difficulty: 'Hard', type: 'Main' })).toBe(15); // 10 * 1.5
+      expect(getQuestHpPenalty({ difficulty: 'Boss', type: 'Boss' })).toBe(30); // 20 * 1.5
+    });
+  });
+
   describe('1-Day Gap Processing', () => {
     it('applies exactly 1 day penalty for a missed daily habit over 1 day', () => {
       const habit = createBaseQuest();
@@ -49,6 +59,7 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       expect(result.updatedHistory[0].timestamp).toContain('2026-08-20');
       expect(result.updatedMomentum).toBe(90); // 100 - 10
       expect(result.recoveryModeActivated).toBe(true);
+      expect(result.healthDelta).toBe(-5); // Normal habit = -5 HP loss
 
       const recoveryQuest = result.updatedQuests.find(q => q.type === 'Recovery');
       expect(recoveryQuest).toBeDefined();
@@ -112,6 +123,7 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       expect(result.updatedHistory.length).toBe(1);
       expect(result.updatedHistory[0].xp).toBe(-150);
       expect(result.updatedMomentum).toBe(75);
+      expect(result.healthDelta).toBe(-15); // Main + Hard = 10 * 1.5 = -15 HP
     });
   });
 
@@ -138,6 +150,9 @@ describe('Multi-Day Midnight Penalty Engine', () => {
 
       // Total momentum loss: 100 - (3 * 10) = 70
       expect(result.updatedMomentum).toBe(70);
+
+      // Total health lost: 3 days * -5 HP = -15 HP
+      expect(result.healthDelta).toBe(-15);
 
       // Recovery quests: exactly 1 active recovery directive created, no duplicates
       const recoveryQuests = result.updatedQuests.filter(q => q.type === 'Recovery');

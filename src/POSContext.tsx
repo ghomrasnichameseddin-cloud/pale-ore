@@ -97,8 +97,8 @@ import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
 import { addQiyamRakats as addQiyamRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
-import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties } from './utils/penaltyEngine';
-export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties };
+import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty } from './utils/penaltyEngine';
+export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty };
 import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES } from './jobsAndTitles';
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
@@ -3950,6 +3950,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         !isQuestArchived(q, prev.lists, prev.folders)
       );
 
+      const hpPenalty = questsToDelete.length * 5;
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gated.level || 1));
+      const nextHp = Math.max(0, (prev.profile.hp ?? currentMaxHp) - hpPenalty);
+
       return {
         ...prev,
         quests: updatedQuests,
@@ -3958,7 +3962,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gated.level,
-          recoveryMode: hasRemainingRecoveryQuests ? prev.profile.recoveryMode : false
+          hp: nextHp,
+          maxHp: currentMaxHp,
+          recoveryMode: nextHp <= 0 ? true : (hasRemainingRecoveryQuests ? prev.profile.recoveryMode : false)
         }
       };
     });
@@ -3966,6 +3972,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeFocusSession?.questId && questIdsToDelete.has(activeFocusSession.questId)) {
       stopFocusSession();
     }
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'warning',
+      title: '💀 RECOVERY DIRECTIVES ABANDONED',
+      content: `Abandoned ${eligibleQuests.length} Recovery Quest(s). Incurred −${cumulativePenaltyXp} XP and −${eligibleQuests.length * 5} HP Soul Vitality breach penalty.`,
+      priority: 'high'
+    });
 
     return cumulativePenaltyXp;
   };
@@ -4451,6 +4465,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const activeJob = getActiveJob(state.profile.jobId, state.customJobs || [], state.deletedJobIds || []);
     const penaltyReduction = getFailPenaltyMultiplier(activeJob);
     const finalPenaltyXp = Math.round(basePenaltyXp * penaltyReduction);
+    const finalPenaltyHp = getQuestHpPenalty(questToFail, penaltyReduction);
 
     const xpHistoryId = `h-fail-${Date.now()}`;
     const penaltyEntry: XPHistoryEntry | null = isSideOrOptional ? null : {
@@ -4552,6 +4567,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? false
           : prev.profile.recoveryMode;
 
+      const currentMaxHp = Math.max(prev.profile.maxHp ?? 100, getMaxHpForLevel(gatedLevel.level || 1));
+      const currentHp = prev.profile.hp ?? currentMaxHp;
+      const nextHp = isSideOrOptional ? currentHp : Math.max(0, currentHp - finalPenaltyHp);
+
       return {
         ...prev,
         quests: finalQuestsList,
@@ -4561,11 +4580,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.profile,
           xp: totalXp,
           level: gatedLevel.level,
+          hp: nextHp,
+          maxHp: currentMaxHp,
           momentum: newMomentum,
-          recoveryMode: newRecoveryMode
+          recoveryMode: nextHp <= 0 ? true : newRecoveryMode
         }
       };
     });
+
+    if (!isSideOrOptional) {
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'warning',
+        title: '⚠️ DIRECTIVE FAILED / SKIPPED',
+        content: `"${questToFail.name}" marked as failed. Penalties deducted: −${finalPenaltyXp} XP and −${finalPenaltyHp} HP Soul Vitality.`,
+        priority: 'medium'
+      });
+    }
 
     return penaltyEntry ? Math.round(finalPenaltyXp) : 0;
   };
