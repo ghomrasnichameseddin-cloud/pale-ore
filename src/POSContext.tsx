@@ -449,12 +449,16 @@ interface POSContextType {
     recoveryPercentage?: number;
     weaknessId?: string | null;
     weaknessName?: string | null;
+    timeLossMinutes?: number;
+    debitFromRestBank?: boolean;
+    distractionSource?: string;
   }) => { 
     success: boolean; 
     entryId: string; 
     xpDeducted: number; 
     hpDeducted: number;
     coinsDeducted: number;
+    timeDebited: number;
     rawPenalty: number; 
     recurrenceMultiplier?: number;
     recurrenceCadence?: string;
@@ -6409,7 +6413,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTimeCredits = (minutes: number, reason: string, type: TimeTransactionType = 'manual_adjustment', relatedId?: string) => {
     setState(prev => {
       const current = prev.profile.timeCredits ?? 60;
-      const newBal = Math.max(0, current + minutes); // Clamped >= 0: Balance cannot go negative
+      const newBal = current + minutes; // Allows negative balance for overdrafts and audits (e.g. 160m - 170m = -10m)
       const tx: LeisureTransaction = {
         id: `time-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         type,
@@ -6428,6 +6432,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile: {
           ...prev.profile,
           timeCredits: newBal,
+          timeDebt: newBal < 0 ? Math.abs(newBal) : 0,
           totalTimeEarned: minutes > 0 ? (prev.profile.totalTimeEarned || 0) + minutes : (prev.profile.totalTimeEarned || 0)
         }
       };
@@ -6565,16 +6570,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currDebt = prev.profile.timeDebt || 0;
       const repaid = Math.min(currDebt, minutes);
       const newDebt = Math.max(0, currDebt - repaid);
+      const currCredits = prev.profile.timeCredits ?? 60;
+      const newCredits = currCredits < 0 ? Math.min(0, currCredits + repaid) : currCredits;
       const tx: LeisureTransaction = {
         id: `time-repay-${Date.now()}`,
         type: 'manual_adjustment',
         minutesDelta: repaid,
-        endingBalance: prev.profile.timeCredits ?? 60,
+        endingBalance: newCredits,
         reason: `Temporal Debt Repayment via focus/remedy`,
         linkedId: undefined,
         timestamp: getSystemTimestamp(prev.systemDate),
         minutes: repaid,
-        balanceAfter: prev.profile.timeCredits ?? 60,
+        balanceAfter: newCredits,
         relatedId: undefined
       };
       return {
@@ -6582,6 +6589,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timeHistory: [tx, ...(prev.timeHistory || [])],
         profile: {
           ...prev.profile,
+          timeCredits: newCredits,
           timeDebt: newDebt
         }
       };
@@ -6864,7 +6872,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let newCredits = state.profile.timeCredits ?? 60;
     if (targetLimit.consequence === 'deduct_leisure_bank' && incrementalOverdraft > 0) {
       const deductAmount = incrementalOverdraft;
-      newCredits = Math.max(0, newCredits - deductAmount);
+      newCredits = newCredits - deductAmount;
       usageTx = {
         id: `time-usage-penalty-${Date.now()}`,
         type: 'time_debt_penalty',
@@ -6886,7 +6894,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       profile: usageTx ? {
         ...prev.profile,
         timeCredits: newCredits,
-        timeDebt: (prev.profile.timeDebt || 0) + (newCredits === 0 ? incrementalOverdraft : 0)
+        timeDebt: newCredits < 0 ? Math.abs(newCredits) : 0
       } : prev.profile
     }));
 
@@ -7094,9 +7102,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     recoveryPercentage?: number;
     weaknessId?: string | null;
     weaknessName?: string | null;
+    timeLossMinutes?: number;
+    debitFromRestBank?: boolean;
+    distractionSource?: string;
   }) => {
     const isExempt = Boolean(entry.isExempt);
     const currentSysDate = state.systemDate || getLocalDateString();
+    const timeDebit = (!isExempt && entry.timeLossMinutes && entry.timeLossMinutes > 0 && entry.debitFromRestBank !== false)
+      ? entry.timeLossMinutes
+      : 0;
 
     // 1. Analyze recurrence pattern (intra-day, everyday, every two days, etc.)
     const recurrence = isExempt ? null : analyzeSinRecurrence({
@@ -7379,14 +7393,39 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      // 2b. Deduct Time Loss from Rest Bank (allows overdraft / negative credits e.g. 160 - 170 = -10)
+      const currentCredits = prev.profile.timeCredits ?? 60;
+      const nextCredits = currentCredits - timeDebit;
+      const nextTimeDebt = nextCredits < 0 ? Math.abs(nextCredits) : 0;
+
+      let updatedTimeHistory = prev.timeHistory || [];
+      if (timeDebit > 0) {
+        const timeTx: LeisureTransaction = {
+          id: `time-audit-${newEntryId}`,
+          type: 'time_debt_penalty',
+          minutesDelta: -timeDebit,
+          endingBalance: nextCredits,
+          reason: `Muhāsabah Audit: -${timeDebit}m lost to ${entry.distractionSource || entry.category || 'Distraction'}`,
+          linkedId: newEntryId,
+          timestamp: getSystemTimestamp(currentSysDate),
+          minutes: -timeDebit,
+          balanceAfter: nextCredits,
+          relatedId: newEntryId
+        };
+        updatedTimeHistory = [timeTx, ...updatedTimeHistory];
+      }
+
       return {
         ...prev,
         muhasabahEntries: finalEntries,
         weaknesses: updatedWeaknesses,
         quests: updatedQuests,
         xpHistory: updatedXpHistory,
+        timeHistory: updatedTimeHistory,
         profile: {
           ...prev.profile,
+          timeCredits: nextCredits,
+          timeDebt: nextTimeDebt,
           hp: nextHp,
           maxHp,
           xp: totalXp,
@@ -7405,6 +7444,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         xpDeducted: 0,
         hpDeducted: 0,
         coinsDeducted: 0,
+        timeDebited: 0,
         rawPenalty: 0,
         capReached: false,
         message: `Lawful exemption recorded with 0 penalty. Genuine excuses carry no blame. Sincerity (Ikhlāṣ) to Allah comes first.`
@@ -7417,6 +7457,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       xpDeducted: xpToDeduct,
       hpDeducted: hpLoss,
       coinsDeducted: coinFine,
+      timeDebited: timeDebit,
       rawPenalty,
       recurrenceMultiplier: actualMultiplier,
       recurrenceCadence: recurrence?.cadence,

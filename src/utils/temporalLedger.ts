@@ -544,12 +544,17 @@ export function calculateDailyRestState(params: {
   let netRestElapsed = 0;
 
   for (const tx of todayTransactions) {
-    if (tx.type === 'leisure_redemption' || tx.type === 'rest_allowance_consume') {
+    if (tx.type === 'leisure_redemption' || tx.type === 'rest_allowance_consume' || tx.type === 'time_debt_penalty') {
       const minutesSpent = Math.abs(tx.minutesDelta ?? tx.minutes ?? 0);
       netRestElapsed += minutesSpent;
       if (tx.category === 'restorative') restorativeMinutes += minutesSpent;
       else if (tx.category === 'neutral_recovery') neutralMinutes += minutesSpent;
       else leisureMinutes += minutesSpent;
+    } else if (tx.type === 'manual_adjustment' && (tx.minutesDelta ?? tx.minutes ?? 0) < 0) {
+      // Direct debit from manual adjustment or distraction overdraft
+      const minutesSpent = Math.abs(tx.minutesDelta ?? tx.minutes ?? 0);
+      netRestElapsed += minutesSpent;
+      leisureMinutes += minutesSpent;
     } else if (tx.type === 'rest_refund') {
       // Early finish refund subtracts from net rest consumed today!
       const refunded = Math.abs(tx.minutesDelta ?? tx.minutes ?? 0);
@@ -559,7 +564,7 @@ export function calculateDailyRestState(params: {
     }
   }
 
-  const remainingAllowance = Math.max(0, dailyAllowanceMinutes - netRestElapsed);
+  const remainingAllowance = dailyAllowanceMinutes - netRestElapsed;
 
   return {
     dailyAllowanceMinutes,

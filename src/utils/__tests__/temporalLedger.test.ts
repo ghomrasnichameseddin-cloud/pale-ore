@@ -481,4 +481,41 @@ describe('Temporal Ledger & Rest Engine (Core Money-Math)', () => {
       expect(forecast.recommendationText).toContain('Generous solvency');
     });
   });
+
+  describe('11. Rest Bank Deficit & Overdraft Debiting', () => {
+    it('properly calculates negative balance when debit exceeds available rest bank credits', () => {
+      const initialBank = 160;
+      const spentDoomscrolling = 170;
+      const auditedBalance = initialBank - spentDoomscrolling;
+
+      expect(auditedBalance).toBe(-10);
+
+      // Repaying deficit via deep work focus mint (+15m)
+      const restoredBalance = auditedBalance + 15;
+      expect(restoredBalance).toBe(5);
+    });
+
+    it('calculates negative daily rest allowance when rest consumption exceeds daily ceiling', () => {
+      const history = [
+        {
+          id: 'audit-time-1',
+          type: 'time_debt_penalty' as const,
+          minutesDelta: -170,
+          reason: 'Muhasabah Audit: 170m doomscrolling',
+          timestamp: '2026-10-10T14:00:00Z',
+          minutes: -170,
+          balanceAfter: -10
+        }
+      ];
+
+      const restState = calculateDailyRestState({
+        dailyAllowanceMinutes: 160,
+        history,
+        todayDate: '2026-10-10'
+      });
+
+      expect(restState.restConsumedToday).toBe(170);
+      expect(restState.remainingAllowance).toBe(-10);
+    });
+  });
 });

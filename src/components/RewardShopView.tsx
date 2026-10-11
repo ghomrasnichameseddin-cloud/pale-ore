@@ -288,8 +288,8 @@ export const RewardShopView: React.FC = () => {
                   <Hourglass className="h-2 w-2" />
                   REST BANK
                 </div>
-                <div className="text-xl font-mono font-extrabold text-emerald-300 tracking-tight flex items-baseline gap-1">
-                  {timeCredits} <span className="text-[10px] font-sans text-emerald-400 font-bold">MINS</span>
+                <div className={`text-xl font-mono font-extrabold ${timeCredits < 0 ? 'text-rose-400' : 'text-emerald-300'} tracking-tight flex items-baseline gap-1`}>
+                  {timeCredits} <span className={`text-[10px] font-sans ${timeCredits < 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}`}>MINS</span>
                 </div>
               </div>
               <button

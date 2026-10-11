@@ -723,8 +723,8 @@ export const ImperialCirculationLedger: React.FC<ImperialCirculationLedgerProps>
               {temporalInfo?.temporalStatus || 'STABLE'}
             </span>
           </div>
-          <div className="text-2xl sm:text-3xl font-display font-black text-cyan-300 tracking-tight tabular-nums">
-            {summaryMetrics.currentRestBank} <span className="text-xs font-mono text-cyan-500 font-normal">min ({Math.floor(summaryMetrics.currentRestBank / 60)}h {summaryMetrics.currentRestBank % 60}m)</span>
+          <div className={`text-2xl sm:text-3xl font-display font-black tracking-tight tabular-nums ${summaryMetrics.currentRestBank < 0 ? 'text-rose-400' : 'text-cyan-300'}`}>
+            {summaryMetrics.currentRestBank} <span className="text-xs font-mono text-zinc-400 font-normal">min ({summaryMetrics.currentRestBank < 0 ? `-${Math.floor(Math.abs(summaryMetrics.currentRestBank) / 60)}h ${Math.abs(summaryMetrics.currentRestBank) % 60}m deficit` : `${Math.floor(summaryMetrics.currentRestBank / 60)}h ${summaryMetrics.currentRestBank % 60}m`})</span>
           </div>
           <div className="text-[10px] font-mono text-zinc-400 pt-0.5 flex items-center justify-between">
             <span>Today Rest: <strong className="text-cyan-300">+{summaryMetrics.todayRestMinted}m / −{summaryMetrics.todayRestSpent}m</strong></span>
@@ -950,9 +950,11 @@ export const ImperialCirculationLedger: React.FC<ImperialCirculationLedgerProps>
                   <div className="text-zinc-400 text-[10px] uppercase">Lifetime Rest Consumed</div>
                   <div className="text-purple-300 font-bold text-base mt-0.5">−{summaryMetrics.totalRestSpent}m ({Math.round(summaryMetrics.totalRestSpent / 60)}h)</div>
                 </div>
-                <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/20">
+                <div className={`p-2.5 rounded border ${summaryMetrics.currentRestBank < 0 ? 'bg-rose-950/20 border-rose-500/30' : 'bg-emerald-950/20 border-emerald-500/20'}`}>
                   <div className="text-zinc-400 text-[10px] uppercase">Net Rest Equity Balance</div>
-                  <div className="text-emerald-300 font-bold text-base mt-0.5">+{summaryMetrics.currentRestBank}m available</div>
+                  <div className={`font-bold text-base mt-0.5 ${summaryMetrics.currentRestBank < 0 ? 'text-rose-400' : 'text-emerald-300'}`}>
+                    {summaryMetrics.currentRestBank < 0 ? `${summaryMetrics.currentRestBank}m overdraft` : `+${summaryMetrics.currentRestBank}m available`}
+                  </div>
                 </div>
               </div>
             </div>

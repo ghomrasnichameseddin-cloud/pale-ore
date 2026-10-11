@@ -62,10 +62,13 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
   // Format minutes into hours + mins
   const formatMins = (m: number) => {
-    const hrs = Math.floor(m / 60);
-    const mins = m % 60;
-    if (hrs === 0) return `${mins}m`;
-    return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+    const isNeg = m < 0;
+    const abs = Math.abs(m);
+    const hrs = Math.floor(abs / 60);
+    const mins = abs % 60;
+    const sign = isNeg ? '-' : '';
+    if (hrs === 0) return `${sign}${mins}m`;
+    return mins === 0 ? `${sign}${hrs}h` : `${sign}${hrs}h ${mins}m`;
   };
 
   // 5-segment percentages based on waking capital
@@ -691,22 +694,32 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
             {/* 1. Permanent Rest Bank Balance */}
             <div>
               <div className="flex justify-between items-center text-[10px] font-mono uppercase text-zinc-400 font-bold">
-                <span className="text-emerald-400 flex items-center gap-1">
+                <span className={`${(state.profile.timeCredits ?? 60) < 0 ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1`}>
                   <Moon className="h-3 w-3" />
                   PERMANENT REST BANK
                 </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
-                  EQUITY
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                  (state.profile.timeCredits ?? 60) < 0
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                    : 'bg-emerald-500/20 text-emerald-300'
+                }`}>
+                  {(state.profile.timeCredits ?? 60) < 0 ? 'OVERDRAFT / DEFICIT' : 'EQUITY'}
                 </span>
               </div>
 
               <div className="pt-0.5 flex items-baseline justify-between gap-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-mono font-black text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                  <span className={`text-2xl font-mono font-black ${
+                    (state.profile.timeCredits ?? 60) < 0
+                      ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                      : 'text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                  }`}>
                     {state.profile.timeCredits ?? 60}
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-400/80">
-                    MINUTES
+                  <span className={`text-xs font-mono font-bold ${
+                    (state.profile.timeCredits ?? 60) < 0 ? 'text-rose-400 font-mono' : 'text-emerald-400/80 font-mono'
+                  }`}>
+                    {(state.profile.timeCredits ?? 60) < 0 ? 'MINUTES (DEFICIT)' : 'MINUTES'}
                   </span>
                 </div>
 
@@ -728,7 +741,9 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                 </div>
               </div>
               <p className="text-[10px] text-zinc-400 leading-tight">
-                Earned via focus timer sessions (+10m/25m sprint) & quest victories. Never expires.
+                {(state.profile.timeCredits ?? 60) < 0
+                  ? `Temporal overdraft: ${Math.abs(state.profile.timeCredits ?? 60)}m deficit must be repaid via deep work focus sessions before redeeming rest.`
+                  : 'Earned via focus timer sessions (+10m/25m sprint) & quest victories. Never expires.'}
               </p>
             </div>
 
@@ -736,7 +751,12 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
             <div className="border-t border-white/10 pt-2.5 space-y-1">
               <div className="flex justify-between items-center text-[10px] font-mono">
                 <span className="text-zinc-400 uppercase font-semibold">DAILY REST ALLOWANCE</span>
-                <span className="text-teal-300 font-bold">{dailyRest.restConsumedToday} / {dailyRest.dailyAllowanceMinutes}m</span>
+                <span className={`font-bold ${dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes ? 'text-rose-400' : 'text-teal-300'}`}>
+                  {dailyRest.restConsumedToday} / {dailyRest.dailyAllowanceMinutes}m
+                  {dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes && (
+                    <span className="ml-1 text-rose-400 text-[9px] font-mono">(+{dailyRest.restConsumedToday - dailyRest.dailyAllowanceMinutes}m over)</span>
+                  )}
+                </span>
               </div>
               
               <div className="w-full bg-[#0b0e14] rounded-full h-2 overflow-hidden border border-white/10 p-0.5">
@@ -749,7 +769,11 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
               </div>
 
               <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                <span>{formatMins(dailyRest.remainingAllowance)} left today</span>
+                <span className={dailyRest.remainingAllowance < 0 ? 'text-rose-400 font-bold' : ''}>
+                  {dailyRest.remainingAllowance < 0 
+                    ? `${formatMins(dailyRest.remainingAllowance)} overdraft today` 
+                    : `${formatMins(dailyRest.remainingAllowance)} left today`}
+                </span>
                 <span>{accounting.temporalEfficiencyPercent}% Efficiency</span>
               </div>
             </div>
@@ -840,11 +864,15 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                 <div className="text-xs font-mono text-zinc-300 flex items-center justify-between bg-black/50 p-2.5 rounded-xl border border-white/5">
                   <div className="flex items-center gap-1.5">
                     <span className="text-zinc-400 text-[11px]">Bank:</span>
-                    <span className="text-emerald-400 font-bold">{state.profile.timeCredits ?? 60}m</span>
+                    <span className={`font-bold ${(state.profile.timeCredits ?? 60) < 0 ? 'text-rose-400 font-mono' : 'text-emerald-400 font-mono'}`}>
+                      {state.profile.timeCredits ?? 60}m {(state.profile.timeCredits ?? 60) < 0 ? '(Deficit)' : ''}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-zinc-400 text-[11px]">Today's Allowance:</span>
-                    <span className="text-teal-400 font-bold">{dailyRest.remainingAllowance}m</span>
+                    <span className={`font-bold ${dailyRest.remainingAllowance < 0 ? 'text-rose-400 font-mono' : 'text-teal-400 font-mono'}`}>
+                      {dailyRest.remainingAllowance}m {dailyRest.remainingAllowance < 0 ? '(Deficit)' : ''}
+                    </span>
                   </div>
                 </div>
 
@@ -915,7 +943,7 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                     <input
                       type="number"
                       min={5}
-                      max={state.profile.timeCredits ?? 60}
+                      max={Math.max(5, state.profile.timeCredits ?? 60)}
                       value={customMinutes}
                       onChange={e => setCustomMinutes(Math.max(5, parseInt(e.target.value) || 5))}
                       className="w-16 bg-black/50 border border-white/10 rounded-lg px-2 py-2 text-xs font-mono text-zinc-200 text-center focus:outline-none focus:border-emerald-500 transition"
@@ -925,9 +953,9 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
                   <button
                     type="submit"
-                    disabled={(state.profile.timeCredits ?? 60) < customMinutes}
+                    disabled={(state.profile.timeCredits ?? 60) < customMinutes || (state.profile.timeCredits ?? 60) <= 0}
                     className={`w-full py-2.5 rounded-xl text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 shadow-md ${
-                      (state.profile.timeCredits ?? 60) >= customMinutes
+                      (state.profile.timeCredits ?? 60) >= customMinutes && (state.profile.timeCredits ?? 60) > 0
                         ? 'bg-emerald-500 text-black hover:bg-emerald-400 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.35)]'
                         : 'bg-white/10 text-zinc-500 cursor-not-allowed'
                     }`}

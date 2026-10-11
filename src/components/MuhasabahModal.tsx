@@ -390,7 +390,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
 
   // Time Loss Extra Deductions
   const timeDebitMinutes = includeTimeLoss && debitFromRestBank ? durationMinutes : 0;
-  const projectedRestBank = Math.max(0, currentRestBankBalance - timeDebitMinutes);
+  const projectedRestBank = currentRestBankBalance - timeDebitMinutes;
 
   if (!isOpen) return null;
 
@@ -424,7 +424,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
       finalCause = `${finalCause} [Time loss: ${durationMinutes}m squandered to ${srcName}]`.trim();
     }
 
-    // Inscribe Entry
+    // Inscribe Entry with atomic Rest Bank debit
     const res = addMuhasabahEntry({
       title: finalTitle,
       category,
@@ -434,19 +434,13 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
       exemptionReason: auditType === 'exemption' ? exemptionReason : undefined,
       createCorrectiveQuest: auditType === 'standard' && createKaffarahQuest && Boolean(kaffarahTitle.trim()),
       correctiveQuestName: kaffarahTitle.trim() ? `[KAFFĀRAH] ${kaffarahTitle.trim()}` : undefined,
-      weaknessId: selectedWeaknessId || undefined
+      weaknessId: selectedWeaknessId || undefined,
+      timeLossMinutes: timeDebitMinutes > 0 ? timeDebitMinutes : undefined,
+      debitFromRestBank: Boolean(includeTimeLoss && debitFromRestBank),
+      distractionSource: DISTRACTION_CONFIGS[selectedSource]?.labelEn
     });
 
     if (res.success) {
-      // Debit from Rest Bank if requested
-      if (auditType === 'standard' && includeTimeLoss && debitFromRestBank && addTimeCredits) {
-        addTimeCredits(
-          -durationMinutes,
-          `Distraction Overdraft: Lost ${durationMinutes}m to ${DISTRACTION_CONFIGS[selectedSource].labelEn}`,
-          'manual_adjustment'
-        );
-      }
-
       setSubmissionResult({
         entryId: res.entryId,
         questName: kaffarahTitle.trim() ? `[KAFFĀRAH] ${kaffarahTitle.trim()}` : undefined,
@@ -548,8 +542,19 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                     </div>
                   </div>
                   {submissionResult.timeDebited > 0 && (
-                    <div className="p-2 rounded bg-orange-950/30 border border-orange-500/30 text-orange-300 text-center">
-                      <span className="font-bold">−{submissionResult.timeDebited}m debited from Rest Bank balance</span>
+                    <div className={`p-2 rounded border text-center ${
+                      (currentRestBankBalance - submissionResult.timeDebited) < 0
+                        ? 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+                        : 'bg-orange-950/30 border-orange-500/30 text-orange-300'
+                    }`}>
+                      <span className="font-bold">
+                        −{submissionResult.timeDebited}m debited from Rest Bank balance
+                        {(currentRestBankBalance - submissionResult.timeDebited) < 0 && (
+                          <span className="block text-[11px] font-mono text-rose-400 mt-0.5">
+                            Rest Bank in temporal overdraft: {currentRestBankBalance - submissionResult.timeDebited}m
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -973,7 +978,9 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                       </label>
                       <div className="text-right text-[10px] font-mono">
                         <span className="text-zinc-500">Current: {currentRestBankBalance}m</span>
-                        <span className="text-indigo-400 block font-bold">Projected: {projectedRestBank}m</span>
+                        <span className={`block font-bold ${projectedRestBank < 0 ? 'text-rose-400' : 'text-indigo-400'}`}>
+                          Projected: {projectedRestBank}m {projectedRestBank < 0 ? '(Deficit)' : ''}
+                        </span>
                       </div>
                     </div>
                   </motion.div>
