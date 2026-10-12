@@ -47,7 +47,7 @@ export const StrategyNoviceGuideModal: React.FC<StrategyNoviceGuideModalProps> =
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
       <div 
         dir="ltr"
-        className="relative border border-[#c5a059]/50 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(197,160,89,0.25)] bg-gradient-to-b from-[#0e111a] via-[#090b10] to-[#07080c]"
+        className="relative border border-[#c5a059]/50 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(197,160,89,0.25)] bg-gradient-to-b from-[#0e111a] via-[#090b10] to-[#07080c]"
       >
         <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
         <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" color="#c5a059" />
@@ -103,7 +103,12 @@ export const StrategyNoviceGuideModal: React.FC<StrategyNoviceGuideModalProps> =
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
           {/* TOPIC SIDEBAR */}
-          <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[#c5a059]/20 bg-[#07080c]/60 p-3 space-y-1.5 shrink-0 overflow-x-auto md:overflow-y-auto max-h-48 md:max-h-none flex md:flex-col gap-1.5 md:gap-1">
+          <div className="w-full md:w-80 lg:w-84 border-b md:border-b-0 md:border-r border-[#c5a059]/20 bg-[#07080c]/80 p-3 space-y-1.5 shrink-0 overflow-x-auto md:overflow-y-auto max-h-52 md:max-h-none flex md:flex-col gap-1.5 md:gap-1.5">
+            <div className="text-[10px] font-mono text-[#c5a059]/70 font-bold uppercase tracking-wider px-2 py-0.5 hidden md:flex items-center gap-1.5">
+              <Compass className="h-3 w-3 text-[#c5a059]" />
+              <span>GUIDE MODULES</span>
+            </div>
+
             {topics.map(t => {
               const Icon = t.icon;
               const isActive = activeTopic === t.id;
@@ -112,18 +117,21 @@ export const StrategyNoviceGuideModal: React.FC<StrategyNoviceGuideModalProps> =
                   key={t.id}
                   type="button"
                   onClick={() => setActiveTopic(t.id)}
-                  className={`w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 text-xs font-mono cursor-pointer shrink-0 md:shrink ${
+                  title={t.label}
+                  className={`w-full text-left p-2.5 sm:p-3 rounded-xl border transition-all flex items-center justify-between gap-2.5 text-xs font-mono cursor-pointer shrink-0 min-w-[260px] md:min-w-0 ${
                     isActive
-                      ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-sm'
+                      ? 'bg-gradient-to-r from-[#3a2e12] via-[#241c09] to-[#12141f] border-[#c5a059] text-[#fef08a] font-bold shadow-[0_0_12px_rgba(197,160,89,0.2)]'
                       : 'border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
-                    <span className="font-bold whitespace-nowrap">{t.label}</span>
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[#c5a059]' : 'text-zinc-500'}`} />
+                    <span className="truncate font-bold">{t.label}</span>
                   </div>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded border hidden sm:inline ${
-                    isActive ? 'border-[#c5a059]/60 text-[#fef08a]' : 'border-white/10 text-zinc-500'
+                  <span className={`text-[8.5px] px-2 py-0.5 rounded border shrink-0 font-mono tracking-wider uppercase font-semibold whitespace-nowrap inline-flex items-center ${
+                    isActive 
+                      ? 'border-[#c5a059]/80 text-[#fef08a] bg-[#3a2e12]/90 shadow-sm' 
+                      : 'border-white/10 text-zinc-400 bg-black/50'
                   }`}>
                     {t.badge}
                   </span>
