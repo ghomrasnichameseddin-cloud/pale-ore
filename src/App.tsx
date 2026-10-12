@@ -107,8 +107,8 @@ function AppContent() {
       }
 
       case 'strategy_codex': {
-        const total = (state.goals?.length || 0) + (state.projects?.length || 0);
-        return `${total} plans`;
+        const total = (state.doctrines?.length || 0) + (state.strategicDecisions?.length || 0) + (state.strategicExperiments?.length || 0);
+        return `${total} matrix`;
       }
 
       case 'goals': {
@@ -747,7 +747,7 @@ function AppContent() {
               {activeTab === 'spiritual' && <SpiritualTrackerView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
               {activeTab === 'muhasabah' && <MuhasabahView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />}
               {activeTab === 'strategy_codex' && (
-                <StrategyCodexView onNavigate={(tab) => setActiveTab(tab as TabId)} />
+                <StrategyCodexView onNavigate={(tab) => setActiveTab(tab as TabId)} onOpenGuide={openGuide} />
               )}
               {activeTab === 'goals' && <GoalsView />}
               {activeTab === 'projects' && <ProjectsView />}

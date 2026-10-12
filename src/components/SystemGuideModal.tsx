@@ -6,7 +6,7 @@ import {
   Shield, ShieldAlert, AlertTriangle, RotateCcw, CheckCircle2, Check, Flame, Trophy, Scale, Heart, Lock, Scroll, Moon,
   FolderTree, FileText, Search, BarChart3, Split, Lightbulb, CheckSquare, Layers, Clock, RefreshCw, ChevronRight, History,
   Hourglass, FileSpreadsheet, Palette, Volume2, ArrowUpRight, Play, Database, Sliders, BarChart2,
-  Brain, Dumbbell
+  Brain, Dumbbell, FlaskConical
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { RubElHizbIcon, GeometricDivider } from './IslamicRpgDecorations';
@@ -1658,15 +1658,103 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <h3 className="text-lg sm:text-xl font-display font-bold text-[#fef08a] flex items-center gap-2">
                       <Compass className="h-5 w-5 text-[#c5a059]" />
-                      6. Codex Doctrine & Strategic Thinking Lab
+                      6. Strategy & Codex Matrix Hub: Strategic Suite & Novice Blueprint
                     </h3>
-                    <span className="text-[10px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded uppercase font-bold">
-                      INTELLIGENCE_CENTER
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/50 px-2.5 py-0.5 rounded uppercase font-bold">
+                        MATRIX_COMMAND_CENTER
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate('strategy_codex')}
+                        className="px-2.5 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-mono text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <span>GO TO MATRIX</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-xs font-mono text-[#c5a059]/80 mt-1">
-                    Pale Ore's integrated knowledge base, Markdown SOP library, 11 mental model engines, and closed strategic feedback loop.
+                    Pale Ore's integrated strategic suite: Grand Destinies, Immutable Doctrines, Strategic Decision Log, Experimentation Lab, Root-Cause Incident Postmortems, and the 10-Folder Codex Vault.
                   </p>
+                </div>
+
+                {/* NOVICE ARCHITECTURAL BLUEPRINT */}
+                <div className="p-4 bg-gradient-to-br from-[#1c160a] via-[#0d1017] to-[#07080c] border border-[#c5a059]/40 rounded-2xl space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
+                    <div className="font-mono font-bold text-[#fef08a] uppercase flex items-center gap-2 text-xs">
+                      <BookOpen className="h-4 w-4 text-[#c5a059]" />
+                      <span>NOVICE STRATEGIC BLUEPRINT: THE 5 DOMAINS OF THE MATRIX</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">
+                      NOVICE_ONBOARDING
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                    Novices often struggle with fragmented productivity: writing tasks without understanding what campaign they support, or taking bold actions without recording the rationale. The <strong>Strategy &amp; Codex Hub</strong> synthesizes 5 interconnected domains into a single command center:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono">
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-[#fef08a] font-bold block flex items-center gap-1.5">
+                        <Compass className="h-3.5 w-3.5 text-[#c5a059]" /> 1. Overview & Cascade
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Automatic bottleneck audits, 9-step execution loop, active Strategic Freeze controls, and horizon filtering (30-Day, Quarterly, Annual, Lifetime).
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-emerald-300 font-bold block flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5 text-emerald-400" /> 2. Immutable Doctrines
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Non-negotiable personal laws and operating standards across 6 domains (Execution, Architecture, Planning, Temporal, Knowledge, Spiritual).
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-cyan-300 font-bold block flex items-center gap-1.5">
+                        <Scale className="h-3.5 w-3.5 text-cyan-400" /> 3. Strategic Decisions
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Pre-mortems and crossroad logs recording alternatives, confidence ratings, mental frameworks, and scheduled review dates to defeat hindsight bias.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-purple-300 font-bold block flex items-center gap-1.5">
+                        <FlaskConical className="h-3.5 w-3.5 text-purple-400" /> 4. Experimentation Lab
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Empirical trial-and-error chamber with falsifiable hypotheses, timeboxes, quick verdicts, and <strong>1-click promotion to 05 SOPs or Doctrines</strong>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-rose-300 font-bold block flex items-center gap-1.5">
+                        <ShieldAlert className="h-3.5 w-3.5 text-rose-400" /> 5. Incident Postmortems
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        Blameless failure forensics utilizing 5-Whys root-cause drilling, failure vector classification, and preventive guardrail creation.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#07080c] border border-white/10 rounded-xl space-y-1">
+                      <span className="text-amber-300 font-bold block flex items-center gap-1.5">
+                        <FolderTree className="h-3.5 w-3.5 text-amber-400" /> 6. 10-Folder Codex Vault
+                      </span>
+                      <p className="text-zinc-400 font-sans text-[11px] leading-relaxed">
+                        External brain for Markdown documentation, playbooks, specifications, and auto-archived Friday Weekly Muhāsabah summaries.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-black/40 border border-[#c5a059]/30 rounded-lg text-xs font-mono flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-[#fef08a]">💡 Need in-depth guidance while using the matrix?</span>
+                    <span className="text-zinc-400 font-sans">Click the <strong className="text-white">Novice Guide</strong> button located at the top-right of the Strategy Hub anytime!</span>
+                  </div>
                 </div>
 
                 {/* 1. 10-FOLDER CODEX VAULT ARCHITECTURE */}
@@ -1892,6 +1980,56 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
 
                   <div className="p-2.5 bg-black/40 border border-[#c5a059]/20 rounded-lg text-center font-mono text-xs text-[#c5a059]">
                     ✦ CORE OPERATING PRINCIPLE: <strong>THINK → PLAN → EXECUTE → MEASURE → LEARN → ADAPT</strong> ✦
+                  </div>
+                </div>
+
+                {/* 4. NOVICE PRACTICAL PLAYBOOK & BEST PRACTICES */}
+                <div className="p-4 bg-gradient-to-br from-[#121624] to-[#07080c] border border-cyan-500/30 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <div className="font-mono font-bold text-cyan-300 uppercase flex items-center gap-2 text-xs">
+                      <HelpCircle className="h-4 w-4 text-cyan-400" />
+                      <span>NOVICE WORKFLOW PLAYBOOK: THE STEP-BY-STEP CADENCE</span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded">
+                      TACTICAL_GUIDE
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 bg-[#0d1017] rounded-xl border border-white/5 space-y-1">
+                      <strong className="text-[#fef08a] block font-mono text-xs">Phase 1: Inscribe Core Doctrines</strong>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        Start in <strong>Immutable Doctrines</strong>. Do not create hundreds of rules. Select 3 foundational presets from the modal: <em>Protect Golden Hours</em> (Temporal), <em>Stability Over Intensity</em> (Execution), and <em>Mandatory SOP Maintenance</em> (Knowledge). These set guardrails before you take on workload.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] rounded-xl border border-white/5 space-y-1">
+                      <strong className="text-emerald-300 block font-mono text-xs">Phase 2: Establish the 30-Day Destiny & Campaign</strong>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        In the Overview, navigate to <strong>Grand Destinies</strong> and create a clear 30-Day sprint goal. Next, go to <strong>Operational Campaigns</strong> to attach a project with an estimated time budget (e.g. 20 hours). Finally, seed 2 to 3 daily directives directly from the campaign card.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] rounded-xl border border-white/5 space-y-1">
+                      <strong className="text-cyan-300 block font-mono text-xs">Phase 3: Log Architectural Forks</strong>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        Whenever you decide on tech stacks, career shifts, or major life systems, open <strong>Strategic Decisions</strong>. Write out the problem, alternatives, and expected outcome. Set a 14-day review date to look back objectively.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] rounded-xl border border-white/5 space-y-1">
+                      <strong className="text-purple-300 block font-mono text-xs">Phase 4: Run Hypotheses Before Major Changes</strong>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        Instead of disrupting your whole routine, launch a 14-day test in the <strong>Experiment Lab</strong>. When completed, click <strong className="text-emerald-300">Keep</strong> and hit <strong className="text-[#fef08a]">Codify into Doctrine</strong> or <strong className="text-cyan-300">Promote to 05 SOP</strong> to cement the winning habit forever.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-[#0d1017] rounded-xl border border-white/5 space-y-1">
+                      <strong className="text-rose-300 block font-mono text-xs">Phase 5: Convert Slipped Milestones into Armor</strong>
+                      <p className="text-zinc-300 font-sans leading-relaxed">
+                        When an objective fails or takes too long, never blame motivation. In <strong>Incident Postmortems</strong>, run the 5-Whys drill to pinpoint the failure point (e.g., planning bias, missing spec, cognitive exhaustion) and attach a mandatory corrective action.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
