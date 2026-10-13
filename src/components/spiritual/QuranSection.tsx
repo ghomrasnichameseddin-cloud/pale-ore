@@ -39,6 +39,7 @@ import {
   SpiritualDailyLog
 } from '../../types';
 import { RubElHizbIcon, ArabesqueCorner } from '../IslamicRpgDecorations';
+import { SurahLedgerView } from './SurahLedgerView';
 
 interface QuranSectionProps {
   systemDate: string;
@@ -74,8 +75,8 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
     updateQuranLog
   } = usePOS();
 
-  // Active Sub-Tab
-  const [activeSubTab, setActiveSubTab] = useState<'revision' | 'tilawah' | 'memorization' | 'reflection'>('revision');
+  // Active Sub-Tab: ledger | revision | tilawah | memorization | reflection
+  const [activeSubTab, setActiveSubTab] = useState<'ledger' | 'revision' | 'tilawah' | 'memorization' | 'reflection'>('ledger');
 
   // Filter for Revision Queue: all | weak | due | stable | archived
   const [revisionFilter, setRevisionFilter] = useState<'all' | 'weak' | 'due' | 'stable' | 'archived'>('all');
@@ -530,6 +531,21 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
       {/* 2. NAVIGATION SUB-TABS */}
       <div className="flex items-center gap-2 border-b border-[var(--border-subtle,rgba(197,160,89,0.2))] pb-3 flex-wrap">
         <button
+          onClick={() => setActiveSubTab('ledger')}
+          className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeSubTab === 'ledger'
+              ? 'bg-[var(--accent-surface,#c5a059)] text-[var(--accent-highlight,#fef08a)] border border-[var(--border-accent,#c5a059)] shadow-sm'
+              : 'text-zinc-400 hover:text-white bg-[var(--bg-surface,#141824)] border border-transparent'
+          }`}
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          <span>114 SURAHS LEDGER (سجل السور)</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-800 text-[#fef08a] font-bold">
+            114
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('revision')}
           className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-2 cursor-pointer ${
             activeSubTab === 'revision'
@@ -600,6 +616,14 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
       </div>
 
       {/* 3. TAB CONTENT */}
+      {/* ── SUB-TAB 0: 114 SURAHS MASTER LEDGER ── */}
+      {activeSubTab === 'ledger' && (
+        <SurahLedgerView
+          systemDate={systemDate}
+          onOpenGuide={onOpenGuide}
+        />
+      )}
+
       {/* ── SUB-TAB A: REVISION QUEUE (Active & Sacred Archive) ── */}
       {activeSubTab === 'revision' && (
         <div className="space-y-4">
@@ -1076,6 +1100,29 @@ export const QuranSection: React.FC<QuranSectionProps> = ({
       {/* ── SUB-TAB C: MEMORIZATION (Hifdh Track) ── */}
       {activeSubTab === 'memorization' && (
         <div className="space-y-4">
+          {/* Teleport banner to 114 Surahs Ledger */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#1c180e] via-[#0d1017] to-[#141824] border border-[#c5a059]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a]">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold text-sm text-white">
+                  Looking for the Full 114 Surahs Ledger?
+                </h4>
+                <p className="text-xs text-zinc-400 font-sans mt-0.5">
+                  Track page counts, verse completion, Muraja'ah retention strength, and reading across all 114 Surahs.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveSubTab('ledger')}
+              className="px-4 py-2 rounded-xl bg-[#3a2e12] hover:bg-[#4d3d18] border border-[#c5a059] text-[#fef08a] font-mono text-xs font-bold transition cursor-pointer shrink-0"
+            >
+              Open 114 Surahs Ledger →
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Active Memorization Target */}

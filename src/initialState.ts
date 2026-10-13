@@ -10,6 +10,7 @@ import {
   DEFAULT_STRATEGIC_POSTMORTEMS 
 } from './data/defaultStrategyData';
 import { DEFAULT_STARTER_SKILLS, ensureCanonicalAttributes } from './utils/progressionEngine';
+import { generateDefaultSurahLedger } from './data/quranSurahs';
 
 export const createDefaultSpiritualLog = (date: string): SpiritualDailyLog => ({
   date,
@@ -328,7 +329,8 @@ export const DEFAULT_QURAN_TRACKER: QuranTrackerState = {
       actionPoint: 'Turn immediate stress or paralysis into a silent heart-dua before touching the keyboard.',
       date: getLocalDateString()
     }
-  ]
+  ],
+  surahLedger: generateDefaultSurahLedger()
 };
 
 export const DEFAULT_CUSTOM_RADARS: CustomRadarConfig[] = [

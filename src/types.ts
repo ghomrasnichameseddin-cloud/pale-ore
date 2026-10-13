@@ -1109,6 +1109,26 @@ export interface QuranKhatmahRecord {
   isArchived?: boolean;
 }
 
+export type SurahMemorizationStatus = 'not_started' | 'in_progress' | 'completed';
+export type SurahRevisionStatus = 'unrevised' | 'due' | 'fresh' | 'mastered';
+export type SurahReadStatus = 'unread' | 'in_progress' | 'completed';
+
+export interface SurahLedgerEntry {
+  surahNumber: number;
+  memorizationStatus: SurahMemorizationStatus;
+  memorizedPages: number;
+  memorizedAyahs?: number;
+  revisionStatus: SurahRevisionStatus;
+  lastRevisedDate?: string;
+  masteryStrength: number; // 1 to 5
+  revisionCount?: number;
+  readStatus: SurahReadStatus;
+  lastReadDate?: string;
+  readPages: number;
+  notes?: string;
+  updatedAt?: string;
+}
+
 export interface QuranTrackerState {
   currentSurah: string;
   currentSurahNumber: number;
@@ -1126,6 +1146,7 @@ export interface QuranTrackerState {
   khatmahHistory?: QuranKhatmahRecord[];
   passages: QuranPassage[];
   reflections: QuranReflection[];
+  surahLedger?: Record<number, SurahLedgerEntry>;
 }
 
 export interface QuranLog {

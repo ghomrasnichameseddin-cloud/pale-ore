@@ -2493,20 +2493,30 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       </div>
                     </div>
 
-                    {/* PILLAR 9: QURAN SANCTUM */}
+                    {/* PILLAR 9: QURAN SANCTUM & 114 SURAHS LEDGER */}
                     <div className="p-4 bg-zinc-900/90 border border-emerald-500/30 rounded-xl space-y-3">
                       <div className="flex items-center justify-between border-b border-white/10 pb-2">
                         <span className="font-mono font-bold text-emerald-300 uppercase text-xs flex items-center gap-1.5">
-                          📖 9. Quran Sanctum & Tilawah Pace Engine (مِحْرَابُ القُرْآنِ)
+                          📖 9. Quran Sanctum &amp; 114 Surahs Master Ledger (مِحْرَابُ القُرْآنِ وَسِجِلِّ السُّوَر)
                         </span>
                         <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
-                          VELOCITY
+                          CANONICAL 604P
                         </span>
                       </div>
                       <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                        Tracks daily pages read, juz completions, and calculates real-time Khatmah velocity (projected days to complete 604 pages).
+                        Tracks daily pages read, juz completions, and equips a complete 114 Surahs Ledger across all 604 pages of the canonical Madani Mushaf.
                       </p>
                       <div className="space-y-2 text-xs font-mono">
+                        <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-300 font-bold">114 Surahs Master Ledger</span>
+                            <span className="text-[#fef08a] font-bold">Hifdh · Muraja'ah · Tilawah</span>
+                          </div>
+                          <p className="text-[10.5px] text-zinc-400 font-sans">
+                            Tri-mode status tracking per surah: Memorised page counters with completion status, Revision health with 1–5 stars mastery retention strength, and reading progress with Khatmah cycle seals.
+                          </p>
+                        </div>
+
                         <div className="p-2.5 bg-zinc-950 rounded border border-emerald-500/20 space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-emerald-300 font-bold">Daily Tilawah Target</span>
