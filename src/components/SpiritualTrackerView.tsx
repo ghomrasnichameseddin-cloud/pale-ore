@@ -1088,18 +1088,21 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
                     <div className="space-y-2">
                       <div className="p-2.5 bg-[#07090e] border border-white/10 rounded-xl flex items-center justify-between">
-                        <span className="text-xs font-mono text-zinc-300">Ḍuḥā Rak&apos;ahs:</span>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-mono text-zinc-300">Ḍuḥā / Dhoha:</span>
+                          <span className="text-[9px] font-mono text-amber-400/80">صَلَاةُ الضُّحَى • Awābīn</span>
+                        </div>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             aria-label="Decrease Duha by two rakahs"
                             disabled={duhaRakats <= 0}
                             onClick={() => updateSunnahPrayers({ duhaRakats: Math.max(0, duhaRakats - 2) }, systemDate)}
-                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="text-xs font-mono font-bold text-amber-300 min-w-[20px] text-center">
+                          <span className="text-xs font-mono font-bold text-amber-300 min-w-[24px] text-center">
                             {duhaRakats} R
                           </span>
                           <button
@@ -1107,7 +1110,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                             aria-label="Increase Duha by two rakahs"
                             disabled={duhaRakats >= 8}
                             onClick={() => updateSunnahPrayers({ duhaRakats: Math.min(8, duhaRakats + 2) }, systemDate)}
-                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <Plus className="h-3 w-3" />
                           </button>

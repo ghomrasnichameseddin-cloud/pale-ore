@@ -260,7 +260,9 @@ export interface HabitFormation {
 
 export type PrayerRecoveryAction =
   | { kind: 'sunnah-prayer'; prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' }
-  | { kind: 'qiyam'; rakats: 2 };
+  | { kind: 'qiyam'; rakats: 2 }
+  | { kind: 'dhoha'; rakats: 2 }
+  | { kind: 'duha'; rakats: 2 };
 
 export interface Quest {
   id: string;

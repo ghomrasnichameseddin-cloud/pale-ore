@@ -511,7 +511,7 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="font-display font-bold text-base text-zinc-100">
-                    Ṣalāt ad-Ḍuḥā (صَلَاةُ الضُّحَى • صَلَاةُ الأَوَّابِينَ)
+                    Ṣalāt ad-Ḍuḥā / Dhoha (صَلَاةُ الضُّحَى • صَلَاةُ الأَوَّابِينَ)
                   </h4>
                   {duhaRakats > 0 && (
                     <span className="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
@@ -527,7 +527,7 @@ export const SunnahPrayersSection: React.FC<SunnahPrayersSectionProps> = ({
           </div>
 
           <div className="flex items-center gap-3 bg-[#080503] p-2 rounded-xl border border-amber-500/30 shrink-0">
-            <span className="text-[10px] font-mono text-zinc-400 px-1 uppercase font-bold">Ḍuḥā:</span>
+            <span className="text-[10px] font-mono text-zinc-400 px-1 uppercase font-bold">Ḍuḥā / Dhoha:</span>
             <button
               type="button"
               aria-label="Decrease Duha by two rakahs"

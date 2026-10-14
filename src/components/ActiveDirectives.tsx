@@ -7,7 +7,7 @@ import {
   AlertTriangle, Copy, Ban, Check, ArrowLeft, Terminal, Sliders, Cpu, Compass, Layers,
   Archive, Zap, ShieldAlert, Shield,
   RefreshCw, Sparkles,
-  Filter
+  Filter, Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addDays } from '../utils/dateUtils';
@@ -2545,26 +2545,38 @@ export const ActiveDirectives: React.FC = () => {
             {/* Complete/Reopen */}
             {quest.type === 'Recovery' && quest.recoveryActionOptions && quest.recoveryActionOptions.length > 1 && !finished && (
               <div className="col-span-2 sm:col-span-4 md:col-span-8 flex flex-col gap-1.5 rounded-lg border border-teal-500/20 bg-teal-950/20 p-2">
-                <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-teal-300">RESTITUTION ACTION</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-teal-300">RESTITUTION ACTION (KAFFĀRAH OPTIONS)</span>
+                  <span className="text-[8px] font-mono text-zinc-400">Select remedy to update your counter</span>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {quest.recoveryActionOptions.map(option => {
-                    const isSelected = selectedRecoveryAction[quest.id] === option || (!selectedRecoveryAction[quest.id] && option === quest.recoveryAction);
-                    const label = option.kind === 'sunnah-prayer'
+                    const isSelected = selectedRecoveryAction[quest.id]
+                      ? (selectedRecoveryAction[quest.id]?.kind === option.kind && (option.kind !== 'sunnah-prayer' || (selectedRecoveryAction[quest.id] as any)?.prayer === (option as any).prayer))
+                      : (option === quest.recoveryAction || (quest.recoveryAction && quest.recoveryAction.kind === option.kind && (option.kind !== 'sunnah-prayer' || (quest.recoveryAction as any).prayer === (option as any).prayer)));
+                    const isDhoha = option.kind === 'dhoha' || (option as any).kind === 'duha';
+                    const isSunnah = option.kind === 'sunnah-prayer';
+                    const label = isSunnah
                       ? `Sunnah Rawātib (${option.prayer})`
+                      : isDhoha
+                      ? `2 Rak'ahs Ḍuḥā / Dhoha (الضحى)`
                       : `2 Rak'ahs Qiyām`;
 
                     return (
                       <button
-                        key={`${quest.id}-${option.kind}-${option.kind === 'sunnah-prayer' ? option.prayer : 'qiyam'}`}
+                        key={`${quest.id}-${option.kind}-${isSunnah ? (option as any).prayer : option.kind}`}
                         type="button"
                         onClick={() => setSelectedRecoveryAction(prev => ({ ...prev, [quest.id]: option }))}
-                        className={`rounded border px-2 py-1 text-[9px] font-mono font-bold transition ${
+                        className={`rounded border px-2 py-1 text-[9px] font-mono font-bold transition flex items-center gap-1 ${
                           isSelected
-                            ? 'border-teal-400 bg-teal-500/20 text-teal-200'
+                            ? isDhoha
+                              ? 'border-amber-400 bg-amber-500/20 text-amber-200'
+                              : 'border-teal-400 bg-teal-500/20 text-teal-200'
                             : 'border-[#c5a059]/15 bg-[#0b0d13] text-zinc-300 hover:border-teal-500/30'
                         }`}
                       >
-                        {label}
+                        {isDhoha && <Sun className="h-2.5 w-2.5 text-amber-400" />}
+                        <span>{label}</span>
                       </button>
                     );
                   })}

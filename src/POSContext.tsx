@@ -98,7 +98,7 @@ import { consolidateRecoveryQuests, staggerRecoveryQuests } from './utils/recove
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
-import { addQiyamRakats as addQiyamRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
+import { addQiyamRakats as addQiyamRakahCount, addDhohaRakats as addDhohaRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
 import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty } from './utils/penaltyEngine';
 export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty };
@@ -538,6 +538,7 @@ interface POSContextType {
   updateQiyam: (rakats: number, witr?: boolean, dateStr?: string) => void;
   addQiyamRakats: (rakats: number, witr?: boolean, dateStr?: string) => void;
   setQiyamRakats: (rakats: number, witr?: boolean, dateStr?: string) => void;
+  addDhohaRakats: (rakats: number, dateStr?: string) => void;
   toggleFasting: (
     field: 'isFasting' | 'suhurTaken' | 'iftarCompleted' | 'duaMadeAtIftar',
     fastingType?: FastingType,
@@ -4445,15 +4446,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const nextMaxHp = Math.max(previousMaxHp, getMaxHpForLevel(level));
       const nextHp = Math.min(nextMaxHp, (prev.profile.hp ?? previousMaxHp) + levelUpHpGain);
 
+      const kaffarahDetail = (recoveryAction?.kind === 'dhoha' || (recoveryAction as any)?.kind === 'duha')
+        ? ` (+2 Rak'ahs recorded on your Ḍuḥā / Dhoha counter)`
+        : recoveryAction?.kind === 'qiyam'
+        ? ` (+${recoveryAction.rakats || 2} Rak'ahs recorded on Qiyām)`
+        : '';
       const completionMessage = isRecoveryMegapack
         ? `🛡️⚡ RECOVERY MEGAPACK CONQUERED! All ${questToComplete.mergedQuestCount || 'backlog'} directives resolved (+${earnedXp} XP, -${fatigueRelief} Fatigue relief, +15 HP, +10 Momentum).`
-        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
+        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.${kaffarahDetail}`;
 
       addSystemMessage({
         sender: 'SYSTEM',
         category: (isKaffarahQuest || isRecoveryMegapack) ? 'alert' : 'achievement',
         title: isKaffarahQuest ? '🌿 KAFFĀRAH RESTITUTION FULFILLED' : isRecoveryMegapack ? '🛡️⚡ RECOVERY MEGAPACK FULFILLED' : 'Directive Completed',
-        content: isKaffarahQuest ? `Spiritual remedy "${questToComplete.name}" fulfilled. Sincere restitution recorded; spiritual equilibrium restored and shop locks lifted.` : completionMessage,
+        content: isKaffarahQuest ? `Spiritual remedy "${questToComplete.name}" fulfilled${kaffarahDetail}. Sincere restitution recorded; spiritual equilibrium restored and shop locks lifted.` : completionMessage,
         priority: 'high'
       });
 
@@ -4500,6 +4506,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } else if (recoveryAction?.kind === 'qiyam') {
       addQiyamRakats(recoveryAction.rakats, undefined, state.systemDate);
+    } else if (recoveryAction?.kind === 'dhoha' || (recoveryAction as any)?.kind === 'duha') {
+      addDhohaRakats(recoveryAction.rakats || 2, state.systemDate);
     }
   };
 
@@ -11062,6 +11070,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const addDhohaRakats = (rakats: number, dateStr?: string) => {
+    const targetDate = dateStr || state.systemDate || getLocalDateString();
+    const existingLog = getSpiritualLog(targetDate);
+    const currentDuha = existingLog.sunnahPrayers?.duhaRakats || 0;
+    const nextRakats = Math.min(8, currentDuha + (rakats > 0 ? rakats : 2));
+    updateSunnahPrayers({ duhaRakats: nextRakats }, targetDate);
+  };
+
   const updateQuranLog = (updates: Partial<QuranLog>, dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const completedTimestamp = getSystemTimestamp(targetDate);
@@ -12430,6 +12446,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateQiyam,
       addQiyamRakats,
       setQiyamRakats: updateQiyam,
+      addDhohaRakats,
       toggleFasting,
       updateSunnahPrayers,
       updateQuranLog,

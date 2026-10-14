@@ -371,7 +371,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                     <Scale className="h-3 w-3 text-amber-400" />
                     <span>Auto Muhāsabah Audit Logged (Obligations)</span>
                   </span>
-                  <span className="text-zinc-400">Kaffārah Active</span>
+                  <span className="text-zinc-400">Kaffārah: Rawātib • Qiyām • Ḍuḥā</span>
                 </div>
               </div>
             )}
