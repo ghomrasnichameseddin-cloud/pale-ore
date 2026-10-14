@@ -64,7 +64,9 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
     quickToggleSurahMemorized,
     quickToggleSurahRevised,
     quickToggleSurahRead,
-    batchUpdateSurahLedger
+    batchUpdateSurahLedger,
+    resetSurahLedgerEntry,
+    resetFullSurahLedger
   } = usePOS();
 
   const ledger = useMemo(() => {
@@ -93,6 +95,18 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
   // Bulk action confirmation state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'mark_all_read' | 'reset_read' | 'mark_short_memorized' | null>(null);
+
+  // Individual Surah Reset Modal State
+  const [surahToReset, setSurahToReset] = useState<QuranSurahMetadata | null>(null);
+  const [singleResetScope, setSingleResetScope] = useState<'all' | 'memorization' | 'revision' | 'read'>('all');
+
+  // Master 114 Surahs Ledger Reset Modal State
+  const [showMasterResetModal, setShowMasterResetModal] = useState(false);
+  const [masterResetScope, setMasterResetScope] = useState<'all' | 'read' | 'revision' | 'memorization'>('all');
+  const [masterResetConfirmInput, setMasterResetConfirmInput] = useState('');
+
+  // Toast Feedback Banner
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
   // Calculate Aggregates
   const stats = useMemo(() => {
@@ -317,8 +331,81 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
     setBulkActionType(null);
   };
 
+  const showFeedback = (msg: string) => {
+    setActionFeedback(msg);
+    setTimeout(() => setActionFeedback(null), 4500);
+  };
+
+  const handleConfirmSingleReset = () => {
+    if (!surahToReset) return;
+    resetSurahLedgerEntry(surahToReset.number, singleResetScope);
+    const scopeLabel = singleResetScope === 'all' 
+      ? 'All streams' 
+      : singleResetScope === 'memorization' 
+      ? 'Hifdh (memorisation)' 
+      : singleResetScope === 'revision' 
+      ? 'Muraja\'ah (revision)' 
+      : 'Tilawah (reading)';
+    showFeedback(`✓ Surah ${surahToReset.number} (${surahToReset.nameTransliteration}) ${scopeLabel} successfully reset.`);
+    setSurahToReset(null);
+  };
+
+  const handleConfirmMasterReset = () => {
+    if (masterResetScope === 'all' && masterResetConfirmInput.trim().toUpperCase() !== 'RESET') {
+      return;
+    }
+    resetFullSurahLedger(masterResetScope);
+    const scopeLabel = masterResetScope === 'all'
+      ? 'All 114 Surahs (Full Clean Slate)'
+      : masterResetScope === 'read'
+      ? 'Tilawah (Reading) across all 114 Surahs'
+      : masterResetScope === 'revision'
+      ? 'Muraja\'ah (Revision) across all 114 Surahs'
+      : 'Hifdh (Memorisation) across all 114 Surahs';
+    showFeedback(`✓ Master Ledger Reset Applied: ${scopeLabel}.`);
+    setShowMasterResetModal(false);
+    setMasterResetConfirmInput('');
+  };
+
+  const handleResetCurrentEditingSurah = () => {
+    if (!editingSurah) return;
+    resetSurahLedgerEntry(editingSurah.number, 'all');
+    setModalMemorizedPages(0);
+    setModalMemorizedStatus('not_started');
+    setModalRevisionStatus('unrevised');
+    setModalMasteryStrength(1);
+    setModalReadStatus('unread');
+    setModalReadPages(0);
+    setModalNotes('');
+    showFeedback(`✓ Surah ${editingSurah.number} (${editingSurah.nameTransliteration}) reset to pristine clean state.`);
+    setEditingSurah(null);
+  };
+
   return (
     <div className="space-y-5 animate-fadeIn">
+      {/* ── ACTION FEEDBACK NOTIFICATION TOAST ── */}
+      <AnimatePresence>
+        {actionFeedback && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="p-3 rounded-xl bg-gradient-to-r from-[#17201a] via-[#101713] to-[#17201a] border border-emerald-500/50 text-emerald-300 font-mono text-xs flex items-center justify-between shadow-lg"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>{actionFeedback}</span>
+            </div>
+            <button
+              onClick={() => setActionFeedback(null)}
+              className="text-zinc-400 hover:text-white p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── TOP ANALYTICS OVERVIEW ── */}
       <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#141824] via-[#0d1017] to-[#141824] border border-[#c5a059]/30 relative overflow-hidden shadow-lg">
         <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#c5a059" />
@@ -340,7 +427,7 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => {
                 setBulkActionType('mark_short_memorized');
@@ -350,6 +437,20 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
             >
               Quick Preset: Juz 'Amma
             </button>
+
+            <button
+              onClick={() => {
+                setMasterResetScope('all');
+                setMasterResetConfirmInput('');
+                setShowMasterResetModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 text-xs font-mono transition cursor-pointer flex items-center gap-1.5 font-bold shadow-sm"
+              title="Reset Ledger Options (Single Stream or Complete 114 Surahs)"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-rose-400" />
+              <span>Reset Ledger</span>
+            </button>
+
             {onOpenGuide && (
               <button
                 onClick={() => onOpenGuide('quran-revision')}
@@ -740,6 +841,17 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
                       >
                         <Edit2 className="h-3 w-3" />
                       </button>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSurahToReset(surah);
+                          setSingleResetScope('all');
+                        }}
+                        className="p-1 rounded-lg bg-zinc-800/80 hover:bg-rose-950/60 hover:text-rose-300 text-zinc-400 transition cursor-pointer border border-transparent hover:border-rose-500/30"
+                        title="Reset Surah Progress"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </button>
                     </div>
                   </div>
 
@@ -867,13 +979,25 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
                         </button>
                       </td>
                       <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={() => openEditModal(surah)}
-                          className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
-                          title="Open Details Modal"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEditModal(surah)}
+                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                            title="Open Details Modal"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSurahToReset(surah);
+                              setSingleResetScope('all');
+                            }}
+                            className="p-1 rounded bg-zinc-800/80 hover:bg-rose-950/60 hover:text-rose-300 text-zinc-400 cursor-pointer transition border border-transparent hover:border-rose-500/30"
+                            title="Reset Surah Progress"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1048,19 +1172,31 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
               </div>
 
               {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10 font-mono text-xs">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 font-mono text-xs">
                 <button
-                  onClick={() => setEditingSurah(null)}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                  type="button"
+                  onClick={handleResetCurrentEditingSurah}
+                  className="px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 font-bold cursor-pointer flex items-center gap-1.5 transition"
+                  title="Reset all tracks of this Surah"
                 >
-                  Cancel
+                  <RotateCcw className="h-3.5 w-3.5 text-rose-400" />
+                  <span>Reset This Surah</span>
                 </button>
-                <button
-                  onClick={handleSaveModal}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c5a059] to-[#fef08a] text-black font-bold cursor-pointer hover:brightness-110 shadow"
-                >
-                  Save Surah Covenant
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setEditingSurah(null)}
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveModal}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#c5a059] to-[#fef08a] text-black font-bold cursor-pointer hover:brightness-110 shadow"
+                  >
+                    Save Surah Covenant
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -1095,6 +1231,225 @@ export const SurahLedgerView: React.FC<SurahLedgerViewProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── SINGLE SURAH RESET CONFIRMATION MODAL ── */}
+      <AnimatePresence>
+        {surahToReset && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="border border-rose-500/40 rounded-2xl max-w-md w-full bg-gradient-to-b from-[#181119] via-[#0f0d14] to-[#0a080d] p-5 space-y-4 shadow-2xl relative"
+            >
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#f43f5e" />
+              <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" color="#f43f5e" />
+
+              <div className="flex items-start justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 font-mono font-bold text-sm flex items-center justify-center">
+                    {surahToReset.number}
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold text-base text-white">
+                      Reset Surah {surahToReset.nameTransliteration}
+                    </h4>
+                    <p className="text-xs text-zinc-400 font-sans">
+                      {surahToReset.nameArabic} · Pages {surahToReset.startPage}–{surahToReset.endPage} ({surahToReset.totalPages}p)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSurahToReset(null)}
+                  className="p-1 text-zinc-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs font-mono">
+                <span className="text-[10px] uppercase text-zinc-400 block font-bold">
+                  Select Reset Scope:
+                </span>
+
+                <div className="space-y-1.5">
+                  {[
+                    { id: 'all', title: 'Full Reset (All Streams)', desc: 'Clear Hifdh, Revision, Tilawah, and notes back to 0.' },
+                    { id: 'memorization', title: 'Reset Hifdh (Memorisation) Only', desc: 'Set to not started (0 pages memorised).' },
+                    { id: 'revision', title: 'Reset Muraja\'ah (Revision) Only', desc: 'Clear revision dates and reset mastery strength.' },
+                    { id: 'read', title: 'Reset Tilawah (Reading) Only', desc: 'Set to unread (0 pages read) for a fresh cycle.' }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSingleResetScope(opt.id as any)}
+                      className={`w-full p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                        singleResetScope === opt.id
+                          ? 'bg-rose-950/60 border-rose-500 text-white font-bold shadow-sm'
+                          : 'bg-black/40 border-white/5 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={singleResetScope === opt.id ? 'text-rose-300' : 'text-zinc-300'}>
+                          {opt.title}
+                        </span>
+                        {singleResetScope === opt.id && (
+                          <Check className="h-3.5 w-3.5 text-rose-400" />
+                        )}
+                      </div>
+                      <p className="text-[11px] font-sans text-zinc-500 mt-0.5 font-normal">
+                        {opt.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 font-mono text-xs pt-2 border-t border-white/10">
+                <button
+                  onClick={() => setSurahToReset(null)}
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmSingleReset}
+                  className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold cursor-pointer shadow transition flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Execute Reset</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MASTER 114 SURAHS LEDGER RESET MODAL ── */}
+      <AnimatePresence>
+        {showMasterResetModal && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="border border-rose-500/50 rounded-2xl max-w-lg w-full bg-gradient-to-b from-[#1b1016] via-[#100a0e] to-[#070507] p-5 sm:p-6 space-y-4 shadow-2xl relative"
+            >
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#f43f5e" />
+              <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" color="#f43f5e" />
+
+              <div className="flex items-start justify-between border-b border-rose-500/20 pb-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4 text-rose-400" />
+                    <h3 className="font-display font-bold text-base text-white">
+                      114 Surahs Master Ledger Reset
+                    </h3>
+                  </div>
+                  <p className="text-xs text-rose-300/80 font-arabic">
+                    إِعَادَةُ تَعْيِينِ سِجِلِّ القُرْآنِ الكَرِيمِ (١١٤ سُورَة)
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowMasterResetModal(false)}
+                  className="p-1 text-zinc-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                Choose the scope of data you wish to reset across the <strong>114 canonical Surahs</strong> of the Madani Mus'haf:
+              </p>
+
+              <div className="space-y-2 text-xs font-mono">
+                {[
+                  {
+                    id: 'all',
+                    title: 'Full Reset (All 114 Surahs Clean Slate)',
+                    desc: 'Wipes all Hifdh (memorisation), Muraja\'ah (revision), and Tilawah (reading) records across all 114 Surahs back to original state.',
+                    badge: 'COMPLETE WIPE'
+                  },
+                  {
+                    id: 'read',
+                    title: 'Reset Tilawah / Reading Only (New Khatmah)',
+                    desc: 'Sets all 114 Surahs to unread (0/604 pages) so you can start a fresh reading cycle from Al-Fatihah, without touching memorisation.',
+                    badge: 'NEW KHATMAH'
+                  },
+                  {
+                    id: 'revision',
+                    title: 'Reset Muraja\'ah / Revision Cycles',
+                    desc: 'Clears revision dates, revision counts, and returns mastery strength to 1-star unrevised across all surahs.',
+                    badge: 'REVISION RESET'
+                  },
+                  {
+                    id: 'memorization',
+                    title: 'Reset Hifdh / Memorisation Only',
+                    desc: 'Sets all 114 Surahs to not-started (0 pages memorised) while keeping reading logs intact.',
+                    badge: 'HIFDH RESET'
+                  }
+                ].map(scope => (
+                  <button
+                    key={scope.id}
+                    type="button"
+                    onClick={() => setMasterResetScope(scope.id as any)}
+                    className={`w-full p-3 rounded-xl border text-left transition cursor-pointer ${
+                      masterResetScope === scope.id
+                        ? 'bg-rose-950/70 border-rose-500 text-white shadow-md'
+                        : 'bg-black/50 border-white/10 text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`font-bold ${masterResetScope === scope.id ? 'text-rose-200' : 'text-zinc-200'}`}>
+                        {scope.title}
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-500/30">
+                        {scope.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-sans text-zinc-400 mt-1 leading-normal">
+                      {scope.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Safety Confirmation Input for Full Wipe */}
+              {masterResetScope === 'all' && (
+                <div className="p-3 rounded-xl bg-black/60 border border-rose-500/40 space-y-2">
+                  <span className="text-[11px] font-mono text-rose-300 font-bold block">
+                    Security Safeguard: Type "RESET" to confirm full wipe:
+                  </span>
+                  <input
+                    type="text"
+                    value={masterResetConfirmInput}
+                    onChange={e => setMasterResetConfirmInput(e.target.value)}
+                    placeholder="Type RESET"
+                    className="w-full bg-black text-rose-200 px-3 py-1.5 rounded-lg border border-rose-500/50 text-xs font-mono outline-none uppercase placeholder:text-zinc-700"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 font-mono text-xs pt-2 border-t border-white/10">
+                <button
+                  onClick={() => setShowMasterResetModal(false)}
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={masterResetScope === 'all' && masterResetConfirmInput.trim().toUpperCase() !== 'RESET'}
+                  onClick={handleConfirmMasterReset}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow transition flex items-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Confirm Master Reset</span>
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

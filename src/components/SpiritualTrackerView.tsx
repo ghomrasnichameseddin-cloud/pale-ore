@@ -32,6 +32,7 @@ import { PostSalahAdhkarModal } from './spiritual/PostSalahAdhkarModal';
 import { SleepAdhkarModal } from './spiritual/SleepAdhkarModal';
 import { PrayerCard } from './spiritual/PrayerCard';
 import { JumuahWarningModal } from './spiritual/JumuahWarningModal';
+import { QURAN_SURAHS } from '../data/quranSurahs';
 
 interface SpiritualTrackerViewProps {
   onOpenMuhasabahAudit?: () => void;
@@ -74,7 +75,10 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     getMasjid40Stats,
     getAdhkarFortressStats,
     getQuranFreshnessScore,
-    setPostSalahItemStatus
+    setPostSalahItemStatus,
+    quranTracker,
+    quickToggleSurahRead,
+    quickToggleSurahRevised
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'salaat' | 'masjid40' | 'sunnah' | 'siam' | 'adhkar' | 'quran' | 'audit'>('overview');
@@ -87,6 +91,12 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
   const [jumuahReasonInput, setJumuahReasonInput] = useState('');
   const [delaySelectorOpenFor, setDelaySelectorOpenFor] = useState<string | null>(null);
   const [auditFeedback, setAuditFeedback] = useState<string | null>(null);
+
+  // Daily Hub Quran Section Enhanced States
+  const [selectedDailySurahNumber, setSelectedDailySurahNumber] = useState<number>(1);
+  const [showTadabburInput, setShowTadabburInput] = useState(false);
+  const [tadabburInputText, setTadabburInputText] = useState('');
+  const [quranFeedback, setQuranFeedback] = useState<string | null>(null);
 
   const currentLog: SpiritualDailyLog = getSpiritualLog(systemDate);
   const hijriInfo = getHijriDate(systemDate);
@@ -344,6 +354,90 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
     if (val >= 7) return { label: 'Jayyid Jiddan / Attentive & Still (حضور جيد وطمأنينة)', color: 'text-amber-300' };
     if (val >= 5) return { label: 'Maqbūl / Moderate Focus (تركيز متوسط مع بعض الشرود)', color: 'text-cyan-300' };
     return { label: 'Needs Renewal / Distracted (يحتاج تأنياً ومجاهدة)', color: 'text-rose-300' };
+  };
+
+  // 114 Surahs Ledger live aggregates for Daily Hub
+  const ledger = quranTracker?.surahLedger || {};
+  const ledgerStats = React.useMemo(() => {
+    let memorizedSurahs = 0;
+    let memorizedPages = 0;
+    let readSurahs = 0;
+    let readPages = 0;
+    let dueRevision = 0;
+    let nextDueSurah: typeof QURAN_SURAHS[0] | null = null;
+
+    for (const s of QURAN_SURAHS) {
+      const entry = ledger[s.number];
+      if (entry) {
+        if (entry.memorizationStatus === 'completed') {
+          memorizedSurahs++;
+          memorizedPages += s.totalPages;
+        } else if (entry.memorizationStatus === 'in_progress') {
+          memorizedPages += (entry.memorizedPages || 0);
+        }
+
+        if (entry.readStatus === 'completed') {
+          readSurahs++;
+          readPages += s.totalPages;
+        } else if (entry.readStatus === 'in_progress') {
+          readPages += (entry.readPages || 0);
+        }
+
+        if (entry.revisionStatus === 'due' || (entry.revisionStatus === 'fresh' && (entry.masteryStrength || 1) <= 2)) {
+          dueRevision++;
+          if (!nextDueSurah && entry.memorizationStatus !== 'not_started') {
+            nextDueSurah = s;
+          }
+        }
+      }
+    }
+
+    if (!nextDueSurah) {
+      for (const s of QURAN_SURAHS) {
+        const entry = ledger[s.number];
+        if (entry && entry.memorizationStatus === 'completed') {
+          nextDueSurah = s;
+          break;
+        }
+      }
+    }
+
+    return {
+      memorizedSurahs,
+      memorizedPages,
+      readSurahs,
+      readPages,
+      dueRevision,
+      nextDueSurah,
+      khatmahPercentage: Math.min(100, Math.round((readPages / 604) * 100))
+    };
+  }, [ledger]);
+
+  const showQuranFeedback = (msg: string) => {
+    setQuranFeedback(msg);
+    setTimeout(() => setQuranFeedback(null), 4500);
+  };
+
+  const handleQuickLogSurahRead = (surahNum: number) => {
+    quickToggleSurahRead(surahNum, systemDate);
+    const surah = QURAN_SURAHS.find(s => s.number === surahNum);
+    showQuranFeedback(`✓ Surah ${surah?.nameTransliteration || surahNum} updated in Tilawah reading ledger.`);
+  };
+
+  const handleQuickLogSurahRevised = (surahNum: number) => {
+    quickToggleSurahRevised(surahNum, systemDate);
+    const surah = QURAN_SURAHS.find(s => s.number === surahNum);
+    updateQuranLog({ memorizationReviewed: true }, systemDate);
+    showQuranFeedback(`✓ Surah ${surah?.nameTransliteration || surahNum} revision logged (+50 XP).`);
+  };
+
+  const handleSaveTadabburNote = () => {
+    const textToSave = tadabburInputText.trim();
+    updateQuranLog({ 
+      tadabburNotes: textToSave 
+    }, systemDate);
+    showQuranFeedback(`✓ Tadabbur reflection saved (+40 XP recorded).`);
+    setShowTadabburInput(false);
   };
 
   const tabsConfig = [
@@ -1328,18 +1422,22 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
 
             </div>
 
-            {/* QUR'AN TILĀWAH, TADABBUR & MEMORIZATION COCKPIT */}
-            <div className="p-5 bg-gradient-to-r from-[#0c141d] via-[#091017] to-[#070b10] border border-cyan-500/30 rounded-2xl relative overflow-hidden shadow-lg space-y-4">
+            {/* QUR'AN TILĀWAH, TADABBUR & 114 SURAHS LEDGER COCKPIT */}
+            <div className="p-5 bg-gradient-to-r from-[#0c141d] via-[#091017] to-[#070b10] border border-cyan-500/30 rounded-2xl relative overflow-hidden shadow-xl space-y-4">
+              <ArabesqueCorner position="top-right" className="top-2 right-2 h-4 w-4" color="#06b6d4" />
+              <ArabesqueCorner position="bottom-left" className="bottom-2 left-2 h-4 w-4" color="#06b6d4" />
+
+              {/* 1. Header & Live Freshness / Khatmah Track */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-cyan-400" />
                     <h4 className="font-display font-bold text-base text-zinc-100">
-                      Qur&apos;ān Tilāwah &amp; Tadabbur Sanctum (تِلَاوَةُ القُرْآنِ وَتَدَبُّرُهُ)
+                      Qur&apos;ān Tilāwah, Tadabbur &amp; Ledger Sanctum (تِلَاوَةُ القُرْآنِ وَتَدَبُّرُهُ)
                     </h4>
                   </div>
                   <p className="text-xs text-zinc-400 font-sans">
-                    Pillar 7: Daily pages (+5 XP/page up to 100 XP), Full Juz (+100 XP), Tadabbur Reflection (+40 XP), and Hifdh Revision (+50 XP).
+                    Pillar 09 • Canonical Madani Mus&apos;haf (604 Pages) across 114 Surahs: Tilawah (+5 XP/page up to 100 XP), Full Juz (+100 XP), Tadabbur (+40 XP), and Hifdh Revision (+50 XP).
                   </p>
                 </div>
 
@@ -1356,7 +1454,7 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     </span>
                   )}
                   <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full">
-                    {currentLog.quran?.pagesRead || 0} Pages Read Today
+                    {currentLog.quran?.pagesRead || 0} Pages Today
                   </span>
                   <button
                     onClick={() => setActiveTab('quran')}
@@ -1368,7 +1466,106 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                 </div>
               </div>
 
-              {/* CONTROLS ROW */}
+              {/* Feedback Toast */}
+              <AnimatePresence>
+                {quranFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 text-xs font-mono flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-cyan-400" />
+                      <span>{quranFeedback}</span>
+                    </div>
+                    <button onClick={() => setQuranFeedback(null)} className="text-zinc-400 hover:text-white">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* 2. KHATMAH PACE GAUGE & 114 SURAHS LEDGER MINI-HUB */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Pod A: Hifdh Memorisation */}
+                <div className="p-3 bg-black/50 border border-emerald-500/30 rounded-xl space-y-1.5 font-mono text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-emerald-400 font-bold uppercase flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> HIFDH LEDGER
+                    </span>
+                    <span className="text-[11px] text-white font-bold">
+                      {ledgerStats.memorizedSurahs}/114 Surahs
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                    <span>Memorised Pages:</span>
+                    <span className="text-emerald-300 font-bold">{ledgerStats.memorizedPages}/604p</span>
+                  </div>
+                  <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.round((ledgerStats.memorizedPages / 604) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Pod B: Muraja'ah Revision Due */}
+                <div className="p-3 bg-black/50 border border-amber-500/30 rounded-xl space-y-1.5 font-mono text-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-amber-400 font-bold uppercase flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3" /> MURAJA&apos;AH
+                      </span>
+                      <span className={`text-[11px] font-bold ${ledgerStats.dueRevision > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                        {ledgerStats.dueRevision > 0 ? `${ledgerStats.dueRevision} Due for Review` : 'All Fresh ✓'}
+                      </span>
+                    </div>
+                    {ledgerStats.nextDueSurah ? (
+                      <div className="text-[11px] text-zinc-300 pt-0.5 flex items-center justify-between">
+                        <span className="truncate">Next: {ledgerStats.nextDueSurah.nameTransliteration}</span>
+                        <button
+                          onClick={() => handleQuickLogSurahRevised(ledgerStats.nextDueSurah!.number)}
+                          className="text-[10px] bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 text-amber-200 px-1.5 py-0.5 rounded transition cursor-pointer"
+                        >
+                          Revise +50
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-zinc-500 block pt-0.5">Retention strength healthy</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Pod C: Tilawah & Khatmah Progress */}
+                <div className="p-3 bg-black/50 border border-cyan-500/30 rounded-xl space-y-1.5 font-mono text-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-cyan-400 font-bold uppercase flex items-center gap-1">
+                      <BookOpen className="h-3 w-3" /> KHATMAH CYCLE
+                    </span>
+                    <span className="text-[11px] text-cyan-300 font-bold">
+                      {ledgerStats.khatmahPercentage}% ({ledgerStats.readPages}/604p)
+                    </span>
+                  </div>
+                  <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                    <div
+                      className="bg-cyan-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${ledgerStats.khatmahPercentage}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                    <span>{ledgerStats.readSurahs}/114 Surahs Read</span>
+                    <button
+                      onClick={() => setActiveTab('quran')}
+                      className="text-cyan-400 hover:underline font-bold"
+                    >
+                      114 Ledger →
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. INTERACTIVE CONTROLS ROW */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {/* 1. Pages Quick Dial */}
                 <div className="p-3 bg-[#07090e] border border-white/10 rounded-xl space-y-2">
@@ -1395,6 +1592,12 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                         className="px-2 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 rounded text-xs font-mono font-bold cursor-pointer"
                       >
                         +5
+                      </button>
+                      <button
+                        onClick={() => updateQuranLog({ pagesRead: (currentLog.quran?.pagesRead || 0) + 10 }, systemDate)}
+                        className="px-2 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 rounded text-xs font-mono font-bold cursor-pointer"
+                      >
+                        +10
                       </button>
                     </div>
                   </div>
@@ -1425,18 +1628,12 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                   </div>
                 </button>
 
-                {/* 3. Tadabbur Reflection Note Toggle */}
-                <button
-                  onClick={() => {
-                    const existing = currentLog.quran?.tadabburNotes;
-                    updateQuranLog({ 
-                      tadabburNotes: existing ? '' : 'Reflected upon the divine verses with presence and contemplation.' 
-                    }, systemDate);
-                  }}
-                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between space-y-1.5 cursor-pointer ${
+                {/* 3. Tadabbur Reflection Note Toggle & Drawer */}
+                <div
+                  className={`p-3 rounded-xl border transition flex flex-col justify-between space-y-1.5 ${
                     Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0)
                       ? 'bg-amber-950/80 border-amber-500/60 shadow-sm'
-                      : 'bg-[#07090e] border-white/10 hover:border-white/20'
+                      : 'bg-[#07090e] border-white/10'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -1448,12 +1645,19 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs font-mono font-bold ${Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'text-amber-300' : 'text-zinc-300'}`}>
-                      {Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'Tadabbur Recorded ✓' : 'Log Tadabbur'}
-                    </span>
+                    <button
+                      onClick={() => {
+                        setTadabburInputText(currentLog.quran?.tadabburNotes || '');
+                        setShowTadabburInput(!showTadabburInput);
+                      }}
+                      className="text-xs font-mono font-bold text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{Boolean(currentLog.quran?.tadabburNotes && currentLog.quran.tadabburNotes.trim().length > 0) ? 'Edit Note' : 'Write Note'}</span>
+                      <ChevronDown className={`h-3 w-3 transition-transform ${showTadabburInput ? 'rotate-180' : ''}`} />
+                    </button>
                     <span className="text-[10px] font-mono text-amber-400">+40 XP</span>
                   </div>
-                </button>
+                </div>
 
                 {/* 4. Hifdh Revision */}
                 <button
@@ -1479,6 +1683,212 @@ export const SpiritualTrackerView: React.FC<SpiritualTrackerViewProps> = ({
                     <span className="text-[10px] font-mono text-indigo-400">+50 XP</span>
                   </div>
                 </button>
+              </div>
+
+              {/* 4. INLINE TADABBUR CONTEMPLATION DRAWER */}
+              <AnimatePresence>
+                {showTadabburInput && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="p-3.5 bg-black/60 border border-amber-500/40 rounded-xl space-y-2 text-xs font-mono"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-amber-300 font-bold flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                        <span>Tadabbur Reflection Station • كِتَابٌ أَنزَلْنَاهُ إِلَيْكَ مُبَارَكٌ لِّيَدَّبَّرُوا آيَاتِهِ</span>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {[
+                          { label: 'Ayah of Day', val: 'Key Ayah: ' },
+                          { label: 'Divine Command', val: 'Command to enact: ' },
+                          { label: 'Heart Admonition', val: 'Heart realization: ' }
+                        ].map(chip => (
+                          <button
+                            key={chip.label}
+                            type="button"
+                            onClick={() => setTadabburInputText(prev => prev ? `${prev} | ${chip.val}` : chip.val)}
+                            className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 cursor-pointer"
+                          >
+                            + {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <textarea
+                      rows={2}
+                      value={tadabburInputText}
+                      onChange={e => setTadabburInputText(e.target.value)}
+                      placeholder="Write your personal contemplation, Ayah insights, or lessons learned today..."
+                      className="w-full bg-zinc-950 text-white p-2.5 rounded-lg border border-zinc-700 text-xs font-sans outline-none focus:border-amber-400"
+                    />
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        onClick={() => setShowTadabburInput(false)}
+                        className="px-3 py-1 rounded-lg bg-zinc-800 text-zinc-300 cursor-pointer text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveTadabburNote}
+                        className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-black font-bold cursor-pointer text-xs flex items-center gap-1"
+                      >
+                        <Check className="h-3 w-3" />
+                        <span>Save Reflection (+40 XP)</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* 5. DIRECT SURAH QUICK-LOGGER & LIVE MUSHAF BOOKMARK */}
+              {(() => {
+                const selectedSurah = QURAN_SURAHS.find(s => s.number === selectedDailySurahNumber) || QURAN_SURAHS[0];
+                const sEntry = ledger[selectedSurah.number];
+                const isSMemorized = sEntry?.memorizationStatus === 'completed';
+                const isSRead = sEntry?.readStatus === 'completed';
+
+                return (
+                  <div className="p-3 bg-[#080b12] border border-cyan-500/20 rounded-xl space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                          QUICK SURAH TRACKER:
+                        </span>
+                        <select
+                          value={selectedDailySurahNumber}
+                          onChange={e => setSelectedDailySurahNumber(Number(e.target.value))}
+                          className="bg-black text-white text-xs font-mono px-2 py-1 rounded-lg border border-zinc-700 outline-none focus:border-cyan-400 cursor-pointer max-w-[220px]"
+                        >
+                          {QURAN_SURAHS.map(s => (
+                            <option key={s.number} value={s.number}>
+                              {s.number}. {s.nameTransliteration} ({s.nameArabic}) - {s.totalPages}p
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-mono">
+                        <span className="text-[11px] text-zinc-400">
+                          Juz {selectedSurah.juz} · Pages {selectedSurah.startPage}–{selectedSurah.endPage} ({selectedSurah.totalPages}p)
+                        </span>
+                        <button
+                          onClick={() => handleQuickLogSurahRead(selectedSurah.number)}
+                          className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                            isSRead
+                              ? 'bg-cyan-950 border-cyan-500 text-cyan-200'
+                              : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-cyan-500'
+                          }`}
+                        >
+                          <BookOpen className="h-3 w-3" />
+                          <span>{isSRead ? 'Read ✓' : 'Mark Read'}</span>
+                        </button>
+                        <button
+                          onClick={() => handleQuickLogSurahRevised(selectedSurah.number)}
+                          className="px-2.5 py-1 rounded-lg border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 bg-amber-950/60 border-amber-500/40 text-amber-200 hover:bg-amber-900"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          <span>Revise +50 XP</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 6. PROPHETIC FRIDAY & NIGHT PROTECTION SURAHS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-white/5">
+                {/* Friday Prophetic Surahs (Al-Kahf & Al-Baqarah) */}
+                <div className={`p-3 rounded-xl border space-y-2 font-mono text-xs ${
+                  hijriInfo.isJumuah 
+                    ? 'bg-gradient-to-r from-[#1c180e] to-[#0c0d12] border-[#c5a059]/60 shadow-[0_0_12px_rgba(197,160,89,0.15)]' 
+                    : 'bg-black/40 border-white/5'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-[#fef08a] font-bold uppercase flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-[#c5a059]" />
+                      <span>FRIDAY PROPHETIC SUNNAH</span>
+                    </span>
+                    {hijriInfo.isJumuah && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-bold">
+                        TODAY IS JUMU&apos;AH
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Al-Kahf */}
+                    <button
+                      onClick={() => toggleFridayQuranReading('al-kahf', systemDate)}
+                      className={`p-2 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                        currentLog.quran?.fridaySurahAlKahfRead
+                          ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
+                          : 'bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-[#c5a059]/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[11px]">سورة الكهف (Al-Kahf)</span>
+                        <span className="text-[9px]">{currentLog.quran?.fridaySurahAlKahfRead ? '✓ Done' : '+60 XP'}</span>
+                      </div>
+                      <span className="text-[9px] text-zinc-400 font-sans mt-0.5">
+                        Light between Fridays
+                      </span>
+                    </button>
+
+                    {/* Al-Baqarah */}
+                    <button
+                      onClick={() => toggleFridayQuranReading('al-baqarah', systemDate)}
+                      className={`p-2 rounded-lg border text-left transition cursor-pointer flex flex-col justify-between ${
+                        currentLog.quran?.fridaySurahAlBaqarahRead
+                          ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 shadow-sm'
+                          : 'bg-zinc-900/60 border-white/5 text-zinc-300 hover:border-[#c5a059]/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[11px]">سورة البقرة (Al-Baqarah)</span>
+                        <span className="text-[9px]">{currentLog.quran?.fridaySurahAlBaqarahRead ? '✓ Done' : '+75 XP'}</span>
+                      </div>
+                      <span className="text-[9px] text-zinc-400 font-sans mt-0.5">
+                        House protection shield
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Night Protection: Surah Al-Mulk */}
+                <div className="p-3 bg-black/40 border border-purple-500/20 rounded-xl space-y-2 font-mono text-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-purple-300 font-bold uppercase flex items-center gap-1">
+                      <Moon className="h-3 w-3 text-purple-400" />
+                      <span>NIGHT SANCTUARY: SURAH AL-MULK</span>
+                    </span>
+                    <span className="text-[9px] text-zinc-500">
+                      ٣٠ آية تنجي من عذاب القبر
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-zinc-900/60 border border-white/5">
+                    <div>
+                      <span className="text-xs font-bold text-white block">سورة الملك (Al-Mulk • 30 Verses)</span>
+                      <span className="text-[10px] text-zinc-400 font-sans">
+                        {currentLog.quran?.surahNumber === 67 ? 'Recited tonight ✓' : 'Daily prophetic night safeguard'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        handleQuickLogSurahRead(67);
+                        updateQuranLog({ surahNumber: 67, surahName: 'Al-Mulk' }, systemDate);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-bold text-[11px] transition cursor-pointer"
+                    >
+                      {currentLog.quran?.surahNumber === 67 ? '✓ Recited' : 'Log Mulk (+40 XP)'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

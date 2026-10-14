@@ -596,6 +596,8 @@ interface POSContextType {
   quickToggleSurahRevised: (surahNumber: number, dateStr?: string) => void;
   quickToggleSurahRead: (surahNumber: number, dateStr?: string) => void;
   batchUpdateSurahLedger: (updates: Record<number, Partial<SurahLedgerEntry>>) => void;
+  resetSurahLedgerEntry: (surahNumber: number, scope?: 'all' | 'memorization' | 'revision' | 'read') => void;
+  resetFullSurahLedger: (scope?: 'all' | 'memorization' | 'revision' | 'read') => void;
 
   // Visual Codex (Appearance System)
   visualCodex: VisualCodexSettings;
@@ -10517,6 +10519,145 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const resetSurahLedgerEntry = (
+    surahNumber: number,
+    scope: 'all' | 'memorization' | 'revision' | 'read' = 'all'
+  ) => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      const currentLedger = { ...(currentTracker.surahLedger || generateDefaultSurahLedger()) };
+      const existing = currentLedger[surahNumber] || {
+        surahNumber,
+        memorizationStatus: 'not_started',
+        memorizedPages: 0,
+        revisionStatus: 'unrevised',
+        masteryStrength: 1,
+        revisionCount: 0,
+        readStatus: 'unread',
+        readPages: 0
+      };
+
+      if (scope === 'all') {
+        currentLedger[surahNumber] = {
+          surahNumber,
+          memorizationStatus: 'not_started',
+          memorizedPages: 0,
+          memorizedAyahs: 0,
+          revisionStatus: 'unrevised',
+          masteryStrength: 1,
+          revisionCount: 0,
+          readStatus: 'unread',
+          readPages: 0,
+          notes: '',
+          lastRevisedDate: undefined,
+          lastReadDate: undefined,
+          updatedAt: new Date().toISOString()
+        };
+      } else if (scope === 'memorization') {
+        currentLedger[surahNumber] = {
+          ...existing,
+          memorizationStatus: 'not_started',
+          memorizedPages: 0,
+          memorizedAyahs: 0,
+          updatedAt: new Date().toISOString()
+        };
+      } else if (scope === 'revision') {
+        currentLedger[surahNumber] = {
+          ...existing,
+          revisionStatus: 'unrevised',
+          masteryStrength: 1,
+          revisionCount: 0,
+          lastRevisedDate: undefined,
+          updatedAt: new Date().toISOString()
+        };
+      } else if (scope === 'read') {
+        currentLedger[surahNumber] = {
+          ...existing,
+          readStatus: 'unread',
+          readPages: 0,
+          lastReadDate: undefined,
+          updatedAt: new Date().toISOString()
+        };
+      }
+
+      const totalMemorizedPages = Object.values(currentLedger).reduce((acc, s) => acc + (s.memorizedPages || 0), 0);
+
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          surahLedger: currentLedger,
+          memorizedPagesCount: totalMemorizedPages
+        }
+      };
+    });
+  };
+
+  const resetFullSurahLedger = (scope: 'all' | 'memorization' | 'revision' | 'read' = 'all') => {
+    setState(prev => {
+      const currentTracker = prev.quranTracker || DEFAULT_QURAN_TRACKER;
+      let newLedger: Record<number, SurahLedgerEntry> = {};
+
+      if (scope === 'all') {
+        newLedger = generateDefaultSurahLedger();
+      } else {
+        const currentLedger = currentTracker.surahLedger || generateDefaultSurahLedger();
+        newLedger = { ...currentLedger };
+
+        for (const surah of QURAN_SURAHS) {
+          const existing = newLedger[surah.number] || {
+            surahNumber: surah.number,
+            memorizationStatus: 'not_started',
+            memorizedPages: 0,
+            revisionStatus: 'unrevised',
+            masteryStrength: 1,
+            revisionCount: 0,
+            readStatus: 'unread',
+            readPages: 0
+          };
+
+          if (scope === 'memorization') {
+            newLedger[surah.number] = {
+              ...existing,
+              memorizationStatus: 'not_started',
+              memorizedPages: 0,
+              memorizedAyahs: 0,
+              updatedAt: new Date().toISOString()
+            };
+          } else if (scope === 'revision') {
+            newLedger[surah.number] = {
+              ...existing,
+              revisionStatus: 'unrevised',
+              masteryStrength: 1,
+              revisionCount: 0,
+              lastRevisedDate: undefined,
+              updatedAt: new Date().toISOString()
+            };
+          } else if (scope === 'read') {
+            newLedger[surah.number] = {
+              ...existing,
+              readStatus: 'unread',
+              readPages: 0,
+              lastReadDate: undefined,
+              updatedAt: new Date().toISOString()
+            };
+          }
+        }
+      }
+
+      const totalMemorizedPages = Object.values(newLedger).reduce((acc, s) => acc + (s.memorizedPages || 0), 0);
+
+      return {
+        ...prev,
+        quranTracker: {
+          ...currentTracker,
+          surahLedger: newLedger,
+          memorizedPagesCount: totalMemorizedPages
+        }
+      };
+    });
+  };
+
   const incrementSalawat = (amount: number, dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const existingLog = getSpiritualLog(targetDate);
@@ -12339,6 +12480,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       quickToggleSurahRevised,
       quickToggleSurahRead,
       batchUpdateSurahLedger,
+      resetSurahLedgerEntry,
+      resetFullSurahLedger,
       visualCodex: state.visualCodex || getStoredVisualCodexSettings(),
       updateVisualCodexSettings,
       setTheme
