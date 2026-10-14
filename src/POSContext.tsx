@@ -94,6 +94,7 @@ import {
 } from './utils/quranAndAdhkarEngine';
 import { DEFAULT_ADHKAR_LIST } from './data/defaultAdhkar';
 import { QURAN_SURAHS, generateDefaultSurahLedger } from './data/quranSurahs';
+import { consolidateRecoveryQuests, staggerRecoveryQuests } from './utils/recoveryConsolidationEngine';
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
@@ -207,6 +208,8 @@ interface POSContextType {
   updateQuest: (id: string, updates: Partial<Quest>) => void;
   deleteQuest: (id: string) => void;
   deleteRecoveryQuestsWithPenalty: (questIds: string[]) => number;
+  mergeRecoveryQuests: (questIds?: string[]) => { megapackId: string | null; count: number };
+  staggerActiveRecoveryQuests: (maxPerDay?: number) => number;
   completeQuest: (id: string, additionalElapsedMinutes?: number, selectedRecoveryAction?: PrayerRecoveryAction) => void;
   logQuestWorkTime: (questId: string, minutes: number) => void;
   reopenQuest: (id: string) => void;
@@ -3999,6 +4002,92 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return cumulativePenaltyXp;
   };
 
+  const mergeRecoveryQuests = (questIds?: string[]): { megapackId: string | null; count: number } => {
+    let resultMegapackId: string | null = null;
+    let mergedCount = 0;
+
+    setState(prev => {
+      const targetQuests = prev.quests.filter(q => {
+        if (q.status !== 'Active') return false;
+        if (isQuestArchived(q, prev.lists, prev.folders)) return false;
+        if (q.type.toUpperCase() !== 'RECOVERY' && q.type.toUpperCase() !== 'PENALTY') return false;
+        if (questIds && questIds.length > 0) {
+          return questIds.includes(q.id);
+        }
+        return true;
+      });
+
+      if (targetQuests.length < 2 && (!questIds || targetQuests.length === 0)) {
+        return prev;
+      }
+
+      const consolidation = consolidateRecoveryQuests(targetQuests, prev.systemDate || getLocalDateString());
+      if (!consolidation) return prev;
+
+      resultMegapackId = consolidation.megapack.id;
+      mergedCount = consolidation.mergedCount;
+
+      const deletedIdsSet = new Set(consolidation.originalIds);
+      const remainingQuests = prev.quests.filter(q => !deletedIdsSet.has(q.id));
+
+      return {
+        ...prev,
+        quests: [consolidation.megapack, ...remainingQuests],
+        profile: {
+          ...prev.profile,
+          recoveryMode: true
+        }
+      };
+    });
+
+    if (resultMegapackId && mergedCount > 0) {
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'alert',
+        title: '🛡️⚡ RECOVERY MEGAPACK CONSOLIDATED',
+        content: `Fused ${mergedCount} recovery directives into a single Megapack with subtasks. Includes a +20% bonus XP yield, compressed focus duration, and -25 Fatigue relief.`,
+        priority: 'high'
+      });
+    }
+
+    return { megapackId: resultMegapackId, count: mergedCount };
+  };
+
+  const staggerActiveRecoveryQuests = (maxPerDay: number = 2): number => {
+    let affectedCount = 0;
+
+    setState(prev => {
+      const activeRecoveryQuests = prev.quests.filter(q =>
+        q.status === 'Active' &&
+        (q.type.toUpperCase() === 'RECOVERY' || q.type.toUpperCase() === 'PENALTY') &&
+        !isQuestArchived(q, prev.lists, prev.folders)
+      );
+
+      if (activeRecoveryQuests.length === 0) return prev;
+      affectedCount = activeRecoveryQuests.length;
+
+      const updatedAllQuests = staggerRecoveryQuests(prev.quests, prev.systemDate || getLocalDateString(), maxPerDay);
+
+      return {
+        ...prev,
+        quests: updatedAllQuests
+      };
+    });
+
+    if (affectedCount > 0) {
+      const totalDays = Math.ceil(affectedCount / maxPerDay);
+      addSystemMessage({
+        sender: 'SYSTEM',
+        category: 'alert',
+        title: '🗓️ RECOVERY DRIP-FEED PACED',
+        content: `Staggered ${affectedCount} recovery directive(s) across ${totalDays} cycle(s) (cap: ${maxPerDay}/day). Overwhelm suppressed; daily routine preserved.`,
+        priority: 'high'
+      });
+    }
+
+    return affectedCount;
+  };
+
   const archiveQuest = (id: string) => {
     setState(prev => {
       const qToArchive = prev.quests.find(q => q.id === id);
@@ -4337,23 +4426,31 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
-      const addedFatigue = questToComplete.difficulty === 'Easy' ? 5 :
+      const isRecoveryMegapack = !!questToComplete.isRecoveryMegapack;
+      const fatigueRelief = questToComplete.fatigueRelief || 25;
+
+      const addedFatigue = isRecoveryMegapack ? 0 :
+                           questToComplete.difficulty === 'Easy' ? 5 :
                            questToComplete.difficulty === 'Normal' ? 10 :
                            questToComplete.difficulty === 'Hard' ? 18 : 25;
       const currentFatigue = prev.profile.fatigueLevel || 0;
-      const newFatigue = Math.min(100, currentFatigue + addedFatigue);
+      const newFatigue = isRecoveryMegapack
+        ? Math.max(0, currentFatigue - fatigueRelief)
+        : Math.min(100, currentFatigue + addedFatigue);
       const previousLevel = prev.profile.level || 1;
       const previousMaxHp = prev.profile.maxHp ?? getMaxHpForLevel(previousLevel);
       const levelUpHpGain = Math.max(0, level - previousLevel) * 5;
       const nextMaxHp = Math.max(previousMaxHp, getMaxHpForLevel(level));
       const nextHp = Math.min(nextMaxHp, (prev.profile.hp ?? previousMaxHp) + levelUpHpGain);
 
-      const completionMessage = `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
+      const completionMessage = isRecoveryMegapack
+        ? `🛡️⚡ RECOVERY MEGAPACK CONQUERED! All ${questToComplete.mergedQuestCount || 'backlog'} directives resolved (+${earnedXp} XP, -${fatigueRelief} Fatigue relief, +15 HP, +10 Momentum).`
+        : `Quest completed: "${questToComplete.name}" earned ${earnedXp} XP.`;
 
       addSystemMessage({
         sender: 'SYSTEM',
-        category: isKaffarahQuest ? 'alert' : 'achievement',
-        title: isKaffarahQuest ? '🌿 KAFFĀRAH RESTITUTION FULFILLED' : 'Directive Completed',
+        category: (isKaffarahQuest || isRecoveryMegapack) ? 'alert' : 'achievement',
+        title: isKaffarahQuest ? '🌿 KAFFĀRAH RESTITUTION FULFILLED' : isRecoveryMegapack ? '🛡️⚡ RECOVERY MEGAPACK FULFILLED' : 'Directive Completed',
         content: isKaffarahQuest ? `Spiritual remedy "${questToComplete.name}" fulfilled. Sincere restitution recorded; spiritual equilibrium restored and shop locks lifted.` : completionMessage,
         priority: 'high'
       });
@@ -4384,9 +4481,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           coins: (prev.profile.coins ?? 150) + totalCoinsEarned,
           timeCredits: nextLeisureBalance,
           totalTimeEarned: (!alreadyMinted && updatedQuestTimeTx) ? (prev.profile.totalTimeEarned || 0) + earnedTimeCredits : (prev.profile.totalTimeEarned || 0),
-          hp: Math.min(nextMaxHp, nextHp + (isKaffarahQuest ? 35 : 2)),
+          hp: Math.min(nextMaxHp, nextHp + (isKaffarahQuest ? 35 : isRecoveryMegapack ? 15 : 2)),
           maxHp: nextMaxHp,
-          momentum: Math.min(100, nextMomentum + (isKaffarahQuest ? 15 : 0)),
+          momentum: Math.min(100, nextMomentum + (isKaffarahQuest ? 15 : isRecoveryMegapack ? 10 : 0)),
           recoveryMode: newRecoveryMode,
           fatigueLevel: newFatigue,
           lastFatigueUpdateDate: prev.systemDate
@@ -12000,6 +12097,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateQuest,
       deleteQuest,
       deleteRecoveryQuestsWithPenalty,
+      mergeRecoveryQuests,
+      staggerActiveRecoveryQuests,
       completeQuest,
       logQuestWorkTime,
       reopenQuest,

@@ -158,7 +158,8 @@ const loadSavedQuestViewSettings = (): QuestViewSettings => {
 
 export const ActiveDirectives: React.FC = () => {
   const { 
-    state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, deleteRecoveryQuestsWithPenalty, duplicateQuest,
+    state, addQuest, updateQuest, completeQuest, reopenQuest, failQuest, deleteQuest, 
+    deleteRecoveryQuestsWithPenalty, mergeRecoveryQuests, staggerActiveRecoveryQuests, duplicateQuest,
     archiveQuest, unarchiveQuest,
     addSubQuest, toggleSubQuest, deleteSubQuest,
     startFocusSession, activeFocusSession, pauseFocusSession, resumeFocusSession, stopFocusSession,
@@ -1173,6 +1174,49 @@ export const ActiveDirectives: React.FC = () => {
     setTimeout(() => setTerminalLog(null), 5000);
   };
 
+  const handleMergeRecoveryQuests = () => {
+    if (recoveryQuests.length < 2) return;
+    const count = recoveryQuests.length;
+    const rawXp = recoveryQuests.reduce((sum, q) => sum + (q.xp || 25), 0);
+    const bonusXp = Math.max(10, Math.round(rawXp * 0.2));
+    const totalXp = rawXp + bonusXp;
+    const rawTime = recoveryQuests.reduce((sum, q) => sum + (q.estimatedTime || 15), 0);
+    const compressedTime = Math.max(15, Math.round(rawTime * 0.8));
+
+    if (!window.confirm(
+      `⚡ CONSOLIDATE ${count} RECOVERY DIRECTIVES?\n\n` +
+      `• Unified Megapack with ${count} checkable sub-objectives\n` +
+      `• Execution Time: ${compressedTime} mins (${rawTime} mins standard - 20% efficiency discount)\n` +
+      `• Reward: ${totalXp} XP (${rawXp} base + ${bonusXp} completionist bonus)\n` +
+      `• Relief: -25 Fatigue Reduction on completion (+15 HP & +10 Momentum)\n\n` +
+      `Proceed with consolidation?`
+    )) return;
+
+    const { megapackId } = mergeRecoveryQuests(recoveryQuests.map(q => q.id));
+    if (megapackId) {
+      setTerminalLog(`[SUCCESS] CONSOLIDATED ${count} RECOVERY DIRECTIVES INTO MEGAPACK (+${bonusXp} BONUS XP, -25 FATIGUE RELIEF).`);
+      setTimeout(() => setTerminalLog(null), 6000);
+    }
+  };
+
+  const handleStaggerRecoveryQuests = (maxPerDay: number = 2) => {
+    if (recoveryQuests.length === 0) return;
+    const count = recoveryQuests.length;
+    const daysNeeded = Math.ceil(count / maxPerDay);
+
+    if (!window.confirm(
+      `🗓️ STAGGER ${count} RECOVERY DIRECTIVES?\n\n` +
+      `• Pacing: Maximum ${maxPerDay} recovery directives per day\n` +
+      `• Timeline: Spread evenly across the next ${daysNeeded} calendar days\n` +
+      `• Outcome: Protects today's daily routine from cramming and cognitive overload\n\n` +
+      `Distribute schedule now?`
+    )) return;
+
+    const staggeredCount = staggerActiveRecoveryQuests(maxPerDay);
+    setTerminalLog(`[SUCCESS] STAGGERED ${staggeredCount} RECOVERY DIRECTIVE(S) OVER ${daysNeeded} DAYS (MAX ${maxPerDay}/DAY).`);
+    setTimeout(() => setTerminalLog(null), 6000);
+  };
+
   const handleMoveToTomorrow = (questId: string) => {
     const tomorrowStr = getTomorrowStr();
     updateQuest(questId, { 
@@ -1663,14 +1707,16 @@ export const ActiveDirectives: React.FC = () => {
             e.dataTransfer.effectAllowed = 'move';
           }
         }}
-        className={`p-2.5 bg-[#0b0d13]/80 hover:bg-[#11151b] border rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
-          isSelected 
-            ? 'border-[#c5a059] bg-[#3a2e12]/30 shadow-[0_0_12px_rgba(197,160,89,0.18)]' 
-            : finished 
-              ? 'border-emerald-500/10 bg-emerald-950/5 opacity-70' 
-              : isDeferred 
-                ? 'border-amber-500/10 hover:border-amber-500/20' 
-                : 'border-[#c5a059]/20 hover:border-[#c5a059]/35'
+        className={`p-2.5 rounded-lg flex items-center justify-between gap-3 cursor-grab active:cursor-grabbing transition-all relative ${cat.borderLeftClass} ${
+          quest.isRecoveryMegapack
+            ? 'border-amber-500/70 bg-gradient-to-r from-amber-950/40 via-zinc-950/90 to-emerald-950/30 shadow-[0_0_15px_rgba(245,158,11,0.18)]'
+            : isSelected 
+              ? 'border-[#c5a059] bg-[#3a2e12]/30 shadow-[0_0_12px_rgba(197,160,89,0.18)]' 
+              : finished 
+                ? 'border-emerald-500/10 bg-emerald-950/5 opacity-70' 
+                : isDeferred 
+                  ? 'border-amber-500/10 hover:border-amber-500/20' 
+                  : 'bg-[#0b0d13]/80 hover:bg-[#11151b] border-[#c5a059]/20 hover:border-[#c5a059]/35'
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -1729,6 +1775,29 @@ export const ActiveDirectives: React.FC = () => {
               }`}>
                 {quest.difficulty}
               </span>
+
+              {/* Recovery Megapack Badges */}
+              {quest.isRecoveryMegapack && (
+                <>
+                  <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold bg-amber-950/80 text-amber-300 border-amber-500/50 flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                    <Sparkles className="h-2.5 w-2.5 text-amber-400" />
+                    MEGAPACK ({quest.mergedQuestCount || (quest.subquests?.length || 0)})
+                  </span>
+                  <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold bg-emerald-950/60 text-emerald-300 border-emerald-500/30">
+                    🌿 -25 FATIGUE
+                  </span>
+                  <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold bg-cyan-950/60 text-cyan-300 border-cyan-500/30">
+                    ✨ +20% BONUS XP
+                  </span>
+                </>
+              )}
+
+              {/* Staggered Pacing Badge */}
+              {quest.pacingBatchIndex && quest.pacingTotalBatches && quest.pacingTotalBatches > 1 && (
+                <span className="text-[8px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold bg-blue-950/60 text-blue-300 border-blue-500/30">
+                  🗓️ PACED ({quest.pacingBatchIndex}/{quest.pacingTotalBatches})
+                </span>
+              )}
 
               {/* Linked Skill Badges */}
               {quest.relatedSkills && quest.relatedSkills.length > 0 && (
@@ -2842,6 +2911,50 @@ export const ActiveDirectives: React.FC = () => {
                 </div>
               </div>
 
+              {recoveryQuests.length >= 2 && (
+                <div className="bg-gradient-to-r from-amber-950/40 via-zinc-950/90 to-emerald-950/30 border border-amber-500/40 rounded-lg p-3 text-xs shadow-[0_0_20px_rgba(245,158,11,0.08)] space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                        <Zap className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-mono font-bold text-amber-300 text-[11px] flex items-center gap-1.5">
+                          <span>BACKLOG PROTOCOL: {recoveryQuests.length} RECOVERY DIRECTIVES ACCUMULATED</span>
+                          <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 uppercase">
+                            Cramming Alert
+                          </span>
+                        </div>
+                        <div className="text-[9.5px] font-mono text-zinc-400 mt-0.5">
+                          Standard load: {recoveryQuests.reduce((sum, q) => sum + (q.estimatedTime || 15), 0)}m focus • +{recoveryQuests.reduce((sum, q) => sum + (q.xp || 25), 0)} XP baseline. Consolidate or pace to prevent burnout.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={handleMergeRecoveryQuests}
+                      className="flex-1 sm:flex-none px-3 py-1.5 bg-gradient-to-r from-amber-950/80 to-amber-900/80 hover:from-amber-900 hover:to-amber-800 text-amber-200 border border-amber-500/50 rounded text-[10.5px] font-mono font-bold transition flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.15)] group"
+                      title="Merge all recovery quests into a single Megapack with subtasks, +20% bonus XP, and -25 Fatigue relief"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                      <span>⚡ MERGE INTO MEGAPACK (+20% XP, -25 FATIGUE)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleStaggerRecoveryQuests(2)}
+                      className="flex-1 sm:flex-none px-3 py-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-blue-300 border border-blue-500/40 rounded text-[10.5px] font-mono font-bold transition flex items-center justify-center gap-1.5 group"
+                      title="Spread recovery directives across upcoming days (maximum 2 per day)"
+                    >
+                      <Calendar className="h-3.5 w-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+                      <span>🗓️ STAGGER SCHEDULE (MAX 2/DAY • {Math.ceil(recoveryQuests.length / 2)} DAYS)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -301,6 +301,12 @@ export interface Quest {
   attributeRewards?: AttributeReward[];
   recoveryAction?: PrayerRecoveryAction;
   recoveryActionOptions?: PrayerRecoveryAction[];
+  isRecoveryMegapack?: boolean; // Consolidated recovery directive bundling multiple crammed directives
+  mergedQuestCount?: number; // Number of original recovery quests merged into this Megapack
+  originalQuestIds?: string[]; // IDs of the constituent recovery quests
+  fatigueRelief?: number; // Fatigue reduction points applied upon completing this Megapack
+  pacingBatchIndex?: number; // Day/batch index in staggered pacing (e.g. 1)
+  pacingTotalBatches?: number; // Total batches in staggered pacing (e.g. 3)
 }
 
 export interface LevelUpBossRequirement {
