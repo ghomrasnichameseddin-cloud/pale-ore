@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { processMultiDayPenalties, getQuestHpPenalty } from '../penaltyEngine';
-import { POSState, Quest } from '../../types';
-import { INITIAL_STATE } from '../../initialState';
+import { processMultiDayPenalties, autoProcessMidnightUnmarkedPrayers, getQuestHpPenalty } from '../penaltyEngine';
+import { POSState, Quest, SpiritualDailyLog } from '../../types';
+import { INITIAL_STATE, createDefaultSpiritualLog } from '../../initialState';
 
 describe('Multi-Day Midnight Penalty Engine', () => {
   const createBaseQuest = (overrides: Partial<Quest> = {}): Quest => ({
@@ -230,6 +230,72 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       expect(result.updatedHistory.length).toBe(0);
       expect(result.updatedMomentum).toBe(100);
       expect(result.recoveryModeActivated).toBe(false);
+    });
+  });
+
+  describe('Automatic Midnight Unmarked Prayer Penalties', () => {
+    it('automatically applies -200 XP and -10 HP and spawns Qada quests for unperformed prayers after midnight', () => {
+      const yesterday = '2026-08-19';
+      const today = '2026-08-20';
+
+      // User prayed Fajr and Dhuhr, but Asr, Maghrib, and Isha remained unmarked
+      const yesterdayLog: SpiritualDailyLog = {
+        ...createDefaultSpiritualLog(yesterday),
+        fajr: { fardh: true, onTime: true, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: `${yesterday}T05:00:00.000Z` },
+        dhuhr: { fardh: true, onTime: true, delayed: false, inMasjid: false, sunnahRawatib: false, completedAt: `${yesterday}T12:30:00.000Z` }
+      };
+
+      const state: POSState = {
+        ...INITIAL_STATE,
+        systemDate: today,
+        quests: [],
+        xpHistory: [],
+        spiritualLogs: {
+          [yesterday]: yesterdayLog
+        }
+      };
+
+      const result = autoProcessMidnightUnmarkedPrayers(state, today);
+
+      expect(result.daysProcessed).toBe(1);
+      // 3 prayers unmarked (Asr, Maghrib, Isha) -> 3 penalty entries
+      expect(result.updatedHistory.length).toBe(3);
+      expect(result.updatedHistory.every(h => h.xp === -200)).toBe(true);
+      expect(result.updatedHistory.every(h => h.source === 'penalty_midnight')).toBe(true);
+      expect(result.healthDelta).toBe(-30); // 3 * -10 HP
+      expect(result.recoveryModeActivated).toBe(true);
+
+      // Check updated log
+      const updatedLog = result.updatedSpiritualLogs?.[yesterday];
+      expect(updatedLog?.asr?.missedPastMidnight).toBe(true);
+      expect(updatedLog?.asr?.executionState).toBe('missed_midnight');
+      expect(updatedLog?.maghrib?.missedPastMidnight).toBe(true);
+      expect(updatedLog?.isha?.missedPastMidnight).toBe(true);
+      // Performed prayers remain intact
+      expect(updatedLog?.fajr?.fardh).toBe(true);
+      expect(updatedLog?.fajr?.missedPastMidnight).toBeFalsy();
+
+      // Qada' quests created
+      const qadaQuests = result.updatedQuests.filter(q => q.id.startsWith('q-qada-'));
+      expect(qadaQuests.length).toBe(3);
+      expect(qadaQuests.some(q => q.name.includes('Asr'))).toBe(true);
+      expect(qadaQuests.some(q => q.name.includes('Maghrib'))).toBe(true);
+      expect(qadaQuests.some(q => q.name.includes('Isha'))).toBe(true);
+    });
+
+    it('multi-day penalty with autoTrackUnmarkedPrayers automatically penalizes unmarked prayers across missed days', () => {
+      const state = createTestState([], 100);
+      const result = processMultiDayPenalties(state, '2026-08-19', '2026-08-20', { autoTrackUnmarkedPrayers: true });
+
+      expect(result.daysProcessed).toBe(1);
+      // All 5 prayers of 2026-08-19 remained unmarked -> 5 penalties
+      expect(result.updatedHistory.length).toBe(5);
+      expect(result.updatedHistory.reduce((sum, h) => sum + h.xp, 0)).toBe(-1000); // 5 * -200 XP
+      expect(result.healthDelta).toBe(-50); // 5 * -10 HP
+      expect(result.recoveryModeActivated).toBe(true);
+
+      const qadaQuests = result.updatedQuests.filter(q => q.id.startsWith('q-qada-'));
+      expect(qadaQuests.length).toBe(5);
     });
   });
 });

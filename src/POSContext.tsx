@@ -100,8 +100,8 @@ import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
 import { addQiyamRakats as addQiyamRakahCount, addDhohaRakats as addDhohaRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
-import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty } from './utils/penaltyEngine';
-export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, getQuestHpPenalty };
+import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, autoProcessMidnightUnmarkedPrayers, getQuestHpPenalty } from './utils/penaltyEngine';
+export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, autoProcessMidnightUnmarkedPrayers, getQuestHpPenalty };
 import { getActiveJob, getAllJobs, getAllTitles, JobSpec, TitleSpec, getJobLevel, getTitleLevel, evaluateLevelConditions, LEVEL_RANK_NAMES } from './jobsAndTitles';
 import { 
   getQuestXpMultiplier, getFocusXpMultiplier, getCoinMultiplier, getFailPenaltyMultiplier, getMomentumMultiplier 
@@ -2119,7 +2119,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const applyMidnightPenalties = (prev: POSState, oldDate: string, newDateStr: string) => {
-    return processMultiDayPenalties(prev, oldDate, newDateStr);
+    return processMultiDayPenalties(prev, oldDate, newDateStr, { autoTrackUnmarkedPrayers: true });
   };
 
   const setSystemDate = (newDateStr: string) => {
@@ -2205,7 +2205,43 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         const oldDate = currentSimulated;
-        const { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated, updatedSpiritualLogs, healthDelta } = applyMidnightPenalties(prev, oldDate, nextSimulated);
+        let { updatedQuests, updatedHistory, updatedMomentum, recoveryModeActivated, updatedSpiritualLogs, healthDelta } = applyMidnightPenalties(prev, oldDate, nextSimulated);
+
+        // Automatically audit past dates to activate midnight penalty on any unmarked prayers
+        const prayerAudit = autoProcessMidnightUnmarkedPrayers({
+          ...prev,
+          quests: updatedQuests,
+          xpHistory: updatedHistory,
+          spiritualLogs: updatedSpiritualLogs || prev.spiritualLogs
+        }, nextSimulated);
+
+        let prayerAuditActivated = false;
+        if (prayerAudit.daysProcessed > 0) {
+          updatedQuests = prayerAudit.updatedQuests;
+          updatedHistory = prayerAudit.updatedHistory;
+          if (prayerAudit.updatedSpiritualLogs) {
+            updatedSpiritualLogs = prayerAudit.updatedSpiritualLogs;
+          }
+          if (prayerAudit.healthDelta) {
+            healthDelta = (healthDelta || 0) + prayerAudit.healthDelta;
+          }
+          if (prayerAudit.recoveryModeActivated) {
+            recoveryModeActivated = true;
+          }
+          prayerAuditActivated = true;
+        }
+
+        if (prayerAuditActivated) {
+          setTimeout(() => {
+            addSystemMessage({
+              sender: 'SYSTEM',
+              category: 'warning',
+              title: '🚨 AUTOMATIC MIDNIGHT PRAYER AUDIT',
+              content: 'Obligatory prayers that remained unmarked after midnight were recorded as missed (−200 XP, −10 HP). Obligatory Qada\' restitution directives have been issued.',
+              priority: 'high'
+            });
+          }, 0);
+        }
 
         const finalQuests = resetRecurringQuestsForNewDate(nextSimulated, updatedQuests, prev.lists, prev.folders);
         const finalHistory = resolveRecoveredPenalties(updatedHistory);
@@ -2254,7 +2290,24 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     // Check every 30 seconds for midnight transition
     const interval = setInterval(runCycleReset, 30000);
-    return () => clearInterval(interval);
+
+    // Exact midnight timer scheduled at 00:00:01
+    let midnightTimeout: NodeJS.Timeout | null = null;
+    const scheduleMidnightTimer = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+      const msUntilMidnight = Math.max(1000, nextMidnight.getTime() - now.getTime());
+      midnightTimeout = setTimeout(() => {
+        runCycleReset();
+        scheduleMidnightTimer();
+      }, msUntilMidnight);
+    };
+    scheduleMidnightTimer();
+
+    return () => {
+      clearInterval(interval);
+      if (midnightTimeout) clearTimeout(midnightTimeout);
+    };
   }, []);
 
   // Helper to determine if a quest is completed or has been completed at least once (for recurring)
@@ -8030,7 +8083,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (state.spiritualLogs && state.spiritualLogs[targetDate]) {
       return state.spiritualLogs[targetDate];
     }
-    return createDefaultSpiritualLog(targetDate);
+    const defaultLog = createDefaultSpiritualLog(targetDate);
+    const currentSysDate = state.systemDate || getLocalDateString();
+    if (targetDate < currentSysDate) {
+      for (const p of PRAYER_ORDER) {
+        if (defaultLog[p]) {
+          defaultLog[p] = {
+            ...defaultLog[p],
+            missedPastMidnight: true,
+            executionState: 'missed_midnight'
+          };
+        }
+      }
+    }
+    return defaultLog;
   };
 
   const updateSpiritualLog = (dateStr: string, updates: Partial<SpiritualDailyLog>) => {
@@ -9419,14 +9485,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       for (const prayer of PRAYER_ORDER) {
         const pState = dayLog[prayer];
-        if (pState && !pState.fardh && !pState.missedPastMidnight) {
+        if (!pState || (!pState.fardh && !pState.missedPastMidnight)) {
           modified = true;
           penalizedCount++;
           const pInfo = PRAYER_NAMES[prayer];
           penalizedPrayers.push(pInfo.en);
 
           dayLog[prayer] = {
-            ...pState,
+            ...(pState || { inMasjid: false, sunnahRawatib: false, completedAt: null }),
             fardh: false,
             onTime: false,
             delayed: false,

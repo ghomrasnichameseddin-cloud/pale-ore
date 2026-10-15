@@ -3,6 +3,7 @@ import { getDaysDifference, addDays, getWeekdayStr, getDaysInMonth } from './dat
 import { getActiveJob } from '../jobsAndTitles';
 import { getFailPenaltyMultiplier } from './perkEvaluator';
 import { resolveRecoveryQuestRewards } from './progressionEngine';
+import { createDefaultSpiritualLog } from '../initialState';
 import { 
   PRAYER_ORDER, 
   PRAYER_NAMES, 
@@ -148,6 +149,10 @@ export const getQuestHpPenalty = (
   return Math.max(1, Math.round(basePenaltyHp * penaltyReduction));
 };
 
+export interface ProcessMultiDayPenaltiesOptions {
+  autoTrackUnmarkedPrayers?: boolean;
+}
+
 /**
  * Iterates through all missed days between oldDate and newDateStr (capped at MAX_PENALTY_DAYS_LOOKBACK),
  * applying quest failures, XP deductions, momentum penalties, and recovery directives.
@@ -155,7 +160,8 @@ export const getQuestHpPenalty = (
 export function processMultiDayPenalties(
   prev: POSState,
   oldDate: string,
-  newDateStr: string
+  newDateStr: string,
+  options?: ProcessMultiDayPenaltiesOptions
 ): MidnightPenaltiesResult {
   const daysDiff = getDaysDifference(oldDate, newDateStr);
 
@@ -354,16 +360,24 @@ export function processMultiDayPenalties(
     });
 
     // 4. Process unexecuted prayers before midnight on dayStr -> Severe Penalty
-    if (updatedSpiritualLogs[dayStr]) {
-      const dayLog = { ...updatedSpiritualLogs[dayStr] };
-      let dayModified = false;
+    const shouldCheckPrayers = Boolean(
+      options?.autoTrackUnmarkedPrayers ||
+      updatedSpiritualLogs[dayStr] ||
+      (prev.spiritualLogs && Object.keys(prev.spiritualLogs).length > 0)
+    );
+
+    if (shouldCheckPrayers) {
+      const dayLog: SpiritualDailyLog = updatedSpiritualLogs[dayStr]
+        ? { ...updatedSpiritualLogs[dayStr] }
+        : createDefaultSpiritualLog(dayStr);
+      let dayModified = !updatedSpiritualLogs[dayStr];
 
       for (const prayer of PRAYER_ORDER) {
         const pState = dayLog[prayer];
-        if (pState && !pState.fardh && !pState.missedPastMidnight) {
+        if (!pState || (!pState.fardh && !pState.missedPastMidnight)) {
           dayModified = true;
           dayLog[prayer] = {
-            ...pState,
+            ...(pState || { inMasjid: false, sunnahRawatib: false, completedAt: null }),
             fardh: false,
             onTime: false,
             delayed: false,
@@ -447,6 +461,127 @@ export function processMultiDayPenalties(
     updatedMomentum,
     recoveryModeActivated,
     daysProcessed: effectiveDays,
+    updatedSpiritualLogs,
+    healthDelta: totalHealthLost > 0 ? -totalHealthLost : 0
+  };
+}
+
+/**
+ * Automatically audits all past dates prior to currentSystemDate and activates
+ * the midnight missed prayer penalty mechanism for any prayer that remains unmarked.
+ */
+export function autoProcessMidnightUnmarkedPrayers(
+  prev: POSState,
+  currentSystemDate: string
+): MidnightPenaltiesResult {
+  const lookbackDays = Math.min(MAX_PENALTY_DAYS_LOOKBACK, 30);
+  const candidateDates = new Set<string>();
+
+  if (prev.spiritualLogs) {
+    for (const d of Object.keys(prev.spiritualLogs)) {
+      if (d < currentSystemDate && getDaysDifference(d, currentSystemDate) <= lookbackDays) {
+        candidateDates.add(d);
+      }
+    }
+  }
+
+  // Also include yesterday if within lookback
+  const yesterday = addDays(currentSystemDate, -1);
+  if (prev.spiritualLogs && Object.keys(prev.spiritualLogs).length > 0) {
+    candidateDates.add(yesterday);
+  }
+
+  let updatedQuests = [...prev.quests];
+  let updatedHistory = [...prev.xpHistory];
+  let updatedSpiritualLogs: Record<string, SpiritualDailyLog> = prev.spiritualLogs ? { ...prev.spiritualLogs } : {};
+  let totalHealthLost = 0;
+  let recoveryModeActivated = false;
+  let datesChanged = 0;
+
+  for (const dayStr of Array.from(candidateDates).sort()) {
+    const existing = updatedSpiritualLogs[dayStr];
+    if (!existing) continue; // Only process dates that have spiritual tracking entries
+
+    const dayLog: SpiritualDailyLog = { ...existing };
+    let dayModified = false;
+
+    for (const prayer of PRAYER_ORDER) {
+      const pState = dayLog[prayer];
+      if (!pState || (!pState.fardh && !pState.missedPastMidnight)) {
+        dayModified = true;
+        dayLog[prayer] = {
+          ...(pState || { inMasjid: false, sunnahRawatib: false, completedAt: null }),
+          fardh: false,
+          onTime: false,
+          delayed: false,
+          missedPastMidnight: true,
+          executionState: 'missed_midnight'
+        };
+
+        const pInfo = PRAYER_NAMES[prayer];
+        const prayXpId = `h-fail-midnight-prayer-${prayer}-${dayStr}`;
+        if (!updatedHistory.some(h => h.id === prayXpId)) {
+          updatedHistory.unshift({
+            id: prayXpId,
+            questId: `spiritual-prayer-${dayStr}-${prayer}-missedMidnight`,
+            questName: `🚨 SEVERE PRAYER PENALTY: ${pInfo.en} (${pInfo.ar}) not executed before midnight`,
+            xp: -MIDNIGHT_MISSED_PRAYER_PENALTY_XP,
+            timestamp: `${dayStr}T23:59:59.000Z`,
+            date: dayStr,
+            type: 'penalty',
+            source: 'penalty_midnight',
+            sourceId: `spiritual-prayer-${dayStr}-${prayer}`,
+            activityId: `prayer-${prayer}-missed-midnight`,
+            skillIds: []
+          });
+          totalHealthLost += MIDNIGHT_MISSED_PRAYER_PENALTY_HP;
+        }
+
+        const qadaQuestId = `q-qada-${prayer}-${dayStr}`;
+        if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
+          updatedQuests.push({
+            id: qadaQuestId,
+            name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${dayStr})`,
+            description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${dayStr}. Mandatory in Islamic jurisprudence to clear lapse.`,
+            status: 'Active',
+            difficulty: 'Hard',
+            type: 'Recovery',
+            estimatedTime: 15,
+            recurrence: 'None',
+            energyLevel: 'High',
+            deadline: currentSystemDate,
+            createdAt: `${dayStr}T23:59:59.000Z`,
+            completedAt: null,
+            xp: 50,
+            goalId: null,
+            projectId: null,
+            milestoneId: null,
+            subquests: [
+              {
+                id: `sq-qada-${prayer}-${dayStr}-1`,
+                name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+                completed: false
+              }
+            ],
+            relatedSkills: []
+          });
+          recoveryModeActivated = true;
+        }
+      }
+    }
+
+    if (dayModified) {
+      updatedSpiritualLogs[dayStr] = dayLog;
+      datesChanged++;
+    }
+  }
+
+  return {
+    updatedQuests,
+    updatedHistory,
+    updatedMomentum: prev.profile.momentum,
+    recoveryModeActivated,
+    daysProcessed: datesChanged,
     updatedSpiritualLogs,
     healthDelta: totalHealthLost > 0 ? -totalHealthLost : 0
   };
