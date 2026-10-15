@@ -127,7 +127,7 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
               {renderTopicIcon(activeJob.iconName, "h-4 w-4")}
               <span>{activeJob.name}</span>
               <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">
-                LVL {getJobLvl(activeJob.id)}/7
+                LVL {getJobLvl(activeJob.id)}/9
               </span>
             </span>
           </div>
@@ -138,7 +138,7 @@ export const JobTitleModal: React.FC<JobTitleModalProps> = ({ isOpen, onClose })
               {renderTopicIcon(activeTitle.iconName || 'GraduationCap', 'h-3.5 w-3.5')}
               <span>[{activeTitle.badge}] {activeTitle.name}</span>
               <span className="text-[9px] bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 px-1.5 py-0.2 rounded">
-                LVL {getTitleLvl(activeTitle.id)}/7
+                LVL {getTitleLvl(activeTitle.id)}/9
               </span>
             </span>
           </div>

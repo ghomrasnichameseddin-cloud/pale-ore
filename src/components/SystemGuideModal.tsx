@@ -631,10 +631,10 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                   </div>
 
                   <p className="text-xs text-zinc-300 font-sans leading-relaxed">
-                    Equipped Job Classes (e.g. <em>Cyber Architect, Code Alchemist, Titan Enforcer</em>) and Honorific Titles (e.g. <em>Grand Architect, Iron Will</em>) scale from Level 1 to 7 as you fulfill their milestone requirements:
+                    Equipped Job Classes (e.g. <em>Cyber Architect, Code Alchemist, Titan Enforcer</em>) and Honorific Titles (e.g. <em>Grand Architect, Iron Will</em>) scale from Level 1 to 9 as you fulfill their milestone requirements:
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs font-mono">
                     <div className="p-2.5 bg-zinc-950 border border-white/5 rounded-lg space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-zinc-300 font-bold">Lvl 1</span>
@@ -683,12 +683,28 @@ export function SystemGuideModal({ isOpen, onClose, onNavigateTab, initialSectio
                       <p className="text-zinc-400 text-[10px] font-sans">Long-term operational excellence & sustained momentum.</p>
                     </div>
 
-                    <div className="p-2.5 bg-zinc-950 border border-rose-500/30 rounded-lg space-y-1 sm:col-span-2">
+                    <div className="p-2.5 bg-zinc-950 border border-orange-500/20 rounded-lg space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-rose-400 font-bold">Lvl 7</span>
-                        <span className="text-[9px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded font-bold">Apex Legend (MAX)</span>
+                        <span className="text-orange-400 font-bold">Lvl 7</span>
+                        <span className="text-[9px] bg-orange-950 text-orange-300 px-1.5 py-0.5 rounded font-bold">Apex Legend</span>
                       </div>
-                      <p className="text-zinc-400 text-[10px] font-sans">The absolute pinnacle level cap — flawless mastery and maximum perk multipliers.</p>
+                      <p className="text-zinc-400 text-[10px] font-sans">Flawless mastery & elite domain leadership.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-red-500/20 rounded-lg space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-red-400 font-bold">Lvl 8</span>
+                        <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-bold">Apex Sovereign</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">Mythic operational dominion & effortless multi-project synthesis.</p>
+                    </div>
+
+                    <div className="p-2.5 bg-zinc-950 border border-rose-500/40 rounded-lg space-y-1 sm:col-span-2 lg:col-span-1 shadow-[0_0_15px_rgba(244,63,94,0.15)]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-400 font-bold">Lvl 9</span>
+                        <span className="text-[9px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded font-bold">Transcendent Paragon (MAX)</span>
+                      </div>
+                      <p className="text-zinc-400 text-[10px] font-sans">The absolute pinnacle level cap — supreme mastery and +40% perk boost.</p>
                     </div>
                   </div>
                 </div>

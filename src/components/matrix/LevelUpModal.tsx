@@ -34,7 +34,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   const isJob = !!job;
 
   const currentLevel = isJob ? getJobLvl(job!.id) : getTitleLvl(title!.id);
-  const defaultTarget = currentLevel < 7 ? currentLevel + 1 : 7;
+  const defaultTarget = currentLevel < 9 ? currentLevel + 1 : 9;
 
   const [targetLevel, setTargetLevel] = useState<number>(defaultTarget);
   const [levelCondition, setLevelCondition] = useState<LevelConditionSpec>({
@@ -259,10 +259,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           </button>
         </div>
 
-        {/* LEVEL NAVIGATION TABS (LEVELS 2 TO 7) */}
+        {/* LEVEL NAVIGATION TABS (LEVELS 2 TO 9) */}
         <div className="px-4 py-2 bg-black/70 border-b border-white/10 flex items-center gap-1.5 overflow-x-auto">
           <span className="text-[10px] text-zinc-400 uppercase font-bold mr-1 shrink-0">TARGET LEVEL:</span>
-          {[2, 3, 4, 5, 6, 7].map(lvl => {
+          {[2, 3, 4, 5, 6, 7, 8, 9].map(lvl => {
             const hasCustom = !!(activeSpec.customLevelConditions && activeSpec.customLevelConditions[lvl]);
             const isSelected = targetLevel === lvl;
             const isCompleted = currentLevel >= lvl;

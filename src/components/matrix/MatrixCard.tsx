@@ -34,12 +34,12 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
   const [showConditionsDetail, setShowConditionsDetail] = useState(false);
 
   const currentLevel = isJob ? getJobLvl(item.id) : getTitleLvl(item.id);
-  const nextLevel = currentLevel < 7 ? currentLevel + 1 : 7;
+  const nextLevel = currentLevel < 9 ? currentLevel + 1 : 9;
 
   const unlockEval = evaluateUnlockConditions(item, state);
   const isUnlocked = isJob ? isJobUnlocked(item as JobSpec, state) : isTitleUnlocked(item as TitleSpec, state);
   const nextLevelEval = evaluateLevelConditions(item, nextLevel, state);
-  const canLevelUp = currentLevel < 7 && nextLevelEval.isMet;
+  const canLevelUp = currentLevel < 9 && nextLevelEval.isMet;
 
   const jobSpec = isJob ? (item as JobSpec) : null;
   const titleSpec = !isJob ? (item as TitleSpec) : null;
@@ -93,7 +93,7 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
 
               <span className="text-[9px] text-[var(--accent-highlight)] bg-[var(--accent-surface)] border border-[var(--border-accent)] px-2 py-0.5 rounded font-black uppercase flex items-center gap-1">
                 <Star className="h-3 w-3 text-[var(--accent-bright)] fill-[var(--accent-bright)]" />
-                LVL {currentLevel}/7 ({LEVEL_RANK_NAMES[currentLevel]})
+                LVL {currentLevel}/9 ({LEVEL_RANK_NAMES[currentLevel]})
               </span>
 
               <span className="text-[9px] text-zinc-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded uppercase">
@@ -113,7 +113,7 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
               )}
             </div>
 
-            {/* 7-LEVEL PROGRESSION PIPELINE BAR */}
+            {/* 9-LEVEL PROGRESSION PIPELINE BAR */}
             <div className="space-y-1 pt-0.5">
               <div className="flex items-center justify-between text-[9px] text-zinc-400">
                 <span className="uppercase text-zinc-500 flex items-center gap-1">
@@ -121,11 +121,11 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
                   Progression Pipeline:
                 </span>
                 <span className="text-[var(--accent-bright)] font-bold">
-                  {currentLevel === 7 ? '👑 MAX APEX LEVEL 7' : `Next: Lvl ${nextLevel} (${LEVEL_RANK_NAMES[nextLevel]})`}
+                  {currentLevel === 9 ? '👑 MAX APEX LEVEL 9' : `Next: Lvl ${nextLevel} (${LEVEL_RANK_NAMES[nextLevel]})`}
                 </span>
               </div>
-              <div className="grid grid-cols-7 gap-1">
-                {[1, 2, 3, 4, 5, 6, 7].map(lvl => (
+              <div className="grid grid-cols-9 gap-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
                   <div 
                     key={lvl} 
                     className={`h-2 rounded transition-all ${
@@ -164,7 +164,7 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
                 onClick={() => setShowConditionsDetail(!showConditionsDetail)}
                 className="text-[10px] text-[var(--accent-bright)] hover:text-[var(--accent-highlight)] flex items-center gap-1 transition cursor-pointer"
               >
-                <span>{currentLevel === 7 ? 'View Apex Conditions' : `Level ${nextLevel} Requirements`}</span>
+                <span>{currentLevel === 9 ? 'View Transcendent Conditions' : `Level ${nextLevel} Requirements`}</span>
                 {showConditionsDetail ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
 
@@ -172,16 +172,16 @@ export const MatrixCard: React.FC<MatrixCardProps> = ({
                 <div className="mt-2 p-2.5 bg-[#07080c]/90 rounded-lg border border-[var(--border-accent)] space-y-1.5 animate-fade-in">
                   <span className="text-[9px] text-[var(--accent-bright)] uppercase font-bold block flex items-center gap-1">
                     <RubElHizbIcon className="h-2 w-2" />
-                    {currentLevel === 7 ? 'MAX LEVEL CONDITIONS SATISFIED:' : `LEVEL ${nextLevel} CONDITIONS STATUS:`}
+                    {currentLevel === 9 ? 'MAX LEVEL CONDITIONS SATISFIED:' : `LEVEL ${nextLevel} CONDITIONS STATUS:`}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {(currentLevel === 7 ? unlockEval.metConditions : nextLevelEval.metConditions).map((cond, idx) => (
+                    {(currentLevel === 9 ? unlockEval.metConditions : nextLevelEval.metConditions).map((cond, idx) => (
                       <span key={idx} className="bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium text-[10px]">
                         <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
                         {cond}
                       </span>
                     ))}
-                    {currentLevel < 7 && nextLevelEval.unmetConditions.map((cond, idx) => (
+                    {currentLevel < 9 && nextLevelEval.unmetConditions.map((cond, idx) => (
                       <span key={idx} className="bg-rose-950/70 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-medium text-[10px]">
                         <XCircle className="h-3 w-3 text-rose-400 shrink-0" />
                         {cond}

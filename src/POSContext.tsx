@@ -5974,9 +5974,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const levelUpJob = (jobId: string, targetLvl?: number, forceLevelUp?: boolean): { success: boolean; message: string } => {
     const currentLvl = getJobLevel(jobId, stateRef.current);
-    const nextLvl = targetLvl ? Math.min(7, Math.max(1, targetLvl)) : (currentLvl < 7 ? currentLvl + 1 : 7);
-    if (currentLvl >= 7 && nextLvl <= currentLvl && !forceLevelUp) {
-      return { success: false, message: 'Job Class is already at MAX Level 7 (Apex Legend)!' };
+    const nextLvl = targetLvl ? Math.min(9, Math.max(1, targetLvl)) : (currentLvl < 9 ? currentLvl + 1 : 9);
+    if (currentLvl >= 9 && nextLvl <= currentLvl && !forceLevelUp) {
+      return { success: false, message: `Job Class is already at MAX Level 9 (${LEVEL_RANK_NAMES[9] || 'Transcendent Paragon'})!` };
     }
     const allJobs = getAllJobs(stateRef.current.customJobs || [], stateRef.current.deletedJobIds || []);
     const job = allJobs.find(j => j.id === jobId);
@@ -6008,9 +6008,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const levelUpTitle = (titleId: string, targetLvl?: number, forceLevelUp?: boolean): { success: boolean; message: string } => {
     const currentLvl = getTitleLevel(titleId, stateRef.current);
-    const nextLvl = targetLvl ? Math.min(7, Math.max(1, targetLvl)) : (currentLvl < 7 ? currentLvl + 1 : 7);
-    if (currentLvl >= 7 && nextLvl <= currentLvl && !forceLevelUp) {
-      return { success: false, message: 'Honorific Title is already at MAX Level 7!' };
+    const nextLvl = targetLvl ? Math.min(9, Math.max(1, targetLvl)) : (currentLvl < 9 ? currentLvl + 1 : 9);
+    if (currentLvl >= 9 && nextLvl <= currentLvl && !forceLevelUp) {
+      return { success: false, message: `Honorific Title is already at MAX Level 9 (${LEVEL_RANK_NAMES[9] || 'Transcendent Paragon'})!` };
     }
     const allTitles = getAllTitles(stateRef.current.customTitles || [], stateRef.current.deletedTitleIds || []);
     const title = allTitles.find(t => t.id === titleId);

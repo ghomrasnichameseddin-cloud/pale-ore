@@ -464,8 +464,8 @@ export interface UserProfile {
   focusShields?: number; // count of streak protection shields
   hp?: number; // 0 to 100+ Spiritual Health / Soul Vitality (clamped at maxHp)
   maxHp?: number; // Max health points (default 100)
-  jobLevels?: Record<string, number>; // mapping of jobId -> level (1-7)
-  titleLevels?: Record<string, number>; // mapping of titleId -> level (1-7)
+  jobLevels?: Record<string, number>; // mapping of jobId -> level (1-9)
+  titleLevels?: Record<string, number>; // mapping of titleId -> level (1-9)
   fatigueLevel?: number; // 0 to 100
   lastFatigueUpdateDate?: string;
   levelUpBossRequirement?: LevelUpBossRequirement;

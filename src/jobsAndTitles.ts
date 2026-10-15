@@ -46,7 +46,7 @@ export interface JobSpec {
   relatedProjectId?: string | null;
   relatedProjectIds?: string[];
 
-  // Custom Level Progression Conditions (Levels 2-7)
+  // Custom Level Progression Conditions (Levels 2-9)
   customLevelConditions?: Record<number, LevelConditionSpec>;
 
   isCustom?: boolean;
@@ -72,7 +72,7 @@ export interface TitleSpec {
   relatedProjectId?: string | null;
   relatedProjectIds?: string[];
 
-  // Custom Level Progression Conditions (Levels 2-7)
+  // Custom Level Progression Conditions (Levels 2-9)
   customLevelConditions?: Record<number, LevelConditionSpec>;
 
   checkUnlocked?: (state: POSState, completedQuestCount: number, currentLevel: number) => boolean;
@@ -613,7 +613,9 @@ export const LEVEL_RANK_NAMES: Record<number, string> = {
   4: 'Senior Operator',
   5: 'Master',
   6: 'Grandmaster',
-  7: 'Apex Legend'
+  7: 'Apex Legend',
+  8: 'Apex Sovereign',
+  9: 'Transcendent Paragon'
 };
 
 export function getDefaultLevelConditionSpec(spec: JobSpec | TitleSpec, targetLevel: number): LevelConditionSpec {
@@ -669,7 +671,7 @@ export function evaluateLevelConditions(
   targetLevel: number,
   state: POSState
 ): { isMet: boolean; unmetConditions: string[]; metConditions: string[] } {
-  if (targetLevel < 1 || targetLevel > 7) {
+  if (targetLevel < 1 || targetLevel > 9) {
     return { isMet: false, unmetConditions: ['Invalid Level Range'], metConditions: [] };
   }
 
@@ -890,7 +892,7 @@ export function getJobLevel(jobId: string, state: POSState): number {
   if (!job) return 1;
 
   const storedLevel = state.profile.jobLevels?.[jobId];
-  if (storedLevel && storedLevel >= 1 && storedLevel <= 7) {
+  if (storedLevel && storedLevel >= 1 && storedLevel <= 9) {
     return storedLevel;
   }
 
@@ -898,7 +900,7 @@ export function getJobLevel(jobId: string, state: POSState): number {
 
   // Calculate highest level achieved
   let maxLevel = 1;
-  for (let lvl = 2; lvl <= 7; lvl++) {
+  for (let lvl = 2; lvl <= 9; lvl++) {
     const evalRes = evaluateLevelConditions(job, lvl, state);
     if (evalRes.isMet) {
       maxLevel = lvl;
@@ -911,7 +913,7 @@ export function getJobLevel(jobId: string, state: POSState): number {
 
 export function getTitleLevel(titleId: string, state: POSState): number {
   const storedLevel = state.profile.titleLevels?.[titleId];
-  if (storedLevel && storedLevel >= 1 && storedLevel <= 7) {
+  if (storedLevel && storedLevel >= 1 && storedLevel <= 9) {
     return storedLevel;
   }
   const title = getAllTitles(state.customTitles || [], state.deletedTitleIds || []).find(t => t.id === titleId);
@@ -920,7 +922,7 @@ export function getTitleLevel(titleId: string, state: POSState): number {
   if (!isTitleUnlocked(title, state)) return 1;
 
   let maxLevel = 1;
-  for (let lvl = 2; lvl <= 7; lvl++) {
+  for (let lvl = 2; lvl <= 9; lvl++) {
     const evalRes = evaluateLevelConditions(title, lvl, state);
     if (evalRes.isMet) {
       maxLevel = lvl;
