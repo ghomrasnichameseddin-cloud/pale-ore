@@ -1033,9 +1033,18 @@ export function reconcilePOSState(rawInput: any): POSState {
     strategicPostmortems: parsed.strategicPostmortems && parsed.strategicPostmortems.length > 0 ? parsed.strategicPostmortems : (INITIAL_STATE.strategicPostmortems || []),
     quranTracker: {
       ...(parsed.quranTracker || INITIAL_STATE.quranTracker || DEFAULT_QURAN_TRACKER),
-      surahLedger: (parsed.quranTracker?.surahLedger && Object.keys(parsed.quranTracker.surahLedger).length > 0)
-        ? parsed.quranTracker.surahLedger
-        : generateDefaultSurahLedger()
+      surahLedger: (() => {
+        const existing = parsed.quranTracker?.surahLedger;
+        if (!existing || Object.keys(existing).length === 0) {
+          return generateDefaultSurahLedger();
+        }
+        // If the stored ledger is the previous default pre-seeded state (Al-Fatihah with pre-seeded note and 50 revisions),
+        // reset to the empty initial state.
+        if (existing[1]?.notes === 'Foundation of every Salah. Memorized firmly.' && existing[1]?.revisionCount === 50 && existing[67]?.revisionCount === 14) {
+          return generateDefaultSurahLedger();
+        }
+        return existing;
+      })()
     },
     customRadars: (parsed.customRadars && parsed.customRadars.length > 0) ? parsed.customRadars : (INITIAL_STATE.customRadars || [])
   };

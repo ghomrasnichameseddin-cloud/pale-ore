@@ -9,6 +9,7 @@ import {
 } from '../quranAndAdhkarEngine';
 import { QuranPassage, SpiritualDailyLog } from '../../types';
 import { createDefaultSpiritualLog } from '../../initialState';
+import { generateDefaultSurahLedger, QURAN_SURAHS } from '../../data/quranSurahs';
 
 describe('Qur\'an and Adhkār Sacred Protocol Engine', () => {
   describe('Adhkār Fortress Integrity', () => {
@@ -216,5 +217,37 @@ describe('Qur\'an and Adhkār Sacred Protocol Engine', () => {
       expect(freshness.archivedCount).toBe(1);
     });
   });
+
+  describe('Surah Ledger Initial State', () => {
+    it('initializes all 114 surahs in an empty, clean state with zero pre-seeded progress', () => {
+      const ledger = generateDefaultSurahLedger();
+      const surahKeys = Object.keys(ledger).map(Number);
+      
+      expect(surahKeys.length).toBe(114);
+      expect(QURAN_SURAHS.length).toBe(114);
+
+      for (const surah of QURAN_SURAHS) {
+        const entry = ledger[surah.number];
+        expect(entry).toBeDefined();
+        expect(entry.surahNumber).toBe(surah.number);
+        // Memorization: clean slate
+        expect(entry.memorizationStatus).toBe('not_started');
+        expect(entry.memorizedPages).toBe(0);
+        expect(entry.memorizedAyahs).toBe(0);
+        // Revision: unrevised
+        expect(entry.revisionStatus).toBe('unrevised');
+        expect(entry.revisionCount).toBe(0);
+        expect(entry.masteryStrength).toBe(1);
+        expect(entry.lastRevisedDate).toBeUndefined();
+        // Tilawah (reading): unread
+        expect(entry.readStatus).toBe('unread');
+        expect(entry.readPages).toBe(0);
+        expect(entry.lastReadDate).toBeUndefined();
+        // Notes: empty
+        expect(entry.notes).toBeUndefined();
+      }
+    });
+  });
 });
+
 

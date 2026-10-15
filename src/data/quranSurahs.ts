@@ -129,11 +129,9 @@ export const QURAN_SURAHS: QuranSurahMetadata[] = [
 ];
 
 import { SurahLedgerEntry } from '../types';
-import { getLocalDateString } from '../utils/dateUtils';
 
 export function generateDefaultSurahLedger(): Record<number, SurahLedgerEntry> {
   const ledger: Record<number, SurahLedgerEntry> = {};
-  const todayStr = getLocalDateString();
 
   for (const surah of QURAN_SURAHS) {
     ledger[surah.number] = {
@@ -149,126 +147,7 @@ export function generateDefaultSurahLedger(): Record<number, SurahLedgerEntry> {
     };
   }
 
-  // Pre-seed canonical beginner milestones
-  // 1. Al-Fatihah (Memorized, Mastered, Read)
-  if (ledger[1]) {
-    ledger[1] = {
-      ...ledger[1],
-      memorizationStatus: 'completed',
-      memorizedPages: 1,
-      memorizedAyahs: 7,
-      revisionStatus: 'mastered',
-      masteryStrength: 5,
-      revisionCount: 50,
-      readStatus: 'completed',
-      readPages: 1,
-      lastRevisedDate: todayStr,
-      lastReadDate: todayStr,
-      notes: 'Foundation of every Salah. Memorized firmly.'
-    };
-  }
-
-  // 67. Al-Mulk (Memorized, Mastered)
-  if (ledger[67]) {
-    ledger[67] = {
-      ...ledger[67],
-      memorizationStatus: 'completed',
-      memorizedPages: 3,
-      memorizedAyahs: 30,
-      revisionStatus: 'mastered',
-      masteryStrength: 5,
-      revisionCount: 14,
-      readStatus: 'completed',
-      readPages: 3,
-      lastRevisedDate: todayStr,
-      lastReadDate: todayStr,
-      notes: 'The protector against punishment of the grave.'
-    };
-  }
-
-  // 112. Al-Ikhlas
-  if (ledger[112]) {
-    ledger[112] = {
-      ...ledger[112],
-      memorizationStatus: 'completed',
-      memorizedPages: 1,
-      memorizedAyahs: 4,
-      revisionStatus: 'mastered',
-      masteryStrength: 5,
-      revisionCount: 40,
-      readStatus: 'completed',
-      readPages: 1,
-      lastRevisedDate: todayStr,
-      lastReadDate: todayStr
-    };
-  }
-
-  // 113. Al-Falaq
-  if (ledger[113]) {
-    ledger[113] = {
-      ...ledger[113],
-      memorizationStatus: 'completed',
-      memorizedPages: 1,
-      memorizedAyahs: 5,
-      revisionStatus: 'mastered',
-      masteryStrength: 5,
-      revisionCount: 38,
-      readStatus: 'completed',
-      readPages: 1,
-      lastRevisedDate: todayStr,
-      lastReadDate: todayStr
-    };
-  }
-
-  // 114. An-Nas
-  if (ledger[114]) {
-    ledger[114] = {
-      ...ledger[114],
-      memorizationStatus: 'completed',
-      memorizedPages: 1,
-      memorizedAyahs: 6,
-      revisionStatus: 'mastered',
-      masteryStrength: 5,
-      revisionCount: 38,
-      readStatus: 'completed',
-      readPages: 1,
-      lastRevisedDate: todayStr,
-      lastReadDate: todayStr
-    };
-  }
-
-  // 18. Al-Kahf (In Progress)
-  if (ledger[18]) {
-    ledger[18] = {
-      ...ledger[18],
-      memorizationStatus: 'in_progress',
-      memorizedPages: 2,
-      memorizedAyahs: 10,
-      revisionStatus: 'due',
-      masteryStrength: 4,
-      revisionCount: 6,
-      readStatus: 'completed',
-      readPages: 12,
-      notes: 'Opening 10 verses memorized for protection from Dajjal.'
-    };
-  }
-
-  // 2. Al-Baqarah (In Progress Tilawah & Hifdh)
-  if (ledger[2]) {
-    ledger[2] = {
-      ...ledger[2],
-      memorizationStatus: 'in_progress',
-      memorizedPages: 5,
-      memorizedAyahs: 25,
-      revisionStatus: 'due',
-      masteryStrength: 3,
-      revisionCount: 10,
-      readStatus: 'in_progress',
-      readPages: 28,
-      notes: 'Includes Ayat al-Kursi firmly memorized.'
-    };
-  }
-
   return ledger;
 }
+
 
