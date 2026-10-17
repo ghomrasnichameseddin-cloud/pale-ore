@@ -291,7 +291,7 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3.5">
         
         {/* COLUMN 1 & 2: WAKING CAPITAL SEGMENTED BREAKDOWN */}
-        <div className="md:col-span-2 space-y-2.5">
+        <div className="md:col-span-2 space-y-2.5 min-w-0">
           <div className="flex justify-between items-center text-xs font-mono">
             <span className="text-zinc-400 uppercase tracking-wider font-semibold flex items-center gap-1.5">
               <Activity className="h-3.5 w-3.5 text-emerald-400" />
@@ -658,18 +658,18 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
           {/* Overdraft or Tight Margin Notice */}
           {accounting.isOverdrawn && (
-            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 min-w-0">
               <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400" />
-              <span>
+              <span className="min-w-0 break-words leading-relaxed">
                 <strong>Deficit Alert:</strong> Day is over-allocated by +{formatMins(accounting.overdraftMinutes)}. Defer lower-priority tasks to preserve sleep and tomorrow's vigor.
               </span>
             </div>
           )}
 
           {!accounting.isOverdrawn && accounting.status === 'TIGHT' && (
-            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2 min-w-0">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-              <span>
+              <span className="min-w-0 break-words">
                 <strong>Tight Capacity:</strong> Only {formatMins(accounting.rawAvailableMinutes)} raw uncommitted time remains before eating into the {formatMins(accounting.protectedBufferMinutes)} safety buffer.
               </span>
             </div>
@@ -677,10 +677,10 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
 
           {/* App Overdraft Lock Notice */}
           {usageBlocker.isBlocked && (
-            <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <Lock className="h-4 w-4 shrink-0 text-rose-400" />
-                <span>
+                <span className="min-w-0 break-words">
                   <strong>Rest Blocked:</strong> Limit for &ldquo;{usageBlocker.appName}&rdquo; exceeded by +{usageBlocker.overdraftMinutes}m.
                 </span>
               </div>
@@ -689,133 +689,176 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
         </div>
 
         {/* COLUMN 3: DUAL REST METRICS (PERMANENT BANK & DAILY ALLOWANCE) */}
-        <div className="glass-panel p-3.5 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-[#0c1018] to-[#121927] flex flex-col justify-between relative shadow-md">
-          <div className="space-y-3">
-            {/* 1. Permanent Rest Bank Balance */}
-            <div>
-              <div className="flex justify-between items-center text-[10px] font-mono uppercase text-zinc-400 font-bold">
-                <span className={`${(state.profile.timeCredits ?? 60) < 0 ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1`}>
-                  <Moon className="h-3 w-3" />
-                  PERMANENT REST BANK
-                </span>
-                <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                  (state.profile.timeCredits ?? 60) < 0
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
-                    : 'bg-emerald-500/20 text-emerald-300'
-                }`}>
-                  {(state.profile.timeCredits ?? 60) < 0 ? 'OVERDRAFT / DEFICIT' : 'EQUITY'}
-                </span>
-              </div>
+        {(() => {
+          const isBankInDeficit = (state.profile.timeCredits ?? 60) < 0;
+          const isDailyInOverdraft = dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes;
 
-              <div className="pt-0.5 flex items-baseline justify-between gap-2">
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-2xl font-mono font-black ${
-                    (state.profile.timeCredits ?? 60) < 0
-                      ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]'
-                      : 'text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                  }`}>
-                    {state.profile.timeCredits ?? 60}
-                  </span>
-                  <span className={`text-xs font-mono font-bold ${
-                    (state.profile.timeCredits ?? 60) < 0 ? 'text-rose-400 font-mono' : 'text-emerald-400/80 font-mono'
-                  }`}>
-                    {(state.profile.timeCredits ?? 60) < 0 ? 'MINUTES (DEFICIT)' : 'MINUTES'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => addTimeCredits(15, 'Manual Rest Bank addition')}
-                    className="text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded transition cursor-pointer font-bold"
-                    title="Add +15m to Rest Bank"
-                  >
-                    +15m
-                  </button>
-                  <button
-                    onClick={() => addTimeCredits(30, 'Manual Rest Bank addition')}
-                    className="text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded transition cursor-pointer font-bold"
-                    title="Add +30m to Rest Bank"
-                  >
-                    +30m
-                  </button>
-                </div>
-              </div>
-              <p className="text-[10px] text-zinc-400 leading-tight">
-                {(state.profile.timeCredits ?? 60) < 0
-                  ? `Temporal overdraft: ${Math.abs(state.profile.timeCredits ?? 60)}m deficit must be repaid via deep work focus sessions before redeeming rest.`
-                  : 'Earned via focus timer sessions (+10m/25m sprint) & quest victories. Never expires.'}
-              </p>
-            </div>
-
-            {/* 2. Daily Rest Allowance Gauge */}
-            <div className="border-t border-white/10 pt-2.5 space-y-1">
-              <div className="flex justify-between items-center text-[10px] font-mono">
-                <span className="text-zinc-400 uppercase font-semibold">DAILY REST ALLOWANCE</span>
-                <span className={`font-bold ${dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes ? 'text-rose-400' : 'text-teal-300'}`}>
-                  {dailyRest.restConsumedToday} / {dailyRest.dailyAllowanceMinutes}m
-                  {dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes && (
-                    <span className="ml-1 text-rose-400 text-[9px] font-mono">(+{dailyRest.restConsumedToday - dailyRest.dailyAllowanceMinutes}m over)</span>
-                  )}
-                </span>
-              </div>
-              
-              <div className="w-full bg-[#0b0e14] rounded-full h-2 overflow-hidden border border-white/10 p-0.5">
-                <div 
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes ? 'bg-rose-400' : 'bg-gradient-to-r from-teal-400 to-emerald-400'
-                  }`}
-                  style={{ width: `${Math.min(100, Math.round((dailyRest.restConsumedToday / dailyRest.dailyAllowanceMinutes) * 100))}%` }}
-                />
-              </div>
-
-              <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                <span className={dailyRest.remainingAllowance < 0 ? 'text-rose-400 font-bold' : ''}>
-                  {dailyRest.remainingAllowance < 0 
-                    ? `${formatMins(dailyRest.remainingAllowance)} overdraft today` 
-                    : `${formatMins(dailyRest.remainingAllowance)} left today`}
-                </span>
-                <span>{accounting.temporalEfficiencyPercent}% Efficiency</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (!usageBlocker.isBlocked) {
-                  setIsQuickRedeemOpen(true);
-                }
-              }}
-              className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm ${
-                usageBlocker.isBlocked
-                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed'
-                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+          return (
+            <div 
+              className={`glass-panel p-3.5 rounded-xl border flex flex-col justify-between relative shadow-md min-w-0 overflow-hidden transition-all ${
+                isBankInDeficit
+                  ? 'border-rose-500/40 bg-gradient-to-br from-[#160d13]/95 via-[#1a0e16]/90 to-[#261019]/90 shadow-[0_0_20px_rgba(244,63,94,0.15)]'
+                  : 'border-emerald-500/30 bg-gradient-to-br from-[#0c1018] to-[#121927]'
               }`}
-              title={usageBlocker.isBlocked ? `Rest pass locked: ${usageBlocker.appName} exceeded limit` : "Start an intentional rest block"}
             >
-              {usageBlocker.isBlocked ? (
-                <>
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>REST LOCKED</span>
-                </>
-              ) : (
-                <>
-                  <Coffee className="h-3.5 w-3.5" />
-                  <span>START REST</span>
-                </>
-              )}
-            </button>
+              <div className="space-y-3 min-w-0">
+                {/* 1. Permanent Rest Bank Balance */}
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 text-[10px] font-mono uppercase text-zinc-400 font-bold min-w-0">
+                    <span className={`${isBankInDeficit ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1 shrink-0`}>
+                      <Moon className="h-3 w-3 shrink-0" />
+                      <span>PERMANENT REST BANK</span>
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 tracking-wider ${
+                      isBankInDeficit
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}>
+                      {isBankInDeficit ? 'OVERDRAFT / DEFICIT' : 'EQUITY'}
+                    </span>
+                  </div>
 
-            <button
-              onClick={() => onNavigate?.('shop')}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-[#c5a059]/20 text-zinc-300 hover:text-[#fef08a] border border-white/10 hover:border-[#c5a059]/40 transition"
-              title="Browse Leisure Vouchers in Imperial Vault"
-            >
-              <ShoppingBag className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+                  <div className="pt-0.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1.5 min-w-0">
+                    <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+                      <span className={`text-2xl font-mono font-black tracking-tight ${
+                        isBankInDeficit
+                          ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                          : 'text-emerald-300 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                      }`}>
+                        {state.profile.timeCredits ?? 60}
+                      </span>
+                      <span className={`text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 ${
+                        isBankInDeficit ? 'text-rose-400 font-semibold' : 'text-emerald-400/80'
+                      }`}>
+                        {isBankInDeficit ? 'MIN (DEFICIT)' : 'MINUTES'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 ml-auto">
+                      <button
+                        onClick={() => addTimeCredits(15, 'Manual Rest Bank addition')}
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition cursor-pointer font-bold ${
+                          isBankInDeficit
+                            ? 'text-rose-300 hover:text-white bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40'
+                            : 'text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30'
+                        }`}
+                        title="Add +15m to Rest Bank"
+                      >
+                        +15m
+                      </button>
+                      <button
+                        onClick={() => addTimeCredits(30, 'Manual Rest Bank addition')}
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition cursor-pointer font-bold ${
+                          isBankInDeficit
+                            ? 'text-rose-300 hover:text-white bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40'
+                            : 'text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30'
+                        }`}
+                        title="Add +30m to Rest Bank"
+                      >
+                        +30m
+                      </button>
+                    </div>
+                  </div>
+
+                  {isBankInDeficit ? (
+                    <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-[10px] text-rose-200 leading-tight space-y-1 min-w-0">
+                      <div className="flex items-center gap-1 font-bold text-rose-300 uppercase tracking-wide">
+                        <AlertOctagon className="h-3 w-3 shrink-0 text-rose-400" />
+                        <span>Temporal Overdraft Active</span>
+                      </div>
+                      <p className="text-zinc-300 break-words leading-relaxed">
+                        <strong className="text-rose-300 font-mono">+{Math.abs(state.profile.timeCredits ?? 60)}m</strong> deficit must be repaid via deep work focus sessions before redeeming rest.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-zinc-400 leading-tight break-words">
+                      Earned via focus timer sessions (+10m/25m sprint) & quest victories. Never expires.
+                    </p>
+                  )}
+                </div>
+
+                {/* 2. Daily Rest Allowance Gauge */}
+                <div className="border-t border-white/10 pt-2.5 space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] font-mono min-w-0">
+                    <span className="text-zinc-400 uppercase font-semibold shrink-0">DAILY REST ALLOWANCE</span>
+                    <span className={`font-bold shrink-0 ${isDailyInOverdraft ? 'text-rose-400' : 'text-teal-300'}`}>
+                      {dailyRest.restConsumedToday} / {dailyRest.dailyAllowanceMinutes}m
+                      {isDailyInOverdraft && (
+                        <span className="ml-1 text-rose-400 text-[9px] font-mono">(+{dailyRest.restConsumedToday - dailyRest.dailyAllowanceMinutes}m over)</span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="w-full bg-[#0b0e14] rounded-full h-2 overflow-hidden border border-white/10 p-0.5 min-w-0">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        isDailyInOverdraft ? 'bg-rose-400' : 'bg-gradient-to-r from-teal-400 to-emerald-400'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((dailyRest.restConsumedToday / dailyRest.dailyAllowanceMinutes) * 100))}%` }}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-[9px] font-mono text-zinc-500 min-w-0">
+                    <span className={`shrink-0 ${dailyRest.remainingAllowance < 0 ? 'text-rose-400 font-bold' : ''}`}>
+                      {dailyRest.remainingAllowance < 0 
+                        ? `${formatMins(dailyRest.remainingAllowance)} overdraft today` 
+                        : `${formatMins(dailyRest.remainingAllowance)} left today`}
+                    </span>
+                    <span className="shrink-0">{accounting.temporalEfficiencyPercent}% Efficiency</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => {
+                    if (!usageBlocker.isBlocked && !isBankInDeficit) {
+                      setIsQuickRedeemOpen(true);
+                    }
+                  }}
+                  className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm min-w-0 ${
+                    usageBlocker.isBlocked || isBankInDeficit
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-90'
+                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 cursor-pointer'
+                  }`}
+                  title={
+                    usageBlocker.isBlocked 
+                      ? `Rest pass locked: ${usageBlocker.appName} exceeded limit` 
+                      : isBankInDeficit
+                        ? `Permanent Rest Bank in Deficit (${state.profile.timeCredits ?? 60}m). Repay deficit through deep work focus sessions.`
+                        : "Start an intentional rest block"
+                  }
+                >
+                  {usageBlocker.isBlocked ? (
+                    <>
+                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">REST LOCKED</span>
+                    </>
+                  ) : isBankInDeficit ? (
+                    <>
+                      <AlertOctagon className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+                      <span className="truncate">DEFICIT LOCKED</span>
+                    </>
+                  ) : (
+                    <>
+                      <Coffee className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">START REST</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => onNavigate?.('shop')}
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-[#c5a059]/20 text-zinc-300 hover:text-[#fef08a] border border-white/10 hover:border-[#c5a059]/40 transition shrink-0 cursor-pointer"
+                  title="Browse Leisure Vouchers in Imperial Vault"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
 
