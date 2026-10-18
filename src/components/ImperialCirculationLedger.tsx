@@ -169,7 +169,8 @@ export interface ImperialCirculationLedgerProps {
 export const ImperialCirculationLedger: React.FC<ImperialCirculationLedgerProps> = ({ onNavigate }) => {
   const { 
     state, addXp, addTimeCredits, addCoins, getPlayerLevelInfo, 
-    getXPAnalytics, getTemporalCapitalInfo, getDailyRestState
+    getXPAnalytics, getTemporalCapitalInfo, getDailyRestState,
+    liquidateTimeDeficitWithCoins
   } = usePOS();
 
   // Active Currency Stream Tab
@@ -951,7 +952,18 @@ export const ImperialCirculationLedger: React.FC<ImperialCirculationLedgerProps>
                   <div className="text-purple-300 font-bold text-base mt-0.5">−{summaryMetrics.totalRestSpent}m ({Math.round(summaryMetrics.totalRestSpent / 60)}h)</div>
                 </div>
                 <div className={`p-2.5 rounded border ${summaryMetrics.currentRestBank < 0 ? 'bg-rose-950/20 border-rose-500/30' : 'bg-emerald-950/20 border-emerald-500/20'}`}>
-                  <div className="text-zinc-400 text-[10px] uppercase">Net Rest Equity Balance</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-zinc-400 text-[10px] uppercase">Net Rest Equity Balance</div>
+                    {summaryMetrics.currentRestBank < 0 && (
+                      <button
+                        onClick={() => liquidateTimeDeficitWithCoins({ partialIfInsufficient: true })}
+                        className="text-[9px] font-mono text-[#fef08a] bg-amber-500/20 hover:bg-amber-500/30 border border-[#c5a059]/40 px-1.5 py-0.5 rounded cursor-pointer transition font-bold"
+                        title="Replace deficit with coins and reset to 0 min"
+                      >
+                        🪙 Clear Deficit
+                      </button>
+                    )}
+                  </div>
                   <div className={`font-bold text-base mt-0.5 ${summaryMetrics.currentRestBank < 0 ? 'text-rose-400' : 'text-emerald-300'}`}>
                     {summaryMetrics.currentRestBank < 0 ? `${summaryMetrics.currentRestBank}m overdraft` : `+${summaryMetrics.currentRestBank}m available`}
                   </div>

@@ -31,7 +31,8 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
     setDailyRestAllowance,
     setRequiredMinutesBaseline,
     startActiveRestSession,
-    addTimeCredits
+    addTimeCredits,
+    liquidateTimeDeficitWithCoins
   } = usePOS();
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -691,6 +692,9 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
         {/* COLUMN 3: DUAL REST METRICS (PERMANENT BANK & DAILY ALLOWANCE) */}
         {(() => {
           const isBankInDeficit = (state.profile.timeCredits ?? 60) < 0;
+          const deficitMinutes = isBankInDeficit ? Math.abs(state.profile.timeCredits ?? 60) : 0;
+          const currentCoins = state.profile.coins ?? 150;
+          const canAffordFullCoins = currentCoins >= deficitMinutes;
           const isDailyInOverdraft = dailyRest.restConsumedToday > dailyRest.dailyAllowanceMinutes;
 
           return (
@@ -761,14 +765,55 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                   </div>
 
                   {isBankInDeficit ? (
-                    <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/30 text-[10px] text-rose-200 leading-tight space-y-1 min-w-0">
-                      <div className="flex items-center gap-1 font-bold text-rose-300 uppercase tracking-wide">
-                        <AlertOctagon className="h-3 w-3 shrink-0 text-rose-400" />
-                        <span>Temporal Overdraft Active</span>
+                    <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-500/30 text-[10px] text-rose-200 leading-tight space-y-2 min-w-0">
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        <div className="flex items-center gap-1 font-bold text-rose-300 uppercase tracking-wide">
+                          <AlertOctagon className="h-3 w-3 shrink-0 text-rose-400" />
+                          <span>Temporal Overdraft Active</span>
+                        </div>
+                        <span className="font-mono text-[9px] text-[#fef08a] bg-[#3a2e12] px-1.5 py-0.5 rounded border border-[#c5a059]/40 font-bold shrink-0">
+                          🪙 {currentCoins} coins
+                        </span>
                       </div>
-                      <p className="text-zinc-300 break-words leading-relaxed">
-                        <strong className="text-rose-300 font-mono">+{Math.abs(state.profile.timeCredits ?? 60)}m</strong> deficit must be repaid via deep work focus sessions before redeeming rest.
+
+                      <p className="text-zinc-300 break-words leading-relaxed text-[10px]">
+                        <strong className="text-rose-300 font-mono">+{deficitMinutes}m</strong> deficit must be repaid via focus sessions or replaced with coins to unlock rest.
                       </p>
+
+                      {/* LIQUIDATE DEFICIT WITH COINS ACTION */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (canAffordFullCoins) {
+                            liquidateTimeDeficitWithCoins();
+                          } else if (currentCoins > 0) {
+                            liquidateTimeDeficitWithCoins({ partialIfInsufficient: true });
+                          }
+                        }}
+                        disabled={currentCoins === 0}
+                        className={`w-full py-1.5 px-2 rounded-lg font-mono text-[10px] font-bold transition flex items-center justify-between shadow-sm cursor-pointer ${
+                          canAffordFullCoins
+                            ? 'bg-gradient-to-r from-amber-600/35 via-yellow-500/30 to-amber-600/35 hover:from-amber-600/50 hover:to-yellow-500/45 text-[#fef08a] border border-[#c5a059]/60 shadow-[0_0_15px_rgba(197,160,89,0.25)]'
+                            : currentCoins > 0
+                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40'
+                              : 'bg-zinc-800/40 text-zinc-500 border border-white/10 cursor-not-allowed'
+                        }`}
+                        title={
+                          canAffordFullCoins
+                            ? `Spend ${deficitMinutes} coins to reset deficit to 0 min`
+                            : currentCoins > 0
+                              ? `Spend ${currentCoins} coins to reduce deficit by ${currentCoins}m`
+                              : `Need ${deficitMinutes} coins to clear deficit`
+                        }
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span>🪙</span>
+                          <span>{canAffordFullCoins ? 'REPLACE WITH COINS' : `REDUCE (-${currentCoins}m)`}</span>
+                        </span>
+                        <span className="bg-[#05070d] px-1.5 py-0.5 rounded text-[9px] border border-[#c5a059]/40 text-[#fef08a] font-mono font-black shrink-0 ml-1">
+                          {canAffordFullCoins ? `-${deficitMinutes} 🪙 → 0 MIN` : `-${currentCoins} 🪙`}
+                        </span>
+                      </button>
                     </div>
                   ) : (
                     <p className="text-[10px] text-zinc-400 leading-tight break-words">
@@ -813,20 +858,33 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
               <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => {
-                    if (!usageBlocker.isBlocked && !isBankInDeficit) {
-                      setIsQuickRedeemOpen(true);
+                    if (usageBlocker.isBlocked) return;
+                    if (isBankInDeficit) {
+                      if (canAffordFullCoins) {
+                        liquidateTimeDeficitWithCoins();
+                      } else if (currentCoins > 0) {
+                        liquidateTimeDeficitWithCoins({ partialIfInsufficient: true });
+                      }
+                      return;
                     }
+                    setIsQuickRedeemOpen(true);
                   }}
                   className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1 shadow-sm min-w-0 ${
-                    usageBlocker.isBlocked || isBankInDeficit
+                    usageBlocker.isBlocked
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-90'
-                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 cursor-pointer'
+                      : isBankInDeficit
+                        ? canAffordFullCoins
+                          ? 'bg-gradient-to-r from-amber-600/30 via-yellow-600/30 to-amber-600/30 hover:from-amber-600/50 hover:to-yellow-600/50 text-[#fef08a] border border-[#c5a059]/60 cursor-pointer shadow-[0_0_12px_rgba(197,160,89,0.25)]'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/40 cursor-pointer opacity-90'
+                        : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 cursor-pointer'
                   }`}
                   title={
                     usageBlocker.isBlocked 
                       ? `Rest pass locked: ${usageBlocker.appName} exceeded limit` 
                       : isBankInDeficit
-                        ? `Permanent Rest Bank in Deficit (${state.profile.timeCredits ?? 60}m). Repay deficit through deep work focus sessions.`
+                        ? canAffordFullCoins
+                          ? `Click to spend ${deficitMinutes} coins and reset Permanent Rest Bank to 0 min!`
+                          : `Deficit active (${deficitMinutes}m). Need ${deficitMinutes} coins to reset to 0 min.`
                         : "Start an intentional rest block"
                   }
                 >
@@ -836,10 +894,17 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                       <span className="truncate">REST LOCKED</span>
                     </>
                   ) : isBankInDeficit ? (
-                    <>
-                      <AlertOctagon className="h-3.5 w-3.5 shrink-0 text-rose-400" />
-                      <span className="truncate">DEFICIT LOCKED</span>
-                    </>
+                    canAffordFullCoins ? (
+                      <>
+                        <span>🪙</span>
+                        <span className="truncate">RESET TO 0M (-{deficitMinutes} 🪙)</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertOctagon className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+                        <span className="truncate">DEFICIT LOCKED (+{deficitMinutes}m)</span>
+                      </>
+                    )
                   ) : (
                     <>
                       <Coffee className="h-3.5 w-3.5 shrink-0" />
@@ -918,6 +983,32 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                     </span>
                   </div>
                 </div>
+
+                {/* Deficit Liquidation Option if Bank in Deficit */}
+                {(state.profile.timeCredits ?? 60) < 0 && (
+                  <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/40 flex items-center justify-between gap-2 text-xs font-mono">
+                    <div className="flex items-center gap-1.5 text-rose-300">
+                      <AlertOctagon className="h-4 w-4 shrink-0 text-rose-400" />
+                      <span className="text-[11px] font-bold">
+                        Deficit: {Math.abs(state.profile.timeCredits ?? 60)}m
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => liquidateTimeDeficitWithCoins({ partialIfInsufficient: true })}
+                      disabled={(state.profile.coins ?? 150) === 0}
+                      className="px-2.5 py-1 bg-gradient-to-r from-amber-600/40 to-yellow-600/40 hover:from-amber-600/60 hover:to-yellow-600/60 text-[#fef08a] border border-[#c5a059]/60 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-sm"
+                      title="Replace deficit with coins and reset to 0 min"
+                    >
+                      <span>🪙</span>
+                      <span>
+                        {(state.profile.coins ?? 150) >= Math.abs(state.profile.timeCredits ?? 60)
+                          ? `Pay ${Math.abs(state.profile.timeCredits ?? 60)} 🪙 → 0 MIN`
+                          : `Pay ${state.profile.coins ?? 150} 🪙 (-${state.profile.coins ?? 150}m)`}
+                      </span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Preset Block Choices */}
                 <div className="space-y-1.5">

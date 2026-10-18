@@ -313,6 +313,13 @@ interface POSContextType {
   setDailyRestAllowance: (minutes: number) => void;
   setRequiredMinutesBaseline: (minutes: number) => void;
   repayTimeDebt: (minutes: number) => void;
+  liquidateTimeDeficitWithCoins: (options?: { partialIfInsufficient?: boolean }) => {
+    success: boolean;
+    message: string;
+    coinsSpent: number;
+    minutesCleared: number;
+    newBalance: number;
+  };
   getTemporalCapitalInfo: () => TemporalCapitalInfo;
   getDailyWakingCapital: () => DailyWakingCapital;
   getTemporalAccounting: () => TemporalAccounting;
@@ -6776,6 +6783,97 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const liquidateTimeDeficitWithCoins = (options?: { partialIfInsufficient?: boolean }): {
+    success: boolean;
+    message: string;
+    coinsSpent: number;
+    minutesCleared: number;
+    newBalance: number;
+  } => {
+    const currentCredits = state.profile.timeCredits ?? 60;
+    if (currentCredits >= 0) {
+      return {
+        success: false,
+        message: 'Permanent Rest Bank is not in deficit (balance is ≥ 0 min).',
+        coinsSpent: 0,
+        minutesCleared: 0,
+        newBalance: currentCredits
+      };
+    }
+
+    const deficitMinutes = Math.abs(currentCredits);
+    const availableCoins = state.profile.coins ?? 150;
+
+    if (availableCoins <= 0) {
+      return {
+        success: false,
+        message: `Insufficient Imperial Dinars! You need ${deficitMinutes} coins to liquidate the ${deficitMinutes}m deficit, but currently have 0 coins.`,
+        coinsSpent: 0,
+        minutesCleared: 0,
+        newBalance: currentCredits
+      };
+    }
+
+    if (availableCoins < deficitMinutes && !options?.partialIfInsufficient) {
+      return {
+        success: false,
+        message: `Need ${deficitMinutes} coins to fully reset the deficit to 0 min, but you have ${availableCoins} coins.`,
+        coinsSpent: 0,
+        minutesCleared: 0,
+        newBalance: currentCredits
+      };
+    }
+
+    const minutesToClear = Math.min(deficitMinutes, availableCoins);
+    const coinsToSpend = minutesToClear;
+    const nextCredits = currentCredits + minutesToClear;
+    const nextCoins = Math.max(0, availableCoins - coinsToSpend);
+    const nextDebt = nextCredits < 0 ? Math.abs(nextCredits) : 0;
+
+    const tx: LeisureTransaction = {
+      id: `time-coin-liquidate-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      type: 'manual_adjustment',
+      minutesDelta: minutesToClear,
+      endingBalance: nextCredits,
+      reason: nextCredits === 0
+        ? `Temporal Deficit replaced with ${coinsToSpend} coins (Permanent Rest Bank reset to 0 min)`
+        : `Partial deficit liquidated with ${coinsToSpend} coins (${Math.abs(nextCredits)}m deficit remaining)`,
+      timestamp: getSystemTimestamp(state.systemDate),
+      minutes: minutesToClear,
+      balanceAfter: nextCredits
+    };
+
+    setState(prev => ({
+      ...prev,
+      timeHistory: [tx, ...(prev.timeHistory || [])],
+      profile: {
+        ...prev.profile,
+        coins: nextCoins,
+        timeCredits: nextCredits,
+        timeDebt: nextDebt
+      }
+    }));
+
+    addSystemMessage({
+      sender: 'SYSTEM',
+      category: 'alert',
+      title: nextCredits === 0 ? '🪙 DEFICIT REPLACED WITH COINS' : '🪙 DEFICIT PARTIALLY REDUCED',
+      content: nextCredits === 0
+        ? `Replaced ${minutesToClear}m deficit with ${coinsToSpend} gold dinars. Permanent Rest Bank successfully reset to 0 min!`
+        : `Repaid ${minutesToClear}m of deficit with ${coinsToSpend} gold dinars. ${Math.abs(nextCredits)}m deficit remaining.`
+    });
+
+    return {
+      success: true,
+      message: nextCredits === 0
+        ? `Deficit replaced with ${coinsToSpend} coins! Permanent Rest Bank reset to 0 min.`
+        : `Repaid ${minutesToClear}m deficit using ${coinsToSpend} coins.`,
+      coinsSpent: coinsToSpend,
+      minutesCleared: minutesToClear,
+      newBalance: nextCredits
+    };
+  };
+
   const getTemporalAccounting = (): TemporalAccounting => {
     const wakingHours = state.profile.dailyWakingHours || 16;
     const budgetMinutes = wakingHours * 60;
@@ -12399,6 +12497,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setDailyRestAllowance,
       setRequiredMinutesBaseline,
       repayTimeDebt,
+      liquidateTimeDeficitWithCoins,
       getTemporalCapitalInfo,
       getDailyWakingCapital,
       getTemporalAccounting,

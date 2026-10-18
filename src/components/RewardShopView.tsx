@@ -29,7 +29,8 @@ export const RewardShopView: React.FC = () => {
     isQuestFinishedForToday,
     isQuestScheduledForDate,
     completeQuest,
-    isShopLocked
+    isShopLocked,
+    liquidateTimeDeficitWithCoins
   } = usePOS();
 
   const [activeTab, setActiveTab] = useState<'all' | 'real-life' | 'temporal' | 'system-perks' | 'custom' | 'inventory'>('all');
@@ -292,13 +293,24 @@ export const RewardShopView: React.FC = () => {
                   {timeCredits} <span className={`text-[10px] font-sans ${timeCredits < 0 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}`}>MINS</span>
                 </div>
               </div>
-              <button
-                onClick={() => addTimeCredits(30, 'Manual leisure credit grant')}
-                className="ml-1 text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded transition cursor-pointer font-bold"
-                title="Add bonus (+30m Rest)"
-              >
-                +30m ⏳
-              </button>
+              {timeCredits < 0 ? (
+                <button
+                  onClick={() => liquidateTimeDeficitWithCoins({ partialIfInsufficient: true })}
+                  className="ml-1 text-[9px] font-mono text-[#fef08a] hover:text-white bg-gradient-to-r from-amber-600/30 to-yellow-600/30 hover:from-amber-600/50 hover:to-yellow-600/50 border border-[#c5a059]/50 px-2 py-1 rounded-lg transition cursor-pointer font-bold flex items-center gap-1 shadow-sm shrink-0"
+                  title="Replace deficit with coins and reset to 0 min"
+                >
+                  <span>🪙</span>
+                  <span>Reset Deficit (-{Math.abs(timeCredits)} coins)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => addTimeCredits(30, 'Manual leisure credit grant')}
+                  className="ml-1 text-[9px] font-mono text-emerald-400 hover:text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 rounded transition cursor-pointer font-bold"
+                  title="Add bonus (+30m Rest)"
+                >
+                  +30m ⏳
+                </button>
+              )}
             </div>
           </div>
         </div>

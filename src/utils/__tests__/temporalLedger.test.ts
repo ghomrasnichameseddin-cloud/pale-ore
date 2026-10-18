@@ -518,4 +518,31 @@ describe('Temporal Ledger & Rest Engine (Core Money-Math)', () => {
       expect(restState.remainingAllowance).toBe(-10);
     });
   });
+
+  describe('8. Deficit Replacement with Coins', () => {
+    it('calculates coin liquidation required to reset deficit to 0m', () => {
+      const deficitMinutes = 45; // e.g. timeCredits = -45
+      const availableCoins = 50;
+      const coinsRequired = deficitMinutes;
+      const canAfford = availableCoins >= coinsRequired;
+      expect(canAfford).toBe(true);
+      
+      const newCredits = -deficitMinutes + coinsRequired;
+      const newCoins = availableCoins - coinsRequired;
+      expect(newCredits).toBe(0);
+      expect(newCoins).toBe(5);
+    });
+
+    it('handles partial deficit reduction when coins are less than deficit', () => {
+      const deficitMinutes = 45;
+      const availableCoins = 20;
+      const minutesToClear = Math.min(deficitMinutes, availableCoins);
+      const newCredits = -deficitMinutes + minutesToClear;
+      const newCoins = availableCoins - minutesToClear;
+      expect(minutesToClear).toBe(20);
+      expect(newCredits).toBe(-25);
+      expect(newCoins).toBe(0);
+    });
+  });
 });
+

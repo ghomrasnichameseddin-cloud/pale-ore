@@ -267,7 +267,7 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
   prefillCategory,
   onNavigateToQuests
 }) => {
-  const { state, addMuhasabahEntry, addTimeCredits, getTodayMuhasabahStats } = usePOS();
+  const { state, addMuhasabahEntry, addTimeCredits, getTodayMuhasabahStats, liquidateTimeDeficitWithCoins } = usePOS();
   const weaknesses = state.weaknesses || [];
   const currentRestBankBalance = state.profile.timeCredits ?? 60;
 
@@ -550,9 +550,18 @@ export const MuhasabahModal: React.FC<MuhasabahModalProps> = ({
                       <span className="font-bold">
                         −{submissionResult.timeDebited}m debited from Rest Bank balance
                         {(currentRestBankBalance - submissionResult.timeDebited) < 0 && (
-                          <span className="block text-[11px] font-mono text-rose-400 mt-0.5">
-                            Rest Bank in temporal overdraft: {currentRestBankBalance - submissionResult.timeDebited}m
-                          </span>
+                          <div className="mt-1 flex items-center justify-center gap-2 flex-wrap">
+                            <span className="text-[11px] font-mono text-rose-400">
+                              Rest Bank in temporal overdraft: {currentRestBankBalance - submissionResult.timeDebited}m
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => liquidateTimeDeficitWithCoins({ partialIfInsufficient: true })}
+                              className="text-[9px] font-mono text-[#fef08a] bg-amber-500/20 hover:bg-amber-500/30 border border-[#c5a059]/40 px-1.5 py-0.5 rounded cursor-pointer transition font-bold"
+                            >
+                              🪙 Clear Deficit With Coins
+                            </button>
+                          </div>
                         )}
                       </span>
                     </div>
