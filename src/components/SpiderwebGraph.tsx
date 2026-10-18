@@ -2,14 +2,27 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { usePOS } from '../POSContext';
 import { 
   Network, Target, Award, Zap, Sparkles, Activity, Search, 
-  Filter, Eye, Layers, Compass, RefreshCw, ZoomIn, ZoomOut, 
-  Maximize2, Share2, Info, ArrowRight, ShieldCheck, Flame, CheckCircle,
-  HelpCircle, Clock, Check, FileText, ChevronRight
+  Filter, Layers, Compass, RefreshCw, ZoomIn, ZoomOut, 
+  Info, ArrowRight, ShieldCheck, Flame, CheckCircle,
+  FileText, Crown, Shield, ShieldAlert, Move, ExternalLink, Moon
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { RubElHizbIcon, ArabesqueCorner } from './IslamicRpgDecorations';
+import { getAllJobs, getAllTitles, LEVEL_RANK_NAMES, getJobScaledPerk } from '../jobsAndTitles';
+import { Quest } from '../types';
 
-export type NodeType = 'core' | 'goal' | 'project' | 'quest' | 'skill' | 'attribute' | 'milestone' | 'plan';
+export type NodeType = 
+  | 'core' 
+  | 'attribute' 
+  | 'goal' 
+  | 'job' 
+  | 'project' 
+  | 'title' 
+  | 'milestone' 
+  | 'quest' 
+  | 'habit' 
+  | 'skill' 
+  | 'muhasabah' 
+  | 'plan';
 
 export interface GraphNode {
   id: string;
@@ -17,17 +30,25 @@ export interface GraphNode {
   type: NodeType;
   status?: string;
   level?: number;
+  rankName?: string;
   progress?: number;
-  updatedAt?: string;
+  streakCount?: number;
+  xpValue?: number;
+  occurrenceCount?: number;
+  correctiveStrategy?: string;
+  isEquipped?: boolean;
+  category?: string;
   x: number;
   y: number;
   radius: number;
   ring: number;
   angle: number;
   color: string;
+  secondaryColor?: string;
   isModifiedRecently?: boolean;
   skillTier?: 'Primary' | 'Secondary';
   parentId?: string | null;
+  perkDescription?: string;
 }
 
 export interface GraphLink {
@@ -37,36 +58,70 @@ export interface GraphLink {
   sourceType: NodeType;
   targetType: NodeType;
   label?: string;
+  weight: number; // 1 to 4 based on XP / completion / equipped status
+  energyPulse: boolean; // animated particle energy tracer stream
+  color?: string;
   isModifiedRecently?: boolean;
 }
 
 interface SpiderwebGraphProps {
   compact?: boolean;
   onSelectEntity?: (type: NodeType, id: string) => void;
+  onNavigate?: (tab: string) => void;
 }
 
-export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false, onSelectEntity }) => {
-  const { state, getGoalProgress, getProjectProgress, getSkillXpAndLevel, getAttributes } = usePOS();
+export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ 
+  compact = false, 
+  onSelectEntity,
+  onNavigate 
+}) => {
+  const { state, getGoalProgress, getProjectProgress, getSkillXpAndLevel, getAttributes, getJobLvl, getTitleLvl } = usePOS();
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<NodeType | 'all' | 'primary_skill' | 'secondary_skill'>('all');
+  const [activeFilter, setActiveFilter] = useState<NodeType | 'all' | 'primary_skill' | 'secondary_skill' | 'job_title'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showModifiedOnly, setShowModifiedOnly] = useState(false);
   const [isolateCircuit, setIsolateCircuit] = useState<boolean>(false);
   const [recentModifications, setRecentModifications] = useState<Array<{ id: string; type: NodeType; title: string; timestamp: string; action: string }>>([]);
 
   const prevItemsRef = useRef<string>('');
+  const svgContainerRef = useRef<HTMLDivElement>(null);
 
-  // Dimensions of SVG spiderweb canvas
-  const svgWidth = 800;
-  const svgHeight = 800;
+  // Dimensions of Celestial Star-Map SVG canvas
+  const svgWidth = 1100;
+  const svgHeight = 1100;
   const cx = svgWidth / 2;
   const cy = svgHeight / 2;
 
-  // Concentric spiderweb rings radii
-  const ringRadii = [0, 110, 200, 290, 360];
+  // Concentric orbital rings radii
+  // Orbit 0: Core (0)
+  // Orbit 1: Attributes (115)
+  // Orbit 2: Goals & Job Classes (215)
+  // Orbit 3: Projects, Milestones & Titles (310)
+  // Orbit 4: Habits & Quests (395)
+  // Orbit 5: Skills & Muhāsabah Restraints (470)
+  // Orbit 6: Planning Codex Scrolls (530)
+  const ringRadii = [0, 115, 215, 310, 395, 470, 530];
+
+  // Deterministic Cosmic Background Stars (Star Dust)
+  const cosmicStarDust = useMemo(() => {
+    const stars: Array<{ id: number; x: number; y: number; r: number; opacity: number; pulseSpeed: number }> = [];
+    for (let i = 0; i < 75; i++) {
+      // Deterministic pseudo-random distribution
+      const pseudoX = ((i * 137.5 + 43) % 1060) + 20;
+      const pseudoY = ((i * 269.3 + 97) % 1060) + 20;
+      const r = (i % 5 === 0) ? 2.2 : (i % 3 === 0) ? 1.5 : 0.9;
+      const opacity = 0.2 + ((i * 17) % 60) / 100;
+      const pulseSpeed = 2 + (i % 4) * 0.8;
+      stars.push({ id: i, x: pseudoX, y: pseudoY, r, opacity, pulseSpeed });
+    }
+    return stars;
+  }, []);
 
   // 1. DYNAMICALLY COMPUTE ALL NODES & EXHAUSTIVE CONNECTIONS FROM POS STATE
   const { nodes, links, nodeMap, modifiedNodeIds } = useMemo(() => {
@@ -81,6 +136,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       target: string,
       sourceType: NodeType,
       targetType: NodeType,
+      weight: number = 1.5,
+      energyPulse: boolean = false,
+      color?: string,
       label?: string,
       isModifiedRecently?: boolean
     ) => {
@@ -96,11 +154,14 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         sourceType,
         targetType,
         label,
+        weight,
+        energyPulse,
+        color,
         isModifiedRecently: isModifiedRecently || false
       });
     };
 
-    // 1A. CORE PLAYER NODE (Center)
+    // 1A. CORE PLAYER SUN-STAR (Center Ring 0)
     const coreNode: GraphNode = {
       id: 'core-player',
       name: (state.profile as any).name || 'OPERATOR CORE',
@@ -109,15 +170,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       status: 'Active',
       x: cx,
       y: cy,
-      radius: 22,
+      radius: 24,
       ring: 0,
       angle: 0,
-      color: '#c5a059' // Antique Gold
+      color: '#c5a059', // Imperial Antique Gold
+      secondaryColor: '#fef08a'
     };
     nodeList.push(coreNode);
     nMap.set(coreNode.id, coreNode);
 
-    // 1B. ATTRIBUTES (Ring 1 - Inner Radial Ring)
+    // 1B. CONSTITUTIONAL ATTRIBUTES (Ring 1)
     const attrs = getAttributes();
     attrs.forEach((attr, idx) => {
       const angle = (idx / Math.max(attrs.length, 1)) * 2 * Math.PI - Math.PI / 2;
@@ -131,23 +193,25 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         type: 'attribute',
         level: attr.level,
         progress: attr.progress,
+        category: (attr as any).domain || 'Constitutional Pillar',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 14,
         ring: 1,
         angle,
         color: '#10b981', // Emerald
+        secondaryColor: '#059669',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1C. GOALS (Ring 1 - Alternating Outer Angle)
+    // 1C. GOALS (Ring 2)
     const goals = state.goals || [];
     goals.forEach((goal, idx) => {
-      const angle = ((idx + 0.5) / Math.max(goals.length, 1)) * 2 * Math.PI - Math.PI / 2;
-      const r = ringRadii[1] + 25;
+      const angle = (idx / Math.max(goals.length, 1)) * 2 * Math.PI - Math.PI / 2;
+      const r = ringRadii[2];
       const goalProg = getGoalProgress(goal.id);
       const isRecentlyModified = goal.status === 'Completed' || goalProg > 0;
       if (isRecentlyModified) modSet.add(goal.id);
@@ -158,23 +222,73 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         type: 'goal',
         status: goal.status,
         progress: goalProg,
+        category: goal.horizon || 'Destiny Campaign',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
-        radius: 13,
-        ring: 1,
+        radius: 14,
+        ring: 2,
         angle,
-        color: '#f59e0b', // Amber
+        color: '#f59e0b', // Amber Supernova
+        secondaryColor: '#d97706',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1D. PROJECTS (Ring 2)
+    // 1D. JOB CLASSES (Ring 2 - Alternating or Anchored Near Related Goals)
+    const allJobs = getAllJobs(state.customJobs, state.deletedJobIds);
+    allJobs.forEach((job, idx) => {
+      const isEquipped = job.id === state.profile.jobId;
+      const jobLvl = getJobLvl(job.id);
+      const rankTitle = LEVEL_RANK_NAMES[jobLvl] || `Rank ${jobLvl}`;
+      
+      // Angular positioning: near relatedGoalId if exists, else interleaved
+      let angle = ((idx + 0.5) / Math.max(allJobs.length, 1)) * 2 * Math.PI;
+      const parentGoal = job.relatedGoalId ? nMap.get(job.relatedGoalId) : null;
+      if (parentGoal) {
+        angle = parentGoal.angle + 0.18;
+      }
+
+      const r = ringRadii[2] + 25;
+      const isRecentlyModified = isEquipped || jobLvl > 1;
+      if (isRecentlyModified) modSet.add(job.id);
+
+      const perkText = getJobScaledPerk(job, jobLvl);
+
+      const node: GraphNode = {
+        id: job.id,
+        name: job.name,
+        type: 'job',
+        status: isEquipped ? 'Equipped Active Job' : 'Archetype Available',
+        level: jobLvl,
+        rankName: rankTitle,
+        isEquipped,
+        category: job.category || 'Career Discipline',
+        perkDescription: perkText,
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: isEquipped ? 16 : 13,
+        ring: 2,
+        angle,
+        color: isEquipped ? '#facc15' : '#eab308', // Radiant Gold Spire
+        secondaryColor: '#ca8a04',
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+    });
+
+    // 1E. PROJECTS (Ring 3)
     const projects = state.projects || [];
     projects.forEach((proj, idx) => {
-      const angle = (idx / Math.max(projects.length, 1)) * 2 * Math.PI - Math.PI / 3;
-      const r = ringRadii[2];
+      let angle = (idx / Math.max(projects.length, 1)) * 2 * Math.PI - Math.PI / 3;
+      const parentGoal = proj.goalId ? nMap.get(proj.goalId) : null;
+      if (parentGoal) {
+        angle = parentGoal.angle + ((idx % 3 - 1) * 0.22);
+      }
+
+      const r = ringRadii[3];
       const projProg = getProjectProgress(proj.id);
       const isRecentlyModified = proj.status === 'Completed' || projProg > 0;
       if (isRecentlyModified) modSet.add(proj.id);
@@ -185,28 +299,31 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         type: 'project',
         status: proj.status,
         progress: projProg,
+        parentId: proj.goalId || null,
+        category: proj.status || 'Tactical Operation',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 12,
-        ring: 2,
+        ring: 3,
         angle,
-        color: '#a855f7', // Purple
+        color: '#a855f7', // Amethyst Royal Violet
+        secondaryColor: '#7c3aed',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1E. MILESTONES (Ring 2 Sub-orbit)
+    // 1F. MILESTONES (Ring 3 Sub-orbit)
     const milestones = state.milestones || [];
     milestones.forEach((ms, idx) => {
       let angle = (idx / Math.max(milestones.length, 1)) * 2 * Math.PI;
       const parentProjNode = ms.projectId ? nMap.get(ms.projectId) : null;
       if (parentProjNode) {
-        angle = parentProjNode.angle + ((idx % 3 - 1) * 0.25);
+        angle = parentProjNode.angle + ((idx % 3 - 1) * 0.18);
       }
 
-      const r = ringRadii[2] + 35;
+      const r = ringRadii[3] + 28;
       const isCompleted = ms.status === 'Completed' || (ms as any).completed;
       if (isCompleted) modSet.add(ms.id);
 
@@ -215,32 +332,124 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         name: ms.name,
         type: 'milestone',
         status: isCompleted ? 'Completed' : 'Pending',
+        parentId: ms.projectId || ms.goalId || null,
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 9,
-        ring: 2,
+        ring: 3,
         angle,
-        color: '#ec4899', // Pink
+        color: '#ec4899', // Pink Gem
+        secondaryColor: '#be185d',
         isModifiedRecently: isCompleted
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1F. QUESTS (Ring 3)
-    const quests = state.quests || [];
-    quests.forEach((quest, idx) => {
-      let angle = (idx / Math.max(quests.length, 1)) * 2 * Math.PI + 0.1;
+    // 1G. HONORIFIC TITLES (Ring 3 Sub-orbit)
+    const allTitles = getAllTitles(state.customTitles, state.deletedTitleIds);
+    allTitles.forEach((title, idx) => {
+      const isEquipped = title.id === state.profile.equippedTitleId;
+      const titleLvl = getTitleLvl(title.id);
+      const rankTitle = LEVEL_RANK_NAMES[titleLvl] || `Rank ${titleLvl}`;
+
+      let angle = ((idx + 0.3) / Math.max(allTitles.length, 1)) * 2 * Math.PI + 0.5;
+      const parentGoal = title.relatedGoalId ? nMap.get(title.relatedGoalId) : null;
+      const parentProj = title.relatedProjectId ? nMap.get(title.relatedProjectId) : null;
+      if (parentProj) {
+        angle = parentProj.angle + 0.16;
+      } else if (parentGoal) {
+        angle = parentGoal.angle + 0.16;
+      }
+
+      const r = ringRadii[3] + 22;
+      const isRecentlyModified = isEquipped || titleLvl > 1;
+      if (isRecentlyModified) modSet.add(title.id);
+
+      const node: GraphNode = {
+        id: title.id,
+        name: title.name,
+        type: 'title',
+        status: isEquipped ? 'Equipped Title' : 'Honorific Attuned',
+        level: titleLvl,
+        rankName: rankTitle,
+        isEquipped,
+        category: title.category || 'Honorific Accolade',
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: isEquipped ? 15 : 12,
+        ring: 3,
+        angle,
+        color: isEquipped ? '#38bdf8' : '#06b6d4', // Cyan Celestial Badge
+        secondaryColor: '#0891b2',
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+    });
+
+    // Helper: is a quest a Habit / Sunnah routine
+    const isHabitQuest = (q: Quest) => 
+      q.type === 'Habit' || 
+      (q.recurrence && q.recurrence !== 'None') || 
+      q.formation !== undefined || 
+      (q.streakCount !== undefined && q.streakCount > 0);
+
+    const allQuests = state.quests || [];
+    const habitQuests = allQuests.filter(isHabitQuest);
+    const standardQuests = allQuests.filter(q => !isHabitQuest(q));
+
+    // 1H. HABITS & SUNNAHS (Ring 4)
+    habitQuests.forEach((habit, idx) => {
+      let angle = (idx / Math.max(habitQuests.length, 1)) * 2 * Math.PI + 0.15;
+      const parentGoal = habit.goalId ? nMap.get(habit.goalId) : null;
+      const parentProj = habit.projectId ? nMap.get(habit.projectId) : null;
+      if (parentProj) {
+        angle = parentProj.angle + ((idx % 3 - 1) * 0.14);
+      } else if (parentGoal) {
+        angle = parentGoal.angle + ((idx % 3 - 1) * 0.14);
+      }
+
+      const r = ringRadii[4];
+      const streak = habit.streakCount || habit.formation?.currentStreak || 0;
+      const isRecentlyModified = streak > 0 || habit.status === 'Completed';
+      if (isRecentlyModified) modSet.add(habit.id);
+
+      const node: GraphNode = {
+        id: habit.id,
+        name: habit.name,
+        type: 'habit',
+        status: habit.status,
+        streakCount: streak,
+        xpValue: habit.xp,
+        category: habit.recurrence || 'Daily Sunnah / Habit',
+        parentId: habit.projectId || habit.goalId || null,
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: streak > 5 ? 13 : 11,
+        ring: 4,
+        angle,
+        color: '#14b8a6', // Emerald-Teal Habit Star
+        secondaryColor: '#0d9488',
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+    });
+
+    // 1I. STANDARD QUESTS & DECREES (Ring 4)
+    standardQuests.forEach((quest, idx) => {
+      let angle = (idx / Math.max(standardQuests.length, 1)) * 2 * Math.PI - 0.25;
       const parentGoal = quest.goalId ? nMap.get(quest.goalId) : null;
       const parentProj = quest.projectId ? nMap.get(quest.projectId) : null;
 
       if (parentProj) {
-        angle = parentProj.angle + ((idx % 4 - 1.5) * 0.2);
+        angle = parentProj.angle + ((idx % 4 - 1.5) * 0.16);
       } else if (parentGoal) {
-        angle = parentGoal.angle + ((idx % 4 - 1.5) * 0.2);
+        angle = parentGoal.angle + ((idx % 4 - 1.5) * 0.16);
       }
 
-      const r = ringRadii[3];
+      const r = ringRadii[4] + 25;
       const isRecentlyModified = quest.status === 'Completed' || ((quest as any).xpEarned && (quest as any).xpEarned > 0);
       if (isRecentlyModified) modSet.add(quest.id);
 
@@ -249,31 +458,35 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         name: quest.name,
         type: 'quest',
         status: quest.status,
+        xpValue: quest.xp,
+        parentId: quest.projectId || quest.goalId || null,
+        category: quest.difficulty || 'Decree',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
-        radius: 10,
-        ring: 3,
+        radius: quest.difficulty === 'Boss' ? 14 : 10,
+        ring: 4,
         angle,
         color: quest.status === 'Completed' ? '#38bdf8' : quest.status === 'Active' ? '#f43f5e' : '#64748b',
+        secondaryColor: quest.status === 'Completed' ? '#0284c7' : '#be123c',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1G. SKILLS (Ring 4 Primary Skills & Satellite Secondary Skills)
+    // 1J. SKILLS (Ring 5 Primary Skills & Satellite Secondary Skills)
     const skills = state.skills || [];
     const primarySkills = skills.filter(s => (s.tier || 'Primary') === 'Primary');
     const secondarySkills = skills.filter(s => s.tier === 'Secondary');
 
     primarySkills.forEach((skill, idx) => {
-      let angle = (idx / Math.max(primarySkills.length, 1)) * 2 * Math.PI - 0.2;
+      let angle = (idx / Math.max(primarySkills.length, 1)) * 2 * Math.PI - 0.1;
       const parentAttrNode = (skill as any).attributeId ? nMap.get((skill as any).attributeId) : null;
       if (parentAttrNode) {
-        angle = parentAttrNode.angle + ((idx % 4 - 1.5) * 0.22);
+        angle = parentAttrNode.angle + ((idx % 4 - 1.5) * 0.18);
       }
 
-      const r = ringRadii[4];
+      const r = ringRadii[5];
       const isRecentlyModified = skill.level > 1 || skill.xp > 0;
       if (isRecentlyModified) modSet.add(skill.id);
 
@@ -285,12 +498,14 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         level: skill.level,
         progress: skillProg,
         skillTier: 'Primary',
+        category: skill.primaryAttribute || 'Primary Discipline',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 12,
-        ring: 4,
+        ring: 5,
         angle,
-        color: '#2563eb', // Sapphire Blue
+        color: '#2563eb', // Sapphire Blue Star
+        secondaryColor: '#1d4ed8',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
@@ -299,11 +514,11 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
     secondarySkills.forEach((secSkill, idx) => {
       const parentNode = secSkill.parentId ? nMap.get(secSkill.parentId) : null;
-      let angle = (idx / Math.max(secondarySkills.length, 1)) * 2 * Math.PI + 0.15;
-      let r = ringRadii[4] + 32;
+      let angle = (idx / Math.max(secondarySkills.length, 1)) * 2 * Math.PI + 0.2;
+      let r = ringRadii[5] + 30;
 
       if (parentNode) {
-        angle = parentNode.angle + ((idx % 3 - 1) * 0.2);
+        angle = parentNode.angle + ((idx % 3 - 1) * 0.15);
       }
 
       const isRecentlyModified = secSkill.level > 1 || secSkill.xp > 0;
@@ -318,35 +533,71 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         progress: secSkillProg,
         skillTier: 'Secondary',
         parentId: secSkill.parentId || null,
+        category: 'Secondary Branch',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 8,
-        ring: 4,
+        ring: 5,
         angle,
-        color: '#818cf8', // Indigo
+        color: '#818cf8', // Indigo Star
+        secondaryColor: '#6366f1',
         isModifiedRecently: isRecentlyModified
       };
       nodeList.push(node);
       nMap.set(node.id, node);
     });
 
-    // 1H. PLANNING DOCUMENTS (Ring 4 Outer Sub-orbit)
+    // 1K. MUHĀSABAH RESTRAINTS & WEAKNESS AUDITS (Ring 5 - Restraint Wards)
+    const weaknesses = state.weaknesses || [];
+    weaknesses.forEach((weakness, idx) => {
+      // Anchored in the top-right / spiritual sector
+      const angle = (idx / Math.max(weaknesses.length, 1)) * (Math.PI * 0.8) - Math.PI * 0.9;
+      const r = ringRadii[5] + 15;
+      const slips = weakness.occurrenceCount || 0;
+      const isClean = slips === 0;
+      const isRecentlyModified = slips > 0 || weakness.status === 'Under Control';
+      if (isRecentlyModified) modSet.add(weakness.id);
+
+      const node: GraphNode = {
+        id: weakness.id,
+        name: weakness.name,
+        type: 'muhasabah',
+        status: isClean ? 'Steadfast (Clean)' : `${slips}/5 Slips Active`,
+        occurrenceCount: slips,
+        correctiveStrategy: weakness.correctiveStrategy || weakness.triggerCause,
+        category: weakness.category || 'Moral Restraint Audit',
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        radius: 12,
+        ring: 5,
+        angle,
+        color: slips > 0 ? '#ef4444' : weakness.status === 'Overcome' ? '#10b981' : '#f97316', // Crimson Warning Ward
+        secondaryColor: slips > 0 ? '#b91c1c' : '#c2410c',
+        isModifiedRecently: isRecentlyModified
+      };
+      nodeList.push(node);
+      nMap.set(node.id, node);
+    });
+
+    // 1L. PLANNING DOCUMENTS & ANCIENT CODEX SCROLLS (Ring 6 Outer Orbit)
     const planningDocs = state.planningDocuments || [];
     planningDocs.forEach((doc, idx) => {
-      let angle = (idx / Math.max(planningDocs.length, 1)) * 2 * Math.PI + 0.4;
-      const r = ringRadii[4] + 55;
+      let angle = (idx / Math.max(planningDocs.length, 1)) * 2 * Math.PI + 0.35;
+      const r = ringRadii[6];
 
       const node: GraphNode = {
         id: doc.id,
         name: doc.name,
         type: 'plan',
-        status: 'Active',
+        status: 'Active Codex Scroll',
+        category: doc.path || 'Doctrine',
         x: cx + r * Math.cos(angle),
         y: cy + r * Math.sin(angle),
         radius: 9,
-        ring: 4,
+        ring: 6,
         angle,
-        color: '#14b8a6', // Teal
+        color: '#2dd4bf', // Teal Ancient Manuscript
+        secondaryColor: '#0f766e',
         isModifiedRecently: false
       };
       nodeList.push(node);
@@ -354,110 +605,225 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     });
 
     // =========================================================================
-    // 2. EXHAUSTIVE CROSS-RELATION LINK BUILDING (CONNECTING EVERY COMPONENT)
+    // 2. EXHAUSTIVE CROSS-ENTITY CONNECTION NETWORK WITH DYNAMIC LINK RESONANCE
     // =========================================================================
 
     // 2A. Core Player Links
-    attrs.forEach(a => addLink(a.id, coreNode.id, 'attribute', 'core'));
-    goals.forEach(g => addLink(g.id, coreNode.id, 'goal', 'core'));
-    if (state.profile.focusGoalId && nMap.has(state.profile.focusGoalId)) {
-      addLink(coreNode.id, state.profile.focusGoalId, 'core', 'goal', 'Focus Goal');
-    }
-    if (state.profile.currentBossQuestId && nMap.has(state.profile.currentBossQuestId)) {
-      addLink(coreNode.id, state.profile.currentBossQuestId, 'core', 'quest', 'Boss Quest');
-    }
+    attrs.forEach(a => addLink(a.id, coreNode.id, 'attribute', 'core', 2.2, true, '#10b981'));
+    goals.forEach(g => addLink(g.id, coreNode.id, 'goal', 'core', g.status === 'Completed' ? 3.5 : 2, true, '#f59e0b'));
 
-    // 2B. Goal Relations (Goal -> Project, Skill, Attribute, Plan)
-    goals.forEach(goal => {
-      // Goal <-> Skills (via goal.relatedSkills)
-      if (goal.relatedSkills && Array.isArray(goal.relatedSkills)) {
-        goal.relatedSkills.forEach(sId => addLink(goal.id, sId, 'goal', 'skill'));
+    // Equipped Job -> Thick Radiant Gold Stream to Core
+    if (state.profile.jobId && nMap.has(state.profile.jobId)) {
+      addLink(state.profile.jobId, coreNode.id, 'job', 'core', 4, true, '#facc15', 'Equipped Job');
+    }
+    allJobs.forEach(j => {
+      if (j.id !== state.profile.jobId) {
+        addLink(j.id, coreNode.id, 'job', 'core', 1.5, false, '#ca8a04');
       }
     });
 
-    // 2C. Project Relations (Project -> Goal, Milestone, Skill)
+    // Equipped Title -> Cyan Radiant Stream to Core
+    if (state.profile.equippedTitleId && nMap.has(state.profile.equippedTitleId)) {
+      addLink(state.profile.equippedTitleId, coreNode.id, 'title', 'core', 3.8, true, '#38bdf8', 'Equipped Title');
+    }
+    allTitles.forEach(t => {
+      if (t.id !== state.profile.equippedTitleId) {
+        addLink(t.id, coreNode.id, 'title', 'core', 1.5, false, '#0891b2');
+      }
+    });
+
+    // Habits -> Core (Daily spiritual and physical practice sustains vitality)
+    habitQuests.forEach(h => {
+      const streak = h.streakCount || h.formation?.currentStreak || 0;
+      addLink(h.id, coreNode.id, 'habit', 'core', streak > 3 ? 2.8 : 1.6, streak > 0, '#14b8a6');
+    });
+
+    // Muhāsabah -> Core (Protective boundary guards core soul vitality)
+    weaknesses.forEach(w => {
+      const isClean = (w.occurrenceCount || 0) === 0;
+      addLink(w.id, coreNode.id, 'muhasabah', 'core', isClean ? 2.5 : 3.2, isClean, isClean ? '#10b981' : '#ef4444');
+    });
+
+    // 2B. Job Relations (Job -> Goals, Projects, Skills)
+    allJobs.forEach(job => {
+      if (job.relatedGoalId && nMap.has(job.relatedGoalId)) {
+        addLink(job.id, job.relatedGoalId, 'job', 'goal', 3, true, '#eab308');
+      }
+      if (job.relatedGoalIds && Array.isArray(job.relatedGoalIds)) {
+        job.relatedGoalIds.forEach(gId => {
+          if (nMap.has(gId)) addLink(job.id, gId, 'job', 'goal', 2.5, true, '#eab308');
+        });
+      }
+      if (job.relatedProjectId && nMap.has(job.relatedProjectId)) {
+        addLink(job.id, job.relatedProjectId, 'job', 'project', 2.5, true, '#eab308');
+      }
+      if (job.skillRequirements && Array.isArray(job.skillRequirements)) {
+        job.skillRequirements.forEach(sReq => {
+          if (nMap.has(sReq.skillId)) {
+            addLink(job.id, sReq.skillId, 'job', 'skill', 2.4, true, '#eab308');
+          }
+        });
+      }
+    });
+
+    // 2C. Title Relations (Title -> Goals, Projects, Skills)
+    allTitles.forEach(title => {
+      if (title.relatedGoalId && nMap.has(title.relatedGoalId)) {
+        addLink(title.id, title.relatedGoalId, 'title', 'goal', 2.8, true, '#06b6d4');
+      }
+      if (title.relatedProjectId && nMap.has(title.relatedProjectId)) {
+        addLink(title.id, title.relatedProjectId, 'title', 'project', 2.4, true, '#06b6d4');
+      }
+      if (title.skillRequirements && Array.isArray(title.skillRequirements)) {
+        title.skillRequirements.forEach(sReq => {
+          if (nMap.has(sReq.skillId)) {
+            addLink(title.id, sReq.skillId, 'title', 'skill', 2.2, true, '#06b6d4');
+          }
+        });
+      }
+    });
+
+    // 2D. Goal Relations (Goal -> Skills)
+    goals.forEach(goal => {
+      if (goal.relatedSkills && Array.isArray(goal.relatedSkills)) {
+        goal.relatedSkills.forEach(sId => {
+          if (nMap.has(sId)) addLink(goal.id, sId, 'goal', 'skill', 2.2, false, '#f59e0b');
+        });
+      }
+    });
+
+    // 2E. Project Relations (Project -> Goal)
     projects.forEach(proj => {
       if (proj.goalId && nMap.has(proj.goalId)) {
-        addLink(proj.id, proj.goalId, 'project', 'goal');
+        addLink(proj.id, proj.goalId, 'project', 'goal', 2.5, true, '#a855f7');
       } else {
-        addLink(proj.id, coreNode.id, 'project', 'core');
+        addLink(proj.id, coreNode.id, 'project', 'core', 1.8, false, '#a855f7');
       }
     });
 
-    // 2D. Milestone Relations (Milestone -> Project, Goal)
+    // 2F. Milestone Relations (Milestone -> Project, Goal)
     milestones.forEach(ms => {
       if (ms.projectId && nMap.has(ms.projectId)) {
-        addLink(ms.id, ms.projectId, 'milestone', 'project');
+        addLink(ms.id, ms.projectId, 'milestone', 'project', 1.8, false, '#ec4899');
       }
       if (ms.goalId && nMap.has(ms.goalId)) {
-        addLink(ms.id, ms.goalId, 'milestone', 'goal');
+        addLink(ms.id, ms.goalId, 'milestone', 'goal', 1.8, false, '#ec4899');
       }
     });
 
-    // 2E. Quest Relations (Quest -> Goal, Project, Milestone, Skill)
-    quests.forEach(quest => {
+    // 2G. Habit Relations (Habit -> Goal, Project, Skills)
+    habitQuests.forEach(habit => {
+      const streak = habit.streakCount || habit.formation?.currentStreak || 0;
+      const weight = streak > 5 ? 3 : 2;
+      const isLive = streak > 0;
+
+      if (habit.goalId && nMap.has(habit.goalId)) {
+        addLink(habit.id, habit.goalId, 'habit', 'goal', weight, isLive, '#14b8a6');
+      }
+      if (habit.projectId && nMap.has(habit.projectId)) {
+        addLink(habit.id, habit.projectId, 'habit', 'project', weight, isLive, '#14b8a6');
+      }
+      const hSkills = habit.relatedSkills || (habit as any).skillIds || [];
+      if (Array.isArray(hSkills)) {
+        hSkills.forEach(sId => {
+          if (nMap.has(sId)) addLink(habit.id, sId, 'habit', 'skill', weight, isLive, '#14b8a6');
+        });
+      }
+    });
+
+    // 2H. Standard Quest Relations (Quest -> Goal, Project, Milestone, Skills)
+    standardQuests.forEach(quest => {
+      const isCompleted = quest.status === 'Completed';
+      const weight = quest.difficulty === 'Boss' ? 3.5 : isCompleted ? 2.5 : 1.8;
+      const isLive = isCompleted || quest.status === 'Active';
+
       if (quest.goalId && nMap.has(quest.goalId)) {
-        addLink(quest.id, quest.goalId, 'quest', 'goal');
+        addLink(quest.id, quest.goalId, 'quest', 'goal', weight, isLive, isCompleted ? '#38bdf8' : '#f43f5e');
       }
       if (quest.projectId && nMap.has(quest.projectId)) {
-        addLink(quest.id, quest.projectId, 'quest', 'project');
+        addLink(quest.id, quest.projectId, 'quest', 'project', weight, isLive, isCompleted ? '#38bdf8' : '#f43f5e');
       }
       if (quest.milestoneId && nMap.has(quest.milestoneId)) {
-        addLink(quest.id, quest.milestoneId, 'quest', 'milestone');
+        addLink(quest.id, quest.milestoneId, 'quest', 'milestone', weight, isLive, isCompleted ? '#38bdf8' : '#f43f5e');
       }
       const qSkills = quest.relatedSkills || (quest as any).skillIds || [];
       if (Array.isArray(qSkills)) {
-        qSkills.forEach(sId => addLink(quest.id, sId, 'quest', 'skill'));
+        qSkills.forEach(sId => {
+          if (nMap.has(sId)) addLink(quest.id, sId, 'quest', 'skill', weight, isLive, '#3b82f6');
+        });
       }
     });
 
-    // 2F. Skill Relations (Primary/Secondary -> Attribute, Goals, Projects, Parent Skill)
+    // 2I. Skill Relations (Skill -> Attribute, Parent Skill, Goal, Project)
     skills.forEach(skill => {
-      // Skill -> Attribute
       if ((skill as any).attributeId && nMap.has((skill as any).attributeId)) {
-        addLink(skill.id, (skill as any).attributeId, 'skill', 'attribute');
+        addLink(skill.id, (skill as any).attributeId, 'skill', 'attribute', 2.4, true, '#10b981');
       }
-      // Secondary Skill -> Parent Primary Skill
       if (skill.parentId && nMap.has(skill.parentId)) {
-        addLink(skill.id, skill.parentId, 'skill', 'skill', 'Parent Skill');
+        addLink(skill.id, skill.parentId, 'skill', 'skill', 2, true, '#818cf8', 'Parent Skill');
       }
-      // Skill -> Goals
       if (skill.relatedGoals && Array.isArray(skill.relatedGoals)) {
-        skill.relatedGoals.forEach(gId => addLink(skill.id, gId, 'skill', 'goal'));
+        skill.relatedGoals.forEach(gId => {
+          if (nMap.has(gId)) addLink(skill.id, gId, 'skill', 'goal', 2, false, '#f59e0b');
+        });
       }
-      // Skill -> Projects
       if (skill.relatedProjects && Array.isArray(skill.relatedProjects)) {
-        skill.relatedProjects.forEach(pId => addLink(skill.id, pId, 'skill', 'project'));
+        skill.relatedProjects.forEach(pId => {
+          if (nMap.has(pId)) addLink(skill.id, pId, 'skill', 'project', 2, false, '#a855f7');
+        });
       }
     });
 
-    // 2G. Planning Document Relations
+    // 2J. Muhāsabah Restraints -> Associated Constitutional Attributes
+    weaknesses.forEach(w => {
+      // Find matching attribute based on category (Soul, Mind, Willpower, Self-Discipline)
+      const matchingAttr = attrs.find(a => 
+        a.name.toLowerCase().includes(w.category?.toLowerCase() || '') ||
+        a.name.toLowerCase().includes('willpower') ||
+        a.name.toLowerCase().includes('soul')
+      );
+      if (matchingAttr && nMap.has(matchingAttr.id)) {
+        addLink(w.id, matchingAttr.id, 'muhasabah', 'attribute', 2.2, (w.occurrenceCount || 0) === 0, '#ef4444');
+      }
+    });
+
+    // 2K. Planning Document Relations
     planningDocs.forEach(doc => {
       if (doc.linkedGoals && Array.isArray(doc.linkedGoals)) {
-        doc.linkedGoals.forEach(gId => addLink(doc.id, gId, 'plan', 'goal'));
+        doc.linkedGoals.forEach(gId => {
+          if (nMap.has(gId)) addLink(doc.id, gId, 'plan', 'goal', 1.8, false, '#2dd4bf');
+        });
       }
       if (doc.linkedProjects && Array.isArray(doc.linkedProjects)) {
-        doc.linkedProjects.forEach(pId => addLink(doc.id, pId, 'plan', 'project'));
+        doc.linkedProjects.forEach(pId => {
+          if (nMap.has(pId)) addLink(doc.id, pId, 'plan', 'project', 1.8, false, '#2dd4bf');
+        });
       }
       if (doc.linkedQuests && Array.isArray(doc.linkedQuests)) {
-        doc.linkedQuests.forEach(qId => addLink(doc.id, qId, 'plan', 'quest'));
+        doc.linkedQuests.forEach(qId => {
+          if (nMap.has(qId)) addLink(doc.id, qId, 'plan', 'quest', 1.8, false, '#2dd4bf');
+        });
       }
       if (doc.linkedSkills && Array.isArray(doc.linkedSkills)) {
-        doc.linkedSkills.forEach(sId => addLink(doc.id, sId, 'plan', 'skill'));
+        doc.linkedSkills.forEach(sId => {
+          if (nMap.has(sId)) addLink(doc.id, sId, 'plan', 'skill', 1.8, false, '#2dd4bf');
+        });
       }
     });
 
     return { nodes: nodeList, links: linkList, nodeMap: nMap, modifiedNodeIds: modSet };
-  }, [state]);
+  }, [state, getAttributes, getGoalProgress, getProjectProgress, getSkillXpAndLevel, getJobLvl, getTitleLvl]);
 
   // REAL-TIME MODIFICATION AUDIT LOG
   useEffect(() => {
     const currentStateSummary = JSON.stringify({
-      quests: state.quests.map(q => ({ id: q.id, status: q.status })),
+      quests: state.quests.map(q => ({ id: q.id, status: q.status, streak: q.streakCount })),
       goals: state.goals.map(g => ({ id: g.id, status: g.status, p: getGoalProgress(g.id) })),
       projects: state.projects.map(p => ({ id: p.id, status: p.status, pr: getProjectProgress(p.id) })),
       skills: state.skills.map(s => ({ id: s.id, lvl: s.level, xp: s.xp })),
-      xpHistoryLength: state.xpHistory?.length || 0
+      jobId: state.profile.jobId,
+      titleId: state.profile.equippedTitleId,
+      weaknesses: state.weaknesses?.map(w => ({ id: w.id, o: w.occurrenceCount }))
     });
 
     if (prevItemsRef.current && prevItemsRef.current !== currentStateSummary) {
@@ -466,7 +832,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         {
           id: `mod-${Date.now()}`,
           type: 'quest',
-          title: 'System Web Synchronization Updated',
+          title: 'Celestial Resonance Harmonic Updated',
           timestamp: nowStr,
           action: 'State Mutated'
         },
@@ -474,7 +840,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       ]);
     }
     prevItemsRef.current = currentStateSummary;
-  }, [state]);
+  }, [state, getGoalProgress, getProjectProgress]);
 
   // ACTIVE FOCUS NODE
   const activeFocusId = selectedNodeId || hoveredNodeId;
@@ -489,7 +855,20 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         circuitNodeMap: new Map<string, number>(),
         circuitLinkIds: new Set<string>(),
         maxCircuitHop: 0,
-        circuitStats: { goal: 0, project: 0, quest: 0, skill: 0, attribute: 0, milestone: 0, plan: 0, core: 0 },
+        circuitStats: { 
+          goal: 0, 
+          job: 0, 
+          project: 0, 
+          title: 0, 
+          quest: 0, 
+          habit: 0, 
+          skill: 0, 
+          muhasabah: 0, 
+          attribute: 0, 
+          milestone: 0, 
+          plan: 0, 
+          core: 0 
+        },
         circuitNodesList: [] as GraphNode[]
       };
     }
@@ -531,7 +910,20 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       }
     });
 
-    const stats = { goal: 0, project: 0, quest: 0, skill: 0, attribute: 0, milestone: 0, plan: 0, core: 0 };
+    const stats = { 
+      goal: 0, 
+      job: 0, 
+      project: 0, 
+      title: 0, 
+      quest: 0, 
+      habit: 0, 
+      skill: 0, 
+      muhasabah: 0, 
+      attribute: 0, 
+      milestone: 0, 
+      plan: 0, 
+      core: 0 
+    };
     const list: GraphNode[] = [];
 
     nodeHops.forEach((hop, id) => {
@@ -553,18 +945,6 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
     };
   }, [activeFocusId, links, nodeMap]);
 
-  // DIRECT 1-HOP CONNECTIONS FOR PRIMARY FOCUS HIGHLIGHTS
-  const directConnectedIds = useMemo(() => {
-    if (!activeFocusId) return new Set<string>();
-    const connected = new Set<string>();
-    connected.add(activeFocusId);
-    links.forEach(l => {
-      if (l.source === activeFocusId) connected.add(l.target);
-      if (l.target === activeFocusId) connected.add(l.source);
-    });
-    return connected;
-  }, [activeFocusId, links]);
-
   // VISIBILITY FILTERING
   const filteredNodes = useMemo(() => {
     return nodes.filter(node => {
@@ -574,7 +954,9 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       if (showModifiedOnly && !node.isModifiedRecently && node.type !== 'core') return false;
       
       if (activeFilter !== 'all' && node.type !== 'core') {
-        if (activeFilter === 'primary_skill') {
+        if (activeFilter === 'job_title') {
+          if (node.type !== 'job' && node.type !== 'title') return false;
+        } else if (activeFilter === 'primary_skill') {
           if (node.type !== 'skill' || node.skillTier !== 'Primary') return false;
         } else if (activeFilter === 'secondary_skill') {
           if (node.type !== 'skill' || node.skillTier !== 'Secondary') return false;
@@ -584,7 +966,12 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
       }
 
       if (searchQuery.trim()) {
-        return node.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const query = searchQuery.toLowerCase();
+        return (
+          node.name.toLowerCase().includes(query) ||
+          (node.category && node.category.toLowerCase().includes(query)) ||
+          (node.rankName && node.rankName.toLowerCase().includes(query))
+        );
       }
       return true;
     });
@@ -594,16 +981,50 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
   const selectedNode = selectedNodeId ? nodeMap.get(selectedNodeId) : null;
 
-  const getNodeIcon = (type: NodeType) => {
+  // Interactive Pan Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag when clicking background or holding
+    if ((e.target as HTMLElement).tagName === 'svg' || (e.target as HTMLElement).tagName === 'rect' || (e.target as HTMLElement).tagName === 'circle') {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const resetView = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    setSelectedNodeId(null);
+    setHoveredNodeId(null);
+    setIsolateCircuit(false);
+  };
+
+  const getNodeIcon = (type: NodeType, isEquipped?: boolean) => {
     switch (type) {
-      case 'core': return <Zap className="h-3.5 w-3.5 text-cyan-400" />;
-      case 'goal': return <Target className="h-3.5 w-3.5 text-amber-400" />;
-      case 'project': return <Layers className="h-3.5 w-3.5 text-purple-400" />;
-      case 'quest': return <Sparkles className="h-3.5 w-3.5 text-rose-400" />;
-      case 'skill': return <Award className="h-3.5 w-3.5 text-blue-400" />;
+      case 'core': return <Zap className="h-3.5 w-3.5 text-[#fef08a]" />;
       case 'attribute': return <Activity className="h-3.5 w-3.5 text-emerald-400" />;
+      case 'goal': return <Target className="h-3.5 w-3.5 text-amber-400" />;
+      case 'job': return <Crown className={`h-3.5 w-3.5 ${isEquipped ? 'text-amber-300' : 'text-yellow-400'}`} />;
+      case 'project': return <Layers className="h-3.5 w-3.5 text-purple-400" />;
+      case 'title': return <Award className="h-3.5 w-3.5 text-cyan-400" />;
       case 'milestone': return <CheckCircle className="h-3.5 w-3.5 text-pink-400" />;
-      case 'plan': return <FileText className="h-3.5 w-3.5 text-teal-400" />;
+      case 'quest': return <Sparkles className="h-3.5 w-3.5 text-rose-400" />;
+      case 'habit': return <Flame className="h-3.5 w-3.5 text-teal-400" />;
+      case 'skill': return <Compass className="h-3.5 w-3.5 text-blue-400" />;
+      case 'muhasabah': return <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />;
+      case 'plan': return <FileText className="h-3.5 w-3.5 text-teal-300" />;
       default: return <Info className="h-3.5 w-3.5 text-zinc-400" />;
     }
   };
@@ -611,12 +1032,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
   const getNodeBadgeClass = (type: NodeType) => {
     switch (type) {
       case 'core': return 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a]';
-      case 'goal': return 'bg-[#2a220a] border-[#e5c875]/60 text-[#fef08a]';
-      case 'project': return 'bg-[#181329] border-[#a855f7]/50 text-purple-300';
-      case 'quest': return 'bg-[#2a1318] border-rose-500/50 text-rose-300';
-      case 'skill': return 'bg-[#0f1f38] border-blue-500/50 text-blue-300';
       case 'attribute': return 'bg-[#0c2419] border-emerald-500/50 text-emerald-300';
+      case 'goal': return 'bg-[#2a220a] border-amber-500/50 text-amber-300';
+      case 'job': return 'bg-[#3b2a0c] border-yellow-500/50 text-yellow-300';
+      case 'project': return 'bg-[#181329] border-purple-500/50 text-purple-300';
+      case 'title': return 'bg-[#0d222e] border-cyan-500/50 text-cyan-300';
       case 'milestone': return 'bg-[#2b1022] border-pink-500/50 text-pink-300';
+      case 'quest': return 'bg-[#2a1318] border-rose-500/50 text-rose-300';
+      case 'habit': return 'bg-[#0b2422] border-teal-500/50 text-teal-300';
+      case 'skill': return 'bg-[#0f1f38] border-blue-500/50 text-blue-300';
+      case 'muhasabah': return 'bg-[#2d0e14] border-rose-500/60 text-rose-300';
       case 'plan': return 'bg-[#0b2426] border-teal-500/50 text-teal-300';
       default: return 'bg-[#0b0d13] border-[#c5a059]/30 text-zinc-300';
     }
@@ -625,22 +1050,22 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
   return (
     <div className="space-y-4">
       
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#0b0d13]/95 p-4 rounded-xl border border-[#c5a059]/30 glass-panel relative overflow-hidden shadow-lg">
+      {/* HEADER SECTION: ASTROLABE OF DESTINIES */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#080b12]/95 p-4 rounded-xl border border-[#c5a059]/30 glass-panel relative overflow-hidden shadow-2xl">
         <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-[#141824] border border-[#c5a059]/50 rounded-xl text-[#e5c875] shadow-[0_0_15px_rgba(197,160,89,0.25)]">
+          <div className="p-2.5 bg-[#101422] border border-[#c5a059]/50 rounded-xl text-[#e5c875] shadow-[0_0_20px_rgba(197,160,89,0.3)]">
             <RubElHizbIcon className="h-6 w-6 text-[#c5a059]" />
           </div>
           <div>
             <h3 className="text-base font-display font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              ASTROLABE OF DESTINIES // NEXUS GRAPH
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-bold">
-                SOUL WEAVE ACTIVE
+              CONSTELLATION NET // CELESTIAL STAR-MAP
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-bold shadow-sm">
+                SOUL WEAVE v3.0
               </span>
             </h3>
             <p className="text-[11px] font-mono text-[#c5a059]/80 mt-0.5">
-              Harmonic celestial web linking Destinies, Operations, Decrees, Disciplines, Attributes & Milestones
+              Radiant neural cosmos linking Destinies, Job Archetypes, Habits, Operations, Disciplines & Muhāsabah Audits
             </p>
           </div>
         </div>
@@ -655,8 +1080,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search realm node..."
-              className="bg-[#07080c] border border-[#c5a059]/30 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#c5a059] font-mono w-36 sm:w-48"
+              placeholder="Search star node..."
+              className="bg-[#05070d] border border-[#c5a059]/30 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#c5a059] font-mono w-36 sm:w-48"
             />
           </div>
 
@@ -666,17 +1091,17 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
             className={`text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 uppercase cursor-pointer ${
               showModifiedOnly 
                 ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.3)]' 
-                : 'bg-[#07080c] border-white/10 text-zinc-400 hover:text-white hover:border-[#c5a059]/30'
+                : 'bg-[#05070d] border-white/10 text-zinc-400 hover:text-white hover:border-[#c5a059]/30'
             }`}
           >
             <Sparkles className="h-3 w-3 text-[#e5c875]" />
-            {showModifiedOnly ? 'ATTUNED ONLY' : 'HIGHLIGHT ATTUNED'}
+            {showModifiedOnly ? 'ATTUNED ONLY' : 'ATTUNED STARS'}
           </button>
 
-          {/* ZOOM CONTROLS */}
-          <div className="flex items-center bg-[#07080c] border border-[#c5a059]/30 rounded-lg p-0.5">
+          {/* ZOOM & PAN RESET CONTROLS */}
+          <div className="flex items-center bg-[#05070d] border border-[#c5a059]/30 rounded-lg p-0.5">
             <button 
-              onClick={() => setZoomLevel(prev => Math.max(0.7, prev - 0.15))}
+              onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
               className="p-1 text-zinc-400 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors cursor-pointer"
               title="Zoom Out"
             >
@@ -686,16 +1111,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
               {Math.round(zoomLevel * 100)}%
             </span>
             <button 
-              onClick={() => setZoomLevel(prev => Math.min(1.4, prev + 0.15))}
+              onClick={() => setZoomLevel(prev => Math.min(1.6, prev + 0.15))}
               className="p-1 text-zinc-400 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="h-3.5 w-3.5" />
             </button>
             <button 
-              onClick={() => setZoomLevel(1)}
-              className="p-1 text-zinc-500 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors border-l border-white/5 cursor-pointer"
-              title="Reset Zoom"
+              onClick={resetView}
+              className="p-1 text-zinc-500 hover:text-[#e5c875] rounded hover:bg-white/5 transition-colors border-l border-white/10 cursor-pointer"
+              title="Reset Zoom & Pan"
             >
               <RefreshCw className="h-3 w-3" />
             </button>
@@ -703,23 +1128,23 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         </div>
       </div>
 
-      {/* FILTER TABS */}
+      {/* EXTENDED FILTER TABS (WITH HABITS, JOBS & TITLES, MUHĀSABAH) */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[#c5a059]/20 pb-3">
         <span className="text-[10px] font-mono text-[#c5a059] uppercase mr-1 flex items-center gap-1 font-bold">
-          <Filter className="h-3 w-3 text-[#c5a059]" /> FILTER SPHERE:
+          <Filter className="h-3 w-3 text-[#c5a059]" /> CELESTIAL SPHERES:
         </span>
 
         {[
-          { id: 'all', label: 'ALL REALM NODES' },
-          { id: 'goal', label: 'DESTINIES' },
-          { id: 'project', label: 'OPERATIONS' },
-          { id: 'quest', label: 'DECREES' },
-          { id: 'skill', label: 'DISCIPLINES' },
-          { id: 'primary_skill', label: 'PRIMARY DISCIPLINES' },
-          { id: 'secondary_skill', label: 'SECONDARY BRANCHES' },
+          { id: 'all', label: 'ALL REALM STARS' },
+          { id: 'goal', label: 'DESTINIES (Goals)' },
+          { id: 'job_title', label: 'JOBS & TITLES' },
+          { id: 'habit', label: 'HABITS & SUNNAHS' },
+          { id: 'project', label: 'OPERATIONS (Projects)' },
+          { id: 'quest', label: 'DECREES (Quests)' },
+          { id: 'skill', label: 'DISCIPLINES (Skills)' },
+          { id: 'muhasabah', label: 'MUHĀSABAH RESTRAINTS' },
           { id: 'attribute', label: 'ATTRIBUTES' },
-          { id: 'milestone', label: 'MILESTONES' },
-          { id: 'plan', label: 'SCROLLS' }
+          { id: 'plan', label: 'CODEX SCROLLS' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -727,7 +1152,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
             className={`text-[10px] font-mono px-2.5 py-1 rounded-md transition-all uppercase cursor-pointer ${
               activeFilter === tab.id 
                 ? 'bg-[#3a2e12] text-[#fef08a] border border-[#c5a059] font-bold shadow-sm' 
-                : 'bg-[#07080c] hover:bg-[#141824] text-zinc-400 hover:text-zinc-200 border border-[#c5a059]/15'
+                : 'bg-[#070912] hover:bg-[#121626] text-zinc-400 hover:text-zinc-200 border border-[#c5a059]/15'
             }`}
           >
             {tab.label}
@@ -735,10 +1160,10 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
         ))}
       </div>
 
-      {/* ACTIVE CIRCUIT BANNER (RESERVED HEIGHT CONTAINER TO PREVENT LAYOUT SHIFT) */}
+      {/* ACTIVE CIRCUIT RESONANCE BANNER */}
       <div className="min-h-[58px] flex items-center">
         {activeFocusNode ? (
-          <div className="w-full bg-[#0b0d13] border border-[#c5a059]/50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(197,160,89,0.18)] relative overflow-hidden">
+          <div className="w-full bg-[#080b14] border border-[#c5a059]/50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(197,160,89,0.2)] relative overflow-hidden">
             <ArabesqueCorner position="top-right" className="top-1 right-1 h-3 w-3" color="#c5a059" />
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[#3a2e12] border border-[#c5a059] text-[#fef08a] shrink-0">
@@ -752,15 +1177,29 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#3a2e12] border border-[#c5a059]/40 text-[#fef08a] uppercase font-bold">
                     {activeFocusNode.type}
                   </span>
+                  {activeFocusNode.rankName && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
+                      {activeFocusNode.rankName}
+                    </span>
+                  )}
+                  {activeFocusNode.streakCount !== undefined && activeFocusNode.streakCount > 0 && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-teal-500/20 border border-teal-500/40 text-teal-300 font-bold flex items-center gap-0.5">
+                      <Flame className="h-2.5 w-2.5 text-teal-400" />
+                      {activeFocusNode.streakCount}d STREAK
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] font-mono text-zinc-300 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                  <span className="text-zinc-400">{circuitNodesList.length - 1} Resonating Nodes:</span>
-                  <span className="text-[#e5c875] font-bold">{circuitStats.goal} Destinies</span> •
-                  <span className="text-purple-400 font-bold">{circuitStats.project} Operations</span> •
-                  <span className="text-rose-400 font-bold">{circuitStats.quest} Decrees</span> •
-                  <span className="text-blue-400 font-bold">{circuitStats.skill} Disciplines</span> •
-                  <span className="text-emerald-400 font-bold">{circuitStats.attribute} Attributes</span>
-                  {circuitStats.plan > 0 && <span className="text-teal-400 font-bold">• {circuitStats.plan} Scrolls</span>}
+                  <span className="text-zinc-400">{circuitNodesList.length - 1} Connected Celestial Stars:</span>
+                  {circuitStats.goal > 0 && <span className="text-[#e5c875] font-bold">{circuitStats.goal} Destinies</span>}
+                  {circuitStats.job > 0 && <span className="text-amber-400 font-bold">• {circuitStats.job} Jobs</span>}
+                  {circuitStats.title > 0 && <span className="text-cyan-400 font-bold">• {circuitStats.title} Titles</span>}
+                  {circuitStats.habit > 0 && <span className="text-teal-400 font-bold">• {circuitStats.habit} Habits</span>}
+                  {circuitStats.project > 0 && <span className="text-purple-400 font-bold">• {circuitStats.project} Operations</span>}
+                  {circuitStats.quest > 0 && <span className="text-rose-400 font-bold">• {circuitStats.quest} Decrees</span>}
+                  {circuitStats.skill > 0 && <span className="text-blue-400 font-bold">• {circuitStats.skill} Disciplines</span>}
+                  {circuitStats.muhasabah > 0 && <span className="text-rose-500 font-bold">• {circuitStats.muhasabah} Muhāsabah</span>}
+                  {circuitStats.attribute > 0 && <span className="text-emerald-400 font-bold">• {circuitStats.attribute} Attributes</span>}
                 </div>
               </div>
             </div>
@@ -771,11 +1210,11 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                 className={`text-xs font-mono font-bold px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
                   isolateCircuit 
                     ? 'bg-[#3a2e12] border-[#c5a059] text-[#fef08a] shadow-[0_0_15px_rgba(197,160,89,0.3)]' 
-                    : 'bg-[#07080c] border-[#c5a059]/30 text-zinc-300 hover:text-white hover:border-[#c5a059]'
+                    : 'bg-[#05070d] border-[#c5a059]/30 text-zinc-300 hover:text-white hover:border-[#c5a059]'
                 }`}
               >
                 <Compass className="h-3.5 w-3.5 text-[#e5c875]" />
-                {isolateCircuit ? 'ISOLATED HARMONY VIEW' : 'ISOLATE HARMONY'}
+                {isolateCircuit ? 'ISOLATED HARMONY VIEW' : 'ISOLATE CIRCUIT'}
               </button>
 
               <button
@@ -784,126 +1223,253 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                   setHoveredNodeId(null);
                   setIsolateCircuit(false);
                 }}
-                className="text-xs font-mono text-zinc-400 hover:text-white px-2.5 py-1.5 rounded bg-[#07080c] border border-[#c5a059]/20 hover:border-[#c5a059]/40 transition-colors cursor-pointer"
+                className="text-xs font-mono text-zinc-400 hover:text-white px-2.5 py-1.5 rounded bg-[#05070d] border border-[#c5a059]/20 hover:border-[#c5a059]/40 transition-colors cursor-pointer"
               >
                 CLEAR
               </button>
             </div>
           </div>
         ) : (
-          <div className="w-full bg-[#0b0d13]/80 border border-[#c5a059]/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono text-zinc-400">
+          <div className="w-full bg-[#080b14]/80 border border-[#c5a059]/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono text-zinc-400">
             <span className="flex items-center gap-2">
               <RubElHizbIcon className="h-4 w-4 text-[#c5a059] shrink-0" />
-              HOVER OR ATTUNE TO ANY REALM NODE TO INSPECT ITS CELESTIAL CIRCUIT NETWORK
+              HOVER OR CLICK ANY CELESTIAL STAR TO ILLUMINATE ITS FULL RESONATING ENERGY NETWORK
             </span>
             <span className="text-[10px] text-[#c5a059] uppercase font-mono hidden sm:inline font-bold">ASTROLABE ACTIVE</span>
           </div>
         )}
       </div>
 
-      {/* MAIN SPIDERWEB CANVAS & INSPECTOR GRID */}
+      {/* MAIN CELESTIAL STAR-MAP CANVAS & INSPECTOR GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
-        {/* SPIDERWEB SVG DISPLAY (3 COLS) */}
-        <div className="lg:col-span-3 bg-[#0b0d13]/90 border border-[#c5a059]/30 rounded-xl p-2 relative overflow-hidden flex items-center justify-center min-h-[480px] md:min-h-[580px] shadow-xl">
-          <ArabesqueCorner position="top-left" className="top-1.5 left-1.5 h-4 w-4" color="#c5a059" />
-          <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-4 w-4" color="#c5a059" />
-          <ArabesqueCorner position="bottom-left" className="bottom-1.5 left-1.5 h-4 w-4" color="#c5a059" />
-          <ArabesqueCorner position="bottom-right" className="bottom-1.5 right-1.5 h-4 w-4" color="#c5a059" />
+        {/* CELESTIAL STAR-MAP SVG DISPLAY (3 COLS) */}
+        <div 
+          ref={svgContainerRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`lg:col-span-3 bg-[#06080f] border border-[#c5a059]/30 rounded-xl p-2 relative overflow-hidden flex items-center justify-center min-h-[520px] md:min-h-[640px] shadow-2xl select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        >
+          <ArabesqueCorner position="top-left" className="top-1.5 left-1.5 h-4 w-4 pointer-events-none" color="#c5a059" />
+          <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-4 w-4 pointer-events-none" color="#c5a059" />
+          <ArabesqueCorner position="bottom-left" className="bottom-1.5 left-1.5 h-4 w-4 pointer-events-none" color="#c5a059" />
+          <ArabesqueCorner position="bottom-right" className="bottom-1.5 right-1.5 h-4 w-4 pointer-events-none" color="#c5a059" />
           
-          {/* SPIDERWEB BACKGROUND GRID DECORATION */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#c5a059]/10 via-[#0b0d13]/80 to-[#07080c] pointer-events-none" />
+          {/* PAN CONTROLS HINT (Top-left) */}
+          <div className="absolute top-3 left-3 bg-[#080b14]/90 border border-white/10 rounded-md px-2 py-1 text-[9px] font-mono text-zinc-400 flex items-center gap-1.5 pointer-events-none backdrop-blur-sm z-10">
+            <Move className="h-3 w-3 text-[#c5a059]" />
+            <span>DRAG TO PAN • SCROLL / BUTTONS TO ZOOM</span>
+          </div>
 
-          {/* DYNAMIC SVG SPIDERWEB GRAPH */}
+          {/* DYNAMIC SVG CELESTIAL STAR-MAP */}
           <div 
-            className="transition-transform duration-300 ease-out origin-center w-full max-w-[650px]"
-            style={{ transform: `scale(${zoomLevel})` }}
+            className="transition-transform duration-100 ease-out origin-center w-full max-w-[850px]"
+            style={{ 
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})` 
+            }}
           >
             <svg 
               viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-              className="w-full h-auto overflow-visible select-none"
+              className="w-full h-auto overflow-visible"
             >
               <defs>
                 <style>{`
-                  @keyframes circuitFlow {
-                    from { stroke-dashoffset: 24; }
+                  @keyframes energyStreamFlow {
+                    from { stroke-dashoffset: 32; }
                     to { stroke-dashoffset: 0; }
                   }
-                  .circuit-active-line {
-                    stroke-dasharray: 6 6;
-                    animation: circuitFlow 1s linear infinite;
+                  .energy-stream {
+                    stroke-dasharray: 4 14;
+                    animation: energyStreamFlow 1.2s linear infinite;
                   }
-                  @keyframes circuitPulse {
-                    0%, 100% { opacity: 0.3; stroke-width: 1px; }
-                    50% { opacity: 1; stroke-width: 3px; }
+                  @keyframes starCoronaPulse {
+                    0%, 100% { opacity: 0.35; stroke-width: 1px; }
+                    50% { opacity: 0.95; stroke-width: 3.5px; }
                   }
-                  .circuit-node-pulse {
-                    animation: circuitPulse 1.6s ease-in-out infinite;
+                  .star-corona-pulse {
+                    animation: starCoronaPulse 2s ease-in-out infinite;
+                  }
+                  @keyframes nebulaTwinkle {
+                    0%, 100% { opacity: 0.25; }
+                    50% { opacity: 0.85; }
+                  }
+                  .star-twinkle {
+                    animation: nebulaTwinkle 3s ease-in-out infinite;
                   }
                 `}</style>
 
-                {/* Glow Filters for Spiderweb Nodes & Circuit Lines */}
+                {/* 1. LAYERED INTERSTELLAR NEBULAE GRADIENTS */}
+                <radialGradient id="nebula-emerald" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
+                  <stop offset="50%" stopColor="#047857" stopOpacity="0.09" />
+                  <stop offset="100%" stopColor="#06080f" stopOpacity="0" />
+                </radialGradient>
+
+                <radialGradient id="nebula-cyan" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.22" />
+                  <stop offset="55%" stopColor="#0284c7" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#06080f" stopOpacity="0" />
+                </radialGradient>
+
+                <radialGradient id="nebula-amber" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+                  <stop offset="60%" stopColor="#b45309" stopOpacity="0.09" />
+                  <stop offset="100%" stopColor="#06080f" stopOpacity="0" />
+                </radialGradient>
+
+                <radialGradient id="nebula-violet" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.22" />
+                  <stop offset="55%" stopColor="#6d28d9" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#06080f" stopOpacity="0" />
+                </radialGradient>
+
+                <radialGradient id="nebula-crimson" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.18" />
+                  <stop offset="60%" stopColor="#991b1b" stopOpacity="0.06" />
+                  <stop offset="100%" stopColor="#06080f" stopOpacity="0" />
+                </radialGradient>
+
+                {/* Radial gradient for Sun Core */}
+                <radialGradient id="sun-core-gradient" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#fffbeb" />
+                  <stop offset="40%" stopColor="#fef08a" />
+                  <stop offset="75%" stopColor="#c5a059" />
+                  <stop offset="100%" stopColor="#92400e" />
+                </radialGradient>
+
+                {/* Glow Filters */}
                 <filter id="glow-circuit" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
                   <feMerge>
                     <feMergeNode in="blur" />
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
-                <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+                <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
                   <feGaussianBlur stdDeviation="6" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
-                <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
-                  <feGaussianBlur stdDeviation="8" result="blur" />
+                <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="glow-teal" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="glow-crimson" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                 </filter>
               </defs>
 
-              {/* 1. DRAW SPIDERWEB RINGS (CONCENTRIC POLYGONS & RADIATING SPOKES) */}
-              <g className="spiderweb-mesh opacity-30">
-                {/* Radiating Web Spokes from Center */}
+              {/* 1. COSMIC NEBULA CLOUDS (Background atmospheric clouds) */}
+              <g className="nebulae-layer pointer-events-none">
+                <circle cx={cx - 240} cy={cy - 220} r="320" fill="url(#nebula-emerald)" />
+                <circle cx={cx + 260} cy={cy + 240} r="340" fill="url(#nebula-cyan)" />
+                <circle cx={cx + 250} cy={cy - 200} r="310" fill="url(#nebula-amber)" />
+                <circle cx={cx - 220} cy={cy + 250} r="320" fill="url(#nebula-violet)" />
+                <circle cx={cx} cy={cy - 320} r="260" fill="url(#nebula-crimson)" />
+              </g>
+
+              {/* 2. DETERMINISTIC BACKGROUND STAR DUST (Twinkling cosmic particles) */}
+              <g className="stardust-layer pointer-events-none">
+                {cosmicStarDust.map(star => (
+                  <circle 
+                    key={`dust-${star.id}`}
+                    cx={star.x}
+                    cy={star.y}
+                    r={star.r}
+                    fill="#ffffff"
+                    opacity={star.opacity}
+                    className="star-twinkle"
+                    style={{ animationDuration: `${star.pulseSpeed}s` }}
+                  />
+                ))}
+              </g>
+
+              {/* 3. CELESTIAL COORDINATE SPOKES & CONCENTRIC ORBITAL RINGS */}
+              <g className="celestial-mesh pointer-events-none opacity-40">
+                {/* 12 Radiating Astrolabe Coordinate Spokes */}
                 {Array.from({ length: 12 }).map((_, i) => {
                   const angle = (i / 12) * 2 * Math.PI - Math.PI / 2;
-                  const outerR = ringRadii[ringRadii.length - 1];
+                  const outerR = ringRadii[ringRadii.length - 1] + 15;
                   const x2 = cx + outerR * Math.cos(angle);
                   const y2 = cy + outerR * Math.sin(angle);
+                  const degree = i * 30;
                   return (
-                    <line 
-                      key={`spoke-${i}`}
-                      x1={cx}
-                      y1={cy}
-                      x2={x2}
-                      y2={y2}
-                      stroke="#c5a059"
-                      strokeWidth="1"
-                      strokeDasharray="4 4"
-                    />
+                    <g key={`spoke-${i}`}>
+                      <line 
+                        x1={cx}
+                        y1={cy}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#c5a059"
+                        strokeWidth="0.8"
+                        strokeDasharray="4 6"
+                        strokeOpacity="0.4"
+                      />
+                      {/* Outer degree marker text */}
+                      <text
+                        x={cx + (outerR + 14) * Math.cos(angle)}
+                        y={cy + (outerR + 14) * Math.sin(angle) + 3}
+                        textAnchor="middle"
+                        fill="#c5a059"
+                        fontSize="8"
+                        fontFamily="monospace"
+                        opacity="0.6"
+                      >
+                        {degree}°
+                      </text>
+                    </g>
                   );
                 })}
 
-                {/* Concentric Spiderweb Ring Polygons */}
-                {ringRadii.slice(1).map((r, ringIndex) => {
-                  const sides = 12;
-                  const points = Array.from({ length: sides }).map((_, i) => {
-                    const angle = (i / sides) * 2 * Math.PI - Math.PI / 2;
-                    return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
-                  }).join(' ');
+                {/* Concentric Celestial Orbit Rings */}
+                {ringRadii.slice(1).map((r, ringIdx) => {
+                  const ringLabels = [
+                    'ORBIT I • CONSTITUTIONAL ATTRIBUTES',
+                    'ORBIT II • DESTINIES & ARCHETYPES',
+                    'ORBIT III • OPERATIONS & ACCOLADES',
+                    'ORBIT IV • RHYTHMS & DECREES',
+                    'ORBIT V • DISCIPLINES & RESTRAINTS',
+                    'ORBIT VI • ANCIENT CODEX SCROLLS'
+                  ];
 
                   return (
-                    <polygon 
-                      key={`ring-poly-${ringIndex}`}
-                      points={points}
-                      fill="none"
-                      stroke="#e5c875"
-                      strokeWidth="1"
-                      strokeOpacity={0.28 - ringIndex * 0.04}
-                    />
+                    <g key={`orbit-${ringIdx}`}>
+                      <circle 
+                        cx={cx}
+                        cy={cy}
+                        r={r}
+                        fill="none"
+                        stroke="#e5c875"
+                        strokeWidth="1"
+                        strokeDasharray="6 8"
+                        strokeOpacity={0.24 - ringIdx * 0.02}
+                      />
+                      {/* Subtle orbital designation along the top vertical axis */}
+                      <text
+                        x={cx}
+                        y={cy - r + 8}
+                        textAnchor="middle"
+                        fill="#c5a059"
+                        fontSize="7"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                        opacity="0.35"
+                        letterSpacing="1px"
+                      >
+                        {ringLabels[ringIdx] || `ORBIT ${ringIdx + 1}`}
+                      </text>
+                    </g>
                   );
                 })}
               </g>
 
-              {/* 2. DRAW RELATIONSHIP CONNECTIONS (EXHAUSTIVE LINKS & ANIMATED CIRCUIT LINES) */}
+              {/* 4. DYNAMIC LINK RESONANCE & ANIMATED ENERGY PULSES */}
               <g className="links-layer">
                 {links.map(link => {
                   const sourceNode = nodeMap.get(link.source);
@@ -911,7 +1477,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
                   if (!sourceNode || !targetNode) return null;
 
-                  // Visibility filters
+                  // Filter visibility
                   const isSourceVisible = filteredNodeIdSet.has(sourceNode.id);
                   const isTargetVisible = filteredNodeIdSet.has(targetNode.id);
                   if (!isSourceVisible && !isTargetVisible) return null;
@@ -921,40 +1487,67 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                   const isDimmed = activeFocusId && !isCircuitLink;
                   const isLinkModified = link.isModifiedRecently || sourceNode.isModifiedRecently || targetNode.isModifiedRecently;
 
+                  // Determine dynamic line stroke color & weight
+                  const linkColor = isDirectFocusLink
+                    ? '#fef08a' // Blazing pure gold
+                    : isCircuitLink
+                    ? '#e5c875' // Luminous antique gold
+                    : link.color || (isLinkModified ? '#f59e0b' : '#334155');
+
+                  const strokeWidth = isDirectFocusLink
+                    ? Math.max(3.2, link.weight + 0.8)
+                    : isCircuitLink
+                    ? Math.max(2.4, link.weight)
+                    : link.weight;
+
+                  const opacity = isDimmed
+                    ? 0.05
+                    : isDirectFocusLink
+                    ? 0.95
+                    : isCircuitLink
+                    ? 0.85
+                    : link.energyPulse
+                    ? 0.75
+                    : isLinkModified
+                    ? 0.65
+                    : 0.28;
+
+                  const showEnergyParticle = isCircuitLink || link.energyPulse || isDirectFocusLink;
+
                   return (
                     <g key={link.id}>
+                      {/* Base Connection Ray */}
                       <line 
                         x1={sourceNode.x}
                         y1={sourceNode.y}
                         x2={targetNode.x}
                         y2={targetNode.y}
-                        stroke={
-                          isDirectFocusLink
-                            ? '#e5c875' // Luminous gold for direct links
-                            : isCircuitLink
-                            ? '#c5a059' // Antique gold glow for active circuit
-                            : isLinkModified 
-                            ? '#f59e0b' 
-                            : '#3a2e12'
-                        }
-                        strokeWidth={
-                          isDirectFocusLink ? 3 : isCircuitLink ? 2 : isLinkModified ? 1.5 : 1
-                        }
-                        strokeOpacity={
-                          isDimmed ? 0.05 : isDirectFocusLink ? 0.95 : isCircuitLink ? 0.85 : isLinkModified ? 0.7 : 0.3
-                        }
-                        strokeDasharray={
-                          isCircuitLink ? undefined : link.targetType === 'skill' ? '3 3' : undefined
-                        }
+                        stroke={linkColor}
+                        strokeWidth={strokeWidth}
+                        strokeOpacity={opacity}
+                        className="transition-all duration-300"
                         filter={isCircuitLink ? 'url(#glow-circuit)' : undefined}
-                        className={isCircuitLink ? 'circuit-active-line transition-all duration-300' : 'transition-all duration-300'}
                       />
+
+                      {/* Dynamic Animated Energy Stream Particle (Flowing along active circuits) */}
+                      {showEnergyParticle && !isDimmed && (
+                        <line 
+                          x1={sourceNode.x}
+                          y1={sourceNode.y}
+                          x2={targetNode.x}
+                          y2={targetNode.y}
+                          stroke={isDirectFocusLink ? '#ffffff' : linkColor}
+                          strokeWidth={strokeWidth * 0.9}
+                          strokeOpacity={0.9}
+                          className="energy-stream pointer-events-none"
+                        />
+                      )}
                     </g>
                   );
                 })}
               </g>
 
-              {/* 3. DRAW SPIDERWEB COMPONENT NODES */}
+              {/* 5. LUMINOUS STAR NODES WITH ENTITY-SPECIFIC AESTHETICS */}
               <g className="nodes-layer">
                 {filteredNodes.map(node => {
                   const isSelected = selectedNodeId === node.id;
@@ -966,7 +1559,8 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                   return (
                     <g 
                       key={node.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setSelectedNodeId(node.id);
                         if (onSelectEntity) onSelectEntity(node.type, node.id);
                       }}
@@ -980,81 +1574,208 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         <circle 
                           cx={node.x}
                           cy={node.y}
-                          r={node.radius + (isSelected ? 9 : 6)} 
+                          r={node.radius + (isSelected ? 10 : 6)} 
                           fill="none" 
-                          stroke={isSelected ? '#e5c875' : '#c5a059'} 
+                          stroke={isSelected ? '#fef08a' : '#c5a059'} 
                           strokeWidth="1.5" 
-                          strokeOpacity="0.8" 
-                          className="pointer-events-none circuit-node-pulse"
+                          strokeOpacity="0.85" 
+                          className="pointer-events-none star-corona-pulse"
                         />
                       )}
 
-                      {/* MODIFIED RECENTLY GLOW RING */}
-                      {node.isModifiedRecently && (
+                      {/* EQUIPPED JOB CLASS: RADIANT GOLD CORONA HALO */}
+                      {node.type === 'job' && node.isEquipped && (
+                        <circle 
+                          cx={node.x}
+                          cy={node.y}
+                          r={node.radius + 7} 
+                          fill="none" 
+                          stroke="#facc15" 
+                          strokeWidth="2" 
+                          strokeDasharray="4 3"
+                          filter="url(#glow-gold)"
+                          className="pointer-events-none star-corona-pulse"
+                        />
+                      )}
+
+                      {/* EQUIPPED TITLE: RADIANT CYAN HALO */}
+                      {node.type === 'title' && node.isEquipped && (
                         <circle 
                           cx={node.x}
                           cy={node.y}
                           r={node.radius + 6} 
                           fill="none" 
-                          stroke="#f59e0b" 
+                          stroke="#38bdf8" 
+                          strokeWidth="1.8" 
+                          strokeDasharray="3 3"
+                          filter="url(#glow-cyan)"
+                          className="pointer-events-none star-corona-pulse"
+                        />
+                      )}
+
+                      {/* HABIT WITH STREAK: TEAL FLAME GLOW */}
+                      {node.type === 'habit' && (node.streakCount || 0) > 0 && (
+                        <circle 
+                          cx={node.x}
+                          cy={node.y}
+                          r={node.radius + 5} 
+                          fill="none" 
+                          stroke="#14b8a6" 
                           strokeWidth="1.5" 
-                          strokeDasharray="2 2"
-                          filter="url(#glow-amber)"
+                          strokeDasharray="3 3"
+                          filter="url(#glow-teal)"
                           className="pointer-events-none"
                         />
                       )}
 
-                      {/* PRIMARY / SECONDARY SKILL DISTINCTIVE HALOS */}
-                      {node.type === 'skill' && node.skillTier === 'Primary' && (
+                      {/* MUHĀSABAH RESTRICTION WARD PULSE */}
+                      {node.type === 'muhasabah' && (
                         <circle 
                           cx={node.x}
                           cy={node.y}
-                          r={node.radius + 3.5} 
+                          r={node.radius + 5} 
                           fill="none" 
-                          stroke="#3b82f6" 
+                          stroke={node.color} 
                           strokeWidth="1.5" 
-                          strokeOpacity="0.8" 
-                          className="pointer-events-none"
-                        />
-                      )}
-                      {node.type === 'skill' && node.skillTier === 'Secondary' && (
-                        <circle 
-                          cx={node.x}
-                          cy={node.y}
-                          r={node.radius + 2.5} 
-                          fill="none" 
-                          stroke="#818cf8" 
-                          strokeWidth="1" 
-                          strokeDasharray="2 2" 
+                          strokeDasharray="2 4"
+                          filter={node.occurrenceCount && node.occurrenceCount > 0 ? 'url(#glow-crimson)' : undefined}
                           className="pointer-events-none"
                         />
                       )}
 
-                      {/* MAIN NODE CIRCLE */}
+                      {/* CORE PLAYER SUN-STAR: DUAL CORONA */}
+                      {node.type === 'core' && (
+                        <>
+                          <circle 
+                            cx={node.x}
+                            cy={node.y}
+                            r={node.radius + 12} 
+                            fill="none" 
+                            stroke="#c5a059" 
+                            strokeWidth="1" 
+                            strokeOpacity="0.4"
+                            strokeDasharray="6 6"
+                            className="pointer-events-none star-corona-pulse"
+                          />
+                          <circle 
+                            cx={node.x}
+                            cy={node.y}
+                            r={node.radius + 6} 
+                            fill="none" 
+                            stroke="#fef08a" 
+                            strokeWidth="1.5" 
+                            strokeOpacity="0.75"
+                            className="pointer-events-none"
+                          />
+                        </>
+                      )}
+
+                      {/* MAIN STAR NODE BODY */}
                       <circle 
                         cx={node.x}
                         cy={node.y}
                         r={node.radius} 
-                        fill={node.color}
-                        stroke={isSelected ? '#ffffff' : isHovered ? '#e5c875' : '#07080c'}
+                        fill={node.type === 'core' ? 'url(#sun-core-gradient)' : node.color}
+                        stroke={isSelected ? '#ffffff' : isHovered ? '#fef08a' : '#070912'}
                         strokeWidth={isSelected ? 3 : isHovered ? 2 : 1.5}
-                        filter={node.type === 'core' || isSelected ? 'url(#glow-amber)' : undefined}
+                        filter={node.type === 'core' || isSelected ? 'url(#glow-gold)' : undefined}
                       />
 
-                      {/* NODE LABEL & HOP LEVEL BADGE */}
+                      {/* NODE BADGE: HABIT FLAME / STREAK */}
+                      {node.type === 'habit' && (node.streakCount || 0) > 0 && (
+                        <g transform={`translate(${node.x + node.radius - 4}, ${node.y - node.radius - 3})`}>
+                          <rect 
+                            x="0" 
+                            y="0" 
+                            width="14" 
+                            height="11" 
+                            rx="3" 
+                            fill="#0d9488" 
+                            stroke="#14b8a6" 
+                            strokeWidth="0.8" 
+                          />
+                          <text 
+                            x="7" 
+                            y="8" 
+                            textAnchor="middle" 
+                            fill="#ffffff" 
+                            fontSize="7" 
+                            fontWeight="bold" 
+                            fontFamily="monospace"
+                          >
+                            {node.streakCount}
+                          </text>
+                        </g>
+                      )}
+
+                      {/* NODE BADGE: JOB LEVEL (1-9) */}
+                      {node.type === 'job' && node.level !== undefined && (
+                        <g transform={`translate(${node.x + node.radius - 5}, ${node.y - node.radius - 3})`}>
+                          <rect 
+                            x="0" 
+                            y="0" 
+                            width="16" 
+                            height="11" 
+                            rx="3" 
+                            fill="#78350f" 
+                            stroke="#f59e0b" 
+                            strokeWidth="0.8" 
+                          />
+                          <text 
+                            x="8" 
+                            y="8" 
+                            textAnchor="middle" 
+                            fill="#fef08a" 
+                            fontSize="7" 
+                            fontWeight="bold" 
+                            fontFamily="monospace"
+                          >
+                            L{node.level}
+                          </text>
+                        </g>
+                      )}
+
+                      {/* NODE BADGE: MUHĀSABAH SLIPS COUNT */}
+                      {node.type === 'muhasabah' && node.occurrenceCount !== undefined && (
+                        <g transform={`translate(${node.x + node.radius - 5}, ${node.y - node.radius - 3})`}>
+                          <rect 
+                            x="0" 
+                            y="0" 
+                            width="16" 
+                            height="11" 
+                            rx="3" 
+                            fill={node.occurrenceCount > 0 ? '#7f1d1d' : '#064e3b'} 
+                            stroke={node.occurrenceCount > 0 ? '#ef4444' : '#10b981'} 
+                            strokeWidth="0.8" 
+                          />
+                          <text 
+                            x="8" 
+                            y="8" 
+                            textAnchor="middle" 
+                            fill="#ffffff" 
+                            fontSize="7" 
+                            fontWeight="bold" 
+                            fontFamily="monospace"
+                          >
+                            {node.occurrenceCount}/5
+                          </text>
+                        </g>
+                      )}
+
+                      {/* PRIMARY NODE LABEL */}
                       <text
                         x={node.x}
                         y={node.y + node.radius + 13}
                         textAnchor="middle"
-                        fill={isSelected ? '#ffffff' : isHovered ? '#e5c875' : '#cbd5e1'}
+                        fill={isSelected ? '#ffffff' : isHovered ? '#fef08a' : '#cbd5e1'}
                         fontSize="9"
                         fontWeight={isSelected || isHovered ? 'bold' : 'normal'}
                         className="pointer-events-none font-mono"
                       >
-                        {node.name.length > 14 ? `${node.name.slice(0, 12)}..` : node.name}
+                        {node.name.length > 15 ? `${node.name.slice(0, 13)}..` : node.name}
                       </text>
 
-                      {/* TYPE / HOP TYPE BADGE */}
+                      {/* SUBTITLE / HOP LEVEL BADGE */}
                       {!compact && (
                         <text
                           x={node.x}
@@ -1062,11 +1783,15 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           textAnchor="middle"
                           fill={
                             isInCircuit && hopLevel === 0
-                              ? '#e5c875'
-                              : node.type === 'skill' && node.skillTier === 'Primary'
-                              ? '#60a5fa'
-                              : node.type === 'skill' && node.skillTier === 'Secondary'
-                              ? '#a78bfa'
+                              ? '#fef08a'
+                              : node.type === 'job' && node.isEquipped
+                              ? '#facc15'
+                              : node.type === 'title' && node.isEquipped
+                              ? '#38bdf8'
+                              : node.type === 'habit'
+                              ? '#2dd4bf'
+                              : node.type === 'muhasabah'
+                              ? '#f87171'
                               : '#71717a'
                           }
                           fontSize="7"
@@ -1076,8 +1801,16 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                         >
                           {isInCircuit && hopLevel !== undefined
                             ? hopLevel === 0 ? '[FOCUS]' : `[HOP-${hopLevel}]`
-                            : node.type === 'skill' 
-                            ? `[${node.skillTier === 'Primary' ? 'PRI' : 'SEC'}-DISCIPLINE]` 
+                            : node.type === 'job'
+                            ? node.isEquipped ? '[ACTIVE JOB]' : `[JOB L${node.level || 1}]`
+                            : node.type === 'title'
+                            ? node.isEquipped ? '[ACTIVE TITLE]' : '[TITLE]'
+                            : node.type === 'habit'
+                            ? `[HABIT • ${node.streakCount || 0}D]`
+                            : node.type === 'muhasabah'
+                            ? `[AUDIT • ${node.occurrenceCount || 0}/5]`
+                            : node.type === 'skill'
+                            ? `[${node.skillTier === 'Primary' ? 'PRI' : 'SEC'}-SKILL]`
                             : `[${node.type}]`}
                         </text>
                       )}
@@ -1088,28 +1821,32 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
             </svg>
           </div>
 
-          {/* LEGEND overlay */}
-          <div className="absolute bottom-3 left-3 bg-[#0b0d13]/95 border border-[#c5a059]/30 rounded-lg p-2.5 text-[9px] font-mono text-zinc-300 space-y-1 backdrop-blur-md shadow-lg">
+          {/* CELESTIAL REALM LEGEND OVERLAY (Bottom-left) */}
+          <div className="absolute bottom-3 left-3 bg-[#080b14]/95 border border-[#c5a059]/30 rounded-lg p-2.5 text-[9px] font-mono text-zinc-300 space-y-1 backdrop-blur-md shadow-2xl pointer-events-none max-w-[240px]">
+            <div className="text-[10px] font-bold text-[#c5a059] border-b border-[#c5a059]/20 pb-0.5 flex items-center gap-1">
+              <RubElHizbIcon className="h-2.5 w-2.5 text-[#e5c875]" /> CELESTIAL REALM ORBITS
+            </div>
             <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#c5a059]" /> CENTER: SOUL CORE</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-400" /> RING 1: ATTRIBUTES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#e5c875]" /> RING 1: DESTINIES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" /> RING 2: OPERATIONS & MILESTONES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-400" /> RING 3: DECREES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> RING 4: PRIMARY DISCIPLINES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-indigo-400" /> SATELLITE: SECONDARY BRANCHES</div>
-            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-teal-400" /> OUTER: CODEX SCROLLS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-400" /> ORBIT I: ATTRIBUTES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-amber-400" /> ORBIT II: DESTINIES &amp; JOBS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-400" /> ORBIT III: OPERATIONS &amp; TITLES</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-teal-400" /> ORBIT IV: HABITS &amp; SUNNAHS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-400" /> ORBIT IV: DECREES (Quests)</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-blue-500" /> ORBIT V: DISCIPLINES (Skills)</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-rose-500" /> ORBIT V: MUHĀSABAH AUDITS</div>
+            <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-teal-300" /> ORBIT VI: CODEX SCROLLS</div>
           </div>
         </div>
 
-        {/* RIGHT PANEL: SELECTED COMPONENT INSPECTOR & CIRCUIT TRAVERSAL */}
+        {/* RIGHT PANEL: STAR NODE INSPECTOR & CIRCUIT HARMONY */}
         <div className="space-y-4">
           
-          {/* INSPECTOR PANEL */}
-          <div className="glass-panel rounded-xl p-4 space-y-3.5 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
+          {/* STAR NODE INSPECTOR DRAWER */}
+          <div className="glass-panel rounded-xl p-4 space-y-3.5 border border-[#c5a059]/30 bg-[#080b14]/95 relative overflow-hidden shadow-2xl">
             <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
             <div className="flex justify-between items-center border-b border-[#c5a059]/20 pb-2">
               <span className="text-xs font-mono text-[#e5c875] font-bold uppercase flex items-center gap-1.5">
-                <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" /> REALM INSPECTOR
+                <RubElHizbIcon className="h-3.5 w-3.5 text-[#c5a059]" /> CELESTIAL INSPECTOR
               </span>
               {selectedNode && (
                 <button 
@@ -1123,98 +1860,197 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
             {selectedNode ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className={`p-1.5 rounded border ${getNodeBadgeClass(selectedNode.type)}`}>
-                    {getNodeIcon(selectedNode.type)}
+                <div className="flex items-center gap-2.5">
+                  <span className={`p-2 rounded-lg border ${getNodeBadgeClass(selectedNode.type)}`}>
+                    {getNodeIcon(selectedNode.type, selectedNode.isEquipped)}
                   </span>
-                  <div>
-                    <h4 className="font-display text-sm font-bold text-white uppercase leading-tight">
+                  <div className="min-w-0">
+                    <h4 className="font-display text-sm font-bold text-white uppercase leading-tight truncate">
                       {selectedNode.name}
                     </h4>
-                    <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">
-                      TYPE: {selectedNode.type} {selectedNode.status ? `• ${selectedNode.status}` : ''}
-                    </span>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] font-mono text-[#c5a059] uppercase font-bold">
+                        {selectedNode.type}
+                      </span>
+                      {selectedNode.status && (
+                        <span className="text-[9px] font-mono text-zinc-400 truncate">
+                          • {selectedNode.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* SKILL TIER SPECIFIC BADGE */}
+                {/* JOB CLASS TELEMETRY */}
+                {selectedNode.type === 'job' && (
+                  <div className="bg-[#1f1708] border border-yellow-500/40 rounded-lg p-2.5 space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-yellow-400 font-bold flex items-center gap-1">
+                        <Crown className="h-3.5 w-3.5" />
+                        {selectedNode.isEquipped ? 'EQUIPPED ACTIVE JOB' : 'ARCHETYPE SPEC'}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-bold text-[9px] border border-yellow-500/40">
+                        LVL {selectedNode.level || 1}/9
+                      </span>
+                    </div>
+                    {selectedNode.rankName && (
+                      <div className="text-[11px] text-zinc-200">
+                        Rank Tier: <strong className="text-amber-300">{selectedNode.rankName}</strong>
+                      </div>
+                    )}
+                    {selectedNode.perkDescription && (
+                      <div className="p-2 bg-black/40 rounded border border-white/5 text-[10px] text-zinc-300 leading-relaxed">
+                        <span className="text-amber-400 font-bold block mb-0.5">SCALED PERK BOOST:</span>
+                        {selectedNode.perkDescription}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* HONORIFIC TITLE TELEMETRY */}
+                {selectedNode.type === 'title' && (
+                  <div className="bg-[#0b1c26] border border-cyan-500/40 rounded-lg p-2.5 space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-cyan-300 font-bold flex items-center gap-1">
+                        <Award className="h-3.5 w-3.5" />
+                        {selectedNode.isEquipped ? 'EQUIPPED HONORIFIC TITLE' : 'TITLE BADGE'}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 font-bold text-[9px] border border-cyan-500/40">
+                        LVL {selectedNode.level || 1}/9
+                      </span>
+                    </div>
+                    {selectedNode.rankName && (
+                      <div className="text-[11px] text-zinc-200">
+                        Honorific Rank: <strong className="text-cyan-300">{selectedNode.rankName}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* HABIT TELEMETRY */}
+                {selectedNode.type === 'habit' && (
+                  <div className="bg-[#091f1d] border border-teal-500/40 rounded-lg p-2.5 space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-teal-300 font-bold flex items-center gap-1">
+                        <Flame className="h-3.5 w-3.5 text-teal-400" />
+                        SUNNAH / HABIT RHYTHM
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-200 font-bold text-[9px] border border-teal-500/40">
+                        {selectedNode.streakCount || 0}d STREAK
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-zinc-300">
+                      Cadence: <strong className="text-teal-300">{selectedNode.category}</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* MUHĀSABAH RESTRICTION AUDIT TELEMETRY */}
+                {selectedNode.type === 'muhasabah' && (
+                  <div className="bg-[#260c12] border border-rose-500/40 rounded-lg p-2.5 space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-rose-300 font-bold flex items-center gap-1">
+                        <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+                        RESTRAINT BOUNDARY
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
+                        (selectedNode.occurrenceCount || 0) > 0
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      }`}>
+                        {selectedNode.occurrenceCount || 0}/5 SLIPS
+                      </span>
+                    </div>
+                    {selectedNode.correctiveStrategy && (
+                      <div className="p-2 bg-black/40 rounded border border-white/5 text-[10px] text-zinc-300 leading-relaxed">
+                        <span className="text-rose-400 font-bold block mb-0.5">CORRECTIVE STRATEGY:</span>
+                        {selectedNode.correctiveStrategy}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SKILL TELEMETRY */}
                 {selectedNode.type === 'skill' && (
-                  <div className={`p-2 rounded-lg border text-xs font-mono flex items-center justify-between ${
+                  <div className={`p-2.5 rounded-lg border text-xs font-mono space-y-2 ${
                     selectedNode.skillTier === 'Primary' 
                       ? 'bg-blue-950/60 border-blue-500/40 text-blue-300' 
                       : 'bg-indigo-950/60 border-indigo-500/40 text-indigo-300'
                   }`}>
-                    <div className="flex items-center gap-1.5 font-bold">
-                      {selectedNode.skillTier === 'Primary' ? (
-                        <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-                      ) : (
-                        <Layers className="h-3.5 w-3.5 text-indigo-400" />
-                      )}
-                      <span>{selectedNode.skillTier === 'Primary' ? 'PRIMARY DISCIPLINE' : 'SECONDARY BRANCH'}</span>
+                    <div className="flex items-center justify-between font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <Compass className="h-3.5 w-3.5" />
+                        <span>{selectedNode.skillTier === 'Primary' ? 'PRIMARY DISCIPLINE' : 'SECONDARY BRANCH'}</span>
+                      </div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 uppercase font-bold">
+                        RANK {selectedNode.level || 1}
+                      </span>
                     </div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 uppercase font-bold">
-                      {selectedNode.skillTier}
-                    </span>
                   </div>
                 )}
 
-                {/* SECONDARY SKILL -> PARENT PRIMARY SKILL LINK */}
-                {selectedNode.type === 'skill' && selectedNode.skillTier === 'Secondary' && selectedNode.parentId && (
-                  (() => {
-                    const parentNode = nodeMap.get(selectedNode.parentId);
-                    if (!parentNode) return null;
-                    return (
-                      <div className="bg-[#07080c] p-2 rounded-lg border border-indigo-500/30 space-y-1">
-                        <span className="text-[9px] font-mono text-indigo-400 uppercase font-bold block">
-                          PARENT DISCIPLINE:
-                        </span>
-                        <div 
-                          onClick={() => setSelectedNodeId(parentNode.id)}
-                          className="flex items-center justify-between p-1.5 bg-[#0b0d13] hover:bg-[#141824] rounded border border-white/5 cursor-pointer text-xs font-mono text-white transition-colors"
-                        >
-                          <span className="truncate">{parentNode.name}</span>
-                          <ArrowRight className="h-3 w-3 text-indigo-400" />
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-
-                {/* STATS OF SELECTED NODE */}
-                <div className="bg-[#07080c] p-2.5 rounded-lg border border-[#c5a059]/20 space-y-1.5 text-xs font-mono">
-                  {selectedNode.level !== undefined && (
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">RANK LEVEL:</span>
-                      <span className="text-[#e5c875] font-bold">TIER {selectedNode.level}</span>
-                    </div>
-                  )}
+                {/* GENERAL STATS PANEL */}
+                <div className="bg-[#05070d] p-2.5 rounded-lg border border-[#c5a059]/20 space-y-1.5 text-xs font-mono">
                   {selectedNode.progress !== undefined && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px]">
                         <span className="text-zinc-400">PROGRESSION:</span>
                         <span className="text-emerald-400 font-bold">{selectedNode.progress}%</span>
                       </div>
-                      <div className="w-full bg-[#0b0d13] rounded-full h-1 overflow-hidden border border-white/5">
-                        <div className="rpg-progress-gold h-full" style={{ width: `${selectedNode.progress}%` }} />
+                      <div className="w-full bg-[#080b14] rounded-full h-1.5 overflow-hidden border border-white/5">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300" style={{ width: `${selectedNode.progress}%` }} />
                       </div>
+                    </div>
+                  )}
+                  {selectedNode.xpValue !== undefined && selectedNode.xpValue > 0 && (
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-zinc-400">XP VALUE:</span>
+                      <span className="text-[#e5c875] font-bold">+{selectedNode.xpValue} XP</span>
                     </div>
                   )}
                   <div className="flex justify-between text-[10px]">
                     <span className="text-zinc-400">CIRCUIT HARMONY:</span>
-                    <span className="text-[#e5c875] font-bold">{circuitNodesList.length - 1} resonated</span>
+                    <span className="text-[#e5c875] font-bold">{circuitNodesList.length - 1} connected stars</span>
                   </div>
                 </div>
 
-                {/* ACTIVE CIRCUIT PIPELINE BREAKDOWN */}
+                {/* JUMP TO WORKSPACE ACTION BUTTON */}
+                {onNavigate && (
+                  <button
+                    onClick={() => {
+                      if (selectedNode.type === 'job' || selectedNode.type === 'title') {
+                        onNavigate('frameworks');
+                      } else if (selectedNode.type === 'habit' || selectedNode.type === 'quest') {
+                        onNavigate('quests');
+                      } else if (selectedNode.type === 'muhasabah') {
+                        onNavigate('muhasabah');
+                      } else if (selectedNode.type === 'skill') {
+                        onNavigate('skills');
+                      } else if (selectedNode.type === 'goal') {
+                        onNavigate('goals');
+                      } else if (selectedNode.type === 'project') {
+                        onNavigate('projects');
+                      } else if (selectedNode.type === 'plan') {
+                        onNavigate('planning');
+                      }
+                    }}
+                    className="w-full py-1.5 px-3 rounded-lg bg-[#3a2e12] hover:bg-[#4d3d17] border border-[#c5a059] text-[#fef08a] text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>JUMP TO WORKSPACE</span>
+                  </button>
+                )}
+
+                {/* RESONANCE PIPELINE STREAM */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-mono text-[#e5c875] uppercase font-bold flex items-center gap-1">
                       <RubElHizbIcon className="h-3 w-3 text-[#c5a059]" /> RESONANCE PIPELINE:
                     </span>
-                    <span className="text-[9px] font-mono text-zinc-400 font-bold">{circuitNodesList.length - 1} NODES</span>
+                    <span className="text-[9px] font-mono text-zinc-400 font-bold">{circuitNodesList.length - 1} STARS</span>
                   </div>
 
-                  <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="space-y-1 max-h-[190px] overflow-y-auto pr-1">
                     {circuitNodesList
                       .filter(node => node.id !== selectedNode.id)
                       .sort((a, b) => (circuitNodeMap.get(a.id) || 0) - (circuitNodeMap.get(b.id) || 0))
@@ -1224,7 +2060,7 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
                           <div 
                             key={node.id}
                             onClick={() => setSelectedNodeId(node.id)}
-                            className="p-1.5 bg-[#07080c] hover:bg-[#141824] border border-[#c5a059]/15 hover:border-[#c5a059]/50 rounded text-xs flex items-center justify-between cursor-pointer transition-colors group"
+                            className="p-1.5 bg-[#05070d] hover:bg-[#121626] border border-[#c5a059]/15 hover:border-[#c5a059]/50 rounded text-xs flex items-center justify-between cursor-pointer transition-colors group"
                           >
                             <div className="flex items-center gap-1.5 truncate max-w-[140px]">
                               <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/30 shrink-0 font-bold">
@@ -1245,26 +2081,29 @@ export const SpiderwebGraph: React.FC<SpiderwebGraphProps> = ({ compact = false,
 
               </div>
             ) : (
-              <div className="py-8 text-center space-y-1 text-zinc-400 font-mono text-xs">
-                <RubElHizbIcon className="h-6 w-6 text-[#c5a059]/60 mx-auto" />
-                <p>Attune to any astrolabe node to isolate & inspect its celestial destiny pipeline.</p>
+              <div className="py-10 text-center space-y-2 text-zinc-400 font-mono text-xs">
+                <RubElHizbIcon className="h-8 w-8 text-[#c5a059]/60 mx-auto" />
+                <p className="text-zinc-300 font-semibold">Attune to any celestial star</p>
+                <p className="text-[10px] text-zinc-500 leading-relaxed px-4">
+                  Select any Goal, Job, Habit, Title, Quest, Skill or Muhāsabah node to inspect its telemetry and upstream/downstream energy circuits.
+                </p>
               </div>
             )}
           </div>
 
-          {/* REAL-TIME MODIFICATION AUDIT LOG */}
-          <div className="glass-panel rounded-xl p-4 space-y-3 border border-[#c5a059]/30 bg-[#0b0d13]/90 relative overflow-hidden shadow-lg">
+          {/* REAL-TIME ATTUNEMENT AUDIT STREAM */}
+          <div className="glass-panel rounded-xl p-4 space-y-3 border border-[#c5a059]/30 bg-[#080b14]/95 relative overflow-hidden shadow-2xl">
             <ArabesqueCorner position="top-right" className="top-1.5 right-1.5 h-3.5 w-3.5" color="#c5a059" />
             <div className="flex items-center justify-between border-b border-[#c5a059]/20 pb-2">
               <span className="text-xs font-mono text-[#e5c875] font-bold uppercase flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[#c5a059]" /> ATTUNEMENT STREAM
               </span>
-              <span className="text-[9px] font-mono text-[#c5a059] font-bold">CELESTIAL SYNC</span>
+              <span className="text-[9px] font-mono text-[#c5a059] font-bold">COSMIC SYNC</span>
             </div>
 
             <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
               {modifiedNodeIds.size > 0 ? (
-                Array.from(modifiedNodeIds).slice(0, 5).map(id => {
+                Array.from(modifiedNodeIds).slice(0, 6).map(id => {
                   const node = nodeMap.get(id);
                   if (!node) return null;
                   return (

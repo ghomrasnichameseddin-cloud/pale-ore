@@ -763,7 +763,9 @@ function AppContent() {
                   onNavigate={(tab) => setActiveTab(tab as TabId)}
                 />
               )}
-              {activeTab === 'spiderweb' && <SpiderwebGraph />}
+              {activeTab === 'spiderweb' && (
+                <SpiderwebGraph onNavigate={(tab) => setActiveTab(tab as TabId)} />
+              )}
             </motion.div>
           </AnimatePresence>
         </main>
