@@ -851,6 +851,33 @@ export const TemporalCapitalHud: React.FC<TemporalCapitalHudProps> = ({ onNaviga
                     </span>
                     <span className="shrink-0">{accounting.temporalEfficiencyPercent}% Efficiency</span>
                   </div>
+
+                  {isDailyInOverdraft && !isBankInDeficit && (
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const dailyMins = Math.abs(dailyRest.remainingAllowance);
+                          if (currentCoins >= dailyMins) {
+                            liquidateTimeDeficitWithCoins();
+                          } else if (currentCoins > 0) {
+                            liquidateTimeDeficitWithCoins({ partialIfInsufficient: true });
+                          }
+                        }}
+                        disabled={currentCoins === 0}
+                        className="w-full py-1 px-2 bg-gradient-to-r from-amber-600/30 via-yellow-500/25 to-amber-600/30 hover:from-amber-600/45 hover:to-yellow-500/40 text-[#fef08a] border border-[#c5a059]/50 rounded-lg text-[9px] font-mono font-bold flex items-center justify-between transition-all cursor-pointer"
+                        title={`Replace ${Math.abs(dailyRest.remainingAllowance)}m daily overdraft with coins, resetting to 0m`}
+                      >
+                        <span className="flex items-center gap-1">
+                          <span>🪙</span>
+                          <span>REPLACE OVERDRAFT WITH COINS</span>
+                        </span>
+                        <span className="bg-[#05070d] px-1.5 py-0.5 rounded text-[8.5px] border border-[#c5a059]/40 text-[#fef08a] font-mono font-black">
+                          -{Math.min(Math.abs(dailyRest.remainingAllowance), currentCoins)} 🪙 → 0 MIN
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

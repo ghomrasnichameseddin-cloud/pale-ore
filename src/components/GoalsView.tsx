@@ -1524,6 +1524,9 @@ export const GoalsView: React.FC = () => {
                                       <option value="Recovery">🛡️ Recovery Protocol</option>
                                       <option value="Optional">🌟 Optional Quest</option>
                                       <option value="Milestone">🚩 Milestone Quest</option>
+                                      {![ 'Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Optional', 'Milestone'].includes(editQuestType) && (
+                                        <option value={editQuestType}>🏷️ {editQuestType}</option>
+                                      )}
                                     </select>
                                   </div>
 

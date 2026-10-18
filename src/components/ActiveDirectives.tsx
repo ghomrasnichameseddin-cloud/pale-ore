@@ -763,6 +763,9 @@ export const ActiveDirectives: React.FC = () => {
   const [editQuestName, setEditQuestName] = useState('');
   const [editQuestDiff, setEditQuestDiff] = useState<QuestDifficulty>('Normal');
   const [editQuestType, setEditQuestType] = useState<QuestType>('Main');
+  const [editQuestCategory, setEditQuestCategory] = useState<string>('Main');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [editQuestXp, setEditQuestXp] = useState<number>(100);
   const [editQuestGoal, setEditQuestGoal] = useState<string>('');
   const [editQuestListId, setEditQuestListId] = useState<string>('');
@@ -797,7 +800,19 @@ export const ActiveDirectives: React.FC = () => {
     setEditingQuestId(quest.id);
     setEditQuestName(quest.name);
     setEditQuestDiff(quest.difficulty);
-    setEditQuestType((quest.category as QuestType) || quest.type || 'Main');
+    const initialCat = (quest.category as string) || quest.type || 'Main';
+    const isStandard = ['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Optional', 'Milestone'].includes(initialCat);
+    if (isStandard) {
+      setEditQuestType(initialCat as QuestType);
+      setEditQuestCategory(initialCat);
+      setIsCustomCategory(false);
+      setCustomCategoryInput('');
+    } else {
+      setEditQuestType('Main');
+      setEditQuestCategory(initialCat);
+      setIsCustomCategory(true);
+      setCustomCategoryInput(initialCat);
+    }
     setEditQuestXp(quest.xp);
     setEditQuestGoal(quest.goalId || '');
     setEditQuestListId(quest.listId || '');
@@ -845,11 +860,14 @@ export const ActiveDirectives: React.FC = () => {
       finalRecurrence = editQuestRecurrence;
     }
 
+    const finalCategory = isCustomCategory && customCategoryInput.trim() ? customCategoryInput.trim() : editQuestCategory;
+    const finalType = (['Main', 'Side', 'Boss', 'Habit', 'Recovery', 'Optional', 'Milestone'].includes(finalCategory) ? finalCategory : 'Main') as QuestType;
+
     updateQuest(id, {
       name: editQuestName,
       difficulty: editQuestDiff,
-      type: editQuestType,
-      category: editQuestType,
+      type: finalType,
+      category: finalCategory,
       xp: editQuestXp,
       estimatedTime: editQuestDuration,
       actualMinutesWorked: editQuestActualMinutes,
@@ -1288,7 +1306,52 @@ export const ActiveDirectives: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
+              <div>
+                <label className="block text-[9px] font-mono text-cyan-400 uppercase mb-1 font-bold flex items-center gap-1">
+                  <Layers className="h-2.5 w-2.5" /> Category
+                </label>
+                <select 
+                  value={isCustomCategory ? '__CUSTOM__' : editQuestCategory}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__CUSTOM__') {
+                      setIsCustomCategory(true);
+                      if (!customCategoryInput) setCustomCategoryInput(editQuestCategory);
+                    } else {
+                      setIsCustomCategory(false);
+                      setEditQuestCategory(val);
+                      setEditQuestType(val as QuestType);
+                      if (val === 'Habit' && editQuestRecurrence === 'None') {
+                        setEditQuestRecurrence('Daily');
+                      }
+                    }
+                  }}
+                  className="w-full bg-zinc-900 border border-cyan-500/40 rounded p-1 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-400 cursor-pointer"
+                >
+                  <option value="Main">🏆 Main Quest</option>
+                  <option value="Side">🎯 Side Quest</option>
+                  <option value="Boss">🔥 Boss Encounter</option>
+                  <option value="Habit">⚡ Habit Rhythm</option>
+                  <option value="Recovery">🛡️ Recovery Protocol</option>
+                  <option value="Optional">🌟 Optional Quest</option>
+                  <option value="Milestone">🚩 Milestone Quest</option>
+                  <option value="__CUSTOM__">✏️ Custom Category...</option>
+                </select>
+                {isCustomCategory && (
+                  <input
+                    type="text"
+                    value={customCategoryInput}
+                    onChange={(e) => {
+                      setCustomCategoryInput(e.target.value);
+                      setEditQuestCategory(e.target.value);
+                    }}
+                    placeholder="Category name..."
+                    className="w-full mt-1 bg-zinc-900 border border-cyan-500/50 rounded px-1.5 py-0.5 text-[11px] text-cyan-200 font-mono focus:outline-none focus:border-cyan-400"
+                  />
+                )}
+              </div>
+
               <div>
                 <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Difficulty</label>
                 <select 
