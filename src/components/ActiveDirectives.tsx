@@ -797,7 +797,7 @@ export const ActiveDirectives: React.FC = () => {
     setEditingQuestId(quest.id);
     setEditQuestName(quest.name);
     setEditQuestDiff(quest.difficulty);
-    setEditQuestType(quest.type);
+    setEditQuestType((quest.category as QuestType) || quest.type || 'Main');
     setEditQuestXp(quest.xp);
     setEditQuestGoal(quest.goalId || '');
     setEditQuestListId(quest.listId || '');
@@ -849,6 +849,7 @@ export const ActiveDirectives: React.FC = () => {
       name: editQuestName,
       difficulty: editQuestDiff,
       type: editQuestType,
+      category: editQuestType,
       xp: editQuestXp,
       estimatedTime: editQuestDuration,
       actualMinutesWorked: editQuestActualMinutes,
@@ -1481,18 +1482,28 @@ export const ActiveDirectives: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[9px] font-mono text-zinc-500 uppercase mb-1">Quest Category</label>
+                <label className="block text-[9px] font-mono text-cyan-400 uppercase font-bold mb-1 flex items-center justify-between">
+                  <span>Quest Category</span>
+                  <span className="text-[8px] text-zinc-500 font-normal">Classification</span>
+                </label>
                 <select 
                   value={editQuestType}
-                  onChange={(e) => setEditQuestType(e.target.value as QuestType)}
-                  className="w-full bg-zinc-900 border border-white/10 rounded p-1 text-xs text-zinc-300"
+                  onChange={(e) => {
+                    const newCat = e.target.value as QuestType;
+                    setEditQuestType(newCat);
+                    if (newCat === 'Habit' && editQuestRecurrence === 'None') {
+                      setEditQuestRecurrence('Daily');
+                    }
+                  }}
+                  className="w-full bg-zinc-900 border border-cyan-500/40 rounded p-1 text-xs text-zinc-200 font-mono focus:outline-none focus:border-cyan-400"
                 >
-                  <option value="Main">Main Quest</option>
-                  <option value="Side">Side Quest</option>
-                  <option value="Boss">Boss Quest</option>
-                  <option value="Recovery">Recovery Quest</option>
-                  <option value="Habit">Habit Quest</option>
-                  <option value="Optional">Optional Quest</option>
+                  <option value="Main">🏆 Main Quest</option>
+                  <option value="Side">🎯 Side Quest</option>
+                  <option value="Boss">🔥 Boss Encounter</option>
+                  <option value="Habit">⚡ Habit Rhythm</option>
+                  <option value="Recovery">🛡️ Recovery Protocol</option>
+                  <option value="Optional">🌟 Optional Quest</option>
+                  <option value="Milestone">🚩 Milestone Directive</option>
                 </select>
               </div>
 

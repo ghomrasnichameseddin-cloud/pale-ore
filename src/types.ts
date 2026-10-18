@@ -277,6 +277,7 @@ export interface Quest {
   listId?: string | null; // Belongs to a QuestList, or null
   relatedSkills: string[]; // skill IDs
   type: QuestType;
+  category?: string; // Quest category / classification
   recurrence?: QuestRecurrence;
   streakCount?: number;
   bestStreak?: number;

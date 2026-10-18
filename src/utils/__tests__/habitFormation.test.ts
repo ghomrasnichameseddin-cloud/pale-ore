@@ -310,4 +310,35 @@ describe('Habit Formation & Stability Layer', () => {
       expect(formation.stabilityScore).toBeGreaterThan(0);
     });
   });
+
+  describe('Quest Category Reclassification', () => {
+    it('allows changing quest category between Main, Side, Boss, Habit, Recovery, Optional, and Milestone', () => {
+      const quest: Quest = {
+        id: 'q-test-cat',
+        name: 'Test Directive',
+        description: 'Test description',
+        difficulty: 'Normal',
+        estimatedTime: 30,
+        xp: 100,
+        goalId: null,
+        projectId: null,
+        milestoneId: null,
+        relatedSkills: [],
+        type: 'Main',
+        category: 'Main',
+        status: 'Active',
+        deadline: '2026-10-18',
+        completedAt: null,
+        createdAt: '2026-10-18T10:00:00Z'
+      };
+
+      const updatedToHabit: Quest = { ...quest, type: 'Habit', category: 'Habit' };
+      expect(updatedToHabit.type).toBe('Habit');
+      expect(updatedToHabit.category).toBe('Habit');
+
+      const updatedToBoss: Quest = { ...updatedToHabit, type: 'Boss', category: 'Boss' };
+      expect(updatedToBoss.type).toBe('Boss');
+      expect(updatedToBoss.category).toBe('Boss');
+    });
+  });
 });

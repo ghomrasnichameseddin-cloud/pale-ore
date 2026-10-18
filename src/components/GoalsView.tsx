@@ -121,7 +121,7 @@ export const GoalsView: React.FC = () => {
     setEditingQuestId(quest.id);
     setEditQuestName(quest.name);
     setEditQuestDiff(quest.difficulty);
-    setEditQuestType(quest.type);
+    setEditQuestType((quest.category as QuestType) || quest.type || 'Main');
     setEditQuestXp(quest.xp);
     setEditQuestProj(quest.projectId || '');
     setEditQuestMile(quest.milestoneId || '');
@@ -135,6 +135,7 @@ export const GoalsView: React.FC = () => {
       name: editQuestName,
       difficulty: editQuestDiff,
       type: editQuestType,
+      category: editQuestType,
       xp: editQuestXp,
       projectId: editQuestProj ? editQuestProj : null,
       milestoneId: editQuestMile ? editQuestMile : null,
@@ -1502,7 +1503,30 @@ export const GoalsView: React.FC = () => {
                                   />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <div>
+                                    <label className="block text-[9px] font-mono text-[var(--accent-bright)] uppercase mb-1 font-bold">Category</label>
+                                    <select 
+                                      value={editQuestType}
+                                      onChange={(e) => {
+                                        const newCat = e.target.value as QuestType;
+                                        setEditQuestType(newCat);
+                                        if (newCat === 'Habit' && editQuestRecurrence === 'None') {
+                                          setEditQuestRecurrence('Daily');
+                                        }
+                                      }}
+                                      className="w-full bg-[#0b0d13] border border-[var(--border-accent)] rounded p-1 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[var(--accent-highlight)]"
+                                    >
+                                      <option value="Main">🏆 Main Quest</option>
+                                      <option value="Side">🎯 Side Quest</option>
+                                      <option value="Boss">🔥 Boss Encounter</option>
+                                      <option value="Habit">⚡ Habit Rhythm</option>
+                                      <option value="Recovery">🛡️ Recovery Protocol</option>
+                                      <option value="Optional">🌟 Optional Quest</option>
+                                      <option value="Milestone">🚩 Milestone Quest</option>
+                                    </select>
+                                  </div>
+
                                   <div>
                                     <label className="block text-[9px] font-mono text-zinc-400 uppercase mb-1">Difficulty</label>
                                     <select 

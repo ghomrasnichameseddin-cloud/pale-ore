@@ -3937,7 +3937,17 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateQuest = (id: string, updates: Partial<Quest>) => {
     setState(prev => ({
       ...prev,
-      quests: prev.quests.map(q => q.id === id ? { ...q, ...updates } : q)
+      quests: prev.quests.map(q => {
+        if (q.id !== id) return q;
+        const finalType = updates.type || (updates.category as QuestType) || q.type;
+        const finalCategory = updates.category || updates.type || q.category || q.type;
+        return {
+          ...q,
+          ...updates,
+          type: finalType,
+          category: finalCategory
+        };
+      })
     }));
   };
 
