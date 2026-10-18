@@ -1093,10 +1093,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">STRATEGIC MATRIX & CODEX LAB</h4>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[var(--accent-surface)] text-[var(--accent-highlight)] border border-[var(--border-accent)] font-black">11 ENGINES ACTIVE</span>
+                  <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">STRATEGIC MATRIX HUB</h4>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#3a2e12] text-[#fef08a] border border-[#c5a059]/40 font-bold">ROADMAP &amp; WAR-ROOM</span>
                 </div>
-                <p className="text-[11px] text-zinc-300 font-sans">Grand Destinies, campaigns, Codex doctrine, and tactical decision frameworks.</p>
+                <p className="text-[11px] text-zinc-300 font-sans">Multi-horizon Life Roadmap, 90-Day Sprint War-Room, 168h Capacity Radar &amp; Codex Vault.</p>
               </div>
             </div>
             {onNavigate && (
