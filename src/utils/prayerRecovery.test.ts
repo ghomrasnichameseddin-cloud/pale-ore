@@ -4,7 +4,8 @@ import {
   addDhohaRakats, 
   createPrayerRecoveryQuest, 
   createQiyamRecoveryQuest,
-  createDhohaRecoveryQuest 
+  createDhohaRecoveryQuest,
+  createMidnightQadaRecoveryQuest
 } from './prayerRecovery';
 import { ATTRIBUTE_DOMAIN_MAP } from './progressionEngine';
 
@@ -65,5 +66,28 @@ describe('prayer recovery actions', () => {
     expect(quest.recoveryAction).toEqual({ kind: 'dhoha', rakats: 2 });
     expect(quest.name).toContain('Ḍuḥā / Dhoha');
     expect(quest.attributeRewards).toEqual([{ attribute: 'Discipline', points: 1 }]);
+  });
+
+  it('creates a midnight Qada recovery quest with attached Sunnah prayer, Qiyam, and Duha restitution', () => {
+    const qadaQuest = createMidnightQadaRecoveryQuest({
+      prayer: 'dhuhr',
+      targetDate: '2026-10-24',
+      completedAt: '2026-10-24T23:59:59.000Z',
+      xp: 50
+    });
+
+    expect(qadaQuest.id).toBe('q-qada-dhuhr-2026-10-24');
+    expect(qadaQuest.name).toContain('Make up missed Dhuhr');
+    expect(qadaQuest.type).toBe('Recovery');
+    expect(qadaQuest.recoveryAction).toEqual({ kind: 'sunnah-prayer', prayer: 'dhuhr' });
+    expect(qadaQuest.recoveryActionOptions).toEqual([
+      { kind: 'sunnah-prayer', prayer: 'dhuhr' },
+      { kind: 'qiyam', rakats: 2 },
+      { kind: 'dhoha', rakats: 2 }
+    ]);
+    expect(qadaQuest.subquests).toHaveLength(2);
+    expect(qadaQuest.subquests?.[0].name).toContain('Perform Qada\' of Dhuhr (4 Rak\'ahs)');
+    expect(qadaQuest.subquests?.[1].name).toContain('Fulfill Sunnah Rawātib, 2 Rak\'ahs Qiyām al-Layl, or 2 Rak\'ahs Ḍuḥā');
+    expect(qadaQuest.attributeRewards).toEqual([{ attribute: 'Discipline', points: 1 }]);
   });
 });

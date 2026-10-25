@@ -10,6 +10,7 @@ import {
   MIDNIGHT_MISSED_PRAYER_PENALTY_XP, 
   MIDNIGHT_MISSED_PRAYER_PENALTY_HP 
 } from './prayerRules';
+import { createMidnightQadaRecoveryQuest } from './prayerRecovery';
 
 export const MAX_PENALTY_DAYS_LOOKBACK = 30;
 
@@ -406,32 +407,14 @@ export function processMultiDayPenalties(
 
           const qadaQuestId = `q-qada-${prayer}-${dayStr}`;
           if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
-            updatedQuests.push({
-              id: qadaQuestId,
-              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${dayStr})`,
-              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${dayStr}. Mandatory in Islamic jurisprudence to clear lapse.`,
-              status: 'Active',
-              difficulty: 'Hard',
-              type: 'Recovery',
-              estimatedTime: 15,
-              recurrence: 'None',
-              energyLevel: 'High',
-              deadline: newDateStr,
-              createdAt: `${dayStr}T23:59:59.000Z`,
-              completedAt: null,
+            const qadaQuest = createMidnightQadaRecoveryQuest({
+              prayer,
+              targetDate: dayStr,
+              completedAt: `${dayStr}T23:59:59.000Z`,
               xp: 50,
-              goalId: null,
-              projectId: null,
-              milestoneId: null,
-              subquests: [
-                {
-                  id: `sq-qada-${prayer}-${dayStr}-1`,
-                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
-                  completed: false
-                }
-              ],
-              relatedSkills: []
             });
+            qadaQuest.deadline = newDateStr;
+            updatedQuests.push(qadaQuest);
             recoveryModeActivated = true;
           }
         }
@@ -539,32 +522,14 @@ export function autoProcessMidnightUnmarkedPrayers(
 
         const qadaQuestId = `q-qada-${prayer}-${dayStr}`;
         if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
-          updatedQuests.push({
-            id: qadaQuestId,
-            name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${dayStr})`,
-            description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${dayStr}. Mandatory in Islamic jurisprudence to clear lapse.`,
-            status: 'Active',
-            difficulty: 'Hard',
-            type: 'Recovery',
-            estimatedTime: 15,
-            recurrence: 'None',
-            energyLevel: 'High',
-            deadline: currentSystemDate,
-            createdAt: `${dayStr}T23:59:59.000Z`,
-            completedAt: null,
+          const qadaQuest = createMidnightQadaRecoveryQuest({
+            prayer,
+            targetDate: dayStr,
+            completedAt: `${dayStr}T23:59:59.000Z`,
             xp: 50,
-            goalId: null,
-            projectId: null,
-            milestoneId: null,
-            subquests: [
-              {
-                id: `sq-qada-${prayer}-${dayStr}-1`,
-                name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
-                completed: false
-              }
-            ],
-            relatedSkills: []
           });
+          qadaQuest.deadline = currentSystemDate;
+          updatedQuests.push(qadaQuest);
           recoveryModeActivated = true;
         }
       }

@@ -53,9 +53,10 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
     getAdhkarRecitationCount
   } = usePOS();
 
-  // Active Category Filter
+  // Active Category Filter (Four Sunnah Pillars + General + Express)
   const [activeCategory, setActiveCategory] = useState<AdhkarCategory | 'all' | 'express'>('all');
   const [activePrayerFilter, setActivePrayerFilter] = useState<AdhkarPrayerTarget | 'all'>('all');
+  const [activeSleepFilter, setActiveSleepFilter] = useState<'all' | 'night' | 'qaylulah'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modals & Forms
@@ -85,13 +86,11 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
   const fortressStats = getAdhkarFortressStats(systemDate);
   const completedPostPrayersCount = fortressStats.postSalahCompletedCount;
 
-  // Litanies list by Fortress Session
+  // Litanies list by Four Sunnah Pillars
   const morningLitanies = useMemo(() => adhkarList.filter(a => a.category === 'morning'), [adhkarList]);
   const eveningLitanies = useMemo(() => adhkarList.filter(a => a.category === 'evening'), [adhkarList]);
-  const sleepLitanies = useMemo(() => {
-    const night = adhkarList.filter(a => a.category === 'sleep_night' || a.category === 'sleep');
-    return night.length > 0 ? night : adhkarList.filter(a => a.category === 'sleep_dhohr');
-  }, [adhkarList]);
+  const postSalahLitanies = useMemo(() => adhkarList.filter(a => a.category === 'post_salah' || (a.category as string) === 'postSalah'), [adhkarList]);
+  const sleepLitanies = useMemo(() => adhkarList.filter(a => a.category === 'sleep' || a.category === 'sleep_night' || a.category === 'sleep_dhohr'), [adhkarList]);
 
   const getLitaniesProgress = (items: AdhkarItem[]) => {
     const completed = items.filter(item => getAdhkarRecitationCount(item.id, systemDate) >= item.targetCount).length;
@@ -102,7 +101,21 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
 
   const morningProgress = getLitaniesProgress(morningLitanies);
   const eveningProgress = getLitaniesProgress(eveningLitanies);
+  const postSalahProgress = getLitaniesProgress(postSalahLitanies);
   const sleepProgress = getLitaniesProgress(sleepLitanies);
+
+  const postSalahStatus: AdhkarSessionStatus = useMemo(() => {
+    const ps = spiritualLog.adhkarSessions?.postSalah;
+    const completedPrayers = ps ? Object.values(ps).filter(s => s === 'complete').length : 0;
+    const inProgressPrayers = ps ? Object.values(ps).filter(s => s === 'in_progress').length : 0;
+    if (completedPrayers === 5 || (postSalahProgress.completed === postSalahProgress.total && postSalahProgress.total > 0)) {
+      return 'complete';
+    }
+    if (completedPrayers > 0 || inProgressPrayers > 0 || postSalahProgress.completed > 0 || postSalahProgress.started > 0) {
+      return 'in_progress';
+    }
+    return 'not_started';
+  }, [spiritualLog.adhkarSessions?.postSalah, postSalahProgress]);
 
   // Filtered Adhkar list
   const filteredAdhkar = useMemo(() => {
@@ -115,6 +128,13 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           if (item.category !== 'post_salah' && (item.category as string) !== 'postSalah') return false;
         } else if (activeCategory === 'sleep') {
           if (item.category !== 'sleep' && item.category !== 'sleep_dhohr' && item.category !== 'sleep_night') return false;
+          if (activeSleepFilter === 'night') {
+            if (item.sleepContext && item.sleepContext !== 'night') return false;
+            if (item.category === 'sleep_dhohr') return false;
+          } else if (activeSleepFilter === 'qaylulah') {
+            if (item.sleepContext && item.sleepContext !== 'qaylulah') return false;
+            if (item.category === 'sleep_night') return false;
+          }
         } else if (item.category !== activeCategory) {
           return false;
         }
@@ -136,7 +156,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         const matchesArabic = (item.arabicText || item.arabic || '').includes(searchQuery);
         const matchesTrans = item.transliteration?.toLowerCase().includes(q) || false;
         const matchesEng = item.translation.toLowerCase().includes(q);
-        const matchesSource = item.source?.toLowerCase().includes(q) || false;
+        const matchesSource = (item.hadithSource || item.source || '').toLowerCase().includes(q);
         if (!matchesTitle && !matchesArabic && !matchesTrans && !matchesEng && !matchesSource) {
           return false;
         }
@@ -144,15 +164,15 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       return true;
     }).sort((a, b) => {
       if (activeCategory === 'express') {
-        const catOrder: Record<string, number> = { morning: 1, evening: 2, post_salah: 3 };
+        const catOrder: Record<string, number> = { morning: 1, evening: 2, post_salah: 3, sleep: 4 };
         const orderA = catOrder[a.expressCategory || a.category] || 9;
         const orderB = catOrder[b.expressCategory || b.category] || 9;
         if (orderA !== orderB) return orderA - orderB;
         return (a.expressOrder || 0) - (b.expressOrder || 0);
       }
-      return 0;
+      return (a.order || 0) - (b.order || 0);
     });
-  }, [adhkarList, activeCategory, activePrayerFilter, searchQuery]);
+  }, [adhkarList, activeCategory, activePrayerFilter, activeSleepFilter, searchQuery]);
 
   // Statistics
   const categoryCounts = useMemo(() => {
@@ -161,8 +181,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       morning: adhkarList.filter(a => a.category === 'morning').length,
       evening: adhkarList.filter(a => a.category === 'evening').length,
       post_salah: adhkarList.filter(a => a.category === 'post_salah' || (a.category as string) === 'postSalah').length,
-      sleep_dhohr: adhkarList.filter(a => a.category === 'sleep_dhohr').length,
-      sleep_night: adhkarList.filter(a => a.category === 'sleep_night').length,
+      sleep_dhohr: adhkarList.filter(a => a.category === 'sleep_dhohr' || a.sleepContext === 'qaylulah').length,
+      sleep_night: adhkarList.filter(a => a.category === 'sleep_night' || a.sleepContext === 'night').length,
       sleep: adhkarList.filter(a => a.category === 'sleep' || a.category === 'sleep_dhohr' || a.category === 'sleep_night').length,
       general: adhkarList.filter(a => a.category === 'general').length,
       express: adhkarList.filter(a => a.isExpressDaily).length,
@@ -306,7 +326,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </div>
 
           <div className="p-2.5 bg-[var(--bg-surface,#141824)]/80 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-xl">
-            <span className="text-[9px] text-zinc-400 uppercase block font-bold">3 SACRED SESSIONS</span>
+            <span className="text-[9px] text-zinc-400 uppercase block font-bold">4 SUNNAH PILLARS</span>
             <span className="text-xs font-bold text-zinc-200 mt-1 flex items-center gap-1 flex-wrap">
               <span className={fortressStats.morningStatus === 'complete' ? 'text-emerald-400' : fortressStats.morningStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
                 {fortressStats.morningStatus === 'complete' ? '🌅 Sabah ✓' : fortressStats.morningStatus === 'in_progress' ? '🌅 Sabah (⏳)' : '🌅 Sabah'}
@@ -314,6 +334,10 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               <span>•</span>
               <span className={fortressStats.eveningStatus === 'complete' ? 'text-emerald-400' : fortressStats.eveningStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
                 {fortressStats.eveningStatus === 'complete' ? '🌇 Masa ✓' : fortressStats.eveningStatus === 'in_progress' ? '🌇 Masa (⏳)' : '🌇 Masa'}
+              </span>
+              <span>•</span>
+              <span className={postSalahStatus === 'complete' ? 'text-emerald-400' : postSalahStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
+                {postSalahStatus === 'complete' ? '🕌 Post-Salah ✓' : postSalahStatus === 'in_progress' ? '🕌 Post-Salah (⏳)' : '🕌 Post-Salah'}
               </span>
               <span>•</span>
               <span className={fortressStats.sleepStatus === 'complete' ? 'text-emerald-400' : fortressStats.sleepStatus === 'in_progress' ? 'text-amber-300' : 'text-zinc-500'}>
@@ -335,13 +359,13 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
         </div>
       </div>
 
-      {/* 3 DAILY SACRED SESSIONS: MORNING, EVENING, SLEEP */}
+      {/* 4 DAILY SACRED SESSIONS: MORNING, EVENING, POST-SALAH, SLEEP */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-amber-400" />
             <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-              THE THREE FORTRESS SESSIONS • جُنَنُ الْحِمَايَةِ الثَّلَاث
+              THE FOUR SUNNAH PILLARS • أَرْكَانُ الأَذْكَارِ الأَرْبَعَة
             </span>
           </div>
           <span className="text-[10px] font-mono text-zinc-400">
@@ -349,7 +373,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {/* 1. Morning Session */}
           <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
             fortressStats.morningStatus === 'complete'
@@ -632,7 +656,144 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             </div>
           </div>
 
-          {/* 3. Sleep Session */}
+          {/* 3. Post-Salah Session */}
+          <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
+            postSalahStatus === 'complete'
+              ? 'bg-emerald-950/25 border-emerald-500/40 shadow-emerald-950/20'
+              : postSalahStatus === 'in_progress'
+              ? 'bg-amber-950/30 border-amber-500/40 shadow-amber-950/20'
+              : 'bg-[var(--bg-card,#0c0e14)] hover:bg-[var(--accent-surface,#c5a059)]/10 border-[var(--border-subtle,rgba(197,160,89,0.2))]'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  postSalahStatus === 'complete'
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                    : postSalahStatus === 'in_progress'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                    : 'bg-white/5 border-white/10 text-zinc-400'
+                }`}>
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-emerald-300/80 font-bold block">PRESCRIPED PRAYER SHIELD</span>
+                  <h4 className="text-sm font-display font-bold text-white">Post-Salah Adhkār (أذكار بعد الصلاة)</h4>
+                  <span className="text-[10px] font-mono text-zinc-400">After the 5 Prescribed Prayers</span>
+                </div>
+              </div>
+
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold capitalize ${
+                postSalahStatus === 'complete' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                postSalahStatus === 'in_progress' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                'bg-zinc-800 text-zinc-400 border-zinc-700'
+              }`}>
+                {postSalahStatus === 'complete' ? '✓ Complete' :
+                 postSalahStatus === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+              </span>
+            </div>
+
+            {/* Litany Auto-Progress Tracking */}
+            <div className="space-y-1.5 bg-black/30 p-2 rounded-xl border border-white/5">
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className="text-zinc-400">Litanies: {postSalahProgress.completed}/{postSalahProgress.total}</span>
+                <span className={`font-bold ${
+                  completedPostPrayersCount === 5 ? 'text-emerald-300' : completedPostPrayersCount > 0 ? 'text-amber-300' : 'text-zinc-500'
+                }`}>
+                  🕌 {completedPostPrayersCount}/5 Prayers
+                </span>
+              </div>
+              <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    postSalahStatus === 'complete'
+                      ? 'bg-emerald-400'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-300'
+                  }`}
+                  style={{ width: `${postSalahProgress.percent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 3-State Segmented Selector */}
+            <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('post_salah', 'not_started', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  postSalahStatus === 'not_started'
+                    ? 'bg-zinc-700 text-white shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Not Started
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('post_salah', 'in_progress', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  postSalahStatus === 'in_progress'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                In Progress
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdhkarSessionStatus('post_salah', 'complete', systemDate)}
+                className={`py-1 rounded-lg text-center font-bold transition cursor-pointer ${
+                  postSalahStatus === 'complete'
+                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shadow'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                Complete ✓
+              </button>
+            </div>
+
+            {/* Quick Bulk Action & Navigation */}
+            <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] font-mono">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fulfillAllAdhkarForSession('post_salah', systemDate)}
+                  className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer text-[10.5px] font-bold"
+                  title="Fulfill all post-salah litanies"
+                >
+                  <Check className="h-3 w-3" />
+                  <span>Check All</span>
+                </button>
+                <span className="text-zinc-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => resetAllAdhkarForSession('post_salah', systemDate)}
+                  className="text-zinc-500 hover:text-zinc-300 hover:underline cursor-pointer text-[10.5px]"
+                  title="Reset post-salah litanies"
+                >
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPostSalahModal(true)}
+                  className="text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer font-bold text-[10.5px]"
+                  title="Open 5 Prayers Post-Salah Chamber"
+                >
+                  <span>Chamber</span>
+                </button>
+                <button
+                  onClick={() => setActiveCategory('post_salah')}
+                  className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold text-[10.5px]"
+                >
+                  <span>Litanies</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Sleep & Qaylūlah Session */}
           <div className={`p-4 rounded-2xl border transition-all shadow-md flex flex-col justify-between space-y-3 ${
             fortressStats.sleepStatus === 'complete'
               ? 'bg-emerald-950/25 border-emerald-500/40 shadow-emerald-950/20'
@@ -653,8 +814,8 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                 </div>
                 <div>
                   <span className="text-[10px] font-mono uppercase text-purple-300/80 font-bold block">SACRED SLEEP REPOSE</span>
-                  <h4 className="text-sm font-display font-bold text-white">Sleep Adhkār (أذكار النوم)</h4>
-                  <span className="text-[10px] font-mono text-zinc-400">Bedtime Protection Shield</span>
+                  <h4 className="text-sm font-display font-bold text-white">Sleep Adhkār (أذكار النوم والقيلولة)</h4>
+                  <span className="text-[10px] font-mono text-zinc-400">Bedtime Protection & Siesta Nap</span>
                 </div>
               </div>
 
@@ -738,7 +899,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                   type="button"
                   onClick={() => fulfillAllAdhkarForSession('sleep', systemDate)}
                   className="text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-0.5 cursor-pointer text-[10.5px] font-bold"
-                  title="Fulfill all night sleep litanies"
+                  title="Fulfill all sleep litanies"
                 >
                   <Check className="h-3 w-3" />
                   <span>Check All</span>
@@ -757,17 +918,17 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => cycleAdhkarSessionStatus('sleep', systemDate)}
-                  className="text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
-                  title="Cycle status: Not Started -> In Progress -> Complete"
+                  onClick={() => setShowSleepModal(true)}
+                  className="text-purple-300 hover:underline flex items-center gap-0.5 cursor-pointer font-bold text-[10.5px]"
+                  title="Open Sleep Guidance & Siesta Protocol"
                 >
-                  <RotateCcw className="h-3 w-3 text-purple-400" />
+                  <span>Guide</span>
                 </button>
                 <button
-                  onClick={() => setActiveCategory('sleep_night')}
+                  onClick={() => setActiveCategory('sleep')}
                   className="text-[var(--accent-bright,#fef08a)] hover:underline flex items-center gap-0.5 cursor-pointer font-bold text-[10.5px]"
                 >
-                  <span>View Litanies</span>
+                  <span>Litanies</span>
                 </button>
               </div>
             </div>
@@ -1156,29 +1317,16 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
             </button>
 
             <button
-              onClick={() => { setActiveCategory('sleep_dhohr'); setActivePrayerFilter('all'); }}
+              onClick={() => { setActiveCategory('sleep'); setActivePrayerFilter('all'); }}
               className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                activeCategory === 'sleep_dhohr'
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Sun className="h-3.5 w-3.5" />
-              <span>NOON SLEEP (القيلولة)</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep_dhohr}</span>
-            </button>
-
-            <button
-              onClick={() => { setActiveCategory('sleep_night'); setActivePrayerFilter('all'); }}
-              className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
-                activeCategory === 'sleep_night'
+                activeCategory === 'sleep' || (activeCategory as string) === 'sleep_night' || (activeCategory as string) === 'sleep_dhohr'
                   ? 'bg-purple-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Bed className="h-3.5 w-3.5" />
-              <span>NIGHT SLEEP (نوم الليل)</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep_night}</span>
+              <span>SLEEP (النوم والقيلولة)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{categoryCounts.sleep}</span>
             </button>
 
             <button
@@ -1249,6 +1397,61 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
           </motion.div>
         )}
 
+        {/* Sub-Filter for Sleep & Qaylulah */}
+        {(activeCategory === 'sleep' || (activeCategory as string) === 'sleep_night' || (activeCategory as string) === 'sleep_dhohr') && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-[var(--accent-surface,#c5a059)]/10 border border-[var(--border-accent,#c5a059)]/30 rounded-xl"
+          >
+            <div className="flex items-center gap-1.5 text-xs font-mono">
+              <span className="text-zinc-400 font-bold text-[11px] mr-1">REPOSE CATEGORY:</span>
+              <button
+                type="button"
+                onClick={() => setActiveSleepFilter('all')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer font-bold ${
+                  activeSleepFilter === 'all'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-black/40 text-zinc-300 hover:text-white border border-white/5'
+                }`}
+              >
+                All Sleep ({categoryCounts.sleep})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSleepFilter('night')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer font-bold ${
+                  activeSleepFilter === 'night'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-black/40 text-zinc-300 hover:text-white border border-white/5'
+                }`}
+              >
+                🌙 Bedtime Night ({categoryCounts.sleep_night})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSleepFilter('qaylulah')}
+                className={`px-2.5 py-1 rounded-lg transition cursor-pointer font-bold ${
+                  activeSleepFilter === 'qaylulah'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-black/40 text-zinc-300 hover:text-white border border-white/5'
+                }`}
+              >
+                ☀️ Siesta Nap ({categoryCounts.sleep_dhohr})
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowSleepModal(true)}
+              className="px-3 py-1 bg-purple-950/70 hover:bg-purple-900/80 border border-purple-500/40 text-purple-200 text-xs font-mono font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer ml-auto"
+            >
+              <Bed className="h-3.5 w-3.5 text-purple-300" />
+              <span>Open Sleep Protection Guide</span>
+            </button>
+          </motion.div>
+        )}
+
         {/* Express Minimum Daily Fortress Explanatory Card */}
         {activeCategory === 'express' && (
           <motion.div
@@ -1315,79 +1518,74 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
       </div>
 
       {/* ACTIVE FORTRESS SESSION ACTION BANNER */}
-      {(activeCategory === 'morning' || activeCategory === 'evening' || activeCategory === 'sleep_night' || activeCategory === 'sleep') && (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-black/80 via-[var(--bg-surface,#141824)] to-black/80 border border-[var(--border-subtle,rgba(197,160,89,0.25))] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl border ${
-              activeCategory === 'morning' ? 'bg-amber-500/20 border-amber-500 text-amber-300' :
-              activeCategory === 'evening' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' :
-              'bg-purple-500/20 border-purple-500 text-purple-300'
-            }`}>
-              {activeCategory === 'morning' ? <Sun className="h-4 w-4" /> :
-               activeCategory === 'evening' ? <Moon className="h-4 w-4" /> :
-               <Bed className="h-4 w-4" />}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-display font-bold text-white uppercase">
-                  {activeCategory === 'morning' ? 'Morning Fortress (أذكار الصباح)' :
-                   activeCategory === 'evening' ? 'Evening Fortress (أذكار المساء)' :
-                   'Sleep Fortress (أذكار النوم)'}
-                </span>
-                <span className={`text-[10px] font-mono px-2 py-0.2 rounded-full border font-bold capitalize ${
-                  (activeCategory === 'morning' ? fortressStats.morningStatus :
-                   activeCategory === 'evening' ? fortressStats.eveningStatus :
-                   fortressStats.sleepStatus) === 'complete'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : (activeCategory === 'morning' ? fortressStats.morningStatus :
-                       activeCategory === 'evening' ? fortressStats.eveningStatus :
-                       fortressStats.sleepStatus) === 'in_progress'
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
-                }`}>
-                  {(activeCategory === 'morning' ? fortressStats.morningStatus :
-                    activeCategory === 'evening' ? fortressStats.eveningStatus :
-                    fortressStats.sleepStatus) === 'complete' ? '✓ Complete' :
-                   (activeCategory === 'morning' ? fortressStats.morningStatus :
-                    activeCategory === 'evening' ? fortressStats.eveningStatus :
-                    fortressStats.sleepStatus) === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
-                </span>
-              </div>
-              <p className="text-[11px] font-mono text-zinc-400">
-                {activeCategory === 'morning' ? `${morningProgress.completed} of ${morningProgress.total} litanies completed (${morningProgress.percent}%)` :
-                 activeCategory === 'evening' ? `${eveningProgress.completed} of ${eveningProgress.total} litanies completed (${eveningProgress.percent}%)` :
-                 `${sleepProgress.completed} of ${sleepProgress.total} litanies completed (${sleepProgress.percent}%)`} • Automatically transitions to Complete
-              </p>
-            </div>
-          </div>
+      {(activeCategory === 'morning' || activeCategory === 'evening' || activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah' || activeCategory === 'sleep' || (activeCategory as string) === 'sleep_night' || (activeCategory as string) === 'sleep_dhohr') && (() => {
+        const sess = (activeCategory === 'morning' ? 'morning' : activeCategory === 'evening' ? 'evening' : (activeCategory === 'post_salah' || (activeCategory as string) === 'postSalah') ? 'post_salah' : 'sleep') as 'morning' | 'evening' | 'post_salah' | 'sleep';
+        const isPost = sess === 'post_salah';
+        const isMorning = sess === 'morning';
+        const isEvening = sess === 'evening';
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <button
-              type="button"
-              onClick={() => {
-                const sess = activeCategory === 'morning' ? 'morning' : activeCategory === 'evening' ? 'evening' : 'sleep';
-                fulfillAllAdhkarForSession(sess, systemDate);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
-              title="Fulfill all litanies in this Fortress session"
-            >
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Check All Litanies</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const sess = activeCategory === 'morning' ? 'morning' : activeCategory === 'evening' ? 'evening' : 'sleep';
-                resetAllAdhkarForSession(sess, systemDate);
-              }}
-              className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white text-xs font-mono transition cursor-pointer"
-              title="Reset all litanies in this session"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
+        const status = isMorning ? fortressStats.morningStatus : isEvening ? fortressStats.eveningStatus : isPost ? postSalahStatus : fortressStats.sleepStatus;
+        const progress = isMorning ? morningProgress : isEvening ? eveningProgress : isPost ? postSalahProgress : sleepProgress;
+        const title = isMorning ? 'Morning Fortress (أذكار الصباح)' : isEvening ? 'Evening Fortress (أذكار المساء)' : isPost ? 'Post-Salah Fortress (أذكار بعد الصلاة)' : 'Sleep Fortress (أذكار النوم والقيلولة)';
+
+        return (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-black/80 via-[var(--bg-surface,#141824)] to-black/80 border border-[var(--border-subtle,rgba(197,160,89,0.25))] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl border ${
+                isMorning ? 'bg-amber-500/20 border-amber-500 text-amber-300' :
+                isEvening ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' :
+                isPost ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' :
+                'bg-purple-500/20 border-purple-500 text-purple-300'
+              }`}>
+                {isMorning ? <Sun className="h-4 w-4" /> :
+                 isEvening ? <Moon className="h-4 w-4" /> :
+                 isPost ? <Sparkles className="h-4 w-4" /> :
+                 <Bed className="h-4 w-4" />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-display font-bold text-white uppercase">
+                    {title}
+                  </span>
+                  <span className={`text-[10px] font-mono px-2 py-0.2 rounded-full border font-bold capitalize ${
+                    status === 'complete'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : status === 'in_progress'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  }`}>
+                    {status === 'complete' ? '✓ Complete' :
+                     status === 'in_progress' ? '⏳ In Progress' : 'Not Started'}
+                  </span>
+                </div>
+                <p className="text-[11px] font-mono text-zinc-400">
+                  {progress.completed} of {progress.total} litanies completed ({progress.percent}%) {isPost ? `• ${completedPostPrayersCount}/5 Prayers` : ''} • Automatically syncs with Fortress session
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => fulfillAllAdhkarForSession(sess, systemDate)}
+                className="px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+                title="Fulfill all litanies in this Fortress session"
+              >
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Check All Litanies</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => resetAllAdhkarForSession(sess, systemDate)}
+                className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-400 hover:text-white text-xs font-mono transition cursor-pointer"
+                title="Reset all litanies in this session"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ADHKAR CARDS GRID */}
       <div className="grid grid-cols-1 gap-4">
@@ -1428,43 +1626,56 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 relative z-10">
                   {/* Left Metadata & Header */}
                   <div className="space-y-2 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md uppercase border ${
-                        item.category === 'morning'
-                          ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                          : item.category === 'evening'
-                          ? 'bg-indigo-950 text-indigo-300 border-indigo-500/40'
-                          : item.category === 'post_salah'
-                          ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                          : item.category === 'sleep'
-                          ? 'bg-purple-950 text-purple-300 border-purple-500/40'
-                          : 'bg-zinc-900 text-zinc-300 border-zinc-700'
+                    {/* Zero-Pill Typographic Eyebrow Header */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-mono text-zinc-400">
+                      <span className={`font-bold tracking-wider uppercase ${
+                        item.category === 'morning' ? 'text-amber-300' :
+                        item.category === 'evening' ? 'text-indigo-300' :
+                        item.category === 'post_salah' ? 'text-emerald-300' :
+                        item.category === 'sleep' ? 'text-purple-300' :
+                        'text-cyan-300'
                       }`}>
-                        {item.category.replace('_', ' ')}
+                        {item.category === 'morning' ? '🌅 Morning' :
+                         item.category === 'evening' ? '🌇 Evening' :
+                         item.category === 'post_salah' ? '🕌 Post-Salah' :
+                         item.category === 'sleep' ? (item.sleepContext === 'qaylulah' ? '☀️ Midday Nap' : '🌙 Night Bedtime') :
+                         '📿 General'}
                       </span>
-
-                      {item.isExpressDaily && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1">
-                          <Zap className="h-3 w-3 text-amber-400" /> MINIMUM (حصن الأيام الصعبة)
-                        </span>
+                      <span>·</span>
+                      <span className="text-zinc-300 font-bold">
+                        Target: {item.targetCount}x
+                      </span>
+                      {(item.hadithSource || item.source) && (
+                        <>
+                          <span>·</span>
+                          <span className="text-amber-200/90 font-sans">
+                            📜 {item.hadithSource || item.source}
+                          </span>
+                        </>
                       )}
-
                       {item.prayerTarget && item.category === 'post_salah' && (
-                        <span className="text-[10px] font-mono bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-md">
-                          🕌 {item.prayerTarget.toUpperCase()}
-                        </span>
+                        <>
+                          <span>·</span>
+                          <span className="text-emerald-300">
+                            🕌 {item.prayerTarget.toUpperCase()}
+                          </span>
+                        </>
                       )}
-
+                      {item.isExpressDaily && (
+                        <>
+                          <span>·</span>
+                          <span className="text-amber-400 font-bold">
+                            ⚡ Express Minimum
+                          </span>
+                        </>
+                      )}
                       {item.isCustom && (
-                        <span className="text-[10px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 px-2 py-0.5 rounded-md">
-                          CUSTOM
-                        </span>
-                      )}
-
-                      {item.source && (
-                        <span className="text-[10px] font-mono text-zinc-400">
-                          📜 {item.source}
-                        </span>
+                        <>
+                          <span>·</span>
+                          <span className="text-cyan-400">
+                            Custom Supplication
+                          </span>
+                        </>
                       )}
                     </div>
 
@@ -1500,7 +1711,7 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                             </span>
                           )}
                           {isCompleted && (
-                            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1 font-bold animate-pulse">
+                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
                               <Check className="h-3 w-3" /> FULFILLED
                             </span>
                           )}
@@ -1508,12 +1719,12 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                       </div>
                     </div>
 
-                    {/* Arabic Text Display */}
+                    {/* Vocalized Arabic Script (Tashkīl) */}
                     {(item.arabicText || item.arabic) && (
                       <div className="p-4 bg-[var(--bg-void,#050608)]/90 border border-[var(--border-accent,#c5a059)]/30 rounded-xl my-2">
                         <p 
                           dir="rtl"
-                          className="font-arabic text-lg sm:text-xl text-right text-amber-100/90 leading-loose tracking-wide select-all"
+                          className="font-arabic text-lg sm:text-xl text-right text-amber-100/95 leading-loose tracking-wide select-all whitespace-pre-line"
                         >
                           {item.arabicText || item.arabic}
                         </p>
@@ -1532,11 +1743,14 @@ export const AdhkarSection: React.FC<AdhkarSectionProps> = ({
                       {item.translation}
                     </p>
 
-                    {/* Virtue / Reward Note */}
+                    {/* Virtue / Hadith Evidence Note (Unboxed Zero-Pill Callout) */}
                     {item.virtue && (
-                      <div className="text-[11px] text-[var(--accent-bright,#fef08a)]/90 bg-[var(--accent-surface,#c5a059)]/10 border border-[var(--border-subtle,rgba(197,160,89,0.2))] rounded-lg p-2 flex items-start gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-[var(--accent-bright,#fef08a)] shrink-0 mt-0.5" />
-                        <span><strong>Virtue:</strong> {item.virtue}</span>
+                      <div className="text-[11.5px] text-zinc-300 border-l-2 border-[var(--border-accent,#c5a059)] pl-3 py-1 font-sans space-y-0.5 bg-black/20 rounded-r-lg">
+                        <div className="text-[10px] font-mono text-amber-300/90 uppercase font-bold tracking-wider flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-amber-400" />
+                          <span>VIRTUE &amp; EVIDENCE</span>
+                        </div>
+                        <p className="leading-relaxed">{item.virtue}</p>
                       </div>
                     )}
                   </div>

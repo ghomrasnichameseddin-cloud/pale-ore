@@ -172,15 +172,35 @@ export const NIGHT_SLEEP_ADHKAR: DhikrItem[] = [
   }
 ];
 
+const SLEEP_MODAL_ID_MAP: Record<string, string> = {
+  'dhohr-ayat-kursi': 'adhkar-qaylulah-ayat-kursi',
+  'dhohr-muawwidhat': 'adhkar-qaylulah-muawwidhat',
+  'dhohr-sunnah-side': 'adhkar-qaylulah-bismika',
+  'dhohr-bismika': 'adhkar-qaylulah-bismika',
+  'night-ayat-kursi': 'adhkar-night-ayat-kursi',
+  'night-baqarah-last-two': 'adhkar-night-baqarah-last-two',
+  'night-muawwidhat-3x': 'adhkar-night-muawwidhat-3x',
+  'night-tasbih-fatimah': 'adhkar-night-tasbih-fatimah',
+  'night-bismika-amutu': 'adhkar-night-bismika-amutu',
+  'night-bismika-wada-tu': 'adhkar-night-bismika-wada-tu',
+  'night-concluding-fitrah': 'adhkar-night-concluding-fitrah',
+};
+
 export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
   isOpen,
   onClose,
   initialTab = 'night',
   systemDate
 }) => {
-  const { getSpiritualLog, toggleAdhkar } = usePOS();
+  const { 
+    getSpiritualLog, 
+    toggleAdhkar,
+    setAdhkarSessionStatus,
+    incrementAdhkarRecitation, 
+    resetAdhkarRecitation, 
+    getAdhkarRecitationCount 
+  } = usePOS();
   const [activeTab, setActiveTab] = useState<'dhohr' | 'night'>(initialTab);
-  const [counters, setCounters] = useState<Record<string, number>>({});
 
   // Sync tab when opened
   React.useEffect(() => {
@@ -197,30 +217,37 @@ export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
 
   const currentList = activeTab === 'dhohr' ? DHOHR_SLEEP_ADHKAR : NIGHT_SLEEP_ADHKAR;
 
+  const getItemCount = (id: string): number => {
+    const canonicalId = SLEEP_MODAL_ID_MAP[id] || id;
+    return getAdhkarRecitationCount(canonicalId, systemDate);
+  };
+
   const handleIncrement = (id: string, target: number) => {
-    setCounters(prev => {
-      const current = prev[id] || 0;
-      const next = current >= target ? 0 : current + 1;
-      return { ...prev, [id]: next };
-    });
+    const canonicalId = SLEEP_MODAL_ID_MAP[id] || id;
+    const current = getAdhkarRecitationCount(canonicalId, systemDate);
+    if (current >= target) {
+      resetAdhkarRecitation(canonicalId, systemDate);
+    } else {
+      incrementAdhkarRecitation(canonicalId, 1, systemDate);
+    }
   };
 
   const handleSetCompleted = (id: string, target: number) => {
-    setCounters(prev => ({
-      ...prev,
-      [id]: target
-    }));
+    const canonicalId = SLEEP_MODAL_ID_MAP[id] || id;
+    const current = getAdhkarRecitationCount(canonicalId, systemDate);
+    if (current < target) {
+      incrementAdhkarRecitation(canonicalId, target - current, systemDate);
+    }
   };
 
   const handleResetCurrentCounters = () => {
-    const next = { ...counters };
     currentList.forEach(item => {
-      delete next[item.id];
+      const canonicalId = SLEEP_MODAL_ID_MAP[item.id] || item.id;
+      resetAdhkarRecitation(canonicalId, systemDate);
     });
-    setCounters(next);
   };
 
-  const completedCount = currentList.filter(item => (counters[item.id] || 0) >= item.targetCount).length;
+  const completedCount = currentList.filter(item => getItemCount(item.id) >= item.targetCount).length;
   const progressPercent = currentList.length > 0 ? Math.round((completedCount / currentList.length) * 100) : 0;
 
   return (
@@ -406,7 +433,7 @@ export const SleepAdhkarModal: React.FC<SleepAdhkarModalProps> = ({
           {/* SCROLLABLE LIST OF ADHKAR */}
           <div className="overflow-y-auto pr-1.5 space-y-3.5 flex-1 min-h-0">
             {currentList.map((item) => {
-              const currentVal = counters[item.id] || 0;
+              const currentVal = getItemCount(item.id);
               const isItemDone = currentVal >= item.targetCount;
 
               return (

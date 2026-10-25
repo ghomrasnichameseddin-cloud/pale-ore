@@ -384,14 +384,22 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                   <span>−{MIDNIGHT_MISSED_PRAYER_PENALTY_XP} XP • −{MIDNIGHT_MISSED_PRAYER_PENALTY_HP} HP</span>
                 </div>
 
+                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300">
+                  <span className="flex items-center gap-1 text-rose-300">
+                    <Scale className="h-3 w-3 text-rose-400" />
+                    <span>Qaḍā' Directive Active</span>
+                  </span>
+                  <span className="text-zinc-400">Restitution: Rawātib · Qiyām · Ḍuḥā</span>
+                </div>
+
                 {onCompleteQada && (
                   <button
                     type="button"
                     onClick={() => onCompleteQada(prayer.id)}
-                    className="w-full py-1.5 px-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-200 font-mono text-[10px] font-bold transition flex items-center justify-center gap-1.5"
+                    className="w-full py-1.5 px-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-200 font-mono text-[10px] font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Check className="h-3 w-3 text-emerald-400" />
-                    <span>Perform Qada&apos; Restitution (قضاء الفائتة)</span>
+                    <span>Perform Qada&apos; &amp; Sunnah Restitution (قضاء الفائتة وسنتها)</span>
                   </button>
                 )}
               </div>

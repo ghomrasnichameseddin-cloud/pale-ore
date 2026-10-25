@@ -9,7 +9,7 @@ import {
   Masjid40Stats, Masjid40DayCovenant,
   VisualCodexSettings, CodexThemeId,
   AdhkarItem, AdhkarCategory, AdhkarPrayerTarget, ActiveAdhkarFocusSession,
-  AdhkarSessionStatus, AdhkarFortressStats, PrayerId,
+  AdhkarSessionStatus, AdhkarFortressStats, PrayerId, PostSalahSessionsMap,
   QuranRevisionStatus, QuranPassage, QuranReflection, QuranTrackerState, QuranKhatmahRecord,
   SurahLedgerEntry, SurahMemorizationStatus, SurahRevisionStatus, SurahReadStatus,
   NotificationSettings,
@@ -98,7 +98,7 @@ import { consolidateRecoveryQuests, staggerRecoveryQuests } from './utils/recove
 import { getStoredVisualCodexSettings, saveStoredVisualCodexSettings, applyVisualCodexToDOM } from './utils/visualCodex';
 import { sendNativeNotification } from './utils/nativeNotifications';
 import { generateDelayedNotifications, scanAllDelayedItems, DelayedScanResult } from './utils/delayedTaskScanner';
-import { addQiyamRakats as addQiyamRakahCount, addDhohaRakats as addDhohaRakahCount, createPrayerRecoveryQuest } from './utils/prayerRecovery';
+import { addQiyamRakats as addQiyamRakahCount, addDhohaRakats as addDhohaRakahCount, createPrayerRecoveryQuest, createMidnightQadaRecoveryQuest } from './utils/prayerRecovery';
 import { parseDateSafe, addDays, getDaysDifference, getWeekdayStr, getSystemTimestamp } from './utils/dateUtils';
 import { isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, autoProcessMidnightUnmarkedPrayers, getQuestHpPenalty } from './utils/penaltyEngine';
 export { getSystemTimestamp, isQuestScheduledForDate, isQuestArchived, processMultiDayPenalties, autoProcessMidnightUnmarkedPrayers, getQuestHpPenalty };
@@ -570,10 +570,10 @@ interface POSContextType {
   incrementAdhkarRecitation: (adhkarId: string, delta: number, dateStr?: string) => void;
   resetAdhkarRecitation: (adhkarId: string, dateStr?: string) => void;
   getAdhkarRecitationCount: (adhkarId: string, dateStr?: string) => number;
-  setAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', status: AdhkarSessionStatus, dateStr?: string) => void;
-  cycleAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
-  fulfillAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
-  resetAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => void;
+  setAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep' | 'post_salah', status: AdhkarSessionStatus, dateStr?: string) => void;
+  cycleAdhkarSessionStatus: (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => void;
+  fulfillAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => void;
+  resetAllAdhkarForSession: (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => void;
   setPostSalahSessionStatus: (prayer: PrayerId, status: AdhkarSessionStatus, dateStr?: string) => void;
   cyclePostSalahSessionStatus: (prayer: PrayerId, dateStr?: string) => void;
   setPostSalahItemStatus: (prayer: PrayerId, itemId: string, completed: boolean, count?: number, dateStr?: string) => void;
@@ -4352,7 +4352,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Add XP history and dynamically resolve any negative penalties if they earned the XP back!
       const rawHistory = newHistoryEntry ? [newHistoryEntry, ...prev.xpHistory] : prev.xpHistory;
-      const updatedHistory = resolveRecoveredPenalties(rawHistory);
+      let updatedHistory = resolveRecoveredPenalties(rawHistory);
 
       // Complete quest or update recurrence completion time & habit streak
       const updatedQuests = prev.quests.map(q => {
@@ -4552,6 +4552,49 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       }
 
+      // Extract target date and prayer if this is a Qada recovery quest
+      const qadaMatch = questToComplete.id.match(/^q-qada-([a-z]+)-(\d{4}-\d{2}-\d{2})$/);
+      let updatedSpiritualLogs = prev.spiritualLogs;
+
+      if (qadaMatch) {
+        const qPrayer = qadaMatch[1] as PrayerId;
+        const qDate = qadaMatch[2];
+        const log = (prev.spiritualLogs && prev.spiritualLogs[qDate]) || createDefaultSpiritualLog(qDate);
+        const curr = log[qPrayer] || { inMasjid: false, sunnahRawatib: false, completedAt: null, fardh: false, onTime: false, delayed: false };
+
+        if (!curr.sunnahRawatib) {
+          const sunnahQId = `spiritual-prayer-${qDate}-${qPrayer}-sunnahRawatib`;
+          const pInfo = PRAYER_NAMES[qPrayer];
+          const sunnahEntry: XPHistoryEntry = {
+            id: `h-pray-${Date.now()}-qadaSunnahRawatib`,
+            questId: sunnahQId,
+            questName: `📿 PRAYER: Sunan Rawātib restitution for ${pInfo?.en || qPrayer}`,
+            xp: 25,
+            timestamp: completedTimestamp,
+            date: qDate,
+            type: 'salah',
+            source: 'quest',
+            sourceId: sunnahQId,
+            activityId: `prayer-${qPrayer}-sunnah-rawatib`,
+            skillIds: []
+          };
+          updatedHistory = [sunnahEntry, ...updatedHistory.filter(h => h.questId !== sunnahQId)];
+        }
+
+        updatedSpiritualLogs = {
+          ...(prev.spiritualLogs || {}),
+          [qDate]: {
+            ...log,
+            [qPrayer]: {
+              ...curr,
+              qadaCompleted: true,
+              qadaCompletedAt: completedTimestamp,
+              sunnahRawatib: true
+            }
+          }
+        };
+      }
+
       return {
         ...prev,
         quests: updatedQuests,
@@ -4560,6 +4603,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         xpHistory: updatedHistory,
         timeHistory: (!alreadyMinted && updatedQuestTimeTx) ? [updatedQuestTimeTx, ...(prev.timeHistory || [])] : prev.timeHistory,
         muhasabahEntries: updatedMuhasabahEntries,
+        spiritualLogs: updatedSpiritualLogs,
         profile: {
           ...prev.profile,
           xp: totalXp,
@@ -4578,15 +4622,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
     });
 
-    if (recoveryAction?.kind === 'sunnah-prayer') {
+    const qadaMatch = questToComplete.id.match(/^q-qada-([a-z]+)-(\d{4}-\d{2}-\d{2})$/);
+    const targetDate = qadaMatch ? qadaMatch[2] : state.systemDate;
+
+    if (recoveryAction?.kind === 'sunnah-prayer' && !qadaMatch) {
       const prayerLog = state.spiritualLogs?.[state.systemDate]?.[recoveryAction.prayer];
       if (!prayerLog?.sunnahRawatib) {
         togglePrayer(recoveryAction.prayer, 'sunnahRawatib', state.systemDate);
       }
     } else if (recoveryAction?.kind === 'qiyam') {
-      addQiyamRakats(recoveryAction.rakats, undefined, state.systemDate);
+      addQiyamRakats(recoveryAction.rakats, undefined, targetDate);
     } else if (recoveryAction?.kind === 'dhoha' || (recoveryAction as any)?.kind === 'duha') {
-      addDhohaRakats(recoveryAction.rakats || 2, state.systemDate);
+      addDhohaRakats((recoveryAction as any)?.rakats || 2, targetDate);
     }
   };
 
@@ -8497,32 +8544,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
           if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
-            updatedQuests.push({
-              id: qadaQuestId,
-              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
-              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse.`,
-              status: 'Active',
-              difficulty: 'Hard',
-              type: 'Recovery',
-              estimatedTime: 15,
-              recurrence: 'None',
-              energyLevel: 'High',
-              deadline: targetDate,
-              createdAt: completedTimestamp,
-              completedAt: null,
-              xp: 50,
-              goalId: null,
-              projectId: null,
-              milestoneId: null,
-              subquests: [
-                {
-                  id: `sq-qada-${prayer}-${targetDate}-1`,
-                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
-                  completed: false
-                }
-              ],
-              relatedSkills: []
-            });
+            updatedQuests.push(createMidnightQadaRecoveryQuest({
+              prayer,
+              targetDate,
+              completedAt: completedTimestamp,
+              xp: 50
+            }));
           }
 
           addSystemMessage({
@@ -9561,12 +9588,35 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return q;
       });
 
+      const sunnahQId = `spiritual-prayer-${targetDate}-${prayer}-sunnahRawatib`;
+      let finalHistory = [...updatedHistory];
+      let deltaSunnahCoins = 0;
+
+      if (!curr?.sunnahRawatib) {
+        const sunnahEntry: XPHistoryEntry = {
+          id: `h-pray-${Date.now()}-qadaSunnahRawatib`,
+          questId: sunnahQId,
+          questName: `📿 PRAYER: Sunan Rawātib restitution for ${pInfo.en}`,
+          xp: 25,
+          timestamp: completedTimestamp,
+          date: targetDate,
+          type: 'salah',
+          source: 'quest',
+          sourceId: sunnahQId,
+          activityId: `prayer-${prayer}-sunnah-rawatib`,
+          skillIds: []
+        };
+        finalHistory = [sunnahEntry, ...finalHistory.filter(h => h.questId !== sunnahQId)];
+        deltaSunnahCoins = 5;
+      }
+
       const updatedLog: SpiritualDailyLog = {
         ...log,
         [prayer]: {
           ...curr,
           qadaCompleted: true,
-          qadaCompletedAt: completedTimestamp
+          qadaCompletedAt: completedTimestamp,
+          sunnahRawatib: true
         }
       };
 
@@ -9574,11 +9624,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sender: 'SYSTEM',
         category: 'achievement',
         title: `📜 QADA' RESTITUTION SEALED: ${pInfo.en}`,
-        content: `Missed ${pInfo.en} (${pInfo.ar}) made up with sincere repentance. Restitution acknowledged (+50 XP).`,
+        content: `Missed ${pInfo.en} (${pInfo.ar}) made up with sincere repentance and Sunnah Rawātib restitution (+50 XP Qada' + Sunnah).`,
         priority: 'medium'
       });
 
-      const totalXp = updatedHistory.reduce((sum, h) => sum + h.xp, 0);
+      const totalXp = finalHistory.reduce((sum, h) => sum + h.xp, 0);
       const gated = calculateGatedPlayerLevel(
         totalXp,
         prev.profile.level,
@@ -9589,7 +9639,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         ...prev,
         quests: updatedQuests,
-        xpHistory: updatedHistory,
+        xpHistory: finalHistory,
         spiritualLogs: {
           ...(prev.spiritualLogs || {}),
           [targetDate]: updatedLog
@@ -9597,7 +9647,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile: {
           ...prev.profile,
           xp: totalXp,
-          level: gated.level
+          level: gated.level,
+          coins: Math.max(0, (prev.profile.coins ?? 150) + deltaSunnahCoins)
         }
       };
     });
@@ -9653,32 +9704,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           const qadaQuestId = `q-qada-${prayer}-${targetDate}`;
           if (!updatedQuests.some(uq => uq.id === qadaQuestId)) {
-            updatedQuests.push({
-              id: qadaQuestId,
-              name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
-              description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse.`,
-              status: 'Active',
-              difficulty: 'Hard',
-              type: 'Recovery',
-              estimatedTime: 15,
-              recurrence: 'None',
-              energyLevel: 'High',
-              deadline: targetDate,
-              createdAt: `${targetDate}T23:59:59.000Z`,
-              completedAt: null,
-              xp: 50,
-              goalId: null,
-              projectId: null,
-              milestoneId: null,
-              subquests: [
-                {
-                  id: `sq-qada-${prayer}-${targetDate}-1`,
-                  name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
-                  completed: false
-                }
-              ],
-              relatedSkills: []
-            });
+            updatedQuests.push(createMidnightQadaRecoveryQuest({
+              prayer,
+              targetDate,
+              completedAt: `${targetDate}T23:59:59.000Z`,
+              xp: 50
+            }));
           }
         }
       }
@@ -9845,14 +9876,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const getFortressSessionForAdhkarCategory = (category: AdhkarCategory | string): 'morning' | 'evening' | 'sleep' | null => {
+  const getFortressSessionForAdhkarCategory = (category: AdhkarCategory | string): 'morning' | 'evening' | 'sleep' | 'post_salah' | null => {
     if (category === 'morning') return 'morning';
     if (category === 'evening') return 'evening';
     if (category === 'sleep' || category === 'sleep_night' || category === 'sleep_dhohr') return 'sleep';
+    if (category === 'post_salah' || category === 'postSalah') return 'post_salah';
     return null;
   };
 
-  const getFortressSessionItems = (session: 'morning' | 'evening' | 'sleep', list: AdhkarItem[]): AdhkarItem[] => {
+  const getFortressSessionItems = (session: 'morning' | 'evening' | 'sleep' | 'post_salah', list: AdhkarItem[]): AdhkarItem[] => {
     if (session === 'morning') {
       return list.filter(a => a.category === 'morning');
     }
@@ -9860,14 +9892,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return list.filter(a => a.category === 'evening');
     }
     if (session === 'sleep') {
-      const night = list.filter(a => a.category === 'sleep_night' || a.category === 'sleep');
-      return night.length > 0 ? night : list.filter(a => a.category === 'sleep_dhohr');
+      return list.filter(a => a.category === 'sleep' || a.category === 'sleep_night' || a.category === 'sleep_dhohr');
+    }
+    if (session === 'post_salah') {
+      return list.filter(a => a.category === 'post_salah' || (a.category as string) === 'postSalah');
     }
     return [];
   };
 
   const setAdhkarSessionStatus = (
-    session: 'morning' | 'evening' | 'sleep',
+    session: 'morning' | 'evening' | 'sleep' | 'post_salah',
     newStatus: AdhkarSessionStatus,
     dateStr?: string
   ) => {
@@ -9889,11 +9923,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       legacyField = 'adhkarSleepNight';
       label = 'Night Sleep Adhkār (أذكار النوم)';
       messageContent = 'Night Sleep Adhkār complete (+75 XP, +10 Coins). Fortified with Ayat al-Kursi, Mu‘awwidhatayn & Tasbīḥ Fāṭimah.';
+    } else if (session === 'post_salah') {
+      label = 'Post-Salah Adhkār (أذكار بعد الصلاة)';
+      messageContent = 'Post-Salah litanies fulfilled (+75 XP, +10 Coins). Heart purified in the wake of sacred prayer.';
     }
 
-    const questIdentifier = `spiritual-adhkar-${targetDate}-${session === 'morning' ? 'sabah' : session === 'evening' ? 'masa' : 'sleepNight'}`;
+    const questIdentifier = `spiritual-adhkar-${targetDate}-${session === 'morning' ? 'sabah' : session === 'evening' ? 'masa' : session === 'sleep' ? 'sleepNight' : 'postSalah'}`;
     const isNowComplete = newStatus === 'complete';
-    const wasComplete = existingLog.adhkarSessions?.[session] === 'complete' || existingLog[legacyField];
+    const wasComplete = session === 'post_salah'
+      ? (existingLog.adhkarSessions?.postSalah && Object.values(existingLog.adhkarSessions.postSalah).filter(s => s === 'complete').length === 5)
+      : (existingLog.adhkarSessions?.[session] === 'complete' || existingLog[legacyField]);
 
     setState(prev => {
       const log = (prev.spiritualLogs && prev.spiritualLogs[targetDate]) || createDefaultSpiritualLog(targetDate);
@@ -9903,13 +9942,33 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
       };
 
+      const prayers: PrayerId[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      const updatedPostSalah: PostSalahSessionsMap = { ...(currentSessions.postSalah || {}) };
+      const updatedDhikrPostSalah = { ...(log.dhikr?.postSalahAdhkar || {}) };
+
+      if (session === 'post_salah') {
+        prayers.forEach(p => {
+          updatedPostSalah[p] = newStatus;
+          if (isNowComplete) {
+            updatedDhikrPostSalah[p] = 'standard33';
+          } else if (newStatus === 'not_started') {
+            updatedDhikrPostSalah[p] = 'none';
+          }
+        });
+      }
+
       const updatedLog: SpiritualDailyLog = {
         ...log,
-        [legacyField]: isNowComplete,
+        ...(session !== 'post_salah' ? { [legacyField]: isNowComplete } : {}),
         adhkarSessions: {
           ...currentSessions,
-          [session]: newStatus
-        }
+          ...(session !== 'post_salah' ? { [session]: newStatus } : {}),
+          postSalah: session === 'post_salah' ? updatedPostSalah : currentSessions.postSalah
+        },
+        dhikr: session === 'post_salah' ? {
+          ...(log.dhikr || { tasbeehAfterSalah: false, tahlilCount: 0 }),
+          postSalahAdhkar: updatedDhikrPostSalah
+        } : log.dhikr
       };
 
       let updatedHistory = [...prev.xpHistory];
@@ -10015,13 +10074,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const cycleAdhkarSessionStatus = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+  const cycleAdhkarSessionStatus = (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     const log = getSpiritualLog(targetDate);
-    const currentStatus: AdhkarSessionStatus = log.adhkarSessions?.[session] ||
-      (session === 'morning' ? (log.adhkarSabah ? 'complete' : 'not_started') :
-       session === 'evening' ? (log.adhkarMasa ? 'complete' : 'not_started') :
-       ((log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'));
+    let currentStatus: AdhkarSessionStatus = 'not_started';
+    if (session === 'post_salah') {
+      const ps = log.adhkarSessions?.postSalah;
+      const completedCount = ps ? Object.values(ps).filter(s => s === 'complete').length : 0;
+      const inProgressCount = ps ? Object.values(ps).filter(s => s === 'in_progress').length : 0;
+      if (completedCount === 5) currentStatus = 'complete';
+      else if (completedCount > 0 || inProgressCount > 0) currentStatus = 'in_progress';
+      else currentStatus = 'not_started';
+    } else {
+      currentStatus = log.adhkarSessions?.[session] ||
+        (session === 'morning' ? (log.adhkarSabah ? 'complete' : 'not_started') :
+         session === 'evening' ? (log.adhkarMasa ? 'complete' : 'not_started') :
+         ((log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'));
+    }
 
     let nextStatus: AdhkarSessionStatus = 'not_started';
     if (currentStatus === 'not_started') nextStatus = 'in_progress';
@@ -12182,7 +12251,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             evening: log.adhkarMasa ? 'complete' : 'not_started',
             sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
           };
-          const currentSessionStatus = currentSessions[sessionType] || 'not_started';
+          const prayers: PrayerId[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+          const currentSessionStatus = sessionType === 'post_salah'
+            ? (currentSessions.postSalah && Object.values(currentSessions.postSalah).filter(s => s === 'complete').length === 5 ? 'complete' : (currentSessions.postSalah && Object.values(currentSessions.postSalah).some(s => s === 'complete' || s === 'in_progress') ? 'in_progress' : 'not_started'))
+            : (currentSessions[sessionType] || 'not_started');
 
           if (newSessionStatus !== currentSessionStatus) {
             let legacyField: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepNight' = 'adhkarSabah';
@@ -12199,9 +12271,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               legacyField = 'adhkarSleepNight';
               sessionLabel = 'Night Sleep Adhkār (أذكار النوم)';
               sessionMessage = 'Night Sleep Adhkār complete (+75 XP, +10 Coins). Fortified with Ayat al-Kursi, Mu‘awwidhatayn & Tasbīḥ Fāṭimah.';
+            } else if (sessionType === 'post_salah') {
+              sessionLabel = 'Post-Salah Adhkār (أذكار بعد الصلاة)';
+              sessionMessage = 'Post-Salah litanies fulfilled (+75 XP, +10 Coins). Heart purified in the wake of sacred prayer.';
             }
 
-            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : 'sleepNight'}`;
+            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : sessionType === 'sleep' ? 'sleepNight' : 'postSalah'}`;
             const isNowSessionComplete = newSessionStatus === 'complete';
             const wasSessionComplete = currentSessionStatus === 'complete';
 
@@ -12236,13 +12311,32 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               coinsDelta -= sessionCoinsReward;
             }
 
+            const updatedPostSalah: PostSalahSessionsMap = { ...(currentSessions.postSalah || {}) };
+            const updatedDhikrPostSalah = { ...(log.dhikr?.postSalahAdhkar || {}) };
+
+            if (sessionType === 'post_salah') {
+              prayers.forEach(p => {
+                updatedPostSalah[p] = newSessionStatus;
+                if (newSessionStatus === 'complete') {
+                  updatedDhikrPostSalah[p] = 'standard33';
+                } else if (newSessionStatus === 'not_started') {
+                  updatedDhikrPostSalah[p] = 'none';
+                }
+              });
+            }
+
             const updatedLog: SpiritualDailyLog = {
               ...log,
-              [legacyField]: isNowSessionComplete,
+              ...(sessionType !== 'post_salah' ? { [legacyField]: isNowSessionComplete } : {}),
               adhkarSessions: {
                 ...currentSessions,
-                [sessionType]: newSessionStatus
-              }
+                ...(sessionType !== 'post_salah' ? { [sessionType]: newSessionStatus } : {}),
+                postSalah: sessionType === 'post_salah' ? updatedPostSalah : currentSessions.postSalah
+              },
+              dhikr: sessionType === 'post_salah' ? {
+                ...(log.dhikr || { tasbeehAfterSalah: false, tahlilCount: 0 }),
+                postSalahAdhkar: updatedDhikrPostSalah
+              } : log.dhikr
             };
 
             updatedSpiritualLogs = {
@@ -12340,7 +12434,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             evening: log.adhkarMasa ? 'complete' : 'not_started',
             sleep: (log.adhkarSleepNight || log.adhkarSleepDhohr) ? 'complete' : 'not_started'
           };
-          const currentSessionStatus = currentSessions[sessionType] || 'not_started';
+          const prayers: PrayerId[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+          const currentSessionStatus = sessionType === 'post_salah'
+            ? (currentSessions.postSalah && Object.values(currentSessions.postSalah).filter(s => s === 'complete').length === 5 ? 'complete' : (currentSessions.postSalah && Object.values(currentSessions.postSalah).some(s => s === 'complete' || s === 'in_progress') ? 'in_progress' : 'not_started'))
+            : (currentSessions[sessionType] || 'not_started');
 
           if (newSessionStatus !== currentSessionStatus) {
             let legacyField: 'adhkarSabah' | 'adhkarMasa' | 'adhkarSleepNight' = 'adhkarSabah';
@@ -12349,7 +12446,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (sessionType === 'evening') legacyField = 'adhkarMasa';
             else if (sessionType === 'sleep') legacyField = 'adhkarSleepNight';
 
-            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : 'sleepNight'}`;
+            const sessionQuestId = `spiritual-adhkar-${targetDate}-${sessionType === 'morning' ? 'sabah' : sessionType === 'evening' ? 'masa' : sessionType === 'sleep' ? 'sleepNight' : 'postSalah'}`;
             const wasSessionComplete = currentSessionStatus === 'complete';
 
             if (wasSessionComplete && newSessionStatus !== 'complete') {
@@ -12358,13 +12455,32 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               coinsDelta -= sessionCoinsReward;
             }
 
+            const updatedPostSalah: PostSalahSessionsMap = { ...(currentSessions.postSalah || {}) };
+            const updatedDhikrPostSalah = { ...(log.dhikr?.postSalahAdhkar || {}) };
+
+            if (sessionType === 'post_salah') {
+              prayers.forEach(p => {
+                updatedPostSalah[p] = newSessionStatus;
+                if (newSessionStatus === 'complete') {
+                  updatedDhikrPostSalah[p] = 'standard33';
+                } else if (newSessionStatus === 'not_started') {
+                  updatedDhikrPostSalah[p] = 'none';
+                }
+              });
+            }
+
             const updatedLog: SpiritualDailyLog = {
               ...log,
-              [legacyField]: newSessionStatus === 'complete',
+              ...(sessionType !== 'post_salah' ? { [legacyField]: newSessionStatus === 'complete' } : {}),
               adhkarSessions: {
                 ...currentSessions,
-                [sessionType]: newSessionStatus
-              }
+                ...(sessionType !== 'post_salah' ? { [sessionType]: newSessionStatus } : {}),
+                postSalah: sessionType === 'post_salah' ? updatedPostSalah : currentSessions.postSalah
+              },
+              dhikr: sessionType === 'post_salah' ? {
+                ...(log.dhikr || { tasbeehAfterSalah: false, tahlilCount: 0 }),
+                postSalahAdhkar: updatedDhikrPostSalah
+              } : log.dhikr
             };
 
             updatedSpiritualLogs = {
@@ -12402,12 +12518,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const fulfillAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+  const fulfillAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     setAdhkarSessionStatus(session, 'complete', targetDate);
   };
 
-  const resetAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep', dateStr?: string) => {
+  const resetAllAdhkarForSession = (session: 'morning' | 'evening' | 'sleep' | 'post_salah', dateStr?: string) => {
     const targetDate = dateStr || state.systemDate || getLocalDateString();
     setAdhkarSessionStatus(session, 'not_started', targetDate);
   };

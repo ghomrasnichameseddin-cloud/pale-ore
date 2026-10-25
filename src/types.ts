@@ -1174,7 +1174,8 @@ export interface QuranLog {
 
 export type PostSalahDhikrMode = 'standard33' | 'mini10' | 'none';
 
-export type AdhkarCategory = 'morning' | 'evening' | 'post_salah' | 'postSalah' | 'sleep' | 'sleep_dhohr' | 'sleep_night' | 'general' | 'express';
+// Four Canonical Sunnah Pillars: morning, evening, post_salah, sleep (plus general and express)
+export type AdhkarCategory = 'morning' | 'evening' | 'post_salah' | 'sleep' | 'general' | 'express' | 'postSalah' | 'sleep_dhohr' | 'sleep_night';
 export type AdhkarPrayerTarget = 'all' | 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'fajr_maghrib';
 
 export interface AdhkarItem {
@@ -1187,6 +1188,7 @@ export interface AdhkarItem {
   translation: string;
   category: AdhkarCategory;
   prayerTarget?: AdhkarPrayerTarget; // For post_salah: 'all' | 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'fajr_maghrib'
+  sleepContext?: 'night' | 'qaylulah' | 'all'; // For sleep: 'night' for bedtime, 'qaylulah' for midday nap
   targetCount: number; // e.g. 1, 3, 7, 10, 33, 100
   virtue?: string; // Hadith benefit
   source?: string;

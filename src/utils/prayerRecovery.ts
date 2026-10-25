@@ -1,4 +1,5 @@
 import { Quest, PrayerRecoveryAction } from '../types';
+import { PRAYER_NAMES } from './prayerRules';
 
 export const addQiyamRakats = (currentRakats: number, rakatsToAdd: number): number =>
   Math.max(0, currentRakats) + Math.max(0, rakatsToAdd);
@@ -123,3 +124,63 @@ export const createDhohaRecoveryQuest = ({
   recoveryAction: { kind: 'dhoha', rakats: 2 },
   recoveryActionOptions: [{ kind: 'dhoha', rakats: 2 }],
 });
+
+export const createMidnightQadaRecoveryQuest = ({
+  prayer,
+  targetDate,
+  completedAt,
+  xp = 50,
+}: {
+  prayer: 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+  targetDate: string;
+  completedAt?: string;
+  xp?: number;
+}): Quest => {
+  const pInfo = PRAYER_NAMES[prayer];
+  const creationTime = completedAt || `${targetDate}T23:59:59.000Z`;
+  const recoveryActionOptions: PrayerRecoveryAction[] = [
+    { kind: 'sunnah-prayer', prayer },
+    { kind: 'qiyam', rakats: 2 },
+    { kind: 'dhoha', rakats: 2 },
+  ];
+
+  return {
+    id: `q-qada-${prayer}-${targetDate}`,
+    name: `📜 QADA' OBLIGATION: Make up missed ${pInfo.en} (${targetDate})`,
+    description: `Obligatory Qada' restitution for ${pInfo.en} (${pInfo.ar}) prayer not executed before midnight on ${targetDate}. Mandatory in Islamic jurisprudence to clear lapse. Includes Sunnah Rawātib or Nawāfil recovery restitution.`,
+    status: 'Active',
+    difficulty: 'Hard',
+    type: 'Recovery',
+    estimatedTime: 20,
+    recurrence: 'None',
+    energyLevel: 'High',
+    deadline: targetDate,
+    createdAt: creationTime,
+    completedAt: null,
+    lastCompletedDate: null,
+    postponedFrom: null,
+    postponedTo: null,
+    goalId: null,
+    projectId: null,
+    milestoneId: null,
+    listId: null,
+    streakCount: 0,
+    xp,
+    recoveryAction: recoveryActionOptions[0],
+    recoveryActionOptions,
+    subquests: [
+      {
+        id: `sq-qada-${prayer}-${targetDate}-1`,
+        name: `Perform Qada' of ${pInfo.en} (${pInfo.defaultRakats} Rak'ahs) with sincere repentance (Istighfar)`,
+        completed: false,
+      },
+      {
+        id: `sq-qada-${prayer}-${targetDate}-2`,
+        name: `Fulfill Sunnah Rawātib, 2 Rak'ahs Qiyām al-Layl, or 2 Rak'ahs Ḍuḥā restitution`,
+        completed: false,
+      },
+    ],
+    relatedSkills: [],
+    attributeRewards: [{ attribute: 'Discipline', points: 1 }],
+  };
+};

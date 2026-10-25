@@ -275,12 +275,14 @@ describe('Multi-Day Midnight Penalty Engine', () => {
       expect(updatedLog?.fajr?.fardh).toBe(true);
       expect(updatedLog?.fajr?.missedPastMidnight).toBeFalsy();
 
-      // Qada' quests created
+      // Qada' quests created with attached Sunnah prayer recovery action
       const qadaQuests = result.updatedQuests.filter(q => q.id.startsWith('q-qada-'));
       expect(qadaQuests.length).toBe(3);
       expect(qadaQuests.some(q => q.name.includes('Asr'))).toBe(true);
       expect(qadaQuests.some(q => q.name.includes('Maghrib'))).toBe(true);
       expect(qadaQuests.some(q => q.name.includes('Isha'))).toBe(true);
+      expect(qadaQuests[0].recoveryAction).toBeDefined();
+      expect(qadaQuests[0].recoveryActionOptions).toHaveLength(3);
     });
 
     it('multi-day penalty with autoTrackUnmarkedPrayers automatically penalizes unmarked prayers across missed days', () => {
